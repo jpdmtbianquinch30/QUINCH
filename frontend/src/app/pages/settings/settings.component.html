@@ -1,0 +1,396 @@
+<div class="settings-page animate-fade-in">
+
+  <!-- ═══════ HEADER ═══════ -->
+  <div class="settings-header">
+    <button class="q-btn q-btn-icon" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <h1>Parametres</h1>
+    <div class="header-spacer"></div>
+  </div>
+
+  <div class="settings-body">
+
+    <!-- ═══════ COMPTE ═══════ -->
+    <div class="settings-section">
+      <h2><span class="material-icons">person</span> Compte</h2>
+      <div class="settings-items">
+
+        <a routerLink="/profile/edit" class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Email et telephone</span>
+            <span class="setting-value">{{ user()?.email || 'Non defini' }} &bull; {{ user()?.phone_number || 'Non defini' }}</span>
+          </div>
+          <span class="material-icons chevron">chevron_right</span>
+        </a>
+
+        <div class="setting-item" (click)="changePassword()">
+          <div class="setting-info">
+            <span class="setting-title">Changer mot de passe</span>
+            <span class="setting-subtitle">Mettre a jour votre securite</span>
+          </div>
+          <span class="material-icons chevron">{{ showPasswordForm() ? 'expand_less' : 'chevron_right' }}</span>
+        </div>
+
+        <!-- Password change form (expandable) -->
+        @if (showPasswordForm()) {
+          <div class="inline-form animate-slide-down">
+            <div class="form-group">
+              <label class="form-label">Mot de passe actuel</label>
+              <input type="password" class="form-input" placeholder="Votre mot de passe actuel"
+                     [(ngModel)]="currentPassword" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nouveau mot de passe</label>
+              <input type="password" class="form-input" placeholder="Minimum 8 caracteres"
+                     [(ngModel)]="newPassword" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirmer le nouveau mot de passe</label>
+              <input type="password" class="form-input" placeholder="Confirmer"
+                     [(ngModel)]="confirmPassword" />
+            </div>
+            <div class="form-actions">
+              <button class="form-btn-cancel" (click)="showPasswordForm.set(false)">Annuler</button>
+              <button class="form-btn-submit" (click)="submitPasswordChange()" [disabled]="savingPassword()">
+                {{ savingPassword() ? 'Enregistrement...' : 'Changer le mot de passe' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <div class="setting-item danger" (click)="deleteAccount()">
+          <div class="setting-info">
+            <span class="setting-title">Supprimer mon compte</span>
+            <span class="setting-subtitle">Action irreversible - toutes vos donnees seront supprimees</span>
+          </div>
+          <span class="material-icons chevron">chevron_right</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ NOTIFICATIONS ═══════ -->
+    <div class="settings-section">
+      <h2><span class="material-icons">notifications</span> Notifications</h2>
+      <div class="settings-items">
+
+        <label class="setting-item toggle-item">
+          <div class="setting-info">
+            <span class="setting-title">Notifications push</span>
+            <span class="setting-subtitle">Sur votre appareil</span>
+          </div>
+          <div class="toggle-wrapper">
+            <input type="checkbox" class="toggle-input"
+                   [checked]="pushNotifications()"
+                   (change)="pushNotifications.set(!pushNotifications()); onTogglePush()" />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+
+        <label class="setting-item toggle-item">
+          <div class="setting-info">
+            <span class="setting-title">Notifications email</span>
+            <span class="setting-subtitle">Messages importants</span>
+          </div>
+          <div class="toggle-wrapper">
+            <input type="checkbox" class="toggle-input"
+                   [checked]="emailNotifications()"
+                   (change)="emailNotifications.set(!emailNotifications()); onToggleEmail()" />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+
+        <label class="setting-item toggle-item">
+          <div class="setting-info">
+            <span class="setting-title">Notifications SMS</span>
+            <span class="setting-subtitle">Transactions importantes</span>
+          </div>
+          <div class="toggle-wrapper">
+            <input type="checkbox" class="toggle-input"
+                   [checked]="smsNotifications()"
+                   (change)="smsNotifications.set(!smsNotifications()); onToggleSms()" />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+
+        <div class="setting-item" (click)="toggleNotifPrefs()">
+          <div class="setting-info">
+            <span class="setting-title">Preferences par type</span>
+            <span class="setting-subtitle">Controler chaque type de notification</span>
+          </div>
+          <span class="material-icons chevron">{{ showNotifPrefs() ? 'expand_less' : 'chevron_right' }}</span>
+        </div>
+
+        @if (showNotifPrefs()) {
+          <div class="inline-panel animate-slide-down">
+            <div class="notif-prefs-header">
+              <span class="np-col">Type</span>
+              <span class="np-col np-col-toggle">Push</span>
+              <span class="np-col np-col-toggle">In-app</span>
+            </div>
+            @for (pref of notifPrefs(); track pref.type; let i = $index) {
+              <div class="notif-pref-row">
+                <div class="np-type">
+                  <span class="material-icons np-icon">{{ getNotifTypeIcon(pref.type) }}</span>
+                  <span class="np-label">{{ pref.label }}</span>
+                </div>
+                <label class="mini-toggle">
+                  <input type="checkbox" [checked]="pref.push_enabled" (change)="togglePrefPush(i)" />
+                  <span class="mini-slider"></span>
+                </label>
+                <label class="mini-toggle">
+                  <input type="checkbox" [checked]="pref.in_app_enabled" (change)="togglePrefInApp(i)" />
+                  <span class="mini-slider"></span>
+                </label>
+              </div>
+            }
+            <div class="form-actions" style="margin-top: 12px;">
+              <button class="form-btn-submit" (click)="saveNotifPrefs()" [disabled]="savingNotifPrefs()">
+                {{ savingNotifPrefs() ? 'Sauvegarde...' : 'Sauvegarder les preferences' }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ═══════ CONFIDENTIALITE ═══════ -->
+    <div class="settings-section">
+      <h2><span class="material-icons">lock</span> Confidentialite</h2>
+      <div class="settings-items">
+
+        <div class="setting-item" (click)="blockedUsers()">
+          <div class="setting-info">
+            <span class="setting-title">Bloques et restreints</span>
+            <span class="setting-subtitle">Gerer les utilisateurs bloques</span>
+          </div>
+          <span class="material-icons chevron">{{ showBlockedUsers() ? 'expand_less' : 'chevron_right' }}</span>
+        </div>
+
+        <!-- Blocked users list (expandable) -->
+        @if (showBlockedUsers()) {
+          <div class="inline-panel animate-slide-down">
+            @if (blockedUsersList().length === 0) {
+              <div class="empty-inline">
+                <span class="material-icons">sentiment_satisfied</span>
+                <p>Aucun utilisateur bloque</p>
+              </div>
+            } @else {
+              @for (blocked of blockedUsersList(); track blocked.id) {
+                <div class="blocked-user-item">
+                  <div class="blocked-user-info">
+                    <span class="blocked-user-name">{{ blocked.full_name }}</span>
+                    <span class="blocked-user-date">Bloque le {{ blocked.blocked_at }}</span>
+                  </div>
+                  <button class="unblock-btn" (click)="unblockUser(blocked.id)">Debloquer</button>
+                </div>
+              }
+            }
+          </div>
+        }
+
+        <div class="setting-item" (click)="exportData()">
+          <div class="setting-info">
+            <span class="setting-title">Exporter mes donnees</span>
+            <span class="setting-subtitle">Telecharger vos informations en JSON</span>
+          </div>
+          @if (exportingData()) {
+            <span class="material-icons spinning">sync</span>
+          } @else {
+            <span class="material-icons chevron">download</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════ PREFERENCES ═══════ -->
+    <div class="settings-section">
+      <h2><span class="material-icons">tune</span> Preferences</h2>
+      <div class="settings-items">
+
+        <div class="setting-item select-item">
+          <div class="setting-info">
+            <span class="setting-title">Langue</span>
+            <span class="setting-subtitle">Choisir la langue de l'application</span>
+          </div>
+          <select class="setting-select" [value]="selectedLanguage()" (change)="changeLanguage($any($event.target).value)">
+            <option value="fr">Francais</option>
+            <option value="wo">Wolof</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div class="setting-item select-item">
+          <div class="setting-info">
+            <span class="setting-title">Devise</span>
+            <span class="setting-subtitle">Devise d'affichage des prix</span>
+          </div>
+          <select class="setting-select" [value]="selectedCurrency()" (change)="changeCurrency($any($event.target).value)">
+            <option value="XOF">XOF (FCFA)</option>
+            <option value="EUR">EUR (Euro)</option>
+            <option value="USD">USD (Dollar)</option>
+          </select>
+        </div>
+
+        <label class="setting-item toggle-item">
+          <div class="setting-info">
+            <span class="setting-title">Mode clair</span>
+            <span class="setting-subtitle">{{ themeService.lightMode() ? 'Theme clair active' : 'Theme sombre (par defaut)' }}</span>
+          </div>
+          <div class="toggle-wrapper">
+            <input type="checkbox" class="toggle-input"
+                   [checked]="themeService.lightMode()"
+                   (change)="toggleLightMode()" />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- ═══════ SUPPORT ═══════ -->
+    <div class="settings-section">
+      <h2><span class="material-icons">help</span> Support</h2>
+      <div class="settings-items">
+
+        <div class="setting-item" (click)="openHelp()">
+          <div class="setting-info">
+            <span class="setting-title">Centre d'aide</span>
+            <span class="setting-subtitle">Questions frequentes et guides</span>
+          </div>
+          <span class="material-icons chevron">{{ showHelpPanel() ? 'expand_less' : 'chevron_right' }}</span>
+        </div>
+
+        <!-- Help Center (expandable) -->
+        @if (showHelpPanel()) {
+          <div class="inline-panel animate-slide-down">
+            <h3 style="margin-bottom: 16px; font-size: 1rem; color: var(--q-text-primary);">Questions frequentes</h3>
+            <div class="faq-item">
+              <strong>Comment vendre un produit ?</strong>
+              <p>Cliquez sur "Publier" dans la barre laterale, selectionnez "Produit", ajoutez une video et des photos, puis remplissez les details.</p>
+            </div>
+            <div class="faq-item">
+              <strong>Comment acheter un produit ?</strong>
+              <p>Parcourez le feed ou la page Explorer, cliquez sur un produit qui vous interesse, puis choisissez "Acheter" ou "Ajouter au panier".</p>
+            </div>
+            <div class="faq-item">
+              <strong>Comment contacter un vendeur ?</strong>
+              <p>Sur la page du produit, cliquez sur "Contacter le vendeur" pour demarrer une conversation.</p>
+            </div>
+            <div class="faq-item">
+              <strong>Comment fonctionne le score de confiance ?</strong>
+              <p>Votre score de confiance commence a 50% et evolue en fonction de vos activites: ventes reussies, avis positifs, verification KYC, etc.</p>
+            </div>
+            <div class="faq-item">
+              <strong>Comment signaler un probleme ?</strong>
+              <p>Utilisez le bouton "Signaler un probleme" ci-dessous pour nous envoyer un rapport detaille.</p>
+            </div>
+          </div>
+        }
+
+        <div class="setting-item" (click)="contactSupport()">
+          <div class="setting-info">
+            <span class="setting-title">Nous contacter</span>
+            <span class="setting-subtitle">Envoyer un email a support&#64;quinch.sn</span>
+          </div>
+          <span class="material-icons chevron">mail</span>
+        </div>
+
+        <div class="setting-item" (click)="reportProblem()">
+          <div class="setting-info">
+            <span class="setting-title">Signaler un probleme</span>
+            <span class="setting-subtitle">Bug, suggestion ou feedback</span>
+          </div>
+          <span class="material-icons chevron">{{ showReportForm() ? 'expand_less' : 'chevron_right' }}</span>
+        </div>
+
+        <!-- Report problem form (expandable) -->
+        @if (showReportForm()) {
+          <div class="inline-form animate-slide-down">
+            <div class="form-group">
+              <label class="form-label">Type de probleme</label>
+              <select class="form-input" [(ngModel)]="reportCategory">
+                <option value="bug">Bug / Dysfonctionnement</option>
+                <option value="suggestion">Suggestion d'amelioration</option>
+                <option value="security">Probleme de securite</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="form-input form-textarea" rows="4"
+                        placeholder="Decrivez le probleme en detail..."
+                        [(ngModel)]="reportText"></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="form-btn-cancel" (click)="showReportForm.set(false)">Annuler</button>
+              <button class="form-btn-submit" (click)="submitReport()">Envoyer le signalement</button>
+            </div>
+          </div>
+        }
+
+        <div class="setting-item" (click)="openTerms()">
+          <div class="setting-info">
+            <span class="setting-title">Conditions d'utilisation</span>
+            <span class="setting-subtitle">Lire nos conditions et politique de confidentialite</span>
+          </div>
+          <span class="material-icons chevron">{{ showTerms() ? 'expand_less' : 'chevron_right' }}</span>
+        </div>
+
+        <!-- Terms of Service (expandable) -->
+        @if (showTerms()) {
+          <div class="inline-panel terms-panel animate-slide-down">
+            <h3>Conditions d'utilisation de Quinch</h3>
+            <div class="terms-content">
+              <p><strong>1. Acceptation des conditions</strong></p>
+              <p>En utilisant Quinch, vous acceptez les presentes conditions d'utilisation.
+                 Quinch est une plateforme de commerce social permettant l'achat et la vente
+                 de produits et services au Senegal.</p>
+              <p><strong>2. Comptes utilisateurs</strong></p>
+              <p>Chaque utilisateur est responsable de la confidentialite de son compte.
+                 Les informations fournies doivent etre exactes et a jour.</p>
+              <p><strong>3. Transactions</strong></p>
+              <p>Les transactions entre acheteurs et vendeurs sont effectuees sous la responsabilite
+                 des parties concernees. Quinch facilite la mise en relation mais n'est pas partie
+                 prenante dans les transactions.</p>
+              <p><strong>4. Contenu</strong></p>
+              <p>Les utilisateurs s'engagent a ne publier aucun contenu illegal, offensant,
+                 ou violant les droits d'autrui. Quinch se reserve le droit de supprimer
+                 tout contenu inapproprie.</p>
+              <p><strong>5. Protection des donnees</strong></p>
+              <p>Quinch respecte la legislation senegalaise sur la protection des donnees personnelles.
+                 Vos donnees ne sont partagees avec des tiers qu'avec votre consentement explicite.</p>
+              <p><strong>6. Contact</strong></p>
+              <p>Pour toute question: support&#64;quinch.sn</p>
+            </div>
+            <p class="terms-updated">Derniere mise a jour: Fevrier 2026</p>
+          </div>
+        }
+
+      </div>
+    </div>
+
+    @if (auth.isAdmin()) {
+      <div class="settings-section">
+        <h2><span class="material-icons">admin_panel_settings</span> Administration</h2>
+        <div class="settings-items">
+          <a routerLink="/admin" class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">Panel Admin</span>
+              <span class="setting-subtitle">Gerer la plateforme Quinch</span>
+            </div>
+            <span class="material-icons chevron">chevron_right</span>
+          </a>
+        </div>
+      </div>
+    }
+
+    <!-- ═══════ FOOTER ═══════ -->
+    <div class="settings-footer">
+      <div class="app-version">Version {{ appVersion }} &bull; Quinch &copy; 2026</div>
+      <button class="btn-logout" (click)="logout()">
+        <span class="material-icons">logout</span> Deconnexion
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,789 @@
+<!-- Loading state -->
+@if (loading()) {
+  <div class="detail-page">
+    <div class="detail-loading">
+      <div class="loader"></div>
+      <p>Chargement...</p>
+    </div>
+  </div>
+}
+
+@if (product(); as p) {
+  <div class="detail-page" [class.is-service]="isService()" [class.is-product]="isProduct()">
+
+    <!-- ═══════ TOP BAR ═══════ -->
+    <div class="detail-topbar">
+      <button class="topbar-btn" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+
+      <div class="topbar-type-badge" [class.service]="isService()">
+        <span class="material-icons">{{ getTypeIcon() }}</span>
+        {{ getTypeLabel() }}
+      </div>
+
+      <div class="topbar-actions">
+        <button class="topbar-btn" (click)="openShare()">
+          <span class="material-icons">share</span>
+        </button>
+        <button class="topbar-btn" (click)="toggleFavorite()">
+          <span class="material-icons" [class.active-fav]="isFavorited()">
+            {{ isFavorited() ? 'bookmark' : 'bookmark_border' }}
+          </span>
+        </button>
+        <button class="topbar-btn" (click)="toggleLike()">
+          <span class="material-icons" [class.active-like]="p.is_liked">
+            {{ p.is_liked ? 'favorite' : 'favorite_border' }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ MAIN LAYOUT ═══════ -->
+    <div class="detail-layout">
+
+      <!-- ══ LEFT: Media Panel ══ -->
+      <div class="media-panel">
+        <div class="media-main" (click)="openFullscreen()">
+          @if (activeMediaTab() === 'video' && hasVideo()) {
+            <video #detailVideo
+                   class="media-video"
+                   muted
+                   autoplay
+                   loop
+                   playsinline
+                   controls
+                   preload="auto"
+                   (click)="$event.stopPropagation()"
+                   (loadeddata)="onVideoLoaded($event)"
+                   (playing)="onVideoPlaying()"
+                   (pause)="onVideoPaused()"
+                   (error)="onVideoPlayError()">
+              <source [src]="getProductVideoUrl()!" type="video/mp4" />
+              Votre navigateur ne supporte pas la lecture video.
+            </video>
+
+            <!-- Play/Pause overlay (click to play) -->
+            @if (!videoPlaying()) {
+              <div class="video-play-overlay" (click)="toggleVideoPlay(); $event.stopPropagation()">
+                <span class="material-icons">play_arrow</span>
+              </div>
+            }
+
+            <!-- Custom controls bar -->
+            <div class="video-controls" (click)="$event.stopPropagation()">
+              <button class="vid-ctrl-btn" (click)="toggleVideoPlay()">
+                <span class="material-icons">{{ videoPlaying() ? 'pause' : 'play_arrow' }}</span>
+              </button>
+              <div class="vid-progress-bar">
+                <div class="vid-progress-fill" [style.width.%]="videoProgress()"></div>
+              </div>
+              <button class="vid-ctrl-btn" (click)="toggleVideoMute()">
+                <span class="material-icons">{{ videoMuted() ? 'volume_off' : 'volume_up' }}</span>
+              </button>
+            </div>
+
+            <!-- Fullscreen button on video -->
+            <button class="media-expand-btn" (click)="openFullscreen(); $event.stopPropagation()" title="Agrandir">
+              <span class="material-icons">fullscreen</span>
+            </button>
+          } @else if (activeMediaTab() === 'photos' && p.images?.length) {
+            <img [src]="p.images[currentImgIdx()]" alt="" class="media-image" (error)="onMediaError($event)" />
+            @if (p.images.length > 1) {
+              <div class="img-nav" (click)="$event.stopPropagation()">
+                <button (click)="prevImg($event)"><span class="material-icons">chevron_left</span></button>
+                <span class="img-counter">{{ currentImgIdx() + 1 }} / {{ p.images.length }}</span>
+                <button (click)="nextImg($event)"><span class="material-icons">chevron_right</span></button>
+              </div>
+            }
+            <!-- Fullscreen button on image -->
+            <button class="media-expand-btn" (click)="openFullscreen(); $event.stopPropagation()" title="Agrandir">
+              <span class="material-icons">fullscreen</span>
+            </button>
+          } @else if (p.images?.length) {
+            <img [src]="p.images[0]" alt="" class="media-image" (error)="onMediaError($event)" />
+          } @else if (getProductThumbnail()) {
+            <img [src]="getProductThumbnail()" alt="" class="media-image" (error)="onMediaError($event)" />
+          } @else {
+            <div class="media-empty">
+              <span class="material-icons">{{ isService() ? 'handyman' : 'image' }}</span>
+              <span>Aucun media disponible</span>
+            </div>
+          }
+        </div>
+
+        <!-- Media tabs (photos first, then video) -->
+        @if (hasVideo() || p.images?.length) {
+          <div class="media-tabs">
+            @if (p.images?.length) {
+              <button class="media-tab" [class.active]="activeMediaTab() === 'photos'"
+                      (click)="activeMediaTab.set('photos')">
+                <span class="material-icons">photo_library</span>
+                Photos ({{ p.images.length }})
+              </button>
+            }
+            @if (hasVideo()) {
+              <button class="media-tab" [class.active]="activeMediaTab() === 'video'"
+                      (click)="activeMediaTab.set('video')">
+                <span class="material-icons">videocam</span>
+                Video
+              </button>
+            }
+          </div>
+        }
+
+        <!-- Image & video thumbnails gallery -->
+        @if (p.images?.length || hasVideo()) {
+          <div class="image-thumbs-strip">
+            @if (p.images?.length) {
+              @for (img of p.images; track $index; let i = $index) {
+                <button class="thumb-item" [class.active]="activeMediaTab() === 'photos' && currentImgIdx() === i"
+                        (click)="activeMediaTab.set('photos'); currentImgIdx.set(i)">
+                  <img [src]="img" alt="Image {{ i + 1 }}" (error)="onMediaError($event)" />
+                </button>
+              }
+            }
+            @if (hasVideo()) {
+              <button class="thumb-item video-thumb" [class.active]="activeMediaTab() === 'video'"
+                      (click)="activeMediaTab.set('video')">
+                @if (getVideoThumbnail()) {
+                  <img [src]="getVideoThumbnail()" alt="Video" (error)="onMediaError($event)" />
+                } @else {
+                  <span class="material-icons">videocam</span>
+                }
+                <div class="thumb-play-badge"><span class="material-icons">play_arrow</span></div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- ══ RIGHT: Info Panel ══ -->
+      <div class="info-panel">
+
+        <!-- Type + Category -->
+        <div class="info-tags">
+          <span class="type-tag" [class.service]="isService()">
+            <span class="material-icons">{{ getTypeIcon() }}</span>
+            {{ getTypeLabel() }}
+          </span>
+          @if (p.category?.name) {
+            <span class="category-tag">{{ p.category.name }}</span>
+          }
+          @if (p.condition === 'new' && isProduct()) {
+            <span class="condition-tag new">Neuf</span>
+          }
+          @if (p.is_negotiable) {
+            <span class="condition-tag nego">Negociable</span>
+          }
+        </div>
+
+        <!-- Title -->
+        <h1 class="info-title">{{ p.title }}</h1>
+
+        <!-- Price Section -->
+        <div class="info-price-section" [class.service]="isService()">
+          <div class="price-main">
+            @if (p.price) {
+              <span class="price-value">{{ formatPrice(p.price) }}</span>
+              <span class="price-currency">F CFA</span>
+            } @else if (isService()) {
+              <span class="price-quote">Sur devis</span>
+            }
+          </div>
+          @if (isProduct()) {
+            <div class="stock-info" [class.out]="p.stock_quantity <= 0">
+              <span class="material-icons">{{ p.stock_quantity > 0 ? 'check_circle' : 'cancel' }}</span>
+              {{ p.stock_quantity > 0 ? 'En stock (' + p.stock_quantity + ')' : 'Rupture de stock' }}
+            </div>
+          } @else {
+            <div class="availability-info">
+              <span class="material-icons">event_available</span>
+              Disponible
+            </div>
+          }
+        </div>
+
+        <!-- Stats row -->
+        <div class="info-stats">
+          <div class="stat">
+            <span class="material-icons">visibility</span>
+            {{ p.view_count || 0 }} vues
+          </div>
+          <div class="stat">
+            <span class="material-icons">favorite</span>
+            {{ p.like_count || 0 }} likes
+          </div>
+          <div class="stat">
+            <span class="material-icons">share</span>
+            {{ p.share_count || 0 }} partages
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════
+             CTA SECTION — Different per type
+             ══════════════════════════════════════════════ -->
+        <div class="cta-block">
+          @if (!auth.isAuthenticated()) {
+            <!-- Not logged in -->
+            <button class="cta-primary login-cta" routerLink="/auth/login">
+              <span class="material-icons">lock</span>
+              Se connecter pour continuer
+            </button>
+          } @else if (isOwner()) {
+            <!-- ══ OWNER VIEW ══ -->
+            <div class="owner-notice">
+              <span class="material-icons">info</span>
+              <span>C'est votre publication. Vous ne pouvez pas vous contacter vous-meme.</span>
+            </div>
+            <button class="cta-secondary" routerLink="/profile">
+              <span class="material-icons">edit</span>
+              Gerer mes publications
+            </button>
+          } @else if (isService()) {
+            <!-- ══ SERVICE CTAs ══ -->
+            <button class="cta-primary contact-cta" (click)="openContact()">
+              <span class="material-icons">chat</span>
+              Contacter le prestataire
+            </button>
+            <button class="cta-secondary quote-cta" (click)="openQuote()">
+              <span class="material-icons">request_quote</span>
+              Demander un devis
+            </button>
+            @if (p.is_negotiable && p.price) {
+              <button class="cta-tertiary" (click)="openNegotiate()">
+                <span class="material-icons">local_offer</span>
+                Proposer un prix
+              </button>
+            }
+          } @else {
+            <!-- ══ PRODUCT CTAs ══ -->
+            @if (hasSellerPaymentMethods) {
+              <div class="cta-row">
+                <button class="cta-primary buy-cta" (click)="buyNow()">
+                  <span class="material-icons">flash_on</span>
+                  Acheter maintenant
+                </button>
+                <button class="cta-secondary cart-cta" (click)="addToCart()" [disabled]="addingToCart()">
+                  <span class="material-icons">{{ addingToCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span>
+                  {{ addingToCart() ? 'Ajout...' : 'Ajouter au panier' }}
+                </button>
+              </div>
+            } @else {
+              <!-- No payment methods — contact seller directly -->
+              <div class="cta-row">
+                <button class="cta-primary contact-cta" (click)="openContact()">
+                  <span class="material-icons">chat</span>
+                  Contacter le vendeur
+                </button>
+                <button class="cta-secondary cart-cta" (click)="addToCart()" [disabled]="addingToCart()">
+                  <span class="material-icons">{{ addingToCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span>
+                  {{ addingToCart() ? 'Ajout...' : 'Ajouter au panier' }}
+                </button>
+              </div>
+              <div class="payment-notice">
+                <span class="material-icons">info</span>
+                <span>Contactez le vendeur pour convenir du mode de paiement</span>
+              </div>
+            }
+            <div class="cta-row">
+              @if (hasSellerPaymentMethods) {
+                <button class="cta-tertiary" (click)="openContact()">
+                  <span class="material-icons">chat</span>
+                  Contacter le vendeur
+                </button>
+              }
+              @if (p.is_negotiable) {
+                <button class="cta-tertiary" (click)="openNegotiate()">
+                  <span class="material-icons">local_offer</span>
+                  Negocier le prix
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Description -->
+        <div class="info-section">
+          <h3 class="section-title">Description</h3>
+          <p class="section-text" [innerHTML]="formatDescription(p.description || 'Aucune description disponible.')"></p>
+        </div>
+
+        <!-- Seller card -->
+        <div class="seller-card" [class.service]="isService()">
+          <div class="seller-avatar">
+            @if (getSellerAvatar()) {
+              <img [src]="getSellerAvatar()" alt="" (error)="onMediaError($event)" />
+            } @else {
+              <span class="material-icons">person</span>
+            }
+          </div>
+          <div class="seller-info">
+            <span class="seller-name">{{ getSellerName() }}</span>
+            <span class="seller-username">&#64;{{ getSellerUsername() }}</span>
+          </div>
+          <div class="seller-trust">
+            <div class="trust-score">
+              <span class="material-icons">verified</span>
+              {{ (getSellerTrustScore() * 100) | number:'1.0-0' }}%
+            </div>
+            @if (getSellerCity()) {
+              <span class="seller-location">
+                <span class="material-icons">location_on</span>
+                {{ getSellerCity() }}
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Characteristics (product-specific) -->
+        @if (isProduct()) {
+          <div class="info-section">
+            <h3 class="section-title">Caracteristiques</h3>
+            <div class="specs-grid">
+              <div class="spec-item">
+                <span class="spec-icon material-icons">new_releases</span>
+                <div class="spec-content">
+                  <span class="spec-label">Etat</span>
+                  <span class="spec-value">{{ getConditionLabel() }}</span>
+                </div>
+              </div>
+              <div class="spec-item">
+                <span class="spec-icon material-icons">inventory_2</span>
+                <div class="spec-content">
+                  <span class="spec-label">Stock</span>
+                  <span class="spec-value">{{ p.stock_quantity || 0 }} unites</span>
+                </div>
+              </div>
+              <div class="spec-item">
+                <span class="spec-icon material-icons">payments</span>
+                <div class="spec-content">
+                  <span class="spec-label">Prix</span>
+                  <span class="spec-value">{{ p.is_negotiable ? 'Negociable' : 'Fixe' }}</span>
+                </div>
+              </div>
+              <div class="spec-item">
+                <span class="spec-icon material-icons">local_shipping</span>
+                <div class="spec-content">
+                  <span class="spec-label">Livraison</span>
+                  <span class="spec-value">
+                    @if (p.delivery_option === 'fixed' && p.delivery_fee > 0) {
+                      {{ formatPrice(p.delivery_fee) }} F CFA
+                    } @else if (p.delivery_option === 'fixed') {
+                      Frais fixes
+                    } @else {
+                      A convenir
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delivery info banner -->
+            @if (p.delivery_option === 'fixed' && p.delivery_fee > 0) {
+              <div class="delivery-banner fixed">
+                <span class="material-icons">local_shipping</span>
+                <div>
+                  <strong>Livraison : {{ formatPrice(p.delivery_fee) }} F CFA</strong>
+                  <span>Frais de livraison a payer en plus du prix du produit</span>
+                </div>
+                <span class="delivery-fee-tag">+{{ formatPrice(p.delivery_fee) }}</span>
+              </div>
+            } @else if (p.delivery_option === 'contact' || !p.delivery_option) {
+              <div class="delivery-banner contact">
+                <span class="material-icons">chat</span>
+                <div>
+                  <strong>Livraison a convenir</strong>
+                  <span>Contactez le vendeur pour convenir des frais et modalites de livraison</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Accepted Payment Methods -->
+        <div class="info-section">
+          <h3 class="section-title"><span class="material-icons" style="font-size:18px;vertical-align:middle;margin-right:6px;">account_balance_wallet</span>Modes de paiement</h3>
+          @if (hasSellerPaymentMethods) {
+            <div class="accepted-payments">
+              @for (method of sellerPaymentMethods; track method.id) {
+                <div class="accepted-pay-chip">
+                  <span class="material-icons">{{ method.icon }}</span>
+                  <span>{{ method.name }}</span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="no-payment-methods">
+              <span class="material-icons">chat_bubble_outline</span>
+              <div>
+                <strong>Contactez le vendeur</strong>
+                <span>Le vendeur n'a pas defini de methode de paiement. Contactez-le pour convenir d'un arrangement.</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Service details (service-specific) -->
+        @if (isService()) {
+          <div class="info-section">
+            <h3 class="section-title">A propos du service</h3>
+            <div class="service-features">
+              <div class="service-feature">
+                <span class="material-icons">schedule</span>
+                <div>
+                  <strong>Disponibilite</strong>
+                  <span>A convenir avec le prestataire</span>
+                </div>
+              </div>
+              <div class="service-feature">
+                <span class="material-icons">workspace_premium</span>
+                <div>
+                  <strong>Qualite garantie</strong>
+                  <span>Score de confiance verifie</span>
+                </div>
+              </div>
+              <div class="service-feature">
+                <span class="material-icons">support_agent</span>
+                <div>
+                  <strong>Communication directe</strong>
+                  <span>Messagerie integree Quinch</span>
+                </div>
+              </div>
+              <div class="service-feature">
+                <span class="material-icons">verified_user</span>
+                <div>
+                  <strong>Paiement securise</strong>
+                  <span>Paiement apres satisfaction</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ══════════════════════════════════════════════
+             REVIEWS SECTION — Play Store style
+             ══════════════════════════════════════════════ -->
+        <div class="reviews-section" id="reviews-section">
+          <h3 class="section-title">
+            <span class="material-icons">star</span>
+            Notes et avis
+          </h3>
+
+          <!-- Stats summary -->
+          @if (reviewStats(); as stats) {
+            <div class="review-summary">
+              <div class="review-score-big">
+                <span class="score-number">{{ stats.average | number:'1.1-1' }}</span>
+                <div class="score-stars">
+                  @for (s of getStarArray(); track s) {
+                    <span class="material-icons star-icon" [class.filled]="s <= stats.average">
+                      {{ s <= stats.average ? 'star' : (s - 0.5 <= stats.average ? 'star_half' : 'star_border') }}
+                    </span>
+                  }
+                </div>
+                <span class="score-count">{{ stats.total }} avis</span>
+              </div>
+              <div class="review-bars">
+                @for (s of [5, 4, 3, 2, 1]; track s) {
+                  <div class="bar-row">
+                    <span class="bar-label">{{ s }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="getDistributionPercent(s)"></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Write a review -->
+          @if (auth.isAuthenticated() && !reviewSubmitted()) {
+            <div class="write-review">
+              <h4>Donner votre avis</h4>
+              <div class="star-picker">
+                @for (s of getStarArray(); track s) {
+                  <button class="star-pick"
+                          (mouseenter)="newReviewHover.set(s)"
+                          (mouseleave)="newReviewHover.set(0)"
+                          (click)="setReviewRating(s)">
+                    <span class="material-icons">
+                      {{ s <= (newReviewHover() || newReviewRating()) ? 'star' : 'star_border' }}
+                    </span>
+                  </button>
+                }
+                @if (newReviewRating()) {
+                  <span class="rating-label">
+                    {{ newReviewRating() === 1 ? 'Mauvais' : newReviewRating() === 2 ? 'Moyen' : newReviewRating() === 3 ? 'Bien' : newReviewRating() === 4 ? 'Tres bien' : 'Excellent' }}
+                  </span>
+                }
+              </div>
+              @if (newReviewRating()) {
+                <textarea class="review-textarea"
+                          [(ngModel)]="newReviewComment"
+                          placeholder="Decrivez votre experience (optionnel)..."
+                          rows="3"></textarea>
+                <button class="review-submit-btn" (click)="submitReview()" [disabled]="submittingReview()">
+                  <span class="material-icons">{{ submittingReview() ? 'hourglass_top' : 'send' }}</span>
+                  {{ submittingReview() ? 'Publication...' : 'Publier l\'avis' }}
+                </button>
+              }
+            </div>
+          }
+
+          @if (reviewSubmitted()) {
+            <div class="review-thanks">
+              <span class="material-icons">check_circle</span>
+              Vous avez deja evalue ce vendeur. Merci!
+            </div>
+          }
+
+          <!-- Review list -->
+          @if (loadingReviews()) {
+            <div class="reviews-loading">
+              <div class="loader-sm"></div>
+              Chargement des avis...
+            </div>
+          } @else if (reviews().length === 0) {
+            <div class="reviews-empty">
+              <span class="material-icons">rate_review</span>
+              <p>Aucun avis pour le moment. Soyez le premier!</p>
+            </div>
+          } @else {
+            <div class="review-list">
+              @for (review of reviews(); track review.id) {
+                <div class="review-card">
+                  <div class="review-header">
+                    <div class="reviewer-avatar">
+                      @if (review.reviewer.avatar_url) {
+                        <img [src]="review.reviewer.avatar_url" alt="" />
+                      } @else {
+                        <span class="material-icons">person</span>
+                      }
+                    </div>
+                    <div class="reviewer-info">
+                      <span class="reviewer-name">{{ review.reviewer.full_name || 'Utilisateur' }}</span>
+                      <span class="review-date">{{ getTimeAgo(review.created_at) }}</span>
+                    </div>
+                  </div>
+                  <div class="review-stars-row">
+                    @for (s of getStarArray(); track s) {
+                      <span class="material-icons star-sm" [class.filled]="s <= review.rating">
+                        {{ s <= review.rating ? 'star' : 'star_border' }}
+                      </span>
+                    }
+                  </div>
+                  @if (review.comment) {
+                    <p class="review-comment">{{ review.comment }}</p>
+                  }
+                  @if (review.seller_response) {
+                    <div class="seller-reply">
+                      <span class="reply-label">
+                        <span class="material-icons">reply</span>
+                        Reponse du vendeur
+                      </span>
+                      <p>{{ review.seller_response }}</p>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Report -->
+        <button class="report-btn" (click)="reportThisProduct()">
+          <span class="material-icons">flag</span>
+          Signaler ce {{ isService() ? 'service' : 'produit' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ MODALS ═══════ -->
+
+    <!-- Payment Modal (products) -->
+    @if (showPayment()) {
+      <div class="modal-overlay" (click)="showPayment.set(false)">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Choisir un moyen de paiement</h2>
+            <button class="modal-close" (click)="showPayment.set(false)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="modal-summary">
+            <span>{{ p.title }}</span>
+            <strong>{{ formatPrice(p.price) }} F CFA</strong>
+          </div>
+          <div class="payment-list">
+            @for (method of sellerPaymentMethods; track method.id) {
+              <button class="payment-item" [class.selected]="selectedPayment() === method.id"
+                      (click)="selectedPayment.set(method.id)">
+                <span class="material-icons pay-icon">{{ method.icon }}</span>
+                <div class="pay-info">
+                  <span class="pay-name">{{ method.name }}</span>
+                  <span class="pay-desc">{{ method.desc }}</span>
+                </div>
+                @if (selectedPayment() === method.id) {
+                  <span class="material-icons pay-check">check_circle</span>
+                }
+              </button>
+            }
+          </div>
+          <button class="modal-cta" [disabled]="!selectedPayment()" (click)="confirmPayment()">
+            Confirmer le paiement - {{ formatPrice(p.price) }} F CFA
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Share Modal -->
+    @if (showShareModal()) {
+      <div class="modal-overlay" (click)="showShareModal.set(false)">
+        <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Partager</h2>
+            <button class="modal-close" (click)="showShareModal.set(false)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="share-grid">
+            <button class="share-item" (click)="shareVia('whatsapp')">
+              <div class="share-icon whatsapp"><span class="material-icons">chat</span></div>
+              <span>WhatsApp</span>
+            </button>
+            <button class="share-item" (click)="shareVia('facebook')">
+              <div class="share-icon facebook"><span class="material-icons">public</span></div>
+              <span>Facebook</span>
+            </button>
+            <button class="share-item" (click)="shareVia('copy')">
+              <div class="share-icon copy"><span class="material-icons">link</span></div>
+              <span>Copier lien</span>
+            </button>
+            <button class="share-item" (click)="shareVia('native')">
+              <div class="share-icon native"><span class="material-icons">share</span></div>
+              <span>Plus...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Negotiate Modal -->
+    @if (showNegotiateModal()) {
+      <div class="modal-overlay" (click)="showNegotiateModal.set(false)">
+        <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Proposer un prix</h2>
+            <button class="modal-close" (click)="showNegotiateModal.set(false)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="modal-info-row">
+            Prix actuel : <strong>{{ formatPrice(p.price) }} F CFA</strong>
+          </div>
+          <div class="form-field">
+            <label>Votre offre (F CFA)</label>
+            <input type="number" [(ngModel)]="proposedPrice" [min]="100" />
+          </div>
+          <div class="form-field">
+            <label>Message (optionnel)</label>
+            <textarea [(ngModel)]="negotiateMessage" placeholder="Pourquoi ce prix?"></textarea>
+          </div>
+          <button class="modal-cta" (click)="submitNegotiation()" [disabled]="!proposedPrice">
+            <span class="material-icons">send</span>
+            Envoyer l'offre
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Contact Modal -->
+    @if (showContactModal()) {
+      <div class="modal-overlay" (click)="showContactModal.set(false)">
+        <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>{{ isService() ? 'Contacter le prestataire' : 'Contacter le vendeur' }}</h2>
+            <button class="modal-close" (click)="showContactModal.set(false)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="modal-info-row">
+            <span class="material-icons">{{ isService() ? 'handyman' : 'storefront' }}</span>
+            {{ getSellerName() }} — {{ p.title }}
+          </div>
+          <div class="form-field">
+            <label>Votre message</label>
+            <textarea [(ngModel)]="contactMessage"
+                      [placeholder]="isService() ? 'Bonjour, je suis interesse par votre service...' : 'Bonjour, je suis interesse par votre produit...'"></textarea>
+          </div>
+          <button class="modal-cta" (click)="sendContactMessage()" [disabled]="!contactMessage.trim()">
+            <span class="material-icons">send</span>
+            Envoyer
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Quote Modal (services only) -->
+    @if (showQuoteModal()) {
+      <div class="modal-overlay" (click)="showQuoteModal.set(false)">
+        <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Demander un devis</h2>
+            <button class="modal-close" (click)="showQuoteModal.set(false)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="modal-info-row">
+            <span class="material-icons">handyman</span>
+            {{ p.title }} — {{ getSellerName() }}
+          </div>
+          <div class="form-field">
+            <label>Decrivez votre besoin</label>
+            <textarea [(ngModel)]="quoteMessage"
+                      placeholder="Detaillez ce dont vous avez besoin pour recevoir un devis precis..."></textarea>
+          </div>
+          <button class="modal-cta service-cta" (click)="sendQuoteRequest()" [disabled]="!quoteMessage.trim()">
+            <span class="material-icons">send</span>
+            Envoyer la demande
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ═══════ FULLSCREEN LIGHTBOX ═══════ -->
+    @if (showFullscreen()) {
+      <div class="lightbox-overlay" (click)="closeFullscreen()">
+        <button class="lightbox-close" (click)="closeFullscreen()">
+          <span class="material-icons">close</span>
+        </button>
+
+        <div class="lightbox-content" (click)="$event.stopPropagation()">
+          @if (activeMediaTab() === 'video' && hasVideo()) {
+            <video class="lightbox-video"
+                   [src]="getProductVideoUrl()!"
+                   autoplay
+                   controls
+                   loop
+                   playsinline>
+            </video>
+          } @else if (p.images?.length) {
+            <img [src]="p.images[currentImgIdx()]" alt="" class="lightbox-image" />
+          }
+        </div>
+
+        <!-- Navigation arrows for images in lightbox -->
+        @if (activeMediaTab() === 'photos' && p.images && p.images.length > 1) {
+          <button class="lightbox-nav lightbox-prev" (click)="prevImg($event)">
+            <span class="material-icons">chevron_left</span>
+          </button>
+          <button class="lightbox-nav lightbox-next" (click)="nextImg($event)">
+            <span class="material-icons">chevron_right</span>
+          </button>
+          <div class="lightbox-counter">{{ currentImgIdx() + 1 }} / {{ p.images.length }}</div>
+        }
+      </div>
+    }
+  </div>
+}

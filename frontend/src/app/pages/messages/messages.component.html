@@ -1,0 +1,401 @@
+<div class="messages-page">
+  <div class="messages-layout" [class.mobile-chat-open]="mobileShowChat()">
+    <!-- Conversation List -->
+    <div class="conv-list">
+      <div class="conv-header">
+        <h2>Messages</h2>
+        <button class="header-action" (click)="onNewConversation()" title="Nouvelle conversation">
+          <span class="material-icons">edit_note</span>
+        </button>
+      </div>
+
+      <div class="conv-search">
+        <span class="material-icons">search</span>
+        <input
+          type="text"
+          placeholder="Rechercher une conversation..."
+          class="q-input"
+          [value]="searchQuery()"
+          (input)="searchQuery.set($any($event.target).value)"
+        />
+        @if (searchQuery()) {
+          <button class="search-clear" (click)="searchQuery.set('')">
+            <span class="material-icons">close</span>
+          </button>
+        }
+      </div>
+
+      @if (loading()) {
+        <div class="conv-loading">
+          <div class="loader"></div>
+        </div>
+      } @else if (filteredConversations().length === 0) {
+        <div class="conv-empty">
+          <span class="material-icons">chat_bubble_outline</span>
+          @if (searchQuery()) {
+            <p>Aucun résultat pour "{{ searchQuery() }}"</p>
+            <p class="hint">Essayez un autre terme de recherche</p>
+          } @else {
+            <p>Aucune conversation</p>
+            <p class="hint">Contactez un vendeur pour commencer</p>
+          }
+        </div>
+      } @else {
+        <div class="conv-items">
+          @for (conv of filteredConversations(); track conv.id) {
+            <div
+              class="conv-item"
+              [class.active]="selectedConv()?.id === conv.id"
+              [class.has-unread]="conv.unread_count > 0"
+              (click)="selectConversation(conv)"
+            >
+              <div class="conv-avatar">
+                @if (conv.other_user.avatar_url) {
+                  <img [src]="conv.other_user.avatar_url" alt="" class="conv-avatar-img" />
+                } @else {
+                  <span class="material-icons">person</span>
+                }
+                <span class="online-dot" [class.online]="conv.other_user.is_online" [class.offline]="!conv.other_user.is_online"></span>
+              </div>
+              <div class="conv-info">
+                <div class="conv-top">
+                  <span class="conv-name">{{ conv.other_user.full_name || 'Utilisateur' }}</span>
+                  <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
+                </div>
+                <div class="conv-bottom">
+                  <span class="conv-preview">
+                    @if (isLastMessageMine(conv)) {
+                      <span class="read-check" [class.read]="isLastMessageRead(conv)">
+                        <span class="material-icons">done_all</span>
+                      </span>
+                    }
+                    {{ getLastMessagePreview(conv) }}
+                  </span>
+                  @if (conv.unread_count > 0) {
+                    <span class="conv-unread">{{ conv.unread_count }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area">
+      @if (!selectedConv()) {
+        <div class="chat-empty">
+          <span class="material-icons">forum</span>
+          <h3>Sélectionnez une conversation</h3>
+          <p>Choisissez une conversation à gauche pour commencer</p>
+        </div>
+      } @else {
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <button class="back-btn" (click)="goBack()">
+              <span class="material-icons">arrow_back</span>
+            </button>
+            <div class="chat-header-user" (click)="viewProfile()">
+              <div class="chat-avatar">
+                @if (selectedConv()?.other_user?.avatar_url) {
+                  <img [src]="selectedConv()?.other_user?.avatar_url" alt="" class="chat-avatar-img" />
+                } @else {
+                  <span class="material-icons">person</span>
+                }
+                <span class="online-dot" [class.online]="selectedConv()?.other_user?.is_online"></span>
+              </div>
+              <div class="chat-user-info">
+                <h3>{{ selectedConv()?.other_user?.full_name }}</h3>
+                <span class="chat-status">
+                  @if (selectedConv()?.other_user?.is_online) {
+                    <span class="status-online">En ligne</span>
+                  } @else {
+                    <span class="status-offline">Hors ligne</span>
+                  }
+                </span>
+                @if (selectedConv()?.product) {
+                  <span class="chat-product">{{ selectedConv()?.product?.title }} - {{ selectedConv()?.product?.price | number:'1.0-0' }} F</span>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="chat-header-actions">
+            <button class="q-btn q-btn-icon" (click)="onCall()" title="Appeler">
+              <span class="material-icons">call</span>
+            </button>
+            <div class="dropdown-wrap">
+              <button class="q-btn q-btn-icon" (click)="toggleDropdown()" title="Plus d'options">
+                <span class="material-icons">more_vert</span>
+              </button>
+              @if (showDropdown()) {
+                <div class="dropdown-backdrop" (click)="closeDropdown()"></div>
+                <div class="dropdown-menu">
+                  <button class="dropdown-item" (click)="onViewProfile()">
+                    <span class="material-icons">person</span>
+                    Voir le profil
+                  </button>
+                  <button class="dropdown-item" (click)="onMarkAllRead()">
+                    <span class="material-icons">done_all</span>
+                    Marquer comme lu
+                  </button>
+                  <button class="dropdown-item" (click)="onMuteConversation()">
+                    <span class="material-icons">notifications_off</span>
+                    Désactiver les notifs
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <button class="dropdown-item danger" (click)="onDeleteConversation()">
+                    <span class="material-icons">delete</span>
+                    Supprimer
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages" #messagesContainer>
+          <!-- Product/Service Context Card -->
+          @if (selectedConv()?.product) {
+            <div class="product-context-card">
+              <a [routerLink]="['/product', selectedConv()?.product?.slug]" class="pcc-link">
+                <div class="pcc-icon">
+                  <span class="material-icons">{{ selectedConv()?.product?.price ? 'shopping_bag' : 'handyman' }}</span>
+                </div>
+                <div class="pcc-info">
+                  <span class="pcc-label">Conversation a propos de</span>
+                  <span class="pcc-title">{{ selectedConv()?.product?.title }}</span>
+                  @if (selectedConv()?.product?.price) {
+                    <span class="pcc-price">{{ selectedConv()?.product?.price | number:'1.0-0' }} F CFA</span>
+                  } @else {
+                    <span class="pcc-price quote">Sur devis</span>
+                  }
+                </div>
+                <span class="material-icons pcc-arrow">chevron_right</span>
+              </a>
+            </div>
+          }
+
+          @for (msg of chat.messages(); track msg.id) {
+            @if (msg.type === 'system') {
+              <div class="system-message">
+                <div class="system-bubble">
+                  <span class="material-icons system-icon">people</span>
+                  <p>{{ msg.body }}</p>
+                </div>
+              </div>
+            } @else if (msg.type === 'audio') {
+              <!-- Audio / Voice Message -->
+              <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                <div class="message-bubble audio-bubble">
+                  <div class="audio-player">
+                    <button class="audio-play-btn" (click)="toggleAudioPlay(msg)">
+                      <span class="material-icons">
+                        {{ isAudioPlaying(msg.id) ? 'pause' : 'play_arrow' }}
+                      </span>
+                    </button>
+                    <div class="audio-content">
+                      <div class="audio-waveform" (click)="seekAudio(msg, $event)">
+                        <div class="audio-wave-bg">
+                          @for (bar of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; track bar) {
+                            <div class="wave-bar"></div>
+                          }
+                        </div>
+                        <div class="audio-wave-progress" [style.width.%]="getAudioProgress(msg.id)">
+                          @for (bar of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; track bar) {
+                            <div class="wave-bar active"></div>
+                          }
+                        </div>
+                      </div>
+                      <div class="audio-time">
+                        @if (getAudioCurrentTime(msg.id) > 0) {
+                          {{ formatAudioDuration(getAudioCurrentTime(msg.id)) }}
+                        } @else {
+                          {{ formatAudioDuration(msg.metadata?.duration) }}
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <div class="message-footer">
+                    <span class="message-time">{{ formatTime(msg.created_at) }}</span>
+                    @if (isMe(msg)) {
+                      <span class="read-indicator" [class.read]="msg.is_read">
+                        <span class="material-icons">done_all</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            } @else if (isImageMessage(msg)) {
+              <!-- Image Message -->
+              <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                <div class="message-bubble image-bubble">
+                  <a [href]="getFileUrl(msg)" target="_blank" class="msg-image-wrap">
+                    <img [src]="getFileUrl(msg)" alt="Image" class="msg-image" loading="lazy" />
+                  </a>
+                  <div class="message-footer">
+                    <span class="message-time">{{ formatTime(msg.created_at) }}</span>
+                    @if (isMe(msg)) {
+                      <span class="read-indicator" [class.read]="msg.is_read">
+                        <span class="material-icons">done_all</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            } @else if (isFileMessage(msg)) {
+              <!-- File Message -->
+              <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                <div class="message-bubble file-bubble">
+                  <a [href]="getFileUrl(msg)" target="_blank" class="msg-file-wrap" download>
+                    <div class="msg-file-icon">
+                      <span class="material-icons">description</span>
+                      @if (getFileExtension(msg)) {
+                        <span class="file-ext">{{ getFileExtension(msg) }}</span>
+                      }
+                    </div>
+                    <div class="msg-file-info">
+                      <span class="msg-file-name">{{ getFileName(msg) }}</span>
+                      <span class="msg-file-size">{{ getFileSize(msg) }}</span>
+                    </div>
+                    <span class="material-icons msg-file-dl">download</span>
+                  </a>
+                  <div class="message-footer">
+                    <span class="message-time">{{ formatTime(msg.created_at) }}</span>
+                    @if (isMe(msg)) {
+                      <span class="read-indicator" [class.read]="msg.is_read">
+                        <span class="material-icons">done_all</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- Text Message -->
+              <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                <div class="message-bubble" [class.quote-bubble]="isQuoteMessage(msg)">
+                  @if (isQuoteMessage(msg)) {
+                    <div class="quote-tag">
+                      <span class="material-icons">request_quote</span> Demande de devis
+                    </div>
+                    <p>{{ getQuoteBody(msg) }}</p>
+                  } @else {
+                    <p>{{ msg.body }}</p>
+                  }
+                  <div class="message-footer">
+                    <span class="message-time">{{ formatTime(msg.created_at) }}</span>
+                    @if (isMe(msg)) {
+                      <span class="read-indicator" [class.read]="msg.is_read">
+                        <span class="material-icons">done_all</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          }
+          @if (isTyping()) {
+            <div class="message theirs">
+              <div class="message-bubble typing-bubble">
+                <div class="typing-indicator">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Input Area -->
+        @if (isRecording()) {
+          <!-- Recording Bar -->
+          <div class="recording-bar">
+            <div class="recording-indicator">
+              <span class="rec-dot"></span>
+              <span class="rec-label">Enregistrement</span>
+            </div>
+            <div class="recording-timer">{{ formatRecordingTime() }}</div>
+            <div class="recording-wave">
+              @for (i of [1,2,3,4,5,6,7]; track i) {
+                <span class="rec-wave-bar"></span>
+              }
+            </div>
+            <div class="recording-actions">
+              <button class="rec-cancel" (click)="cancelRecording()" title="Annuler">
+                <span class="material-icons">delete</span>
+              </button>
+              <button
+                class="rec-send"
+                (click)="sendVoiceMessage()"
+                [disabled]="recordingSending()"
+                title="Envoyer"
+              >
+                @if (recordingSending()) {
+                  <span class="rec-loader"></span>
+                } @else {
+                  <span class="material-icons">send</span>
+                }
+              </button>
+            </div>
+          </div>
+        } @else {
+          <!-- Normal Input -->
+          <div class="chat-input">
+            <!-- Hidden file input -->
+            <input type="file" #fileInput (change)="onFileSelected($event)" hidden />
+
+            <!-- Attach menu -->
+            <div class="attach-wrap">
+              @if (showAttachMenu()) {
+                <div class="attach-backdrop" (click)="closeAttachMenu()"></div>
+                <div class="attach-menu">
+                  <div class="attach-menu-header">
+                    <span>Envoyer un fichier</span>
+                    <button (click)="closeAttachMenu()"><span class="material-icons">close</span></button>
+                  </div>
+                  @for (opt of attachOptions; track opt.id) {
+                    <button class="attach-option" (click)="selectAttachType(opt.accept)">
+                      <div class="attach-opt-icon" [style.background]="opt.color + '18'" [style.color]="opt.color">
+                        <span class="material-icons">{{ opt.icon }}</span>
+                      </div>
+                      <span class="attach-opt-label">{{ opt.label }}</span>
+                    </button>
+                  }
+                  <div class="attach-hint">
+                    <span class="material-icons">info</span> Taille max : 20 Mo
+                  </div>
+                </div>
+              }
+              <button class="input-action" (click)="onAttachFile()" title="Joindre un fichier" [disabled]="fileSending()">
+                @if (fileSending()) {
+                  <span class="file-loader"></span>
+                } @else {
+                  <span class="material-icons">attach_file</span>
+                }
+              </button>
+            </div>
+
+            <button class="input-action mic-btn" (click)="startRecording()" title="Message vocal">
+              <span class="material-icons">mic</span>
+            </button>
+            <input
+              type="text"
+              [(ngModel)]="newMessage"
+              placeholder="Ecrire un message..."
+              class="q-input"
+              (keyup.enter)="sendMessage()"
+            />
+            <button
+              class="send-btn q-btn q-btn-primary q-btn-icon"
+              [disabled]="!newMessage.trim()"
+              (click)="sendMessage()"
+            >
+              <span class="material-icons">send</span>
+            </button>
+          </div>
+        }
+      }
+    </div>
+  </div>
+</div>

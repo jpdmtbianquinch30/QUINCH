@@ -1,0 +1,100 @@
+<div class="favorites-page q-page">
+  <div class="q-container">
+    <div class="page-header">
+      <h1>
+        <span class="material-icons">star</span>
+        Mes Favoris
+      </h1>
+    </div>
+
+    <!-- Tabs -->
+    <div class="fav-tabs">
+      <button class="fav-tab" [class.active]="activeTab() === 'all'" (click)="activeTab.set('all')">
+        Tous les favoris
+      </button>
+      <button class="fav-tab" [class.active]="activeTab() === 'collections'" (click)="activeTab.set('collections')">
+        Collections
+      </button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="loader"></div>
+        <p>Chargement...</p>
+      </div>
+    } @else if (activeTab() === 'all') {
+      @if (favService.favorites().length === 0) {
+        <div class="empty-state">
+          <span class="material-icons">star_border</span>
+          <h2>Aucun favori</h2>
+          <p>Ajoutez des produits a vos favoris pour les retrouver facilement!</p>
+          <a routerLink="/marketplace" class="q-btn q-btn-primary">
+            <span class="material-icons">explore</span>
+            Explorer les produits
+          </a>
+        </div>
+      } @else {
+        <div class="fav-grid">
+          @for (item of favService.favorites(); track item.id) {
+            <div class="fav-card q-card">
+              <a [routerLink]="['/product', item.product?.slug]" class="fav-media">
+                @if (item.product?.video?.thumbnail) {
+                  <img [src]="item.product.video.thumbnail" [alt]="item.product?.title" />
+                } @else {
+                  <div class="fav-placeholder">
+                    <span class="material-icons">image</span>
+                  </div>
+                }
+                <button class="fav-remove" (click)="removeFavorite(item); $event.preventDefault()">
+                  <span class="material-icons">close</span>
+                </button>
+              </a>
+              <div class="fav-info">
+                <a [routerLink]="['/product', item.product?.slug]" class="fav-title">{{ item.product?.title }}</a>
+                <div class="fav-price-row">
+                  <span class="fav-price">{{ item.product?.price | number:'1.0-0' }} F</span>
+                  @if (item.price_at_save && item.product?.price < item.price_at_save) {
+                    <span class="fav-discount">
+                      <span class="material-icons">trending_down</span>
+                      Prix en baisse!
+                    </span>
+                  }
+                </div>
+                <button class="q-btn q-btn-primary q-btn-sm q-btn-full" (click)="addToCart(item)">
+                  <span class="material-icons">shopping_cart</span>
+                  Ajouter au panier
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    } @else {
+      <!-- Collections Tab -->
+      @if (favService.collections().length === 0) {
+        <div class="empty-state">
+          <span class="material-icons">collections_bookmark</span>
+          <h2>Aucune collection</h2>
+          <p>Organisez vos favoris en collections personnalisées</p>
+        </div>
+      } @else {
+        <div class="collections-grid">
+          @for (col of favService.collections(); track col.id) {
+            <div class="collection-card q-card">
+              <div class="collection-icon">
+                <span class="material-icons">folder</span>
+              </div>
+              <div class="collection-info">
+                <h3>{{ col.name }}</h3>
+                <span>{{ col.items_count }} produit{{ col.items_count > 1 ? 's' : '' }}</span>
+              </div>
+              @if (col.is_public) {
+                <span class="q-badge q-badge-accent">Public</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

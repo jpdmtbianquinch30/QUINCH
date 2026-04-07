@@ -1,0 +1,678 @@
+<div class="feed-page">
+  <!-- ═══════ SEARCH OVERLAY ═══════ -->
+  @if (showSearch()) {
+    <div class="search-overlay" (click)="closeSearch()">
+      <div class="search-panel" (click)="$event.stopPropagation()">
+        <div class="search-bar">
+          <span class="material-icons">search</span>
+          <input #searchInput type="text" placeholder="Rechercher produits, services, vendeurs..."
+                 [value]="searchQuery()"
+                 (input)="onSearchInput($any($event.target).value)"
+                 (keyup.enter)="saveRecentSearch(searchQuery())"
+                 autofocus />
+          @if (searchQuery().length > 0) {
+            <button class="search-clear" (click)="searchQuery.set(''); onSearchInput('')">
+              <span class="material-icons">close</span>
+            </button>
+          }
+          <button class="search-close" (click)="closeSearch()">
+            <span class="material-icons">arrow_back</span>
+          </button>
+        </div>
+
+        @if (searching()) {
+          <div class="search-loading">
+            <div class="loader-sm"></div>
+            <span>Recherche...</span>
+          </div>
+        }
+
+        <!-- ══ SEARCH RESULTS ══ -->
+        @if (searchQuery().length >= 2) {
+          @if (searchResults().users.length > 0) {
+            <div class="search-section">
+              <h3>Vendeurs & Prestataires</h3>
+              @for (user of searchResults().users; track user.id) {
+                <div class="search-item" (click)="goToSeller(user.username)">
+                  @if (user.avatar_url) {
+                    <img [src]="user.avatar_url" class="search-avatar" (error)="onImgError($event)" />
+                  } @else {
+                    <div class="search-avatar-placeholder"><span class="material-icons">person</span></div>
+                  }
+                  <div class="search-item-info">
+                    <span class="search-item-name">{{ user.full_name }}</span>
+                    <span class="search-item-sub">&#64;{{ user.username }} {{ user.city ? '· ' + user.city : '' }}</span>
+                  </div>
+                  <span class="material-icons search-arrow">chevron_right</span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (searchResults().products.length > 0) {
+            <div class="search-section">
+              <h3>Produits & Services</h3>
+              @for (product of searchResults().products; track product.id) {
+                <div class="search-item" (click)="goToProduct(product.slug)">
+                  @if (product.image) {
+                    <img [src]="product.image" class="search-thumb" (error)="onImgError($event)" />
+                  } @else {
+                    <div class="search-thumb-placeholder"><span class="material-icons">image</span></div>
+                  }
+                  <div class="search-item-info">
+                    <span class="search-item-name">{{ product.title }}</span>
+                    <span class="search-item-sub">
+                      {{ product.price | number:'1.0-0' }} F CFA
+                      @if (product.type === 'service') {
+                        <span class="search-type-badge service">Service</span>
+                      }
+                    </span>
+                  </div>
+                  <span class="material-icons search-arrow">chevron_right</span>
+                </div>
+              }
+            </div>
+          }
+
+          @if (!searching() && searchResults().products.length === 0 && searchResults().users.length === 0) {
+            <div class="search-empty">
+              <span class="material-icons">search_off</span>
+              <p>Aucun resultat pour "{{ searchQuery() }}"</p>
+            </div>
+          }
+        } @else {
+          <!-- ══ DEFAULT VIEW: RECENT + SUGGESTIONS ══ -->
+
+          <!-- Recent searches -->
+          @if (recentSearches().length > 0) {
+            <div class="search-section">
+              <div class="search-section-header">
+                <h3>Recherches recentes</h3>
+                <button class="search-clear-all" (click)="clearRecentSearches()">Effacer</button>
+              </div>
+              @for (recent of recentSearches(); track recent) {
+                <div class="search-item recent-item" (click)="useRecentSearch(recent)">
+                  <span class="material-icons recent-icon">history</span>
+                  <div class="search-item-info">
+                    <span class="search-item-name">{{ recent }}</span>
+                  </div>
+                  <button class="recent-remove" (click)="removeRecentSearch(recent, $event)">
+                    <span class="material-icons">close</span>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Suggestions -->
+          @if (suggestions().length > 0) {
+            <div class="search-section">
+              <h3>{{ auth.isAuthenticated() ? 'Suggestions pour vous' : 'Tendances' }}</h3>
+              <div class="suggestion-grid">
+                @for (s of suggestions(); track s.id) {
+                  <div class="suggestion-card" (click)="searchSuggestion(s)">
+                    <div class="suggestion-img">
+                      @if (s.image) {
+                        <img [src]="s.image" alt="" (error)="onImgError($event)" />
+                      } @else {
+                        <span class="material-icons">{{ s.type === 'service' ? 'handyman' : 'shopping_bag' }}</span>
+                      }
+                    </div>
+                    <div class="suggestion-info">
+                      <span class="suggestion-title">{{ s.title }}</span>
+                      @if (s.price) {
+                        <span class="suggestion-price">{{ s.price | number:'1.0-0' }} F</span>
+                      }
+                      @if (s.category) {
+                        <span class="suggestion-cat">{{ s.category }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else if (loadingSuggestions()) {
+            <div class="search-loading">
+              <div class="loader-sm"></div>
+              <span>Chargement des suggestions...</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ═══════ HEADER ═══════ -->
+  <div class="feed-header">
+    <div class="feed-tabs">
+      @if (auth.isAuthenticated()) {
+        <button class="tab" [class.active]="activeTab() === 'following'" (click)="switchTab('following')">
+          Abonnements
+        </button>
+      }
+      <button class="tab" [class.active]="activeTab() === 'foryou'" (click)="switchTab('foryou')">
+        Pour toi
+      </button>
+    </div>
+    <div class="header-right">
+      <button class="header-btn" (click)="openSearch()">
+        <span class="material-icons">search</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════ SWIPER CONTAINER ═══════ -->
+  <div class="swiper-container" #swiperRef (wheel)="onWheel($event)">
+    @if (loading() && products().length === 0) {
+      <div class="feed-state">
+        <div class="loader"></div>
+        <p>Chargement...</p>
+      </div>
+    } @else if (products().length === 0 && !loading()) {
+      <div class="feed-state">
+        <span class="material-icons empty-icon">play_circle</span>
+        @if (activeTab() === 'friends') {
+          <h3>Aucune video de vos amis</h3>
+          <p>Quand vous et un autre utilisateur vous abonnez mutuellement, vous devenez amis et leurs videos apparaitront ici</p>
+          <button class="discover-btn" (click)="switchTab('foryou')">
+            <span class="material-icons">explore</span>
+            Decouvrir du contenu
+          </button>
+        } @else if (activeTab() === 'following') {
+          <h3>Aucun contenu de vos abonnements</h3>
+          <p>Abonnez-vous a des vendeurs pour voir leur contenu ici</p>
+          <button class="discover-btn" (click)="switchTab('foryou')">
+            <span class="material-icons">explore</span>
+            Decouvrir du contenu
+          </button>
+        } @else {
+          <h3>Aucune publication pour le moment</h3>
+          <p>Revenez bientot!</p>
+        }
+      </div>
+    } @else {
+      <!-- ═══ SLIDES ═══ -->
+      @for (product of products(); track product.id; let i = $index) {
+        <div class="slide" [class.active]="currentIndex() === i">
+          <div class="slide-inner" [class.type-service]="isService(product)" [class.type-product]="isProduct(product)" [class.split-mode]="detailMode() && currentIndex() === i">
+
+            <!-- ══ VIDEO CARD ══ -->
+            <div class="video-card" (click)="toggleVideoPlayPause($event)" (dblclick)="onVideoDoubleClick(product, $event)">
+
+              <!-- Type badge (top-left) -->
+              <div class="type-indicator" [class.service]="isService(product)">
+                <span class="material-icons">{{ isService(product) ? 'handyman' : 'shopping_bag' }}</span>
+                <span>{{ getTypeLabel(product) }}</span>
+              </div>
+
+              <!-- Quality badge (top-right) -->
+              @if (product.video?.quality_label) {
+                <div class="quality-badge" [class.hd]="product.video?.resolution === '1080p' || product.video?.resolution === '4k'">
+                  {{ product.video.resolution === '4k' ? '4K' : product.video.resolution || '' }}
+                </div>
+              }
+
+              <!-- Video / Media -->
+              @if (hasVideo(product) && currentIndex() === i) {
+                <video #videoPlayer
+                       class="card-media card-video"
+                       [src]="getVideoUrl(product)!"
+                       muted autoplay loop playsinline
+                       preload="auto"
+                       (canplay)="onVideoCanPlay(i, $event)"
+                       (playing)="onVideoPlaying()"
+                       (error)="onVideoError(i)">
+                </video>
+                @if (videoLoading()) {
+                  <div class="video-loader">
+                    <div class="loader"></div>
+                  </div>
+                }
+                <!-- Pause overlay -->
+                @if (videoPaused()) {
+                  <div class="pause-overlay">
+                    <span class="material-icons">play_arrow</span>
+                  </div>
+                }
+                <button class="mute-btn" (click)="toggleMute($event)">
+                  <span class="material-icons">{{ isMuted() ? 'volume_off' : 'volume_up' }}</span>
+                </button>
+              } @else if (hasVideo(product) && currentIndex() !== i) {
+                @if (getMediaUrl(product)) {
+                  <img [src]="getMediaUrl(product)" alt="" class="card-media" (error)="onImgError($event)" />
+                } @else {
+                  <div class="card-placeholder video-placeholder">
+                    <span class="material-icons">play_circle_filled</span>
+                  </div>
+                }
+              } @else if (getMediaUrl(product)) {
+                <img [src]="getMediaUrl(product)" alt="" class="card-media" (error)="onImgError($event)" />
+              } @else {
+                <div class="card-placeholder">
+                  <span class="material-icons">{{ isService(product) ? 'handyman' : 'image' }}</span>
+                </div>
+              }
+
+              <!-- Double-click heart animation -->
+              @if (showLikeAnim() && currentIndex() === i) {
+                <div class="like-animation">
+                  <span class="material-icons">favorite</span>
+                </div>
+              }
+
+              <!-- Video progress bar -->
+              @if (hasVideo(product) && currentIndex() === i) {
+                <div class="video-progress">
+                  <div class="video-progress-fill" [style.width.%]="videoProgress()"></div>
+                </div>
+              }
+
+              <!-- Bottom gradient -->
+              <div class="card-gradient"></div>
+
+              <!-- ══ BOTTOM INFO OVERLAY ══ -->
+              <div class="card-info">
+                <!-- Seller row -->
+                <div class="info-seller-row" (click)="viewSellerProfile(product, $event)">
+                  <span class="seller-username">&#64;{{ product.seller?.username || 'vendeur' }}</span>
+                  @if (product.seller?.trust_score >= 0.7) {
+                    <span class="material-icons verified-icon">verified</span>
+                  }
+                </div>
+
+                <!-- Title -->
+                <p class="info-title">{{ product.title }}</p>
+
+                <!-- Description preview -->
+                @if (product.description) {
+                  <p class="info-desc" [innerHTML]="formatDescription(product.description)"></p>
+                }
+
+                <!-- Price + Badges row -->
+                <div class="info-commerce-row">
+                  <div class="price-section" [class.service]="isService(product)">
+                    <span class="price-amount">{{ getPriceLabel(product) }}</span>
+                    @if (product.is_negotiable) {
+                      <span class="nego-badge">Negociable</span>
+                    }
+                  </div>
+                  <div class="badges-row">
+                    @if (product.condition === 'new' && isProduct(product)) {
+                      <span class="condition-badge new">Neuf</span>
+                    }
+                    @if (isProduct(product)) {
+                      <span class="stock-badge" [class.out]="!isInStock(product)">
+                        {{ getStockLabel(product) }}
+                      </span>
+                    }
+                    @if (product.category?.name) {
+                      <span class="category-badge">{{ product.category.name }}</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- ══ CTA BUTTON ══ -->
+                <div class="cta-section">
+                  @if (!auth.isAuthenticated()) {
+                    <button class="cta-btn cta-login" (click)="redirectToLogin(); $event.stopPropagation()">
+                      <span class="material-icons">lock</span>
+                      Se connecter
+                    </button>
+                  } @else if (isService(product)) {
+                    <button class="cta-btn cta-contact" (click)="openDetail(product, $event)">
+                      <span class="material-icons">chat</span>
+                      Contacter
+                    </button>
+                  } @else {
+                    <button class="cta-btn cta-buy" (click)="openDetail(product, $event)">
+                      <span class="material-icons">shopping_bag</span>
+                      Voir details
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- ══ SIDE ACTIONS ══ -->
+            <div class="side-actions" [class.hidden-split]="detailMode() && currentIndex() === i">
+              <!-- Avatar + Follow -->
+              <div class="action-avatar">
+                <div class="avatar-wrap" (click)="viewSellerProfile(product, $event)">
+                  @if (product.seller?.avatar) {
+                    <img [src]="product.seller.avatar" alt="" (error)="onImgError($event)" />
+                  } @else {
+                    <span class="material-icons">person</span>
+                  }
+                </div>
+                @if (!isFollowing(product.seller?.id)) {
+                  <button class="follow-badge" (click)="toggleFollow(product, $event)">
+                    <span class="material-icons">add</span>
+                  </button>
+                }
+              </div>
+
+              <!-- Like -->
+              <button class="side-btn" (click)="toggleLike(product)">
+                <span class="material-icons" [class.liked]="product.is_liked">
+                  {{ product.is_liked ? 'favorite' : 'favorite_border' }}
+                </span>
+                <span class="side-label">{{ formatCount(product.like_count) }}</span>
+              </button>
+
+              <!-- Comment -->
+              <button class="side-btn" (click)="openCommentPanel(product, $event)">
+                <span class="material-icons">chat_bubble_outline</span>
+                <span class="side-label">Avis</span>
+              </button>
+
+              <!-- Share -->
+              <button class="side-btn" (click)="shareProduct(product, $event)">
+                <span class="material-icons">reply</span>
+                <span class="side-label">{{ formatCount(product.share_count) }}</span>
+              </button>
+
+              <!-- Save -->
+              <button class="side-btn" (click)="toggleSave(product, $event)">
+                <span class="material-icons" [class.saved]="product.is_saved">
+                  {{ product.is_saved ? 'bookmark' : 'bookmark_border' }}
+                </span>
+                <span class="side-label">Sauver</span>
+              </button>
+            </div>
+
+            <!-- ══ RESIZE HANDLE + DETAIL PANEL ══ -->
+            @if (detailMode() && currentIndex() === i && dp(); as p) {
+              <div class="fd-resize-handle"
+                   [class.dragging]="resizing()"
+                   (mousedown)="startResize($event)"></div>
+              <div class="feed-detail-panel" [class.is-service]="dpIsService()" [class.is-product]="dpIsProduct()">
+                <button class="fd-close" (click)="closeDetail()"><span class="material-icons">close</span></button>
+                <div class="info-panel">
+                  <div class="info-tags">
+                    <span class="type-tag" [class.service]="dpIsService()"><span class="material-icons">{{ dpTypeIcon() }}</span> {{ dpTypeLabel() }}</span>
+                    @if (p.category?.name) { <span class="category-tag">{{ p.category.name }}</span> }
+                    @if (p.condition === 'new' && dpIsProduct()) { <span class="condition-tag new">Neuf</span> }
+                    @if (p.is_negotiable) { <span class="condition-tag nego">Negociable</span> }
+                  </div>
+                  <h1 class="info-title">{{ p.title }}</h1>
+                  <div class="info-price-section" [class.service]="dpIsService()">
+                    <div class="price-main">
+                      @if (p.price) {
+                        @if (dpIsService() && dpPriceType() !== 'Prix fixe') {
+                          <span class="price-prefix">{{ dpPriceType() }}</span>
+                        }
+                        <span class="price-value">{{ formatPrice(p.price) }}</span> <span class="price-currency">F CFA</span>
+                      } @else if (dpIsService()) {
+                        <span class="price-quote">Sur devis</span>
+                      }
+                    </div>
+                    @if (dpIsProduct()) {
+                      <div class="stock-info" [class.out]="p.stock_quantity <= 0">
+                        <span class="material-icons">{{ p.stock_quantity > 0 ? 'check_circle' : 'cancel' }}</span>
+                        {{ p.stock_quantity > 0 ? 'En stock (' + p.stock_quantity + ')' : 'Rupture de stock' }}
+                      </div>
+                    } @else {
+                      <div class="availability-info">
+                        <span class="material-icons">event_available</span> {{ dpAvailability() }}
+                      </div>
+                    }
+                  </div>
+                  <div class="info-stats">
+                    <div class="stat"><span class="material-icons">visibility</span> {{ p.view_count || 0 }} vues</div>
+                    <div class="stat"><span class="material-icons">favorite</span> {{ p.like_count || 0 }} likes</div>
+                    <div class="stat"><span class="material-icons">share</span> {{ p.share_count || 0 }} partages</div>
+                  </div>
+                  <div class="cta-block">
+                    @if (!auth.isAuthenticated()) {
+                      <button class="cta-primary login-cta" (click)="redirectToLogin()"><span class="material-icons">lock</span> Se connecter pour continuer</button>
+                    } @else if (dpIsOwner()) {
+                      <div class="owner-notice">
+                        <span class="material-icons">info</span>
+                        <span>C'est votre {{ dpIsService() ? 'service' : 'produit' }}. Vous ne pouvez pas vous contacter vous-meme.</span>
+                      </div>
+                    } @else if (dpIsService()) {
+                      <button class="cta-primary contact-cta" (click)="dpShowContact.set(true)"><span class="material-icons">chat</span> Contacter le prestataire</button>
+                      <button class="cta-secondary quote-cta" (click)="dpShowQuote.set(true)"><span class="material-icons">request_quote</span> Demander un devis</button>
+                      @if (p.is_negotiable && p.price) { <button class="cta-tertiary" (click)="dpShowNego.set(true)"><span class="material-icons">local_offer</span> Proposer un prix</button> }
+                    } @else {
+                      <div class="cta-row">
+                        <button class="cta-primary buy-cta" (click)="dpBuyNow()"><span class="material-icons">flash_on</span> Acheter maintenant</button>
+                        <button class="cta-secondary cart-cta" (click)="dpAddToCart()" [disabled]="dpAddingCart()"><span class="material-icons">{{ dpAddingCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span> {{ dpAddingCart() ? 'Ajout...' : 'Ajouter au panier' }}</button>
+                      </div>
+                      <div class="cta-row">
+                        <button class="cta-tertiary" (click)="dpShowContact.set(true)"><span class="material-icons">chat</span> Contacter le vendeur</button>
+                        @if (p.is_negotiable) { <button class="cta-tertiary" (click)="dpShowNego.set(true)"><span class="material-icons">local_offer</span> Negocier le prix</button> }
+                      </div>
+                    }
+                  </div>
+                  <div class="info-section"><h3 class="section-title">Description</h3><p class="section-text">{{ p.description || 'Aucune description disponible.' }}</p></div>
+                  <div class="seller-card" [class.service]="dpIsService()" (click)="viewSellerProfile(p, $event)">
+                    <div class="seller-avatar">
+                      @if (dpSellerAvatar()) { <img [src]="dpSellerAvatar()" alt="" (error)="onImgError($event)" /> } @else { <span class="material-icons">person</span> }
+                    </div>
+                    <div class="seller-info"><span class="seller-name">{{ dpSellerName() }}</span><span class="seller-username">&#64;{{ dpSellerUsername() }}</span></div>
+                    <div class="seller-trust">
+                      <div class="trust-score"><span class="material-icons">verified</span> {{ (dpTrustScore() * 100) | number:'1.0-0' }}%</div>
+                      @if (dpSellerCity()) { <span class="seller-location"><span class="material-icons">location_on</span> {{ dpSellerCity() }}</span> }
+                    </div>
+                  </div>
+                  @if (dpIsProduct()) {
+                    <div class="info-section"><h3 class="section-title">Caracteristiques</h3>
+                      <div class="specs-grid">
+                        <div class="spec-item"><span class="spec-icon material-icons">new_releases</span><div class="spec-content"><span class="spec-label">Etat</span><span class="spec-value">{{ dpCondition() }}</span></div></div>
+                        <div class="spec-item"><span class="spec-icon material-icons">inventory_2</span><div class="spec-content"><span class="spec-label">Stock</span><span class="spec-value">{{ p.stock_quantity || 0 }} unites</span></div></div>
+                        <div class="spec-item"><span class="spec-icon material-icons">payments</span><div class="spec-content"><span class="spec-label">Prix</span><span class="spec-value">{{ p.is_negotiable ? 'Negociable' : 'Fixe' }}</span></div></div>
+                        <div class="spec-item"><span class="spec-icon material-icons">local_shipping</span><div class="spec-content"><span class="spec-label">Livraison</span><span class="spec-value">{{ dpDeliveryLabel() }}</span></div></div>
+                      </div>
+                    </div>
+                  } @else {
+                    <!-- ═══ Service Characteristics ═══ -->
+                    <div class="info-section service-specs">
+                      <h3 class="section-title"><span class="material-icons">handyman</span> Details du service</h3>
+                      <div class="specs-grid">
+                        <div class="spec-item service-spec"><span class="spec-icon material-icons">{{ dpServiceTypeIcon() }}</span><div class="spec-content"><span class="spec-label">Type de service</span><span class="spec-value">{{ dpServiceType() }}</span></div></div>
+                        <div class="spec-item service-spec"><span class="spec-icon material-icons">{{ dpPriceTypeIcon() }}</span><div class="spec-content"><span class="spec-label">Tarification</span><span class="spec-value">{{ dpPriceType() }}</span></div></div>
+                        <div class="spec-item service-spec"><span class="spec-icon material-icons">event_available</span><div class="spec-content"><span class="spec-label">Disponibilite</span><span class="spec-value">{{ dpAvailability() }}</span></div></div>
+                        <div class="spec-item service-spec"><span class="spec-icon material-icons">timer</span><div class="spec-content"><span class="spec-label">Duree</span><span class="spec-value">{{ dpDuration() }}</span></div></div>
+                        <div class="spec-item service-spec"><span class="spec-icon material-icons">location_on</span><div class="spec-content"><span class="spec-label">Zone d'intervention</span><span class="spec-value">{{ dpServiceArea() }}</span></div></div>
+                        <div class="spec-item service-spec"><span class="spec-icon material-icons">workspace_premium</span><div class="spec-content"><span class="spec-label">Experience</span><span class="spec-value">{{ dpExperience() }}</span></div></div>
+                      </div>
+                      @if (p.is_negotiable) {
+                        <div class="service-nego-badge">
+                          <span class="material-icons">local_offer</span> Tarif negociable
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Delivery banner -->
+                  @if (p.delivery_option === 'fixed' && p.delivery_fee > 0) {
+                    <div class="fd-delivery-banner fixed">
+                      <span class="material-icons">local_shipping</span>
+                      <div>
+                        <strong>Frais de livraison : {{ p.delivery_fee | number:'1.0-0' }} F CFA</strong>
+                        <span>A la charge de l'acheteur</span>
+                      </div>
+                    </div>
+                  } @else if (p.delivery_option === 'contact') {
+                    <div class="fd-delivery-banner contact">
+                      <span class="material-icons">chat</span>
+                      <div>
+                        <strong>Livraison a convenir</strong>
+                        <span>Contactez le vendeur pour les frais de livraison</span>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Payment methods -->
+                  @if (dpPaymentMethods().length > 0) {
+                    <div class="info-section">
+                      <h3 class="section-title"><span class="material-icons">credit_card</span> Modes de paiement acceptes</h3>
+                      <div class="fd-payment-methods">
+                        @for (m of dpPaymentMethods(); track m.id) {
+                          <div class="fd-pay-chip">
+                            <span class="material-icons">{{ m.icon }}</span>
+                            {{ m.name }}
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="fd-no-payment">
+                      <span class="material-icons">info</span>
+                      Contactez le vendeur pour convenir du mode de paiement
+                    </div>
+                  }
+
+                  <!-- Publication date -->
+                  @if (p.created_at) {
+                    <div class="fd-published-date">
+                      <span class="material-icons">schedule</span> Publie {{ dpCreatedAt() }}
+                    </div>
+                  }
+                  <div class="fd-actions">
+                    <button (click)="dpShare()"><span class="material-icons">share</span></button>
+                    <button (click)="dpToggleSave()"><span class="material-icons" [class.active-fav]="p.is_saved">{{ p.is_saved ? 'bookmark' : 'bookmark_border' }}</span></button>
+                    <button (click)="dpToggleLike()"><span class="material-icons" [class.active-like]="p.is_liked">{{ p.is_liked ? 'favorite' : 'favorite_border' }}</span></button>
+                  </div>
+                  <div class="reviews-section">
+                    <h3 class="section-title"><span class="material-icons">star</span> Notes et avis</h3>
+                    @if (dpStats(); as stats) {
+                      <div class="review-summary">
+                        <div class="review-score-big"><span class="score-number">{{ stats.average | number:'1.1-1' }}</span>
+                          <div class="score-stars">@for (s of starArray; track s) { <span class="material-icons star-icon" [class.filled]="s <= stats.average">{{ s <= stats.average ? 'star' : (s - 0.5 <= stats.average ? 'star_half' : 'star_border') }}</span> }</div>
+                          <span class="score-count">{{ stats.total }} avis</span>
+                        </div>
+                        <div class="review-bars">@for (s of [5,4,3,2,1]; track s) { <div class="bar-row"><span class="bar-label">{{ s }}</span><div class="bar-track"><div class="bar-fill" [style.width.%]="dpDistPct(s)"></div></div></div> }</div>
+                      </div>
+                    }
+                    @if (auth.isAuthenticated() && !dpSubmitted()) {
+                      <div class="write-review"><h4>Donner votre avis</h4>
+                        <div class="star-picker">@for (s of starArray; track s) { <button class="star-pick" (mouseenter)="dpNewHover.set(s)" (mouseleave)="dpNewHover.set(0)" (click)="dpSetRating(s)"><span class="material-icons">{{ s <= (dpNewHover() || dpNewRating()) ? 'star' : 'star_border' }}</span></button> }</div>
+                        @if (dpNewRating()) {
+                          <textarea class="review-textarea" [(ngModel)]="dpNewComment" placeholder="Decrivez votre experience..." rows="3"></textarea>
+                          <button class="review-submit-btn" (click)="dpSubmitReview()" [disabled]="dpSubmitting()"><span class="material-icons">{{ dpSubmitting() ? 'hourglass_top' : 'send' }}</span> {{ dpSubmitting() ? 'Publication...' : 'Publier l\'avis' }}</button>
+                        }
+                      </div>
+                    }
+                    @if (dpSubmitted()) { <div class="review-thanks"><span class="material-icons">check_circle</span> Merci pour votre avis!</div> }
+                    @if (dpLoadingReviews()) { <div class="reviews-loading"><div class="loader-sm"></div> Chargement...</div> }
+                    @else if (dpReviews().length === 0) { <div class="reviews-empty"><span class="material-icons">rate_review</span><p>Aucun avis pour le moment. Soyez le premier!</p></div> }
+                    @else { <div class="review-list">
+                      @for (review of dpReviews(); track review.id) {
+                        <div class="review-card">
+                          <div class="review-header"><div class="reviewer-avatar">@if (review.reviewer?.avatar_url) { <img [src]="review.reviewer.avatar_url" alt="" /> } @else { <span class="material-icons">person</span> }</div><div class="reviewer-info"><span class="reviewer-name">{{ review.reviewer?.full_name || 'Utilisateur' }}</span><span class="review-date">{{ dpTimeAgo(review.created_at) }}</span></div></div>
+                          <div class="review-stars-row">@for (s of starArray; track s) { <span class="material-icons star-sm" [class.filled]="s <= review.rating">{{ s <= review.rating ? 'star' : 'star_border' }}</span> }</div>
+                          @if (review.comment) { <p class="review-comment">{{ review.comment }}</p> }
+                          @if (review.seller_response) { <div class="seller-reply"><span class="reply-label"><span class="material-icons">reply</span> Reponse du vendeur</span><p>{{ review.seller_response }}</p></div> }
+                        </div>
+                      }
+                    </div> }
+                  </div>
+                  <button class="report-btn" (click)="dpReport()"><span class="material-icons">flag</span> Signaler ce {{ dpIsService() ? 'service' : 'produit' }}</button>
+                </div>
+
+                <!-- ═══ Contact Modal ═══ -->
+                @if (dpShowContact()) {
+                  <div class="fd-modal-overlay" (click)="dpShowContact.set(false)">
+                    <div class="fd-modal" (click)="$event.stopPropagation()">
+                      <div class="fd-modal-header">
+                        <h3>{{ dpIsService() ? 'Contacter le prestataire' : 'Contacter le vendeur' }}</h3>
+                        <button class="fd-modal-close" (click)="dpShowContact.set(false)"><span class="material-icons">close</span></button>
+                      </div>
+                      <div class="fd-modal-product">
+                        <span class="material-icons">{{ dpIsService() ? 'handyman' : 'shopping_bag' }}</span>
+                        {{ p.title }} — {{ dpSellerName() }}
+                      </div>
+                      <div class="fd-modal-body">
+                        <label>Votre message</label>
+                        <textarea [(ngModel)]="dpContactMsg" rows="4" placeholder="Bonjour, je suis interesse par votre {{ dpIsService() ? 'service' : 'produit' }}..."></textarea>
+                      </div>
+                      <div class="fd-modal-actions">
+                        <button class="fd-modal-btn fd-modal-btn-primary" (click)="dpSendContact()" [disabled]="!dpContactMsg.trim() || dpSending()">
+                          <span class="material-icons">{{ dpSending() ? 'hourglass_top' : 'send' }}</span>
+                          {{ dpSending() ? 'Envoi...' : 'Envoyer le message' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <!-- ═══ Quote Modal ═══ -->
+                @if (dpShowQuote()) {
+                  <div class="fd-modal-overlay" (click)="dpShowQuote.set(false)">
+                    <div class="fd-modal" (click)="$event.stopPropagation()">
+                      <div class="fd-modal-header">
+                        <h3>Demander un devis</h3>
+                        <button class="fd-modal-close" (click)="dpShowQuote.set(false)"><span class="material-icons">close</span></button>
+                      </div>
+                      <div class="fd-modal-product">
+                        <span class="material-icons">handyman</span>
+                        {{ p.title }} — {{ dpSellerName() }}
+                      </div>
+                      <div class="fd-modal-body">
+                        <label>Decrivez votre besoin</label>
+                        <textarea [(ngModel)]="dpQuoteMsg" rows="4" placeholder="Decrivez en detail votre besoin pour recevoir un devis adapte..."></textarea>
+                      </div>
+                      <div class="fd-modal-actions">
+                        <button class="fd-modal-btn fd-modal-btn-accent" (click)="dpSendQuote()" [disabled]="!dpQuoteMsg.trim() || dpSending()">
+                          <span class="material-icons">{{ dpSending() ? 'hourglass_top' : 'request_quote' }}</span>
+                          {{ dpSending() ? 'Envoi...' : 'Envoyer la demande' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <!-- ═══ Negotiate Modal ═══ -->
+                @if (dpShowNego()) {
+                  <div class="fd-modal-overlay" (click)="dpShowNego.set(false)">
+                    <div class="fd-modal" (click)="$event.stopPropagation()">
+                      <div class="fd-modal-header">
+                        <h3>Proposer un prix</h3>
+                        <button class="fd-modal-close" (click)="dpShowNego.set(false)"><span class="material-icons">close</span></button>
+                      </div>
+                      <div class="fd-modal-product">
+                        <span class="material-icons">local_offer</span>
+                        {{ p.title }} — {{ formatPrice(p.price) }} F CFA
+                      </div>
+                      <div class="fd-modal-body">
+                        <label>Votre offre (F CFA)</label>
+                        <input type="number" [(ngModel)]="dpProposedPrice" placeholder="Entrez votre proposition" class="fd-modal-input" />
+                        <label class="fd-modal-label-second">Message (optionnel)</label>
+                        <textarea [(ngModel)]="dpNegoMsg" rows="3" placeholder="Expliquez votre offre..."></textarea>
+                      </div>
+                      <div class="fd-modal-actions">
+                        <button class="fd-modal-btn fd-modal-btn-nego" (click)="dpSendNego()" [disabled]="!dpProposedPrice || dpSending()">
+                          <span class="material-icons">{{ dpSending() ? 'hourglass_top' : 'gavel' }}</span>
+                          {{ dpSending() ? 'Envoi...' : 'Envoyer l\'offre' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+              </div>
+            }
+
+          </div>
+
+          <!-- Nav Arrows -->
+          @if (i > 0) {
+            <button class="nav-arrow nav-up" (click)="goPrev(i)">
+              <span class="material-icons">expand_less</span>
+            </button>
+          }
+          @if (i < products().length - 1) {
+            <button class="nav-arrow nav-down" (click)="goNext(i)">
+              <span class="material-icons">expand_more</span>
+            </button>
+          }
+        </div>
+      }
+    }
+  </div>
+
+
+
+</div>

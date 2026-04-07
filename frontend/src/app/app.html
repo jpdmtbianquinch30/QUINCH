@@ -1,0 +1,127 @@
+<div class="app-layout" [class.with-sidebar]="showSidebar()" [class.fullscreen]="isFullscreen()">
+  <!-- Sidebar Navigation (Desktop) -->
+  @if (showSidebar()) {
+    <aside class="sidebar">
+      <!-- Brand -->
+      <div class="sidebar-brand">
+        <img src="logoquinch.png" alt="QUINCH" class="sidebar-logo" />
+        <span class="sidebar-title">QUINCH</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="sidebar-nav">
+        <a routerLink="/feed" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="sidebar-link">
+          <span class="sidebar-link-icon"><span class="material-icons">home</span></span>
+          <span class="sidebar-link-label">Accueil</span>
+        </a>
+        <a routerLink="/marketplace" routerLinkActive="active" class="sidebar-link">
+          <span class="sidebar-link-icon"><span class="material-icons">explore</span></span>
+          <span class="sidebar-link-label">Explorer</span>
+        </a>
+
+        @if (auth.isAuthenticated()) {
+          <a routerLink="/sell" routerLinkActive="active" class="sidebar-link publish-link">
+            <span class="sidebar-link-icon publish-icon"><span class="material-icons">add_circle</span></span>
+            <span class="sidebar-link-label">Publier</span>
+          </a>
+
+          <a routerLink="/cart" routerLinkActive="active" class="sidebar-link">
+            <span class="sidebar-link-icon"><span class="material-icons">shopping_cart</span></span>
+            <span class="sidebar-link-label">Panier</span>
+            @if (cart.count() > 0) {
+              <span class="sidebar-badge">{{ cart.count() }}</span>
+            }
+          </a>
+
+          <a routerLink="/messages" routerLinkActive="active" class="sidebar-link">
+            <span class="sidebar-link-icon notif-icon-wrap">
+              <span class="material-icons">chat</span>
+              @if (chat.unreadTotal() > 0) {
+                <span class="notif-badge msg-badge">{{ chat.unreadTotal() > 99 ? '99+' : chat.unreadTotal() }}</span>
+              }
+            </span>
+            <span class="sidebar-link-label">Messages</span>
+            @if (chat.unreadTotal() > 0) {
+              <span class="sidebar-badge pulse">{{ chat.unreadTotal() }}</span>
+            }
+          </a>
+
+          <a routerLink="/favorites" routerLinkActive="active" class="sidebar-link">
+            <span class="sidebar-link-icon"><span class="material-icons">star</span></span>
+            <span class="sidebar-link-label">Favoris</span>
+            @if (fav.count() > 0) {
+              <span class="sidebar-badge fav-badge">{{ fav.count() }}</span>
+            }
+          </a>
+
+          <a routerLink="/notifications" routerLinkActive="active" class="sidebar-link">
+            <span class="sidebar-link-icon notif-icon-wrap">
+              <span class="material-icons">notifications</span>
+              @if (notif.unreadCount() > 0) {
+                <span class="notif-badge">{{ notif.unreadCount() > 99 ? '99+' : notif.unreadCount() }}</span>
+              }
+            </span>
+            <span class="sidebar-link-label">Notifications</span>
+            @if (notif.unreadCount() > 0) {
+              <span class="sidebar-badge pulse">{{ notif.unreadCount() }}</span>
+            }
+          </a>
+
+          <div class="sidebar-divider"></div>
+
+          <a routerLink="/transactions" routerLinkActive="active" class="sidebar-link">
+            <span class="sidebar-link-icon"><span class="material-icons">receipt_long</span></span>
+            <span class="sidebar-link-label">Transactions</span>
+          </a>
+          <a routerLink="/profile" routerLinkActive="active" class="sidebar-link">
+            <span class="sidebar-link-icon"><span class="material-icons">person</span></span>
+            <span class="sidebar-link-label">Profil</span>
+          </a>
+
+          @if (auth.isAdmin()) {
+            <div class="sidebar-divider"></div>
+            <a routerLink="/admin" routerLinkActive="active" class="sidebar-link">
+              <span class="sidebar-link-icon"><span class="material-icons">admin_panel_settings</span></span>
+              <span class="sidebar-link-label">Admin</span>
+            </a>
+          }
+        } @else {
+          <div class="sidebar-divider"></div>
+          <a routerLink="/auth/login" class="sidebar-link">
+            <span class="sidebar-link-icon"><span class="material-icons">login</span></span>
+            <span class="sidebar-link-label">Connexion</span>
+          </a>
+          <a routerLink="/auth/register" class="sidebar-link">
+            <span class="sidebar-link-icon"><span class="material-icons">person_add</span></span>
+            <span class="sidebar-link-label">Inscription</span>
+          </a>
+        }
+      </nav>
+
+      <!-- User footer -->
+      @if (auth.isAuthenticated()) {
+        <div class="sidebar-footer">
+          <a routerLink="/profile" class="sidebar-user">
+            <div class="sidebar-avatar">
+              <span class="material-icons">person</span>
+              <span class="avatar-status online"></span>
+            </div>
+            <div class="sidebar-user-info">
+              <span class="sidebar-user-name">{{ auth.user()?.full_name }}</span>
+              <span class="sidebar-user-role">{{ auth.isAdmin() ? 'Administrateur' : 'Membre' }}</span>
+            </div>
+            <span class="material-icons sidebar-user-chevron">chevron_right</span>
+          </a>
+        </div>
+      }
+    </aside>
+  }
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <router-outlet />
+  </main>
+</div>
+
+<!-- Global Toast Notifications -->
+<app-toast />

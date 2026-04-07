@@ -1,0 +1,254 @@
+<div class="cart-page q-page">
+  <div class="q-container">
+    <div class="page-header">
+      <h1>
+        <span class="material-icons">shopping_cart</span>
+        Mon Panier
+      </h1>
+      @if (cart.count() > 0) {
+        <span class="item-count">{{ cart.count() }} article{{ cart.count() > 1 ? 's' : '' }}</span>
+      }
+    </div>
+
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="loader"></div>
+        <p>Chargement du panier...</p>
+      </div>
+    } @else if (cart.isEmpty()) {
+      <div class="empty-state">
+        <div class="empty-icon-wrap">
+          <span class="material-icons">shopping_cart</span>
+        </div>
+        <h2>Votre panier est vide</h2>
+        <p>Explorez nos produits et ajoutez vos coups de coeur!</p>
+        <a routerLink="/marketplace" class="q-btn q-btn-primary">
+          <span class="material-icons">explore</span>
+          Explorer les produits
+        </a>
+      </div>
+    } @else {
+      <div class="cart-layout" [class.checkout-active]="checkoutMode()">
+        <!-- ═══════ CART ITEMS ═══════ -->
+        <div class="cart-items">
+          @for (item of cart.items(); track item.id) {
+            <div class="cart-item">
+              <!-- Thumbnail -->
+              <div class="item-media">
+                @if (getItemThumb(item)) {
+                  <img [src]="getItemThumb(item)" [alt]="item.product.title" />
+                } @else {
+                  <div class="item-media-placeholder">
+                    <span class="material-icons">image</span>
+                  </div>
+                }
+                @if (item.product.type === 'service') {
+                  <span class="type-tag service">SERVICE</span>
+                }
+              </div>
+
+              <!-- Details -->
+              <div class="item-details">
+                <a [routerLink]="['/product', item.product.slug]" class="item-title">{{ item.product.title }}</a>
+                <div class="item-meta">
+                  @if (item.product.category) {
+                    <span class="meta-badge">{{ item.product.category.name }}</span>
+                  }
+                  @if (item.product.condition === 'new') {
+                    <span class="condition-badge new">Neuf</span>
+                  } @else {
+                    <span class="condition-badge">Occasion</span>
+                  }
+                </div>
+                @if (item.product.seller) {
+                  <div class="item-seller">
+                    <span class="material-icons">storefront</span>
+                    {{ item.product.seller.full_name }}
+                  </div>
+                }
+                <!-- Delivery info per item -->
+                <div class="item-delivery">
+                  <span class="material-icons">local_shipping</span>
+                  @if (item.product.delivery_option === 'fixed' && (item.product.delivery_fee || 0) > 0) {
+                    <span class="delivery-fixed">Livraison : {{ item.product.delivery_fee | number:'1.0-0' }} F CFA</span>
+                  } @else {
+                    <span class="delivery-contact">Livraison a convenir</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="item-actions">
+                <div class="item-price">{{ item.price_at_add | number:'1.0-0' }} F CFA</div>
+                @if (item.product.delivery_option === 'fixed' && (item.product.delivery_fee || 0) > 0) {
+                  <div class="item-delivery-fee">+{{ item.product.delivery_fee | number:'1.0-0' }} F livraison</div>
+                }
+                <div class="qty-control">
+                  <button class="qty-btn" (click)="updateQty(item, item.quantity - 1)" [disabled]="item.quantity <= 1">
+                    <span class="material-icons">remove</span>
+                  </button>
+                  <span class="qty-value">{{ item.quantity }}</span>
+                  <button class="qty-btn" (click)="updateQty(item, item.quantity + 1)">
+                    <span class="material-icons">add</span>
+                  </button>
+                </div>
+                <button class="remove-btn" (click)="removeItem(item)">
+                  <span class="material-icons">delete_outline</span>
+                  Retirer
+                </button>
+              </div>
+            </div>
+          }
+
+          <button class="clear-btn" (click)="clearAll()">
+            <span class="material-icons">delete_sweep</span>
+            Vider le panier
+          </button>
+        </div>
+
+        <!-- ═══════ SUMMARY / CHECKOUT ═══════ -->
+        <div class="cart-summary">
+          <div class="summary-card">
+            <h3>Resume de la commande</h3>
+
+            <div class="summary-lines">
+              <div class="summary-line">
+                <span>Sous-total ({{ cart.count() }} article{{ cart.count() > 1 ? 's' : '' }})</span>
+                <span class="summary-value">{{ cart.subtotal() | number:'1.0-0' }} F</span>
+              </div>
+
+              <!-- Delivery fees breakdown -->
+              @if (cart.deliveryTotal() > 0) {
+                <div class="summary-line delivery">
+                  <span>
+                    <span class="material-icons" style="font-size:16px;vertical-align:middle;margin-right:4px">local_shipping</span>
+                    Frais de livraison
+                  </span>
+                  <span class="summary-value">{{ cart.deliveryTotal() | number:'1.0-0' }} F</span>
+                </div>
+              }
+              @if (itemsDeliveryContact().length > 0 && itemsWithDeliveryFee().length > 0) {
+                <div class="delivery-note">
+                  <span class="material-icons">info</span>
+                  {{ itemsDeliveryContact().length }} article(s) avec livraison a convenir avec le vendeur
+                </div>
+              }
+              @if (cart.deliveryTotal() === 0 && itemsDeliveryContact().length > 0) {
+                <div class="summary-line delivery">
+                  <span>
+                    <span class="material-icons" style="font-size:16px;vertical-align:middle;margin-right:4px">local_shipping</span>
+                    Frais de livraison
+                  </span>
+                  <span class="delivery-contact-badge">A convenir</span>
+                </div>
+              }
+
+              <div class="summary-divider"></div>
+              <div class="summary-line total">
+                <span>Total</span>
+                <span class="total-amount">{{ cart.total() | number:'1.0-0' }} F CFA</span>
+              </div>
+              @if (itemsDeliveryContact().length > 0) {
+                <div class="total-note">
+                  + frais de livraison a convenir pour {{ itemsDeliveryContact().length }} article(s)
+                </div>
+              }
+            </div>
+
+            @if (!checkoutMode()) {
+              <button class="checkout-btn" (click)="startCheckout()">
+                <span class="material-icons">lock</span>
+                Passer la commande
+              </button>
+            } @else {
+              <!-- ═══ Payment Selection ═══ -->
+              <div class="payment-section">
+                <h4>Moyen de paiement</h4>
+
+                @if (commonPaymentMethods().length > 0) {
+                  <div class="payment-options">
+                    @for (method of commonPaymentMethods(); track method.id) {
+                      <label class="payment-option" [class.selected]="selectedPayment() === method.id">
+                        <input type="radio" name="payment" [value]="method.id" (change)="selectedPayment.set(method.id)" [checked]="selectedPayment() === method.id">
+                        <span class="material-icons pay-method-icon">{{ method.icon }}</span>
+                        <div class="payment-info">
+                          <span class="payment-name">{{ method.name }}</span>
+                          <span class="payment-desc">{{ method.desc }}</span>
+                        </div>
+                        @if (selectedPayment() === method.id) {
+                          <span class="material-icons check-mark">check_circle</span>
+                        }
+                      </label>
+                    }
+                  </div>
+                } @else if (hasItemsWithoutPayment()) {
+                  <!-- Some sellers haven't set payment methods -->
+                  <div class="no-payment-notice">
+                    <span class="material-icons">info</span>
+                    <div>
+                      <strong>Methode de paiement non definie</strong>
+                      <span>Un ou plusieurs vendeurs n'ont pas configure de methode de paiement. Contactez-les directement pour finaliser l'achat.</span>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="no-payment-notice">
+                    <span class="material-icons">info</span>
+                    <div>
+                      <strong>Aucune methode commune</strong>
+                      <span>Les vendeurs n'ont pas de methode de paiement en commun. Contactez chaque vendeur individuellement.</span>
+                    </div>
+                  </div>
+                }
+
+                @if (commonPaymentMethods().length > 0) {
+                  <button class="checkout-btn confirm" (click)="processPayment()" [disabled]="!selectedPayment()">
+                    <span class="material-icons">payment</span>
+                    Confirmer - {{ cart.total() | number:'1.0-0' }} F CFA
+                  </button>
+                }
+
+                <button class="back-btn" (click)="checkoutMode.set(false)">
+                  <span class="material-icons">arrow_back</span>
+                  Retour au panier
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Delivery details per item -->
+          @if (itemsWithDeliveryFee().length > 0) {
+            <div class="delivery-details-card">
+              <h4><span class="material-icons">local_shipping</span> Detail des livraisons</h4>
+              @for (item of itemsWithDeliveryFee(); track item.id) {
+                <div class="delivery-detail-row">
+                  <span class="dd-title">{{ item.product.title }}</span>
+                  <span class="dd-fee">{{ item.product.delivery_fee | number:'1.0-0' }} F</span>
+                </div>
+              }
+              <div class="delivery-detail-row total">
+                <span>Total livraison</span>
+                <span class="dd-fee">{{ cart.deliveryTotal() | number:'1.0-0' }} F</span>
+              </div>
+            </div>
+          }
+
+          <!-- Security badges -->
+          <div class="security-badges">
+            <div class="sec-badge">
+              <span class="material-icons">lock</span>
+              <span>Paiement securise</span>
+            </div>
+            <div class="sec-badge">
+              <span class="material-icons">shield</span>
+              <span>Protection acheteur</span>
+            </div>
+            <div class="sec-badge">
+              <span class="material-icons">local_shipping</span>
+              <span>Livraison suivie</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</div>

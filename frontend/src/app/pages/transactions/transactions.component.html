@@ -1,0 +1,277 @@
+<div class="tx-page">
+
+  <!-- ═══════ HEADER ═══════ -->
+  <div class="tx-header">
+    <div class="tx-header-left">
+      <h1><span class="material-icons">receipt_long</span> Mes Transactions</h1>
+      <p class="tx-subtitle">Suivez vos achats et gérez vos ventes</p>
+    </div>
+  </div>
+
+  <!-- ═══════ STATS DASHBOARD ═══════ -->
+  <div class="tx-stats">
+    <div class="stat-card">
+      <div class="stat-icon earned"><span class="material-icons">trending_up</span></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatPrice(totalEarned()) }}</span>
+        <span class="stat-label">Revenus</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon spent"><span class="material-icons">shopping_cart</span></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ formatPrice(totalSpent()) }}</span>
+        <span class="stat-label">Dépensé</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon success"><span class="material-icons">check_circle</span></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ completedCount() }}</span>
+        <span class="stat-label">Complétées</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending"><span class="material-icons">hourglass_top</span></div>
+      <div class="stat-info">
+        <span class="stat-value">{{ pendingCount() }}</span>
+        <span class="stat-label">En attente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ TABS ═══════ -->
+  <div class="tx-tabs-bar">
+    <div class="tx-tabs">
+      <button class="tx-tab" [class.active]="activeTab() === 'purchases'" (click)="activeTab.set('purchases')">
+        <span class="material-icons">shopping_bag</span>
+        <span>Mes achats</span>
+        <span class="tab-badge">{{ purchasesCount() }}</span>
+      </button>
+      <button class="tx-tab" [class.active]="activeTab() === 'sales'" (click)="activeTab.set('sales')">
+        <span class="material-icons">storefront</span>
+        <span>Mes ventes</span>
+        <span class="tab-badge">{{ salesCount() }}</span>
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="tx-filters">
+      <div class="search-box">
+        <span class="material-icons">search</span>
+        <input type="text" placeholder="Rechercher..." [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" />
+      </div>
+      <select class="filter-select" (change)="statusFilter.set($any($event.target).value)">
+        <option value="all">Tous</option>
+        <option value="pending">En attente</option>
+        <option value="processing">En cours</option>
+        <option value="completed">Terminé</option>
+        <option value="cancelled">Annulé</option>
+        <option value="failed">Échoué</option>
+      </select>
+      <select class="filter-select" (change)="dateFilter.set($any($event.target).value)">
+        <option value="all">Période</option>
+        <option value="7d">7 jours</option>
+        <option value="30d">30 jours</option>
+        <option value="90d">3 mois</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ═══════ CONTENT ═══════ -->
+  @if (loading()) {
+    <div class="loading-center"><div class="loader"></div></div>
+  } @else {
+
+    @if (filteredTransactions().length > 0) {
+      <div class="tx-list">
+        @for (tx of filteredTransactions(); track tx.id) {
+          <div class="tx-card" [class.expanded]="expandedTxId() === tx.id" [class]="getStatusClass(tx.payment_status)">
+
+            <!-- Main row -->
+            <div class="tx-main" (click)="toggleExpand(tx.id)">
+              <div class="tx-left">
+                <div class="tx-status-icon" [class]="getStatusClass(tx.payment_status)">
+                  <span class="material-icons">{{ getStatusIcon(tx.payment_status) }}</span>
+                </div>
+                <div class="tx-info">
+                  <span class="tx-product">{{ tx.product?.title || 'Produit' }}</span>
+                  <div class="tx-meta-row">
+                    <span class="tx-user">
+                      @if (getOtherUser(tx)?.avatar_url) {
+                        <img [src]="getOtherUser(tx).avatar_url" class="tx-avatar" />
+                      } @else {
+                        <span class="material-icons tx-avatar-icon">person</span>
+                      }
+                      {{ getOtherUser(tx)?.full_name || getOtherUser(tx)?.username || '—' }}
+                    </span>
+                    <span class="tx-time">{{ timeAgo(tx.created_at) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tx-right">
+                <span class="tx-amount" [class.amount-green]="activeTab() === 'sales'" [class.amount-red]="activeTab() === 'purchases'">
+                  {{ activeTab() === 'sales' ? '+' : '-' }}{{ formatPrice(tx.amount) }}
+                </span>
+                <span class="tx-status-badge" [class]="getStatusClass(tx.payment_status)">
+                  {{ getStatusLabel(tx.payment_status) }}
+                </span>
+                <span class="material-icons tx-expand-icon">{{ expandedTxId() === tx.id ? 'expand_less' : 'expand_more' }}</span>
+              </div>
+            </div>
+
+            <!-- Expanded detail -->
+            @if (expandedTxId() === tx.id) {
+              <div class="tx-detail">
+
+                <!-- Status Timeline -->
+                <div class="tx-timeline">
+                  <div class="timeline-step" [class.done]="getStatusStep(tx.payment_status) >= 1" [class.active]="getStatusStep(tx.payment_status) === 1">
+                    <div class="step-dot"><span class="material-icons">schedule</span></div>
+                    <span>En attente</span>
+                  </div>
+                  <div class="timeline-line" [class.done]="getStatusStep(tx.payment_status) >= 2"></div>
+                  <div class="timeline-step" [class.done]="getStatusStep(tx.payment_status) >= 2" [class.active]="getStatusStep(tx.payment_status) === 2">
+                    <div class="step-dot"><span class="material-icons">local_shipping</span></div>
+                    <span>En cours</span>
+                  </div>
+                  <div class="timeline-line" [class.done]="getStatusStep(tx.payment_status) >= 3"></div>
+                  <div class="timeline-step" [class.done]="getStatusStep(tx.payment_status) >= 3" [class.active]="getStatusStep(tx.payment_status) === 3">
+                    <div class="step-dot"><span class="material-icons">check_circle</span></div>
+                    <span>Terminé</span>
+                  </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="tx-detail-grid">
+                  <div class="detail-item">
+                    <span class="detail-label">Référence</span>
+                    <span class="detail-value mono">#{{ getShortId(tx.id) }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Montant</span>
+                    <span class="detail-value">{{ formatPrice(tx.amount) }} CFA</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Paiement</span>
+                    <span class="detail-value">{{ getPaymentIcon(tx.payment_method) }} {{ getPaymentLabel(tx.payment_method) }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="detail-label">Livraison</span>
+                    <span class="detail-value"><span class="material-icons" style="font-size:16px">{{ getDeliveryIcon(tx.delivery_type) }}</span> {{ getDeliveryLabel(tx.delivery_type) }}</span>
+                  </div>
+                  @if (tx.transaction_fee > 0) {
+                    <div class="detail-item">
+                      <span class="detail-label">Frais</span>
+                      <span class="detail-value">{{ formatPrice(tx.transaction_fee) }} CFA</span>
+                    </div>
+                  }
+                  <div class="detail-item">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">{{ tx.created_at | date:'dd MMM yyyy à HH:mm' }}</span>
+                  </div>
+                  @if (tx.completed_at) {
+                    <div class="detail-item">
+                      <span class="detail-label">Terminé le</span>
+                      <span class="detail-value">{{ tx.completed_at | date:'dd MMM yyyy à HH:mm' }}</span>
+                    </div>
+                  }
+                </div>
+
+                <!-- Contact -->
+                <div class="tx-contact">
+                  <span class="contact-label">{{ activeTab() === 'purchases' ? 'Vendeur' : 'Acheteur' }}</span>
+                  <div class="contact-user">
+                    @if (getOtherUser(tx)?.avatar_url) {
+                      <img [src]="getOtherUser(tx).avatar_url" class="contact-avatar" />
+                    } @else {
+                      <div class="contact-avatar-fallback"><span class="material-icons">person</span></div>
+                    }
+                    <div class="contact-info">
+                      <strong>{{ getOtherUser(tx)?.full_name || '—' }}</strong>
+                      <span>&#64;{{ getOtherUser(tx)?.username || '—' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ═══ Action Buttons ═══ -->
+                <div class="tx-actions">
+
+                  <!-- SELLER actions -->
+                  @if (activeTab() === 'sales') {
+                    @if (tx.payment_status === 'pending') {
+                      <button class="action-btn action-accept" (click)="acceptOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+                        @else { <span class="material-icons">check</span> Accepter }
+                      </button>
+                      <button class="action-btn action-ship" (click)="shipOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        <span class="material-icons">local_shipping</span> Expédier
+                      </button>
+                      <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        <span class="material-icons">close</span> Refuser
+                      </button>
+                    }
+                    @if (tx.payment_status === 'processing') {
+                      <button class="action-btn action-ship" (click)="shipOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+                        @else { <span class="material-icons">local_shipping</span> Marquer expédié }
+                      </button>
+                      <button class="action-btn action-deliver" (click)="markDelivered(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        <span class="material-icons">done_all</span> Marquer livré
+                      </button>
+                      <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        <span class="material-icons">close</span> Annuler
+                      </button>
+                    }
+                    @if (tx.payment_status === 'completed') {
+                      <div class="action-done"><span class="material-icons">verified</span> Vente terminée</div>
+                    }
+                    @if (tx.payment_status === 'cancelled') {
+                      <div class="action-cancelled"><span class="material-icons">block</span> Annulée</div>
+                    }
+                  }
+
+                  <!-- BUYER actions -->
+                  @if (activeTab() === 'purchases') {
+                    @if (tx.payment_status === 'pending') {
+                      <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+                        @else { <span class="material-icons">close</span> Annuler la commande }
+                      </button>
+                    }
+                    @if (tx.payment_status === 'processing') {
+                      <button class="action-btn action-confirm" (click)="confirmReceipt(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+                        @else { <span class="material-icons">done_all</span> Confirmer la réception }
+                      </button>
+                    }
+                    @if (tx.payment_status === 'completed') {
+                      <div class="action-done"><span class="material-icons">verified</span> Achat terminé</div>
+                    }
+                    @if (tx.payment_status === 'cancelled') {
+                      <div class="action-cancelled"><span class="material-icons">block</span> Annulée</div>
+                    }
+                  }
+
+                  <!-- Product link -->
+                  @if (tx.product?.slug) {
+                    <a [routerLink]="['/product', tx.product.slug]" class="action-btn action-view" (click)="$event.stopPropagation()">
+                      <span class="material-icons">visibility</span> Voir le produit
+                    </a>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <span class="material-icons">{{ activeTab() === 'purchases' ? 'shopping_bag' : 'storefront' }}</span>
+        <h3>{{ activeTab() === 'purchases' ? 'Aucun achat' : 'Aucune vente' }}</h3>
+        <p>{{ activeTab() === 'purchases' ? 'Vos achats apparaitront ici' : 'Vos ventes apparaitront ici quand un client commandera' }}</p>
+      </div>
+    }
+  }
+</div>
