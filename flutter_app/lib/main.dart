@@ -8,7 +8,7 @@ import 'config/api_config.dart';
 import 'config/theme.dart';
 import 'config/routes.dart';
 
-// Services
+
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/product_service.dart';
@@ -24,7 +24,7 @@ import 'services/review_service.dart';
 import 'services/admin_service.dart';
 import 'services/push_notification_service.dart';
 
-// Providers
+
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/chat_provider.dart';

@@ -1,32 +1,29 @@
-# QUINCH - Social Commerce Video Platform
 
-Plateforme de social commerce video pour le marche senegalais. Fusion de TikTok et Facebook Marketplace.
+# QUINCH — Social commerce vidéo pour le Sénégal
 
-## Architecture
+> Plateforme mobile de commerce social inspirée de TikTok et Facebook Marketplace, pensée pour le marché sénégalais et ouest-africain.
 
-| Couche | Technologie | Repertoire |
-|--------|-------------|------------|
-| Backend API | Laravel 12 + Sanctum | `backend/` |
-| Frontend SPA | Angular 20 | `frontend/` |
-| Base de donnees | MySQL 8 (XAMPP) | - |
-| Stockage | Local filesystem | `backend/storage/app/public/` |
+---
 
-## Types de comptes
+## Stack technique
 
-| Role | Description |
-|------|-------------|
-| **Client** (`user`) | Peut acheter ET vendre des produits/services |
-| **Admin** (`admin` / `super_admin`) | Gestion de la plateforme, moderation, metriques |
+| Couche | Technologie |
+|--------|-------------|
+| Application mobile | Flutter (iOS + Android) |
+| Backend API | Laravel 12 + Sanctum |
+| Base de données | MySQL 8 |
+| Stockage médias | Cloudflare R2 (prod) / Local (dev) |
 
-> Il n'y a pas de compte "vendeur" separe. Tout client peut publier des produits via le bouton **+** de la navigation.
+---
 
-## Prerequis
+## Prérequis
 
-- **XAMPP** avec Apache + MySQL actifs
-- **PHP 8.2+** (inclus avec XAMPP)
-- **Composer** (gestionnaire de paquets PHP)
-- **Node.js 18+** et **npm**
-- **Angular CLI** (`npm install -g @angular/cli`)
+- Flutter 3.x + Dart 3.x
+- PHP 8.2+ avec Composer
+- MySQL 8 (XAMPP en développement)
+- Node.js 18+ (outils dev uniquement)
+
+---
 
 ## Installation
 
@@ -34,124 +31,129 @@ Plateforme de social commerce video pour le marche senegalais. Fusion de TikTok 
 
 ```bash
 cd backend
-
-# Installer les dependances
 composer install
+cp .env.example .env
+php artisan key:generate
 
-# Copier le fichier .env (deja configure)
-# Verifier que la base de donnees "quinch" existe dans phpMyAdmin
+# Configurer la base de données dans .env
+# DB_DATABASE=quinch
 
-# Lancer les migrations + donnees de demo
 php artisan migrate:fresh --seed
-
-# Lien symbolique pour le stockage public
 php artisan storage:link
+php artisan serve
 ```
 
-### 2. Frontend (Angular)
+### 2. Application Flutter
 
 ```bash
-cd frontend
+cd flutter_app
+flutter pub get
 
-# Installer les dependances
-npm install
+# Configurer l'URL de l'API dans lib/core/config/app_config.dart
+# baseUrl: 'http://10.0.2.2:8000/api/v1' (émulateur Android)
+# baseUrl: 'http://localhost:8000/api/v1' (iOS simulateur)
 
-# Lancer le serveur de developpement
-ng serve
+flutter run
 ```
 
-### 3. Acces
+---
 
-| Service | URL |
-|---------|-----|
-| Frontend Angular | http://localhost:4200 |
-| Backend API | http://localhost/QUINCH/backend/public/api/v1 |
-| phpMyAdmin | http://localhost/phpmyadmin |
+## Comptes de démonstration
 
-## Comptes de demonstration
+| Rôle | Téléphone |
+|------|-----------|
+| Admin | +221 77 000 00 01 |
+| Client 1 | +221 77 000 00 10 |
+| Client 2 | +221 77 000 00 11 |
 
-| Compte | Telephone | Mot de passe |
-|--------|-----------|-------------|
-| **Admin** | +221770000001 | password |
-| **Client 1** | +221770000010 | password |
-| **Client 2** | +221770000011 | password |
+> Les mots de passe de démo sont dans le fichier `.env.example`.
 
-## API Endpoints
+---
 
-### Authentification
-- `POST /api/v1/auth/register` - Inscription
-- `POST /api/v1/auth/login` - Connexion
-- `POST /api/v1/auth/logout` - Deconnexion
-- `GET /api/v1/auth/me` - Profil connecte
+## Endpoints API principaux
 
-### Produits
-- `GET /api/v1/feed` - Fil d'actualite video (style TikTok)
-- `GET /api/v1/products` - Liste des produits
-- `POST /api/v1/products` - Creer un produit (authentifie)
-- `GET /api/v1/products/{slug}` - Detail produit
-- `PUT /api/v1/products/{slug}` - Modifier
-- `DELETE /api/v1/products/{slug}` - Supprimer
+### Auth
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/logout`
+- `GET  /api/v1/auth/me`
 
-### Videos
-- `POST /api/v1/videos/upload` - Upload de video produit
+### Feed & Produits
+- `GET  /api/v1/feed` — fil vidéo style TikTok
+- `GET  /api/v1/products`
+- `POST /api/v1/products` — créer (auth requis)
+- `GET  /api/v1/products/{slug}`
+- `PUT  /api/v1/products/{slug}`
+- `DELETE /api/v1/products/{slug}`
 
-### Interactions
-- `POST /api/v1/products/{id}/view` - Enregistrer une vue
-- `POST /api/v1/products/{id}/like` - Liker/Unliker
-- `POST /api/v1/products/{id}/share` - Partager
-- `POST /api/v1/products/{id}/save` - Sauvegarder
+### Vidéos & Interactions
+- `POST /api/v1/videos/upload`
+- `POST /api/v1/products/{id}/like`
+- `POST /api/v1/products/{id}/save`
+- `POST /api/v1/products/{id}/share`
 
 ### Transactions
-- `POST /api/v1/transactions` - Initier un paiement
-- `GET /api/v1/transactions` - Historique
-- `POST /api/v1/transactions/{id}/confirm` - Confirmer
+- `POST /api/v1/transactions`
+- `GET  /api/v1/transactions`
+- `POST /api/v1/transactions/{id}/confirm`
 
-### Administration
-- `GET /api/v1/admin/metrics` - Metriques tableau de bord
-- `GET /api/v1/admin/users` - Gestion utilisateurs
-- `GET /api/v1/admin/moderation/videos` - Moderation contenu
-
-## Paiements supportes
-
-| Methode | Statut MVP |
-|---------|-----------|
-| Orange Money | Simule |
-| Wave | Simule |
-| Free Money | Simule |
-| Paiement a la livraison | Simule |
-
-## Fonctionnalites
-
-- Feed video vertical style TikTok
-- Achat/vente pour tout client
-- Bouton **+** central pour publier
-- Systeme de trust score
-- Onboarding immersif (categories + localisation)
-- Dashboard admin avec metriques
-- Design responsive mobile-first
-- Couleurs inspirees du Senegal
-- Securite : headers HTTP, detection de fraude, RBAC
+---
 
 ## Structure du projet
 
 ```
 QUINCH/
-├── backend/                    # Laravel 12 API
+├── backend/           # Laravel 12 — API REST
 │   ├── app/
-│   │   ├── Http/Controllers/Api/V1/   # Controllers REST
-│   │   ├── Models/                     # Eloquent models
-│   │   ├── Policies/                   # Authorization
-│   │   └── Services/                   # Business logic
+│   │   ├── Http/Controllers/Api/V1/
+│   │   ├── Models/
+│   │   ├── Policies/
+│   │   └── Services/
 │   ├── database/
-│   │   ├── migrations/                 # Schema
-│   │   └── seeders/                    # Demo data
-│   └── routes/api.php                  # API routes
-├── frontend/                   # Angular 20 SPA
-│   └── src/
-│       ├── app/
-│       │   ├── core/                   # Services, guards, interceptors
-│       │   └── pages/                  # Components par page
-│       ├── environments/               # Config dev/prod
-│       └── styles.scss                 # Design system QUINCH
+│   │   ├── migrations/
+│   │   └── seeders/
+│   └── routes/api.php
+├── flutter_app/       # Application mobile Flutter
+│   └── lib/
+│       ├── core/      # Services, config, intercepteurs
+│       ├── features/  # Modules par fonctionnalité
+│       └── shared/    # Widgets réutilisables
 └── README.md
 ```
+
+---
+
+## Paiements (MVP simulé)
+
+| Méthode | Statut |
+|---------|--------|
+| Wave | Simulé |
+| Orange Money | Simulé |
+| Free Money | Simulé |
+| Paiement à la livraison | Simulé |
+
+Intégration réelle prévue via PayTech Sénégal.
+
+---
+
+## Roadmap
+
+- [ ] Messagerie in-app acheteur/vendeur
+- [ ] Notifications push (Firebase FCM)
+- [ ] Paiement réel (PayTech / Wave API)
+- [ ] Compression vidéo côté serveur (FFmpeg)
+- [ ] Déploiement backend (Railway / Render)
+
+---
+
+## Sécurité
+
+- Authentification par tokens Sanctum
+- RBAC : rôles `user`, `admin`, `super_admin`
+- Rate limiting sur tous les endpoints
+- Validation stricte des uploads médias
+- Headers HTTP sécurisés
+
+---
+
+Projet académique — Master Génie Logiciel

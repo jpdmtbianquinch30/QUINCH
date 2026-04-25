@@ -303,7 +303,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // ═══ PRODUCT CONTEXT CARD ═══
           if (conversation?.product != null)
-            GestureDetector(
+            GestureDetector( 
               onTap: () => context.push('/product/${conversation!.product!.slug}'),
               child: Container(
                 margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
