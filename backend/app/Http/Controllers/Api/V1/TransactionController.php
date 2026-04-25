@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
@@ -240,19 +241,67 @@ class TransactionController extends Controller
         ]);
     }
 
-    // Webhooks
-    public function webhookOrangeMoney(Request $request): JsonResponse
-    {
-        return response()->json(['status' => 'received']);
+public function webhookOrangeMoney(Request $request): JsonResponse
+{
+    // Vérifier signature Orange Money
+    $signature = $request->header('X-Orange-Signature');
+    $secret = config('services.orange_money.webhook_secret');
+
+    if ($secret && $signature !== hash_hmac('sha256', $request->getContent(), $secret)) {
+        Log::warning('Webhook Orange Money: signature invalide', ['ip' => $request->ip()]);
+        return response()->json(['error' => 'Signature invalide'], 401);
     }
 
-    public function webhookWave(Request $request): JsonResponse
-    {
-        return response()->json(['status' => 'received']);
+    $transactionRef = $request->input('transaction_id') ?? $request->input('order_id');
+    if ($transactionRef) {
+        $transaction = Transaction::where('reference', $transactionRef)->first();
+        if ($transaction && $request->input('status') === 'SUCCESS') {
+            $transaction->update(['status' => 'completed']);
+        }
     }
 
-    public function webhookFreeMoney(Request $request): JsonResponse
-    {
-        return response()->json(['status' => 'received']);
+    return response()->json(['status' => 'received']);
+}
+
+public function webhookWave(Request $request): JsonResponse
+{
+    $signature = $request->header('X-Wave-Signature');
+    $secret = config('services.wave.webhook_secret');
+
+    if ($secret && $signature !== hash_hmac('sha256', $request->getContent(), $secret)) {
+        Log::warning('Webhook Wave: signature invalide', ['ip' => $request->ip()]);
+        return response()->json(['error' => 'Signature invalide'], 401);
     }
+
+    $transactionRef = $request->input('client_reference');
+    if ($transactionRef) {
+        $transaction = Transaction::where('reference', $transactionRef)->first();
+        if ($transaction && $request->input('payment_status') === 'succeeded') {
+            $transaction->update(['status' => 'completed']);
+        }
+    }
+
+    return response()->json(['status' => 'received']);
+}
+
+public function webhookFreeMoney(Request $request): JsonResponse
+{
+    $signature = $request->header('X-FreeMoney-Signature');
+    $secret = config('services.free_money.webhook_secret');
+
+    if ($secret && $signature !== hash_hmac('sha256', $request->getContent(), $secret)) {
+        Log::warning('Webhook FreeMoney: signature invalide', ['ip' => $request->ip()]);
+        return response()->json(['error' => 'Signature invalide'], 401);
+    }
+
+    $transactionRef = $request->input('reference');
+    if ($transactionRef) {
+        $transaction = Transaction::where('reference', $transactionRef)->first();
+        if ($transaction && $request->input('status') === 'PAID') {
+            $transaction->update(['status' => 'completed']);
+        }
+    }
+
+    return response()->json(['status' => 'received']);
+}
 }

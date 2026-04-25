@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+'orange_money' => [
+    'webhook_secret' => env('ORANGE_MONEY_WEBHOOK_SECRET'),
+],
+
+'wave' => [
+    'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
+],
+
+'free_money' => [
+    'webhook_secret' => env('FREE_MONEY_WEBHOOK_SECRET'),
+],
+
 ];
