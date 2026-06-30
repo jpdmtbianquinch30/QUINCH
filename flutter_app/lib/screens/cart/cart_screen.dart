@@ -99,7 +99,7 @@ class _CartScreenState extends State<CartScreen> {
                                   boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 4))],
                                 ),
                                 child: ElevatedButton.icon(
-                                  onPressed: () => context.push('/checkout'),
+                                  onPressed: () => context.push('/messages'),
                                   icon: const Icon(Icons.lock, size: 18, color: Colors.white),
                                   label: const Text('Passer la commande', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white)),
                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,

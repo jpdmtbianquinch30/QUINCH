@@ -1,0 +1,507 @@
+<div class="profile-page animate-fade-in">
+  @if (user()) {
+
+    <!-- ═══════ TOP BAR ═══════ -->
+    <div class="profile-top-bar">
+      <h1 class="username">&#64;{{ user()!.username || user()!.phone_number }}</h1>
+      <div class="top-actions">
+        <button class="q-btn q-btn-icon" (click)="openSettings()"><span class="material-icons">settings</span></button>
+        <button class="q-btn q-btn-icon" (click)="shareProfile()"><span class="material-icons">share</span></button>
+      </div>
+    </div>
+
+    <!-- ═══════ COVER PHOTO ═══════ -->
+    <div class="profile-cover">
+      @if (user()!.cover_url && !coverError()) {
+        <img [src]="user()!.cover_url" alt="Couverture" class="cover-img" (error)="onCoverImgError()" />
+      }
+      <div class="cover-gradient"></div>
+      <div class="cover-placeholder">
+        <span class="material-icons">panorama</span>
+      </div>
+      <button class="cover-edit-btn" (click)="coverInput.click()">
+        <span class="material-icons">photo_camera</span>
+        {{ user()!.cover_url ? 'Changer' : 'Ajouter couverture' }}
+      </button>
+      <input #coverInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onCoverSelected($event)" />
+      @if (uploadingCover()) {
+        <div class="cover-loading"><div class="cover-loading-bar"></div></div>
+      }
+    </div>
+
+    <!-- ═══════ HERO SECTION ═══════ -->
+    <div class="profile-hero">
+      <div class="hero-left">
+        <!-- Avatar -->
+        <div class="avatar-ring" (click)="avatarInput.click()" title="Changer la photo">
+          @if (user()!.avatar_url && !avatarError()) {
+            <img [src]="user()!.avatar_url" alt="avatar" class="avatar-img" (error)="onAvatarImgError()" />
+          } @else {
+            <div class="avatar-fallback"><span class="material-icons">person</span></div>
+          }
+          <div class="avatar-edit-hover"><span class="material-icons">photo_camera</span></div>
+          @if (uploadingAvatar()) {
+            <div class="avatar-spinner"></div>
+          }
+        </div>
+        <input #avatarInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onAvatarSelected($event)" />
+
+        <!-- Info -->
+        <div class="hero-info">
+          <h2 class="hero-name">
+            {{ user()!.full_name }}
+            @if (user()!.kyc_status === 'verified') {
+              <span class="material-icons verified-badge">verified</span>
+            }
+          </h2>
+          <p class="hero-handle">&#64;{{ user()!.username || user()!.phone_number }}</p>
+          <div class="hero-meta">
+            @if (user()!.city) {
+              <span class="meta-pill"><span class="material-icons">location_on</span> {{ user()!.city }}, {{ user()!.region }}</span>
+            }
+            @if (auth.isAdmin()) {
+              <span class="q-badge q-badge-warning">ADMIN</span>
+            } @else if (user()!.kyc_status === 'verified') {
+              <span class="q-badge q-badge-accent">Vérifié</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="hero-stats">
+        <div class="stat-block">
+          <span class="stat-num">{{ totalReceivedLikes() }}</span>
+          <span class="stat-lbl">Likes</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-num">{{ followerCount() }}</span>
+          <span class="stat-lbl">Abonnes</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-num">{{ followingCount() }}</span>
+          <span class="stat-lbl">Abonnements</span>
+        </div>
+        <div class="stat-block">
+          <span class="stat-num" [style.color]="getTrustColor()">{{ trustPercent() }}%</span>
+          <span class="stat-lbl">Confiance</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="profile-actions">
+      <button class="q-btn q-btn-primary" (click)="editProfile()">
+        <span class="material-icons">edit</span> Modifier profil
+      </button>
+      <button class="q-btn q-btn-secondary" (click)="openMyPurchases()">
+        <span class="material-icons">shopping_bag</span> Mes achats
+      </button>
+    </div>
+
+    <!-- ═══════ TRUST & BADGES ═══════ -->
+    <div class="trust-badges-row">
+      <div class="trust-card q-card">
+        <div class="trust-top">
+          <span class="material-icons">shield</span>
+          <span>Score de confiance</span>
+          <strong [style.color]="getTrustColor()">{{ trustPercent() }}%</strong>
+        </div>
+        <div class="trust-bar"><div class="trust-fill" [style.width.%]="trustPercent()"></div></div>
+        <small>Ventes, avis et verifications</small>
+      </div>
+
+      @if (badges().length > 0) {
+        <div class="badges-card q-card">
+          <h3><span class="material-icons">military_tech</span> Badges</h3>
+          <div class="badges-list">
+            @for (badge of badges(); track badge.type) {
+              <div class="badge-item" [style.background]="badge.color + '18'" [style.border-color]="badge.color + '44'">
+                <span class="material-icons" [style.color]="badge.color">{{ badge.icon }}</span>
+                <span>{{ badge.name }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ═══════ PROFILE TABS ═══════ -->
+    <div class="profile-tabs">
+      <button class="profile-tab" [class.active]="profileTab() === 'products'" (click)="profileTab.set('products')">
+        <span class="material-icons">inventory_2</span>
+        <span>Mes produits</span>
+        <span class="tab-count">{{ productsCount() }}</span>
+      </button>
+      <button class="profile-tab" [class.active]="profileTab() === 'likes'" (click)="profileTab.set('likes')">
+        <span class="material-icons">favorite</span>
+        <span>Likes</span>
+        <span class="tab-count">{{ likesCount() }}</span>
+      </button>
+    </div>
+
+    <!-- ═══════ PRODUCTS TAB ═══════ -->
+    @if (profileTab() === 'products') {
+      <div class="products-section">
+        <div class="section-header">
+          <h2><span class="material-icons">inventory_2</span> Mes produits</h2>
+          <div class="section-actions">
+            <button class="q-btn q-btn-primary q-btn-sm" (click)="addProduct()">
+              <span class="material-icons">add</span> Nouveau
+            </button>
+            <div class="view-switcher">
+              <button [class.active]="viewMode() === 'grid'" (click)="viewMode.set('grid')">
+                <span class="material-icons">grid_view</span>
+              </button>
+              <button [class.active]="viewMode() === 'list'" (click)="viewMode.set('list')">
+                <span class="material-icons">view_list</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        @if (myProducts().length > 0) {
+          @if (viewMode() === 'grid') {
+            <div class="products-grid">
+              @for (p of myProducts(); track p.id) {
+                <div class="product-card" [class.inactive-card]="isProductInactive(p)">
+                  <a [routerLink]="['/product', p.slug]" class="card-link">
+                    <div class="card-media">
+                      @if (getProductThumb(p)) {
+                        <img [src]="getProductThumb(p)!" [alt]="p.title" (error)="onImgError($event)" />
+                        @if (hasVideo(p)) {
+                          <span class="material-icons play-icon">play_circle</span>
+                        }
+                      } @else if (getProductVideoUrl(p)) {
+                        <video class="card-video-thumb" [src]="getProductVideoUrl(p)!" muted preload="metadata" playsinline></video>
+                        <span class="material-icons play-icon">play_circle</span>
+                      } @else {
+                        <span class="material-icons placeholder-icon">image</span>
+                      }
+                      <span class="card-status" [class]="getProductStatusClass(p.status)">{{ getProductStatusLabel(p.status) }}</span>
+                      @if (p.type === 'product') {
+                        <span class="card-stock" [class]="getStockClass(p)">{{ getStockLabel(p) }}</span>
+                      }
+                    </div>
+                    <div class="card-body">
+                      <span class="card-title">{{ p.title }}</span>
+                      <span class="card-price">{{ p.price | number:'1.0-0' }} F CFA</span>
+                      <div class="card-stats">
+                        <span><span class="material-icons">visibility</span>{{ p.view_count || 0 }}</span>
+                        <span><span class="material-icons">favorite</span>{{ p.like_count || 0 }}</span>
+                      </div>
+                    </div>
+                  </a>
+                  <button class="card-manage-btn" (click)="openManageModal(p, $event)" title="Gerer le produit">
+                    <span class="material-icons">more_vert</span>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          @if (viewMode() === 'list') {
+            <div class="products-list">
+              @for (p of myProducts(); track p.id) {
+                <div class="product-row" [class.inactive-row]="isProductInactive(p)">
+                  <a [routerLink]="['/product', p.slug]" class="row-link">
+                    <div class="row-thumb">
+                      @if (getProductThumb(p)) {
+                        <img [src]="getProductThumb(p)!" [alt]="p.title" (error)="onImgError($event)" />
+                      } @else if (getProductVideoUrl(p)) {
+                        <video class="row-video-thumb" [src]="getProductVideoUrl(p)!" muted preload="metadata" playsinline></video>
+                      } @else {
+                        <span class="material-icons">image</span>
+                      }
+                    </div>
+                    <div class="row-body">
+                      <span class="row-title">{{ p.title }}</span>
+                      <div class="row-meta">
+                        <span class="row-price">{{ p.price | number:'1.0-0' }} F CFA</span>
+                        <span class="row-status" [class]="getProductStatusClass(p.status)">{{ getProductStatusLabel(p.status) }}</span>
+                        @if (p.type === 'product') {
+                          <span class="row-stock" [class]="getStockClass(p)">{{ getStockLabel(p) }}</span>
+                        }
+                      </div>
+                      <div class="row-stats">
+                        <span><span class="material-icons">visibility</span>{{ p.view_count || 0 }}</span>
+                        <span><span class="material-icons">favorite</span>{{ p.like_count || 0 }}</span>
+                      </div>
+                    </div>
+                  </a>
+                  <button class="row-manage-btn" (click)="openManageModal(p, $event)">
+                    <span class="material-icons">settings</span>
+                    Gerer
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        } @else {
+          <div class="empty-products">
+            <span class="material-icons">inventory_2</span>
+            <p>Aucun produit pour le moment</p>
+            <button class="q-btn q-btn-primary" (click)="addProduct()">
+              <span class="material-icons">add</span> Publier un produit
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ═══════ LIKES TAB ═══════ -->
+    @if (profileTab() === 'likes') {
+      <div class="products-section likes-section">
+        <div class="section-header">
+          <h2><span class="material-icons">favorite</span> Mes likes</h2>
+          <div class="section-actions">
+            <div class="view-switcher">
+              <button [class.active]="viewMode() === 'grid'" (click)="viewMode.set('grid')">
+                <span class="material-icons">grid_view</span>
+              </button>
+              <button [class.active]="viewMode() === 'list'" (click)="viewMode.set('list')">
+                <span class="material-icons">view_list</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        @if (likedProducts().length > 0) {
+          @if (viewMode() === 'grid') {
+            <div class="products-grid">
+              @for (p of likedProducts(); track p.id) {
+                <a [routerLink]="['/product', p.slug]" class="product-card liked-card">
+                  <div class="card-media">
+                    @if (getProductThumb(p)) {
+                      <img [src]="getProductThumb(p)!" [alt]="p.title" (error)="onImgError($event)" />
+                      @if (hasVideo(p)) {
+                        <span class="material-icons play-icon">play_circle</span>
+                      }
+                    } @else if (getProductVideoUrl(p)) {
+                      <video class="card-video-thumb" [src]="getProductVideoUrl(p)!" muted preload="metadata" playsinline></video>
+                      <span class="material-icons play-icon">play_circle</span>
+                    } @else {
+                      <span class="material-icons placeholder-icon">image</span>
+                    }
+                    <span class="liked-heart"><span class="material-icons">favorite</span></span>
+                  </div>
+                  <div class="card-body">
+                    <span class="card-title">{{ p.title }}</span>
+                    <span class="card-price">{{ p.price | number:'1.0-0' }} F CFA</span>
+                    @if (p.user) {
+                      <span class="card-seller">&#64;{{ p.user.username }}</span>
+                    }
+                    <div class="card-stats">
+                      <span><span class="material-icons">visibility</span>{{ p.view_count || 0 }}</span>
+                      <span><span class="material-icons">favorite</span>{{ p.like_count || 0 }}</span>
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+          }
+
+          @if (viewMode() === 'list') {
+            <div class="products-list">
+              @for (p of likedProducts(); track p.id) {
+                <a [routerLink]="['/product', p.slug]" class="product-row">
+                  <div class="row-thumb">
+                    @if (getProductThumb(p)) {
+                      <img [src]="getProductThumb(p)!" [alt]="p.title" (error)="onImgError($event)" />
+                    } @else if (getProductVideoUrl(p)) {
+                      <video class="row-video-thumb" [src]="getProductVideoUrl(p)!" muted preload="metadata" playsinline></video>
+                    } @else {
+                      <span class="material-icons">image</span>
+                    }
+                  </div>
+                  <div class="row-body">
+                    <span class="row-title">{{ p.title }}</span>
+                    <div class="row-meta">
+                      <span class="row-price">{{ p.price | number:'1.0-0' }} F CFA</span>
+                      @if (p.user) { <span class="row-seller">&#64;{{ p.user.username }}</span> }
+                    </div>
+                    <div class="row-stats">
+                      <span><span class="material-icons">favorite</span>{{ p.like_count || 0 }}</span>
+                      <span><span class="material-icons">visibility</span>{{ p.view_count || 0 }}</span>
+                    </div>
+                  </div>
+                  <span class="material-icons row-arrow">chevron_right</span>
+                </a>
+              }
+            </div>
+          }
+        } @else {
+          <div class="empty-products">
+            <span class="material-icons">favorite_border</span>
+            <p>Vous n'avez encore like aucun produit</p>
+            <span class="empty-hint">Explorez le feed et likez les videos qui vous plaisent</span>
+          </div>
+        }
+      </div>
+    }
+
+    @if (auth.isAdmin()) {
+      <a routerLink="/admin" class="admin-banner">
+        <span class="material-icons">admin_panel_settings</span> Acceder au Panel Admin
+      </a>
+    }
+  }
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PRODUCT MANAGEMENT MODAL
+     ═══════════════════════════════════════════════════════ -->
+@if (showManageModal() && managingProduct()) {
+  <div class="pm-overlay" (click)="closeManageModal()">
+    <div class="pm-modal" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="pm-header">
+        <div class="pm-header-info">
+          <span class="material-icons">settings</span>
+          <h3>Gestion du produit</h3>
+        </div>
+        <button class="pm-close" (click)="closeManageModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Product preview -->
+      <div class="pm-product-preview">
+        @if (getProductThumb(managingProduct())) {
+          <img [src]="getProductThumb(managingProduct())!" alt="" class="pm-thumb" />
+        } @else {
+          <div class="pm-thumb-placeholder"><span class="material-icons">image</span></div>
+        }
+        <div class="pm-product-info">
+          <span class="pm-product-title">{{ managingProduct().title }}</span>
+          <span class="pm-product-price">{{ managingProduct().price | number:'1.0-0' }} F CFA</span>
+          <span class="pm-product-status" [class]="getProductStatusClass(managingProduct().status)">{{ getProductStatusLabel(managingProduct().status) }}</span>
+        </div>
+      </div>
+
+      @if (!showDeactivateConfirm()) {
+        <!-- Stock management -->
+        @if (managingProduct().type === 'product' || !managingProduct().type) {
+          <div class="pm-section">
+            <h4><span class="material-icons">inventory</span> Stock</h4>
+            <div class="pm-stock-row">
+              <div class="pm-stock-input-group">
+                <button type="button" class="pm-stock-btn" (click)="manageStockQty.set(Math.max(0, manageStockQty() - 1))" [disabled]="manageStockQty() <= 0">
+                  <span class="material-icons">remove</span>
+                </button>
+                <input type="number" class="pm-stock-input" [ngModel]="manageStockQty()" (ngModelChange)="manageStockQty.set($event)" min="0" />
+                <button type="button" class="pm-stock-btn" (click)="manageStockQty.set(manageStockQty() + 1)">
+                  <span class="material-icons">add</span>
+                </button>
+              </div>
+              <span class="pm-stock-label" [class]="getStockClass({stock_quantity: manageStockQty()})">
+                @if (manageStockQty() === 0) {
+                  Epuise
+                } @else {
+                  {{ manageStockQty() }} article(s)
+                }
+              </span>
+            </div>
+            <button class="pm-action-btn pm-save-stock" (click)="updateStock()" [disabled]="manageUpdating()">
+              <span class="material-icons">save</span>
+              {{ manageUpdating() ? 'Mise a jour...' : 'Mettre a jour le stock' }}
+            </button>
+          </div>
+        }
+
+        <!-- Quick Actions -->
+        <div class="pm-section">
+          <h4><span class="material-icons">flash_on</span> Actions rapides</h4>
+          <div class="pm-actions-grid">
+            @if (managingProduct().status === 'active') {
+              <button class="pm-action-card pm-action-outofstock" (click)="markOutOfStock()">
+                <span class="material-icons">remove_shopping_cart</span>
+                <span class="pm-action-title">Produit epuise</span>
+                <span class="pm-action-desc">Stock a 0 et desactiver</span>
+              </button>
+              <button class="pm-action-card pm-action-pause" (click)="showDeactivateConfirm.set(true); deactivateType.set('paused')">
+                <span class="material-icons">pause_circle</span>
+                <span class="pm-action-title">Pause temporaire</span>
+                <span class="pm-action-desc">Masquer temporairement</span>
+              </button>
+              <button class="pm-action-card pm-action-disable" (click)="showDeactivateConfirm.set(true); deactivateType.set('disabled')">
+                <span class="material-icons">block</span>
+                <span class="pm-action-title">Desactiver</span>
+                <span class="pm-action-desc">Retirer definitivement</span>
+              </button>
+            } @else if (managingProduct().status === 'paused') {
+              <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
+                <span class="material-icons">play_circle</span>
+                <span class="pm-action-title">Reactiver</span>
+                <span class="pm-action-desc">Remettre en vente</span>
+              </button>
+              <button class="pm-action-card pm-action-disable" (click)="showDeactivateConfirm.set(true); deactivateType.set('disabled')">
+                <span class="material-icons">block</span>
+                <span class="pm-action-title">Desactiver</span>
+                <span class="pm-action-desc">Retirer definitivement</span>
+              </button>
+            } @else if (managingProduct().status === 'disabled') {
+              <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
+                <span class="material-icons">play_circle</span>
+                <span class="pm-action-title">Reactiver</span>
+                <span class="pm-action-desc">Remettre en vente</span>
+              </button>
+            } @else if (managingProduct().status === 'draft') {
+              <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
+                <span class="material-icons">publish</span>
+                <span class="pm-action-title">Publier</span>
+                <span class="pm-action-desc">Mettre en vente</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="pm-section pm-danger-zone">
+          <button class="pm-delete-btn" (click)="deleteProduct()" [disabled]="manageUpdating()">
+            <span class="material-icons">delete_forever</span>
+            Supprimer le produit
+          </button>
+        </div>
+      } @else {
+        <!-- Deactivation Confirmation -->
+        <div class="pm-deactivate-confirm">
+          @if (manageStockQty() === 0) {
+            <div class="pm-deactivate-icon out-of-stock">
+              <span class="material-icons">remove_shopping_cart</span>
+            </div>
+            <h4>Produit epuise</h4>
+            <p>Le stock est a 0. Souhaitez-vous desactiver ce produit temporairement ou definitivement ?</p>
+          } @else {
+            <div class="pm-deactivate-icon" [class.pause]="deactivateType() === 'paused'" [class.disable]="deactivateType() === 'disabled'">
+              <span class="material-icons">{{ deactivateType() === 'paused' ? 'pause_circle' : 'block' }}</span>
+            </div>
+            <h4>{{ deactivateType() === 'paused' ? 'Desactiver temporairement ?' : 'Desactiver definitivement ?' }}</h4>
+            <p>{{ deactivateType() === 'paused' ? 'Le produit ne sera plus visible mais vous pourrez le reactiver a tout moment.' : 'Le produit sera retire de la vente. Vous pourrez toujours le reactiver plus tard si necessaire.' }}</p>
+          }
+
+          <div class="pm-deactivate-options">
+            <button class="pm-deactivate-btn pm-btn-pause" (click)="confirmDeactivation('paused')" [disabled]="manageUpdating()">
+              <span class="material-icons">pause_circle</span>
+              <div>
+                <strong>Desactiver temporairement</strong>
+                <span>Masque le produit, reactivable a tout moment</span>
+              </div>
+            </button>
+            <button class="pm-deactivate-btn pm-btn-disable" (click)="confirmDeactivation('disabled')" [disabled]="manageUpdating()">
+              <span class="material-icons">block</span>
+              <div>
+                <strong>Desactiver definitivement</strong>
+                <span>Retire le produit de la vente</span>
+              </div>
+            </button>
+          </div>
+
+          <button class="pm-cancel-btn" (click)="showDeactivateConfirm.set(false)">
+            <span class="material-icons">arrow_back</span> Retour
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

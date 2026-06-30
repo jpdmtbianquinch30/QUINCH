@@ -1,0 +1,794 @@
+<div class="sell-page">
+  <div class="page-header">
+    <h1><span class="material-icons">add_circle</span> Publier une annonce</h1>
+    <p>Vendez ou proposez vos services en quelques clics</p>
+  </div>
+
+  <div class="type-selector">
+    <button class="type-btn" [class.active]="publishType() === 'product'" (click)="setType('product')">
+      <span class="material-icons">inventory_2</span><span>Produit</span>
+    </button>
+    <button class="type-btn" [class.active]="publishType() === 'service'" (click)="setType('service')">
+      <span class="material-icons">handyman</span><span>Service</span>
+    </button>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step" [class.active]="currentStep() >= 1" [class.done]="currentStep() > 1"><span class="step-num">1</span><span class="step-label">Medias</span></div>
+    <div class="step-line" [class.active]="currentStep() > 1"></div>
+    <div class="step" [class.active]="currentStep() >= 2" [class.done]="currentStep() > 2"><span class="step-num">2</span><span class="step-label">Details</span></div>
+    <div class="step-line" [class.active]="currentStep() > 2"></div>
+    <div class="step" [class.active]="currentStep() >= 3"><span class="step-num">3</span><span class="step-label">Publication</span></div>
+  </div>
+
+  <form class="sell-form" (ngSubmit)="submit()">
+    @if (currentStep() === 1) {
+      <div class="form-step">
+        <h2>{{ publishType() === 'service' ? 'Visuels de votre service' : 'Medias obligatoires' }}</h2>
+        <p class="step-desc">{{ publishType() === 'service' ? '1 image d\'affiche (obligatoire) + photos/videos de vos realisations' : '1 image d\'affiche (obligatoire) + video + images supplementaires' }}</p>
+
+        <!-- ═══════ POSTER IMAGE (Required) ═══════ -->
+        <div class="upload-section poster-section">
+          <h3>
+            <span class="material-icons" style="color: var(--q-accent); font-size: 20px; vertical-align: middle;">photo_camera</span>
+            Image d'affiche <span class="required-star">*</span>
+          </h3>
+          <p class="poster-hint">{{ publishType() === 'service' ? 'Cette image sera affichee comme couverture de votre service dans Explorer et le feed.' : 'Cette image sera affichee comme couverture de votre produit dans Explorer et le feed.' }}</p>
+
+          @if (posterPreview()) {
+            <div class="poster-preview">
+              <img [src]="posterPreview()" alt="Poster preview" />
+              <div class="poster-overlay">
+                <button type="button" class="poster-action" (click)="removePoster()">
+                  <span class="material-icons">delete</span>
+                  Supprimer
+                </button>
+                <label class="poster-action">
+                  <span class="material-icons">refresh</span>
+                  Changer
+                  <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPosterSelected($event)" hidden />
+                </label>
+              </div>
+              <span class="poster-badge"><span class="material-icons" style="font-size: 14px;">check_circle</span> Image d'affiche</span>
+            </div>
+          } @else {
+            <label class="upload-area poster-upload">
+              <span class="material-icons">add_a_photo</span>
+              <span class="upload-main-text">Ajouter l'image d'affiche</span>
+              <span class="upload-hint">JPEG, PNG, WebP - max 5 Mo</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onPosterSelected($event)" hidden />
+            </label>
+          }
+        </div>
+
+        <!-- ═══════ VIDEO (optional) ═══════ -->
+        <div class="upload-section">
+          <h3>Video de presentation <span style="color: var(--q-text-muted); font-weight: 400; font-size: 0.82rem;">(optionnelle)</span></h3>
+          @if (cameraMode()) {
+            <div class="camera-view">
+              <video #cameraPreview autoplay playsinline muted class="camera-feed"></video>
+              @if (recording()) {
+                <div class="rec-indicator"><span class="rec-dot"></span><span>{{ formatRecordingTime() }}</span></div>
+              }
+              <div class="camera-controls">
+                @if (!recording()) {
+                  <button type="button" class="cam-btn cam-cancel" (click)="cancelCamera()"><span class="material-icons">close</span></button>
+                  <button type="button" class="cam-btn cam-record" (click)="startRecording()"><span class="material-icons">fiber_manual_record</span></button>
+                  <button type="button" class="cam-btn cam-flip" (click)="flipCamera()"><span class="material-icons">flip_camera_ios</span></button>
+                } @else {
+                  <button type="button" class="cam-btn cam-stop" (click)="stopRecording()"><span class="material-icons">stop</span></button>
+                }
+              </div>
+            </div>
+          } @else if (videoPreview()) {
+            <div class="video-preview-wrap" [class.edited]="videoEdited()">
+              <div class="video-preview-inner"
+                   [style.filter]="videoEdited() ? getVideoEditorFilterCss() : ''"
+                   [style.transform]="videoEdited() ? getVideoTransform() : ''">
+                <video [src]="videoPreview()" controls class="video-preview-player"></video>
+              </div>
+              @if (videoEdited() && videoVignette() > 0) {
+                <div class="preview-vignette" [style.opacity]="videoVignette() / 100"></div>
+              }
+              @for (txt of textOverlays(); track $index) {
+                @if (videoEdited()) {
+                  <div class="preview-text-overlay" [style]="getTextStyle(txt)">{{ txt.text }}</div>
+                }
+              }
+              <div class="video-meta">
+                @if (videoResolution()) { <span class="res-badge">{{ videoResolution() }}</span> }
+                @if (videoEdited()) { <span class="res-badge edited-badge"><span class="material-icons" style="font-size:12px">auto_fix_high</span> Modifie</span> }
+                @if (videoId()) { <span class="upload-status success"><span class="material-icons">check_circle</span> Prete</span> }
+                @else if (loading()) { <span class="upload-status loading"><div class="loader-sm"></div> Upload...</span> }
+              </div>
+              <div class="video-actions-bar">
+                <button type="button" class="video-action-btn" (click)="openVideoEditor()"><span class="material-icons">tune</span> Modifier</button>
+                <button type="button" class="video-action-btn danger" (click)="removeVideo()"><span class="material-icons">delete</span> Supprimer</button>
+              </div>
+            </div>
+          } @else {
+            <div class="video-options">
+              <label class="upload-area video-upload">
+                @if (loading()) { <div class="loader"></div><span>Upload en cours...</span> }
+                @else { <span class="material-icons">upload_file</span><span>Importer une video</span><span class="upload-hint">MP4, MOV, WebM - max 200Mo - 4K</span> }
+                <input type="file" accept="video/*" (change)="onVideoSelected($event)" hidden />
+              </label>
+              <button type="button" class="upload-area camera-upload" (click)="openCamera()">
+                <span class="material-icons">videocam</span><span>Filmer avec la camera</span><span class="upload-hint">Enregistrez directement</span>
+              </button>
+            </div>
+          }
+        </div>
+
+        <div class="upload-section">
+          <h3>{{ publishType() === 'service' ? 'Portfolio / Realisations' : 'Images supplementaires' }} ({{ imagePreviews().length }}/5)</h3>
+          <div class="images-grid">
+            @for (img of imagePreviews(); track $index; let i = $index) {
+              <div class="image-preview" (click)="openImageEditor(i)">
+                <img [src]="img" alt="Preview" />
+                <button type="button" class="remove-img" (click)="removeImage(i); $event.stopPropagation()"><span class="material-icons">close</span></button>
+                <div class="edit-overlay"><span class="material-icons">tune</span></div>
+              </div>
+            }
+            @if (imagePreviews().length < 5) {
+              <label class="upload-area image-upload">
+                <span class="material-icons">add_photo_alternate</span><span>Ajouter</span>
+                <input type="file" accept="image/*" multiple (change)="onImagesSelected($event)" hidden />
+              </label>
+            }
+          </div>
+        </div>
+
+        @if (editingImageIdx() !== null) {
+          <div class="editor-modal">
+            <div class="editor-content">
+              <div class="editor-header"><h3>Modifier l'image</h3><button type="button" (click)="closeImageEditor()"><span class="material-icons">close</span></button></div>
+              <div class="editor-preview"><img [src]="imagePreviews()[editingImageIdx()!]" alt="" [style.filter]="getFilterCss(activeFilter())" /></div>
+              <div class="filter-strip">
+                @for (f of photoFilters; track f.id) {
+                  <button type="button" class="filter-thumb" [class.active]="activeFilter() === f.id" (click)="applyFilter(f.id)">
+                    <div class="filter-preview-mini"><img [src]="imagePreviews()[editingImageIdx()!]" alt="" [style.filter]="f.css" /></div>
+                    <span>{{ f.name }}</span>
+                  </button>
+                }
+              </div>
+              <div class="editor-actions">
+                <button type="button" class="q-btn q-btn-ghost" (click)="closeImageEditor()">Annuler</button>
+                <button type="button" class="q-btn q-btn-primary" (click)="saveFilteredImage()">Appliquer</button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <button type="button" class="q-btn q-btn-primary q-btn-full q-btn-lg" (click)="nextStep()" [disabled]="publishType() === 'product' && !videoId()">
+          Suivant <span class="material-icons">arrow_forward</span>
+        </button>
+      </div>
+    }
+
+    @if (currentStep() === 2) {
+      <div class="form-step">
+        <h2>{{ publishType() === 'service' ? 'Details de votre service' : 'Informations du produit' }}</h2>
+
+        <!-- Title -->
+        <div class="form-group">
+          <label>{{ publishType() === 'service' ? 'Nom du service *' : 'Titre *' }}</label>
+          <input type="text" class="q-input" [(ngModel)]="form.title" name="title"
+                 [placeholder]="publishType() === 'service' ? 'Ex: Developpement de site web professionnel' : 'Ex: iPhone 15 Pro Max 256Go'" />
+        </div>
+
+        <!-- Categories -->
+        <div class="form-group">
+          <label>Categorie *</label>
+          @if (categories().length > 0) {
+            <select class="q-input" [(ngModel)]="form.category_id" name="category"><option value="">Selectionnez</option>@for (cat of categories(); track cat.id) { <option [value]="cat.id">{{ cat.name }}</option> }</select>
+          } @else {
+            @if (publishType() === 'product') {
+              <div class="category-grid">
+                @for (cat of productCategories; track cat.id) {
+                  <button type="button" class="category-card" [class.selected]="form.category_id === cat.id" (click)="form.category_id = cat.id">
+                    <span class="cat-emoji">{{ cat.emoji }}</span><span>{{ cat.name }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="category-grid service-category-grid">
+                @for (cat of serviceCategories; track cat.id) {
+                  <button type="button" class="service-cat-card" [class.selected]="form.category_id === cat.id" (click)="form.category_id = cat.id">
+                    <span class="scc-emoji">{{ cat.emoji }}</span>
+                    <div class="scc-text">
+                      <strong>{{ cat.name }}</strong>
+                      <span>{{ cat.desc }}</span>
+                    </div>
+                    @if (form.category_id === cat.id) {
+                      <span class="material-icons scc-check">check_circle</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <!-- ═══ SERVICE-SPECIFIC FIELDS ═══ -->
+        @if (publishType() === 'service') {
+          <!-- Service Type -->
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">room_service</span> Type de prestation *</label>
+            <div class="service-type-grid">
+              @for (st of serviceTypes; track st.id) {
+                <button type="button" class="stype-card" [class.selected]="form.service_type === st.id" (click)="form.service_type = st.id">
+                  <span class="material-icons stype-icon">{{ st.icon }}</span>
+                  <strong>{{ st.label }}</strong>
+                  <span class="stype-desc">{{ st.desc }}</span>
+                  @if (form.service_type === st.id) {
+                    <span class="material-icons stype-check">check_circle</span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Price Type -->
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">sell</span> Type de tarification *</label>
+            <div class="price-type-grid">
+              @for (pt of servicePriceTypes; track pt.id) {
+                <button type="button" class="ptype-card" [class.selected]="servicePriceType() === pt.id" (click)="servicePriceType.set(pt.id)">
+                  <span class="material-icons">{{ pt.icon }}</span>
+                  <strong>{{ pt.label }}</strong>
+                  <span>{{ pt.desc }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Price (not for "quote" type) -->
+          @if (servicePriceType() !== 'quote') {
+            <div class="form-group">
+              <label>{{ servicePriceType() === 'hourly' ? 'Tarif horaire (F CFA) *' : servicePriceType() === 'starting' ? 'Prix minimum (F CFA) *' : 'Prix (F CFA) *' }}</label>
+              <input type="number" class="q-input" [(ngModel)]="form.price" name="price" placeholder="0" min="0" />
+            </div>
+          }
+
+          <!-- Availability -->
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">event_available</span> Disponibilite</label>
+            <div class="avail-grid">
+              @for (av of availabilityOptions; track av.id) {
+                <button type="button" class="avail-chip" [class.selected]="form.availability === av.id" (click)="form.availability = av.id">
+                  <span class="material-icons">{{ av.icon }}</span>
+                  {{ av.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Duration -->
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">timer</span> Duree estimee de la prestation</label>
+            <div class="duration-grid">
+              @for (d of durationOptions; track d.id) {
+                <button type="button" class="duration-chip" [class.selected]="form.duration === d.id" (click)="form.duration = d.id">
+                  {{ d.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Service area -->
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">map</span> Zone d'intervention</label>
+            <input type="text" class="q-input" [(ngModel)]="form.service_area" name="service_area" placeholder="Ex: Dakar, Thies, Tout le Senegal..." />
+            <p class="field-hint">Indiquez les zones ou vous pouvez intervenir</p>
+          </div>
+
+          <!-- Experience -->
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">workspace_premium</span> Annees d'experience</label>
+            <select class="q-input" [(ngModel)]="form.experience_years" name="experience_years">
+              <option value="">Selectionnez</option>
+              <option value="0">Debutant (moins d'un an)</option>
+              <option value="1">1 an</option>
+              <option value="2">2 ans</option>
+              <option value="3">3 ans</option>
+              <option value="5">5+ ans</option>
+              <option value="10">10+ ans</option>
+            </select>
+          </div>
+
+          <!-- Negotiable -->
+          <div class="form-group"><label class="checkbox-label"><input type="checkbox" [(ngModel)]="form.is_negotiable" name="negotiable" /> Tarif negociable</label></div>
+        }
+
+        <!-- ═══ PRODUCT-SPECIFIC FIELDS ═══ -->
+        @if (publishType() === 'product') {
+          <div class="form-group"><label>Prix (F CFA) *</label><input type="number" class="q-input" [(ngModel)]="form.price" name="price" placeholder="0" min="0" /></div>
+          <div class="form-group">
+            <label><span class="material-icons" style="font-size: 18px; vertical-align: middle; color: var(--q-accent);">inventory</span> Quantite en stock *</label>
+            <input type="number" class="q-input" [(ngModel)]="form.stock_quantity" name="stock_quantity" placeholder="Ex: 10" min="1" />
+            <p class="field-hint">Indiquez le nombre d'articles disponibles. Le stock sera decremente a chaque vente.</p>
+          </div>
+          <div class="form-group"><label>Etat</label>
+            <div class="radio-group">@for (opt of [['new','Neuf'],['like_new','Comme neuf'],['good','Bon etat'],['fair','Passable']]; track opt[0]) { <label class="radio-card" [class.selected]="form.condition === opt[0]"><input type="radio" [(ngModel)]="form.condition" [value]="opt[0]" name="condition" hidden />{{ opt[1] }}</label> }</div>
+          </div>
+          <div class="form-group"><label class="checkbox-label"><input type="checkbox" [(ngModel)]="form.is_negotiable" name="negotiable" /> Prix negociable</label></div>
+        }
+
+        <!-- Description (both) -->
+        <div class="form-group">
+          <label>{{ publishType() === 'service' ? 'Description du service' : 'Description' }}</label>
+          <div class="desc-toolbar">
+            <button type="button" class="desc-tool" (click)="insertHashtag()"><span class="hash-symbol">#</span></button>
+            <button type="button" class="desc-tool" (click)="insertMention()"><span class="at-symbol">&#64;</span></button>
+          </div>
+          <textarea class="q-input desc-area" [(ngModel)]="form.description" name="description" rows="5"
+                    [placeholder]="publishType() === 'service' ? 'Decrivez votre service en detail : competences, deroulement, ce qui est inclus...' : 'Decrivez votre produit... Utilisez #hashtags et @mentions'"
+                    (keydown)="onDescriptionKeydown($event)"></textarea>
+          <p class="desc-hint">Utilisez # pour les hashtags et &#64; pour mentionner</p>
+        </div>
+
+        <div class="step-nav">
+          <button type="button" class="q-btn q-btn-ghost" (click)="prevStep()"><span class="material-icons">arrow_back</span> Retour</button>
+          <button type="button" class="q-btn q-btn-primary q-btn-lg" (click)="nextStep()"
+                  [disabled]="!form.title || !form.category_id || (publishType() === 'product' && !form.price) || (publishType() === 'service' && servicePriceType() !== 'quote' && !form.price)">
+            Suivant <span class="material-icons">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (currentStep() === 3) {
+      <div class="form-step">
+        <h2>{{ publishType() === 'service' ? 'Paiement & Publication' : 'Politique vendeur & Publication' }}</h2>
+
+        <!-- ═══ PRODUCT-ONLY: Return policy & Warranty ═══ -->
+        @if (publishType() === 'product') {
+          <div class="form-group"><label>Politique de retour</label><select class="q-input" [(ngModel)]="form.return_policy" name="return_policy"><option value="Retour sous 7 jours">Retour sous 7 jours</option><option value="Retour sous 14 jours">Retour sous 14 jours</option><option value="Retour sous 30 jours">Retour sous 30 jours</option><option value="Pas de retour">Pas de retour</option></select></div>
+          <div class="form-group"><label class="checkbox-label"><input type="checkbox" [(ngModel)]="form.warranty" name="warranty" /> Offrir une garantie</label></div>
+        }
+
+        <!-- ═══ PRODUCT-ONLY: DELIVERY OPTIONS ═══ -->
+        @if (publishType() === 'product') {
+          <div class="delivery-section">
+            <h3><span class="material-icons">local_shipping</span> Frais de livraison</h3>
+            <p class="delivery-hint">Definissez les frais de livraison que l'acheteur devra payer en plus du prix du produit.</p>
+            <div class="delivery-options">
+              <button type="button" class="delivery-option-card" [class.selected]="deliveryOption() === 'fixed'" (click)="deliveryOption.set('fixed')">
+                <div class="do-icon-wrap"><span class="material-icons">payments</span></div>
+                <div class="do-text"><strong>Definir les frais de livraison</strong><span>Indiquez un montant fixe que l'acheteur paiera</span></div>
+                @if (deliveryOption() === 'fixed') { <span class="material-icons do-check">check_circle</span> }
+              </button>
+              <button type="button" class="delivery-option-card" [class.selected]="deliveryOption() === 'contact'" (click)="deliveryOption.set('contact'); deliveryFee.set(0)">
+                <div class="do-icon-wrap"><span class="material-icons">chat</span></div>
+                <div class="do-text"><strong>A convenir avec l'acheteur</strong><span>L'acheteur vous contactera pour la livraison</span></div>
+                @if (deliveryOption() === 'contact') { <span class="material-icons do-check">check_circle</span> }
+              </button>
+            </div>
+            @if (deliveryOption() === 'fixed') {
+              <div class="delivery-fee-input">
+                <label>Montant des frais de livraison (F CFA)</label>
+                <div class="fee-input-wrap">
+                  <span class="material-icons fee-icon">payments</span>
+                  <input type="number" class="q-input" [ngModel]="deliveryFee()" (ngModelChange)="deliveryFee.set($event)" name="delivery_fee" placeholder="Ex: 2000" min="0" />
+                  <span class="fee-currency">F CFA</span>
+                </div>
+                @if (deliveryFee() > 0) {
+                  <p class="fee-info"><span class="material-icons">check_circle</span> L'acheteur paiera {{ deliveryFee() | number:'1.0-0' }} F CFA pour la livraison (en plus du prix du produit).</p>
+                } @else {
+                  <p class="fee-info warn"><span class="material-icons">warning</span> Indiquez le montant des frais de livraison.</p>
+                }
+              </div>
+            } @else {
+              <div class="delivery-buyer-info">
+                <span class="material-icons">info</span>
+                <span>L'acheteur devra vous contacter pour convenir des frais et modalites de livraison.</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ═══ PAYMENT METHODS (dynamic based on type) ═══ -->
+        <div class="payment-methods-section">
+          <h3><span class="material-icons">payments</span> {{ publishType() === 'service' ? 'Modes de paiement pour ce service' : 'Methodes de paiement acceptees' }}</h3>
+          <p class="payment-hint">{{ publishType() === 'service' ? 'Comment souhaitez-vous etre paye pour cette prestation ?' : 'Selectionnez les moyens de paiement que vous acceptez.' }}</p>
+          <div class="payment-methods-grid">
+            @for (method of getPaymentMethods(); track method.id) {
+              <button type="button" class="payment-method-card" [class.selected]="isPaymentSelected(method.id)" (click)="togglePaymentMethod(method.id)">
+                <div class="pm-icon-wrap" [style.background]="isPaymentSelected(method.id) ? method.color + '22' : ''">
+                  <span class="material-icons" [style.color]="isPaymentSelected(method.id) ? method.color : ''">{{ method.icon }}</span>
+                </div>
+                <span class="pm-name">{{ method.name }}</span>
+                @if (isPaymentSelected(method.id)) {
+                  <span class="material-icons pm-check">check_circle</span>
+                }
+              </button>
+            }
+          </div>
+          @if (selectedPaymentMethods().length === 0) {
+            <div class="payment-contact-fallback">
+              <span class="material-icons">info</span>
+              <span>{{ publishType() === 'service' ? 'Le client devra vous contacter pour convenir du mode de paiement.' : 'L\'acheteur devra vous contacter pour convenir du mode de paiement.' }}</span>
+            </div>
+          } @else {
+            <div class="payment-selected-info">
+              <span class="material-icons">check</span>
+              <span>{{ selectedPaymentMethods().length }} methode(s) selectionnee(s)</span>
+            </div>
+          }
+        </div>
+
+        <!-- ═══ PUBLICATION SUMMARY ═══ -->
+        <div class="publish-summary">
+          <h3>Resume de la publication</h3>
+          <div class="summary-row"><span>Type</span><strong>{{ publishType() === 'product' ? 'Produit' : 'Service' }}</strong></div>
+          <div class="summary-row"><span>{{ publishType() === 'service' ? 'Service' : 'Titre' }}</span><strong>{{ form.title || '-' }}</strong></div>
+
+          @if (publishType() === 'service') {
+            <!-- Service summary -->
+            <div class="summary-row">
+              <span>Tarif</span>
+              <strong>{{ getServicePriceLabel() }}</strong>
+            </div>
+            <div class="summary-row">
+              <span>Prestation</span>
+              <strong>{{ form.service_type === 'online' ? 'En ligne' : form.service_type === 'in_person' ? 'Sur place' : 'En ligne & sur place' }}</strong>
+            </div>
+            @if (form.availability) {
+              <div class="summary-row">
+                <span>Disponibilite</span>
+                <strong>{{ form.availability === 'everyday' ? 'Tous les jours' : form.availability === 'weekdays' ? 'Lun-Ven' : form.availability === 'weekends' ? 'Weekends' : form.availability === 'appointment' ? 'Sur RDV' : 'Personnalise' }}</strong>
+              </div>
+            }
+            @if (form.duration) {
+              <div class="summary-row"><span>Duree</span><strong>{{ form.duration }}</strong></div>
+            }
+            @if (form.service_area) {
+              <div class="summary-row"><span>Zone</span><strong>{{ form.service_area }}</strong></div>
+            }
+          } @else {
+            <!-- Product summary -->
+            <div class="summary-row"><span>Prix</span><strong>{{ form.price || 0 }} F CFA</strong></div>
+            <div class="summary-row"><span>Stock</span><strong>{{ form.stock_quantity || 1 }} article(s)</strong></div>
+            <div class="summary-row">
+              <span>Livraison</span>
+              <strong>
+                @if (deliveryOption() === 'fixed' && deliveryFee() > 0) {
+                  {{ deliveryFee() | number:'1.0-0' }} F CFA
+                } @else if (deliveryOption() === 'fixed') {
+                  Frais a definir
+                } @else {
+                  A convenir
+                }
+              </strong>
+            </div>
+          }
+
+          <div class="summary-row"><span>Image d'affiche</span><strong>{{ posterFile ? 'Ajoutee' : 'Non' }}</strong></div>
+          <div class="summary-row"><span>Video</span><strong>{{ videoId() ? 'Uploadee' : 'Aucune' }} {{ videoResolution() ? '(' + videoResolution() + ')' : '' }}</strong></div>
+          <div class="summary-row"><span>{{ publishType() === 'service' ? 'Portfolio' : 'Images suppl.' }}</span><strong>{{ imagePreviews().length }} image(s)</strong></div>
+          <div class="summary-row">
+            <span>Paiement</span>
+            <strong>
+              @if (selectedPaymentMethods().length > 0) {
+                {{ selectedPaymentMethods().length }} methode(s)
+              } @else {
+                Contact direct
+              }
+            </strong>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button type="button" class="q-btn q-btn-ghost" (click)="prevStep()"><span class="material-icons">arrow_back</span> Retour</button>
+          <button type="submit" class="q-btn q-btn-primary q-btn-lg" [disabled]="loading()">
+            <span class="material-icons">publish</span>
+            {{ loading() ? 'Publication...' : (publishType() === 'service' ? 'Publier le service' : 'Publier l\'annonce') }}
+          </button>
+        </div>
+      </div>
+    }
+  </form>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     DYNAMIC VIDEO EDITOR — Desktop Split Layout
+     ══════════════════════════════════════════════════════ -->
+@if (showVideoEditor()) {
+  <div class="ve-overlay" (click)="deselectText()">
+    <div class="ve-editor" (click)="$event.stopPropagation()">
+
+      <!-- ═══ TOP BAR ═══ -->
+      <div class="ve-topbar">
+        <button type="button" class="ve-close" (click)="closeVideoEditor()">
+          <span class="material-icons">arrow_back</span>
+        </button>
+        <h2>Editeur Video</h2>
+        <div class="ve-topbar-actions">
+          <button type="button" class="ve-done" (click)="confirmVideoEdit()">
+            <span class="material-icons">check</span>
+            Appliquer
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══ SPLIT LAYOUT ═══ -->
+      <div class="ve-split">
+
+        <!-- ══ LEFT: Controls ══ -->
+        <div class="ve-controls">
+
+          <!-- Tabs -->
+          <div class="ve-tabs">
+            <button type="button" class="ve-tab" [class.active]="videoEditorTab() === 'filters'" (click)="videoEditorTab.set('filters')">
+              <span class="material-icons">auto_awesome</span><span>Filtres</span>
+            </button>
+            <button type="button" class="ve-tab" [class.active]="videoEditorTab() === 'text'" (click)="videoEditorTab.set('text')">
+              <span class="material-icons">text_fields</span><span>Texte</span>
+            </button>
+            <button type="button" class="ve-tab" [class.active]="videoEditorTab() === 'adjust'" (click)="videoEditorTab.set('adjust')">
+              <span class="material-icons">tune</span><span>Ajuster</span>
+            </button>
+            <button type="button" class="ve-tab" [class.active]="videoEditorTab() === 'settings'" (click)="videoEditorTab.set('settings')">
+              <span class="material-icons">settings</span><span>Reglages</span>
+            </button>
+          </div>
+
+          <!-- Panel content -->
+          <div class="ve-panel">
+
+        <!-- ══ FILTERS ══ -->
+        @if (videoEditorTab() === 'filters') {
+          <div class="ve-filter-grid">
+            @for (f of videoFilters; track f.id) {
+              <button type="button" class="ve-filter-card" [class.active]="activeVideoFilter() === f.id" (click)="activeVideoFilter.set(f.id)">
+                <div class="ve-filter-preview"><video [src]="videoPreview()" muted [style.filter]="f.css"></video></div>
+                <span>{{ f.name }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <!-- ══ TEXT ══ -->
+        @if (videoEditorTab() === 'text') {
+          <div class="ve-text-panel">
+            <div class="ve-text-input-row">
+              <input type="text" class="ve-text-input" [(ngModel)]="newTextContent" [ngModelOptions]="{standalone: true}" placeholder="Tapez votre texte..." (keydown.enter)="addTextOverlay()" />
+              <button type="button" class="ve-add-text-btn" (click)="addTextOverlay()" [disabled]="!newTextContent.trim()"><span class="material-icons">add</span></button>
+            </div>
+
+            <!-- Colors -->
+            <div class="ve-opt-row">
+              <label>Couleur</label>
+              <div class="ve-color-row">
+                @for (c of textColors; track c) {
+                  <button type="button" class="ve-color-dot" [style.background]="c" [class.active]="newTextColor === c" (click)="newTextColor = c; selectedTextIdx() !== null && updateSelectedText('color', c)"></button>
+                }
+              </div>
+            </div>
+
+            <!-- Size slider -->
+            <div class="ve-opt-row">
+              <label>Taille : {{ selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].size : newTextSize }}px</label>
+              <input type="range" class="ve-slider" min="14" max="72"
+                     [ngModel]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].size : newTextSize"
+                     (ngModelChange)="selectedTextIdx() !== null ? updateSelectedText('size', $event) : newTextSize = $event"
+                     [ngModelOptions]="{standalone: true}" />
+            </div>
+
+            <!-- Fonts -->
+            <div class="ve-opt-row">
+              <label>Police</label>
+              <div class="ve-font-row">
+                @for (f of textFonts; track f.name) {
+                  <button type="button" class="ve-font-btn" [class.active]="(selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].font : newTextFont) === f.name"
+                          (click)="newTextFont = f.name; selectedTextIdx() !== null && updateSelectedText('font', f.name)" [style.font-family]="f.family">Aa</button>
+                }
+              </div>
+            </div>
+
+            <!-- Text rotation -->
+            <div class="ve-opt-row">
+              <label>Rotation : {{ selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].rotation : newTextRotation() }}°</label>
+              <input type="range" class="ve-slider" min="-180" max="180"
+                     [ngModel]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].rotation : newTextRotation()"
+                     (ngModelChange)="selectedTextIdx() !== null ? updateSelectedText('rotation', $event) : newTextRotation.set($event)"
+                     [ngModelOptions]="{standalone: true}" />
+            </div>
+
+            <!-- Toggles -->
+            <div class="ve-toggle-row">
+              <button type="button" class="ve-toggle" [class.on]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].bold : newTextBold()"
+                      (click)="toggleSelectedBold()">
+                <strong>B</strong>
+              </button>
+              <button type="button" class="ve-toggle" [class.on]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].hasShadow : newTextShadow()"
+                      (click)="toggleSelectedShadow()">
+                <span class="material-icons">blur_on</span>
+              </button>
+              <button type="button" class="ve-toggle" [class.on]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].hasStroke : newTextStroke()"
+                      (click)="toggleSelectedStroke()">
+                <span class="material-icons">format_paint</span>
+              </button>
+              <button type="button" class="ve-toggle" [class.on]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].hasBg : newTextBg()"
+                      (click)="toggleSelectedBg()">
+                <span class="material-icons">format_color_fill</span>
+              </button>
+            </div>
+
+            <!-- Bg options -->
+            @if ((selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].hasBg : newTextBg())) {
+              <div class="ve-opt-row">
+                <label>Opacite fond : {{ selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].bgOpacity : newTextBgOpacity() }}%</label>
+                <input type="range" class="ve-slider" min="10" max="95"
+                       [ngModel]="selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].bgOpacity : newTextBgOpacity()"
+                       (ngModelChange)="selectedTextIdx() !== null ? updateSelectedText('bgOpacity', $event) : newTextBgOpacity.set($event)"
+                       [ngModelOptions]="{standalone: true}" />
+              </div>
+              <div class="ve-opt-row">
+                <label>Couleur fond</label>
+                <div class="ve-color-row">
+                  @for (c of ['#000000','#ffffff','#1e293b','#7c3aed','#dc2626','#059669','#0284c7','#d97706']; track c) {
+                    <button type="button" class="ve-color-dot" [style.background]="c"
+                            [class.active]="(selectedTextIdx() !== null ? textOverlays()[selectedTextIdx()!].bgColor : newTextBgColor) === c"
+                            (click)="newTextBgColor = c; selectedTextIdx() !== null && updateSelectedText('bgColor', c)"></button>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Text list -->
+            @if (textOverlays().length > 0) {
+              <div class="ve-text-list">
+                @for (txt of textOverlays(); track $index; let i = $index) {
+                  <div class="ve-text-item" [class.selected]="selectedTextIdx() === i" (click)="selectedTextIdx.set(i)">
+                    <span class="ve-text-preview" [style.color]="txt.color" [style.font-family]="textFonts[0].family">{{ txt.text }}</span>
+                    <div class="ve-text-item-actions">
+                      <button type="button" (click)="duplicateText(i); $event.stopPropagation()"><span class="material-icons">content_copy</span></button>
+                      <button type="button" (click)="removeTextOverlay(i); $event.stopPropagation()"><span class="material-icons">delete</span></button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <p class="ve-hint">Glissez les textes directement sur la video pour les positionner librement</p>
+          </div>
+        }
+
+        <!-- ══ ADJUST ══ -->
+        @if (videoEditorTab() === 'adjust') {
+          <div class="ve-adjust-panel">
+
+            <!-- Aspect Ratio / Video Size -->
+            <div class="ve-adj-group">
+              <label><span class="material-icons">aspect_ratio</span> Taille de la video</label>
+              <div class="ve-aspect-row">
+                @for (a of aspectOptions; track a.value) {
+                  <button type="button" class="ve-aspect-btn" [class.active]="videoAspectRatio() === a.value" (click)="videoAspectRatio.set(a.value)">
+                    <span class="material-icons">{{ a.icon }}</span>
+                    <span>{{ a.label }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="ve-adj-group">
+              <label><span class="material-icons">brightness_6</span> Luminosite <span class="ve-val">{{ videoBrightness() }}%</span></label>
+              <input type="range" class="ve-slider" min="30" max="200" [ngModel]="videoBrightness()" (ngModelChange)="videoBrightness.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+            <div class="ve-adj-group">
+              <label><span class="material-icons">contrast</span> Contraste <span class="ve-val">{{ videoContrast() }}%</span></label>
+              <input type="range" class="ve-slider" min="30" max="200" [ngModel]="videoContrast()" (ngModelChange)="videoContrast.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+            <div class="ve-adj-group">
+              <label><span class="material-icons">palette</span> Saturation <span class="ve-val">{{ videoSaturation() }}%</span></label>
+              <input type="range" class="ve-slider" min="0" max="200" [ngModel]="videoSaturation()" (ngModelChange)="videoSaturation.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+            <div class="ve-adj-group">
+              <label><span class="material-icons">invert_colors</span> Teinte <span class="ve-val">{{ videoHue() }}°</span></label>
+              <input type="range" class="ve-slider" min="-180" max="180" [ngModel]="videoHue()" (ngModelChange)="videoHue.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+            <div class="ve-adj-group">
+              <label><span class="material-icons">blur_on</span> Flou <span class="ve-val">{{ videoBlur() }}px</span></label>
+              <input type="range" class="ve-slider" min="0" max="10" step="0.5" [ngModel]="videoBlur()" (ngModelChange)="videoBlur.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+            <div class="ve-adj-group">
+              <label><span class="material-icons">vignette</span> Vignette <span class="ve-val">{{ videoVignette() }}%</span></label>
+              <input type="range" class="ve-slider" min="0" max="100" [ngModel]="videoVignette()" (ngModelChange)="videoVignette.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+            <div class="ve-adj-group">
+              <label><span class="material-icons">zoom_in</span> Zoom <span class="ve-val">{{ videoZoom() }}%</span></label>
+              <input type="range" class="ve-slider" min="80" max="200" [ngModel]="videoZoom()" (ngModelChange)="videoZoom.set($event)" [ngModelOptions]="{standalone: true}" />
+            </div>
+
+            <div class="ve-transform-row">
+              <button type="button" class="ve-transform-btn" (click)="rotateVideo(-90)"><span class="material-icons">rotate_left</span> -90°</button>
+              <button type="button" class="ve-transform-btn" (click)="rotateVideo(90)"><span class="material-icons">rotate_right</span> +90°</button>
+              <button type="button" class="ve-transform-btn" [class.on]="videoFlipH()" (click)="toggleFlipH()"><span class="material-icons">flip</span> Miroir H</button>
+              <button type="button" class="ve-transform-btn" [class.on]="videoFlipV()" (click)="toggleFlipV()"><span class="material-icons">flip</span> Miroir V</button>
+            </div>
+
+            <button type="button" class="ve-reset-btn" (click)="resetAdjustments()"><span class="material-icons">restart_alt</span> Tout reinitialiser</button>
+          </div>
+        }
+
+        <!-- ══ SETTINGS ══ -->
+        @if (videoEditorTab() === 'settings') {
+          <div class="ve-settings-panel">
+            <div class="ve-setting-row">
+              <div class="ve-setting-info"><span class="material-icons">high_quality</span><div><strong>Resolution detectee</strong><span>{{ videoResolution() || 'Inconnue' }}</span></div></div>
+            </div>
+            <div class="ve-quality-grid">
+              @for (q of qualityOptions; track q.value) {
+                <button type="button" class="ve-quality-card" [class.active]="videoQuality() === q.value" (click)="videoQuality.set(q.value)">
+                  <span class="ve-quality-badge">{{ q.value === '4k' ? '4K' : q.value }}</span>
+                  <span class="ve-quality-name">{{ q.label }}</span>
+                  <span class="ve-quality-dim">{{ q.w }}x{{ q.h }}</span>
+                </button>
+              }
+            </div>
+            <div class="ve-setting-row"><div class="ve-setting-info"><span class="material-icons">movie</span><div><strong>Format</strong><span>{{ videoFile?.type || 'video/mp4' }}</span></div></div></div>
+            <div class="ve-setting-row"><div class="ve-setting-info"><span class="material-icons">timer</span><div><strong>Duree</strong><span>{{ formatTime(videoDuration()) }}</span></div></div></div>
+            <div class="ve-setting-row"><div class="ve-setting-info"><span class="material-icons">sd_storage</span><div><strong>Taille</strong><span>{{ videoFile ? (videoFile.size / 1024 / 1024).toFixed(1) + ' Mo' : '-' }}</span></div></div></div>
+            <div class="ve-setting-row"><div class="ve-setting-info"><span class="material-icons">speed</span><div><strong>Vitesse</strong><span>{{ videoSpeed() }}x</span></div></div></div>
+          </div>
+        }
+          </div>
+        </div>
+
+        <!-- ══ RIGHT: Video Preview (fixed) ══ -->
+        <div class="ve-preview-side" (click)="deselectText()">
+          <div class="ve-video-wrap" #videoWrap [class.has-vignette]="videoVignette() > 0"
+               [style.aspect-ratio]="videoAspectRatio() === 'free' ? 'auto' : videoAspectRatio()">
+            <video #editorVideo [src]="videoPreview()" autoplay loop muted playsinline
+                   [style.filter]="getVideoEditorFilterCss()"
+                   [style.transform]="getVideoTransform()"
+                   (timeupdate)="onEditorVideoTimeUpdate()"
+                   (loadedmetadata)="onEditorVideoLoaded()">
+            </video>
+
+            @if (videoVignette() > 0) {
+              <div class="ve-vignette" [style.opacity]="videoVignette() / 100"></div>
+            }
+
+            @for (txt of textOverlays(); track $index; let ti = $index) {
+              <div class="ve-text-overlay"
+                   [class.selected]="selectedTextIdx() === ti"
+                   [style]="getTextStyle(txt)"
+                   (mousedown)="onTextDragStart($event, ti)"
+                   (touchstart)="onTextDragStart($event, ti)"
+                   (click)="selectText(ti, $event)">
+                {{ txt.text }}
+              </div>
+            }
+
+            <button type="button" class="ve-play-overlay" (click)="toggleEditorPlay(); $event.stopPropagation()">
+              <span class="material-icons">{{ editorPlaying() ? 'pause' : 'play_arrow' }}</span>
+            </button>
+          </div>
+
+          <!-- Timeline under video -->
+          <div class="ve-timeline">
+            <button type="button" class="ve-play-btn" (click)="toggleEditorPlay()">
+              <span class="material-icons">{{ editorPlaying() ? 'pause' : 'play_arrow' }}</span>
+            </button>
+            <span class="ve-time">{{ formatTime(videoCurrentTime()) }}</span>
+            <input type="range" class="ve-scrubber" min="0" [max]="videoDuration()" step="0.1" [value]="videoCurrentTime()" (input)="seekVideo($event)" />
+            <span class="ve-time">{{ formatTime(videoDuration()) }}</span>
+            <span class="ve-speed-badge" (click)="setVideoSpeed(videoSpeed() >= 2 ? 0.5 : videoSpeed() + 0.25)">{{ videoSpeed() }}x</span>
+          </div>
+
+          <!-- Video info badges -->
+          <div class="ve-info-bar">
+            @if (videoResolution()) { <span class="ve-info-badge"><span class="material-icons">high_quality</span> {{ videoResolution() }}</span> }
+            <span class="ve-info-badge"><span class="material-icons">timer</span> {{ formatTime(videoDuration()) }}</span>
+            @if (videoFile) { <span class="ve-info-badge"><span class="material-icons">sd_storage</span> {{ (videoFile.size / 1024 / 1024).toFixed(1) }} Mo</span> }
+            <span class="ve-info-badge"><span class="material-icons">aspect_ratio</span> {{ videoAspectRatio() === 'free' ? 'Libre' : videoAspectRatio() }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+}

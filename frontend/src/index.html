@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>QUINCH</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="logoquinch.png">
+  <link rel="apple-touch-icon" href="logoquinch.png">
+</head>
+<body>
+  <script>
+    // Apply saved theme immediately to prevent flash
+    (function() {
+      var t = localStorage.getItem('quinch_theme');
+      if (t === 'light') document.body.classList.add('quinch-light');
+    })();
+  </script>
+  <app-root></app-root>
+</body>
+</html>

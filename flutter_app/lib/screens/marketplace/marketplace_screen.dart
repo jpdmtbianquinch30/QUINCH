@@ -368,7 +368,12 @@ class _FilterChip extends StatelessWidget {
     );
   }
 }
-
+String _conditionFr(String c) => const {
+  'new': 'Neuf',
+  'like_new': 'Comme neuf',
+  'good': 'Bon état',
+  'fair': 'Usé',
+}[c] ?? c;
 class _CatChip extends StatelessWidget {
   final String label;
   final bool active;
@@ -455,7 +460,7 @@ class _MarketCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(20)),
-                  child: Text(product.condition, style: const TextStyle(color: Colors.white70, fontSize: 9)),
+                  child: Text(_conditionFr(product.condition), style: const TextStyle(color: Colors.white70, fontSize: 9)),
                 ),
               ),
             if (product.isNegotiable)
