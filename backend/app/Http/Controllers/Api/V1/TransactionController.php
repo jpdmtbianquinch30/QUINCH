@@ -8,16 +8,21 @@ use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class TransactionController extends Controller
 {
     public function initiate(Request $request): JsonResponse
     {
+        $enabledMethods = config('quinch.enabled_payment_methods', ['cash_delivery']);
+
         $validated = $request->validate([
             'product_id' => ['required', 'uuid', 'exists:products,id'],
-            'payment_method' => ['required', 'in:orange_money,wave,free_money,cash_delivery'],
+            'payment_method' => ['required', Rule::in($enabledMethods)],
             'delivery_type' => ['required', 'in:pickup,delivery,meetup'],
             'delivery_address' => ['required_if:delivery_type,delivery', 'array'],
+        ], [
+            'payment_method.in' => 'Ce moyen de paiement n\'est pas encore disponible.',
         ]);
 
         $product = Product::findOrFail($validated['product_id']);

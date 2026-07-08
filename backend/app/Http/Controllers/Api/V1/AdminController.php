@@ -182,37 +182,9 @@ class AdminController extends Controller
 
         return response()->json(['daily' => $daily, 'period' => $days]);
     }
-    public function deleteAllVideos(): JsonResponse
-    {
-        // Delete products that have videos first to avoid FK constraints or orphans
-        Product::whereNotNull('video_id')->delete();
-        
-        // Then delete the videos
-        ProductVideo::query()->delete();
-        
-        return response()->json(['message' => 'All videos and associated products deleted successfully']);
-    }
-
-    public function resetData(): JsonResponse
-    {
-        // 1. Delete all Transactions
-        Transaction::query()->delete();
-
-        // 2. Delete all Products (cascades to likes, saves, etc.)
-        Product::query()->delete();
-        
-        // 3. Delete all Videos (now safe as products are gone)
-        ProductVideo::query()->delete();
-
-        // 4. Delete all Conversations/Messages (optional but good for clean slate)
-        \App\Models\Conversation::query()->delete();
-
-        // 5. Delete all Notifications
-        \App\Models\Notification::query()->delete();
-        
-        // 6. Delete all users except admins
-        User::whereNotIn('role', ['admin', 'super_admin'])->delete();
-
-        return response()->json(['message' => 'System reset successfully: Users, Videos, Products, and Transactions deleted.']);
-    }
+    // deleteAllVideos() et resetData() ont été retirées de l'API HTTP et
+    // remplacées par les commandes Artisan `quinch:delete-all-videos` et
+    // `quinch:reset-data` (voir app/Console/Commands) : une action aussi
+    // destructrice ne doit pas être accessible via une route, même protégée
+    // par un rôle admin.
 }

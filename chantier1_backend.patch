@@ -1,0 +1,444 @@
+diff --git a/backend/.env.example b/backend/.env.example
+index 8ecd1af..fdc6c66 100644
+--- a/backend/.env.example
++++ b/backend/.env.example
+@@ -69,3 +69,19 @@ VITE_APP_NAME="${APP_NAME}"
+ ORANGE_MONEY_WEBHOOK_SECRET=
+ WAVE_WEBHOOK_SECRET=
+ FREE_MONEY_WEBHOOK_SECRET=
++
++# ─── QUINCH V1 - Feature flags ───────────────────────────────────────────────
++# Moyens de paiement actifs (liste separee par des virgules).
++# V1: uniquement le paiement a la livraison, en attendant l'integration reelle
++# et testee des webhooks Wave / Orange Money / Free Money.
++QUINCH_PAYMENT_METHODS=cash_delivery
++
++# Fonctionnalites desactivees en V1 (mettre a true pour les reactiver en V2/V3)
++QUINCH_FEATURE_NEGOTIATION=false
++QUINCH_FEATURE_FOLLOW=false
++QUINCH_FEATURE_REVIEWS=false
++QUINCH_FEATURE_BADGES=false
++QUINCH_FEATURE_SHARING=false
++QUINCH_FEATURE_CHAT_AUDIO=false
++QUINCH_FEATURE_CHAT_FILE=false
++QUINCH_FEATURE_FAVORITES_COLLECTIONS=false
+diff --git a/backend/app/Console/Commands/QuinchDeleteAllVideos.php b/backend/app/Console/Commands/QuinchDeleteAllVideos.php
+new file mode 100644
+index 0000000..2674a40
+--- /dev/null
++++ b/backend/app/Console/Commands/QuinchDeleteAllVideos.php
+@@ -0,0 +1,37 @@
++<?php
++
++namespace App\Console\Commands;
++
++use App\Models\Product;
++use App\Models\ProductVideo;
++use Illuminate\Console\Command;
++
++/**
++ * Remplace l'ancien endpoint HTTP POST /admin/moderation/delete-all-videos.
++ * Même logique que QuinchResetData : action destructrice réservée au CLI.
++ */
++class QuinchDeleteAllVideos extends Command
++{
++    protected $signature = 'quinch:delete-all-videos {--force : Ignorer la confirmation}';
++
++    protected $description = 'Supprime toutes les vidéos et les produits qui leur sont associés';
++
++    public function handle(): int
++    {
++        if (!app()->environment(['local', 'testing', 'staging'])) {
++            $this->error('Cette commande est bloquée en production. Utilisez-la uniquement en local/staging.');
++            return self::FAILURE;
++        }
++
++        if (!$this->option('force') && !$this->confirm('Ceci va supprimer TOUTES les vidéos et produits associés. Continuer ?')) {
++            $this->info('Annulé.');
++            return self::SUCCESS;
++        }
++
++        Product::whereNotNull('video_id')->delete();
++        ProductVideo::query()->delete();
++
++        $this->info('Toutes les vidéos et produits associés ont été supprimés.');
++        return self::SUCCESS;
++    }
++}
+diff --git a/backend/app/Console/Commands/QuinchResetData.php b/backend/app/Console/Commands/QuinchResetData.php
+new file mode 100644
+index 0000000..f04634e
+--- /dev/null
++++ b/backend/app/Console/Commands/QuinchResetData.php
+@@ -0,0 +1,51 @@
++<?php
++
++namespace App\Console\Commands;
++
++use App\Models\Conversation;
++use App\Models\Notification;
++use App\Models\Product;
++use App\Models\ProductVideo;
++use App\Models\Transaction;
++use App\Models\User;
++use Illuminate\Console\Command;
++
++/**
++ * Remplace l'ancien endpoint HTTP POST /admin/system/reset.
++ *
++ * Une action aussi destructrice (efface transactions, produits, vidéos,
++ * conversations, notifications et tous les utilisateurs non-admin) ne doit
++ * jamais être accessible via une route HTTP, même protégée par un rôle
++ * admin : un token qui fuite, un bug de middleware, ou un reverse-proxy mal
++ * configuré suffiraient à vider toute la base. Cette commande ne peut être
++ * exécutée que depuis le serveur (SSH / CLI Docker), avec confirmation.
++ */
++class QuinchResetData extends Command
++{
++    protected $signature = 'quinch:reset-data {--force : Ignorer la confirmation}';
++
++    protected $description = 'Réinitialise complètement les données QUINCH (transactions, produits, vidéos, conversations, notifications, utilisateurs non-admin)';
++
++    public function handle(): int
++    {
++        if (!app()->environment(['local', 'testing', 'staging'])) {
++            $this->error('Cette commande est bloquée en production. Utilisez-la uniquement en local/staging.');
++            return self::FAILURE;
++        }
++
++        if (!$this->option('force') && !$this->confirm('Ceci va supprimer TOUTES les données (sauf les comptes admin). Continuer ?')) {
++            $this->info('Annulé.');
++            return self::SUCCESS;
++        }
++
++        Transaction::query()->delete();
++        Product::query()->delete();
++        ProductVideo::query()->delete();
++        Conversation::query()->delete();
++        Notification::query()->delete();
++        User::whereNotIn('role', ['admin', 'super_admin'])->delete();
++
++        $this->info('Reset terminé : utilisateurs, vidéos, produits et transactions supprimés.');
++        return self::SUCCESS;
++    }
++}
+diff --git a/backend/app/Http/Controllers/Api/V1/AdminController.php b/backend/app/Http/Controllers/Api/V1/AdminController.php
+index cab968b..6562545 100644
+--- a/backend/app/Http/Controllers/Api/V1/AdminController.php
++++ b/backend/app/Http/Controllers/Api/V1/AdminController.php
+@@ -182,37 +182,9 @@ public function overviewReport(Request $request): JsonResponse
+ 
+         return response()->json(['daily' => $daily, 'period' => $days]);
+     }
+-    public function deleteAllVideos(): JsonResponse
+-    {
+-        // Delete products that have videos first to avoid FK constraints or orphans
+-        Product::whereNotNull('video_id')->delete();
+-        
+-        // Then delete the videos
+-        ProductVideo::query()->delete();
+-        
+-        return response()->json(['message' => 'All videos and associated products deleted successfully']);
+-    }
+-
+-    public function resetData(): JsonResponse
+-    {
+-        // 1. Delete all Transactions
+-        Transaction::query()->delete();
+-
+-        // 2. Delete all Products (cascades to likes, saves, etc.)
+-        Product::query()->delete();
+-        
+-        // 3. Delete all Videos (now safe as products are gone)
+-        ProductVideo::query()->delete();
+-
+-        // 4. Delete all Conversations/Messages (optional but good for clean slate)
+-        \App\Models\Conversation::query()->delete();
+-
+-        // 5. Delete all Notifications
+-        \App\Models\Notification::query()->delete();
+-        
+-        // 6. Delete all users except admins
+-        User::whereNotIn('role', ['admin', 'super_admin'])->delete();
+-
+-        return response()->json(['message' => 'System reset successfully: Users, Videos, Products, and Transactions deleted.']);
+-    }
++    // deleteAllVideos() et resetData() ont été retirées de l'API HTTP et
++    // remplacées par les commandes Artisan `quinch:delete-all-videos` et
++    // `quinch:reset-data` (voir app/Console/Commands) : une action aussi
++    // destructrice ne doit pas être accessible via une route, même protégée
++    // par un rôle admin.
+ }
+diff --git a/backend/app/Http/Controllers/Api/V1/ConversationController.php b/backend/app/Http/Controllers/Api/V1/ConversationController.php
+index 2c39909..602e722 100644
+--- a/backend/app/Http/Controllers/Api/V1/ConversationController.php
++++ b/backend/app/Http/Controllers/Api/V1/ConversationController.php
+@@ -141,7 +141,11 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
+         if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
+ 
+         $request->validate([
+-            'file' => 'required|file|max:20480', // 20 MB max
++            // Whitelist stricte : on n'accepte que des images et documents
++            // usuels, jamais de fichiers exécutables/scripts (.php, .html,
++            // .svg avec JS, etc.) qui pourraient finir servis statiquement
++            // depuis le disque "public".
++            'file' => 'required|file|max:20480|mimes:jpg,jpeg,png,webp,pdf,doc,docx', // 20 MB max
+         ]);
+ 
+         $file = $request->file('file');
+diff --git a/backend/app/Http/Controllers/Api/V1/TransactionController.php b/backend/app/Http/Controllers/Api/V1/TransactionController.php
+index cf6734d..6befb05 100644
+--- a/backend/app/Http/Controllers/Api/V1/TransactionController.php
++++ b/backend/app/Http/Controllers/Api/V1/TransactionController.php
+@@ -8,16 +8,21 @@
+ use Illuminate\Http\JsonResponse;
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Log;
++use Illuminate\Validation\Rule;
+ 
+ class TransactionController extends Controller
+ {
+     public function initiate(Request $request): JsonResponse
+     {
++        $enabledMethods = config('quinch.enabled_payment_methods', ['cash_delivery']);
++
+         $validated = $request->validate([
+             'product_id' => ['required', 'uuid', 'exists:products,id'],
+-            'payment_method' => ['required', 'in:orange_money,wave,free_money,cash_delivery'],
++            'payment_method' => ['required', Rule::in($enabledMethods)],
+             'delivery_type' => ['required', 'in:pickup,delivery,meetup'],
+             'delivery_address' => ['required_if:delivery_type,delivery', 'array'],
++        ], [
++            'payment_method.in' => 'Ce moyen de paiement n\'est pas encore disponible.',
+         ]);
+ 
+         $product = Product::findOrFail($validated['product_id']);
+diff --git a/backend/app/Http/Middleware/EnsureFeatureEnabled.php b/backend/app/Http/Middleware/EnsureFeatureEnabled.php
+new file mode 100644
+index 0000000..86b5ab7
+--- /dev/null
++++ b/backend/app/Http/Middleware/EnsureFeatureEnabled.php
+@@ -0,0 +1,28 @@
++<?php
++
++namespace App\Http\Middleware;
++
++use Closure;
++use Illuminate\Http\Request;
++use Symfony\Component\HttpFoundation\Response;
++
++/**
++ * Bloque l'accès à une route si la fonctionnalité correspondante est
++ * désactivée dans config('quinch.features'). Utilisé pour couper les
++ * fonctionnalités reportées post-V1 (négociation, follow, reviews, badges,
++ * partage, chat audio/fichier, collections de favoris) sans supprimer le
++ * code : il suffit de changer le .env pour les réactiver plus tard.
++ *
++ * Usage: Route::middleware('feature:negotiation')->group(...)
++ */
++class EnsureFeatureEnabled
++{
++    public function handle(Request $request, Closure $next, string $feature): Response
++    {
++        if (!config("quinch.features.{$feature}", false)) {
++            abort(404);
++        }
++
++        return $next($request);
++    }
++}
+diff --git a/backend/bootstrap/app.php b/backend/bootstrap/app.php
+index 2531dbc..5c1436c 100644
+--- a/backend/bootstrap/app.php
++++ b/backend/bootstrap/app.php
+@@ -18,6 +18,7 @@
+         $middleware->alias([
+             'role' => \App\Http\Middleware\CheckRole::class,
+             'fraud.check' => \App\Http\Middleware\FraudDetection::class,
++            'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
+         ]);
+     })
+     ->withExceptions(function (Exceptions $exceptions): void {
+diff --git a/backend/config/quinch.php b/backend/config/quinch.php
+new file mode 100644
+index 0000000..fb2a9e4
+--- /dev/null
++++ b/backend/config/quinch.php
+@@ -0,0 +1,46 @@
++<?php
++
++return [
++
++    /*
++    |--------------------------------------------------------------------------
++    | Moyens de paiement actifs
++    |--------------------------------------------------------------------------
++    |
++    | Pour la V1 publique, seul le paiement à la livraison (cash_delivery)
++    | est activé : l'intégration avec les vrais providers (Wave, Orange
++    | Money, Free Money) et leurs webhooks n'a pas encore été validée en
++    | conditions réelles. On réactivera ces méthodes une par une, provider
++    | par provider, une fois les webhooks testés en sandbox.
++    |
++    | Configurable via QUINCH_PAYMENT_METHODS (liste séparée par des virgules)
++    | pour pouvoir activer un provider en staging sans toucher au code.
++    |
++    */
++    'enabled_payment_methods' => array_filter(array_map(
++        'trim',
++        explode(',', env('QUINCH_PAYMENT_METHODS', 'cash_delivery'))
++    )),
++
++    /*
++    |--------------------------------------------------------------------------
++    | Fonctionnalités activées (V1 réduite)
++    |--------------------------------------------------------------------------
++    |
++    | Permet de couper certaines fonctionnalités non prioritaires pour la V1
++    | sans supprimer le code (routes renvoient 404 si désactivées via les
++    | vérifications ajoutées dans les contrôleurs / routes/api.php).
++    |
++    */
++    'features' => [
++        'negotiation'   => env('QUINCH_FEATURE_NEGOTIATION', false),
++        'follow'        => env('QUINCH_FEATURE_FOLLOW', false),
++        'reviews'       => env('QUINCH_FEATURE_REVIEWS', false),
++        'badges'        => env('QUINCH_FEATURE_BADGES', false),
++        'sharing'       => env('QUINCH_FEATURE_SHARING', false),
++        'chat_audio'    => env('QUINCH_FEATURE_CHAT_AUDIO', false),
++        'chat_file'     => env('QUINCH_FEATURE_CHAT_FILE', false),
++        'favorites_collections' => env('QUINCH_FEATURE_FAVORITES_COLLECTIONS', false),
++    ],
++
++];
+diff --git a/backend/routes/api.php b/backend/routes/api.php
+index edb3dc1..4cf96d6 100644
+--- a/backend/routes/api.php
++++ b/backend/routes/api.php
+@@ -63,18 +63,26 @@
+ Route::get('search/suggestions', [ProductFeedController::class, 'suggestions']);
+ Route::get('search/trending', [ProductFeedController::class, 'trending']);
+ Route::get('products/{product:slug}', [ProductController::class, 'show']);
+-Route::post('shares/track', [ShareController::class, 'track'])->middleware('throttle:100,1');
+-Route::get('products/{product:slug}/share-data', [ShareController::class, 'getShareData']);
++Route::middleware('feature:sharing')->group(function () {
++    Route::post('shares/track', [ShareController::class, 'track'])->middleware('throttle:100,1');
++    Route::get('products/{product:slug}/share-data', [ShareController::class, 'getShareData']);
++});
+ 
+ // Public profiles
+ Route::get('users/{username}/profile', [PublicProfileController::class, 'show']);
+ Route::get('users/{username}/products', [PublicProfileController::class, 'products']);
+-Route::get('users/{user}/reviews', [ReviewController::class, 'sellerReviews']);
+-Route::get('users/{user}/badges', [BadgeController::class, 'userBadges']);
+-Route::get('users/{user}/followers', [FollowController::class, 'followers']);
+-Route::get('users/{user}/following', [FollowController::class, 'following']);
+-Route::get('users/{user}/follow-counts', [FollowController::class, 'counts']);
+-Route::get('badges/definitions', [BadgeController::class, 'allBadgeDefinitions']);
++Route::middleware('feature:reviews')->group(function () {
++    Route::get('users/{user}/reviews', [ReviewController::class, 'sellerReviews']);
++});
++Route::middleware('feature:badges')->group(function () {
++    Route::get('users/{user}/badges', [BadgeController::class, 'userBadges']);
++    Route::get('badges/definitions', [BadgeController::class, 'allBadgeDefinitions']);
++});
++Route::middleware('feature:follow')->group(function () {
++    Route::get('users/{user}/followers', [FollowController::class, 'followers']);
++    Route::get('users/{user}/following', [FollowController::class, 'following']);
++    Route::get('users/{user}/follow-counts', [FollowController::class, 'counts']);
++});
+ 
+ // ─── Authenticated ───────────────────────────────────────────────────────────
+ Route::middleware('auth:sanctum')->group(function () {
+@@ -138,8 +146,8 @@
+         Route::post('start', [ConversationController::class, 'start']);
+         Route::get('{conversation}', [ConversationController::class, 'show']);
+         Route::post('{conversation}/messages', [ConversationController::class, 'sendMessage']);
+-        Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio']);
+-        Route::post('{conversation}/file', [ConversationController::class, 'sendFile']);
++        Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio'])->middleware('feature:chat_audio');
++        Route::post('{conversation}/file', [ConversationController::class, 'sendFile'])->middleware('feature:chat_file');
+         Route::delete('{conversation}', [ConversationController::class, 'destroy']);
+     });
+ 
+@@ -147,9 +155,11 @@
+     Route::prefix('favorites')->group(function () {
+         Route::get('/', [FavoriteController::class, 'index']);
+         Route::post('toggle', [FavoriteController::class, 'toggle']);
+-        Route::get('collections', [FavoriteController::class, 'collections']);
+-        Route::post('collections', [FavoriteController::class, 'createCollection']);
+         Route::get('count', [FavoriteController::class, 'count']);
++        Route::middleware('feature:favorites_collections')->group(function () {
++            Route::get('collections', [FavoriteController::class, 'collections']);
++            Route::post('collections', [FavoriteController::class, 'createCollection']);
++        });
+     });
+ 
+     // Notifications
+@@ -163,8 +173,8 @@
+         Route::put('preferences', [NotificationController::class, 'updatePreferences']);
+     });
+ 
+-    // Negotiations
+-    Route::prefix('negotiations')->group(function () {
++    // Negotiations (V2 — désactivé en V1)
++    Route::prefix('negotiations')->middleware('feature:negotiation')->group(function () {
+         Route::get('/', [NegotiationController::class, 'myNegotiations']);
+         Route::post('propose', [NegotiationController::class, 'propose']);
+         Route::post('{negotiation}/respond', [NegotiationController::class, 'respond']);
+@@ -180,23 +190,27 @@
+         Route::post('{transaction}/dispute', [TransactionController::class, 'dispute']);
+     });
+ 
+-    // Follows & Friends
+-    Route::post('follow/{user}', [FollowController::class, 'follow']);
+-    Route::delete('unfollow/{user}', [FollowController::class, 'unfollow']);
+-    Route::get('my-followers', [FollowController::class, 'myFollowers']);
+-    Route::get('my-following', [FollowController::class, 'myFollowing']);
+-    Route::get('my-friends', [FollowController::class, 'friends']);
+-    Route::get('users/{user}/is-friend', [FollowController::class, 'isFriend']);
+-
+-    // Friends feed
+-    Route::get('products/friends-feed', [ProductFeedController::class, 'friendsFeed']);
++    // Follows & Friends (V2 — désactivé en V1)
++    Route::middleware('feature:follow')->group(function () {
++        Route::post('follow/{user}', [FollowController::class, 'follow']);
++        Route::delete('unfollow/{user}', [FollowController::class, 'unfollow']);
++        Route::get('my-followers', [FollowController::class, 'myFollowers']);
++        Route::get('my-following', [FollowController::class, 'myFollowing']);
++        Route::get('my-friends', [FollowController::class, 'friends']);
++        Route::get('users/{user}/is-friend', [FollowController::class, 'isFriend']);
++        Route::get('products/friends-feed', [ProductFeedController::class, 'friendsFeed']);
++    });
+ 
+-    // Badges
+-    Route::get('my-badges', [BadgeController::class, 'myBadges']);
++    // Badges (V2 — désactivé en V1)
++    Route::middleware('feature:badges')->group(function () {
++        Route::get('my-badges', [BadgeController::class, 'myBadges']);
++    });
+ 
+-    // Reviews
+-    Route::post('reviews', [ReviewController::class, 'create']);
+-    Route::post('reviews/{review}/respond', [ReviewController::class, 'respond']);
++    // Reviews (V2 — désactivé en V1)
++    Route::middleware('feature:reviews')->group(function () {
++        Route::post('reviews', [ReviewController::class, 'create']);
++        Route::post('reviews/{review}/respond', [ReviewController::class, 'respond']);
++    });
+ });
+ 
+ // ─── Admin ───────────────────────────────────────────────────────────────────
+@@ -243,9 +257,9 @@
+         Route::get('reports/users', [AdminController::class, 'userReport']);
+         Route::get('reports/overview', [AdminController::class, 'overviewReport']);
+         
+-        // System
+-        Route::post('system/reset', [AdminController::class, 'resetData']);
+-        Route::post('moderation/delete-all-videos', [AdminController::class, 'deleteAllVideos']);
++        // System — reset/delete-all-videos déplacés en commandes Artisan
++        // (quinch:reset-data / quinch:delete-all-videos), volontairement non
++        // exposés en HTTP même sous rôle admin (action destructrice).
+     });
+ 
+ // ─── Webhooks ────────────────────────────────────────────────────────────────

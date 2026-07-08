@@ -63,18 +63,26 @@ Route::get('search', [ProductFeedController::class, 'search']);
 Route::get('search/suggestions', [ProductFeedController::class, 'suggestions']);
 Route::get('search/trending', [ProductFeedController::class, 'trending']);
 Route::get('products/{product:slug}', [ProductController::class, 'show']);
-Route::post('shares/track', [ShareController::class, 'track'])->middleware('throttle:100,1');
-Route::get('products/{product:slug}/share-data', [ShareController::class, 'getShareData']);
+Route::middleware('feature:sharing')->group(function () {
+    Route::post('shares/track', [ShareController::class, 'track'])->middleware('throttle:100,1');
+    Route::get('products/{product:slug}/share-data', [ShareController::class, 'getShareData']);
+});
 
 // Public profiles
 Route::get('users/{username}/profile', [PublicProfileController::class, 'show']);
 Route::get('users/{username}/products', [PublicProfileController::class, 'products']);
-Route::get('users/{user}/reviews', [ReviewController::class, 'sellerReviews']);
-Route::get('users/{user}/badges', [BadgeController::class, 'userBadges']);
-Route::get('users/{user}/followers', [FollowController::class, 'followers']);
-Route::get('users/{user}/following', [FollowController::class, 'following']);
-Route::get('users/{user}/follow-counts', [FollowController::class, 'counts']);
-Route::get('badges/definitions', [BadgeController::class, 'allBadgeDefinitions']);
+Route::middleware('feature:reviews')->group(function () {
+    Route::get('users/{user}/reviews', [ReviewController::class, 'sellerReviews']);
+});
+Route::middleware('feature:badges')->group(function () {
+    Route::get('users/{user}/badges', [BadgeController::class, 'userBadges']);
+    Route::get('badges/definitions', [BadgeController::class, 'allBadgeDefinitions']);
+});
+Route::middleware('feature:follow')->group(function () {
+    Route::get('users/{user}/followers', [FollowController::class, 'followers']);
+    Route::get('users/{user}/following', [FollowController::class, 'following']);
+    Route::get('users/{user}/follow-counts', [FollowController::class, 'counts']);
+});
 
 // ─── Authenticated ───────────────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -138,8 +146,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('start', [ConversationController::class, 'start']);
         Route::get('{conversation}', [ConversationController::class, 'show']);
         Route::post('{conversation}/messages', [ConversationController::class, 'sendMessage']);
-        Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio']);
-        Route::post('{conversation}/file', [ConversationController::class, 'sendFile']);
+        Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio'])->middleware('feature:chat_audio');
+        Route::post('{conversation}/file', [ConversationController::class, 'sendFile'])->middleware('feature:chat_file');
         Route::delete('{conversation}', [ConversationController::class, 'destroy']);
     });
 
@@ -147,9 +155,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('favorites')->group(function () {
         Route::get('/', [FavoriteController::class, 'index']);
         Route::post('toggle', [FavoriteController::class, 'toggle']);
-        Route::get('collections', [FavoriteController::class, 'collections']);
-        Route::post('collections', [FavoriteController::class, 'createCollection']);
         Route::get('count', [FavoriteController::class, 'count']);
+        Route::middleware('feature:favorites_collections')->group(function () {
+            Route::get('collections', [FavoriteController::class, 'collections']);
+            Route::post('collections', [FavoriteController::class, 'createCollection']);
+        });
     });
 
     // Notifications
@@ -163,8 +173,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('preferences', [NotificationController::class, 'updatePreferences']);
     });
 
-    // Negotiations
-    Route::prefix('negotiations')->group(function () {
+    // Negotiations (V2 — désactivé en V1)
+    Route::prefix('negotiations')->middleware('feature:negotiation')->group(function () {
         Route::get('/', [NegotiationController::class, 'myNegotiations']);
         Route::post('propose', [NegotiationController::class, 'propose']);
         Route::post('{negotiation}/respond', [NegotiationController::class, 'respond']);
@@ -180,23 +190,27 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{transaction}/dispute', [TransactionController::class, 'dispute']);
     });
 
-    // Follows & Friends
-    Route::post('follow/{user}', [FollowController::class, 'follow']);
-    Route::delete('unfollow/{user}', [FollowController::class, 'unfollow']);
-    Route::get('my-followers', [FollowController::class, 'myFollowers']);
-    Route::get('my-following', [FollowController::class, 'myFollowing']);
-    Route::get('my-friends', [FollowController::class, 'friends']);
-    Route::get('users/{user}/is-friend', [FollowController::class, 'isFriend']);
+    // Follows & Friends (V2 — désactivé en V1)
+    Route::middleware('feature:follow')->group(function () {
+        Route::post('follow/{user}', [FollowController::class, 'follow']);
+        Route::delete('unfollow/{user}', [FollowController::class, 'unfollow']);
+        Route::get('my-followers', [FollowController::class, 'myFollowers']);
+        Route::get('my-following', [FollowController::class, 'myFollowing']);
+        Route::get('my-friends', [FollowController::class, 'friends']);
+        Route::get('users/{user}/is-friend', [FollowController::class, 'isFriend']);
+        Route::get('products/friends-feed', [ProductFeedController::class, 'friendsFeed']);
+    });
 
-    // Friends feed
-    Route::get('products/friends-feed', [ProductFeedController::class, 'friendsFeed']);
+    // Badges (V2 — désactivé en V1)
+    Route::middleware('feature:badges')->group(function () {
+        Route::get('my-badges', [BadgeController::class, 'myBadges']);
+    });
 
-    // Badges
-    Route::get('my-badges', [BadgeController::class, 'myBadges']);
-
-    // Reviews
-    Route::post('reviews', [ReviewController::class, 'create']);
-    Route::post('reviews/{review}/respond', [ReviewController::class, 'respond']);
+    // Reviews (V2 — désactivé en V1)
+    Route::middleware('feature:reviews')->group(function () {
+        Route::post('reviews', [ReviewController::class, 'create']);
+        Route::post('reviews/{review}/respond', [ReviewController::class, 'respond']);
+    });
 });
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
@@ -243,9 +257,9 @@ Route::prefix('admin')
         Route::get('reports/users', [AdminController::class, 'userReport']);
         Route::get('reports/overview', [AdminController::class, 'overviewReport']);
         
-        // System
-        Route::post('system/reset', [AdminController::class, 'resetData']);
-        Route::post('moderation/delete-all-videos', [AdminController::class, 'deleteAllVideos']);
+        // System — reset/delete-all-videos déplacés en commandes Artisan
+        // (quinch:reset-data / quinch:delete-all-videos), volontairement non
+        // exposés en HTTP même sous rôle admin (action destructrice).
     });
 
 // ─── Webhooks ────────────────────────────────────────────────────────────────

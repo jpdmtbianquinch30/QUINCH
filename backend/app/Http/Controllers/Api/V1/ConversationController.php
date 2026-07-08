@@ -141,7 +141,11 @@ class ConversationController extends Controller
         if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
 
         $request->validate([
-            'file' => 'required|file|max:20480', // 20 MB max
+            // Whitelist stricte : on n'accepte que des images et documents
+            // usuels, jamais de fichiers exécutables/scripts (.php, .html,
+            // .svg avec JS, etc.) qui pourraient finir servis statiquement
+            // depuis le disque "public".
+            'file' => 'required|file|max:20480|mimes:jpg,jpeg,png,webp,pdf,doc,docx', // 20 MB max
         ]);
 
         $file = $request->file('file');
