@@ -48,9 +48,10 @@ class ProductFeedController extends Controller
         if (!$request->has('q') || empty($request->q)) {
             $query->where(function ($q) {
                 $q->whereNotNull('poster_url')
+                  // Seules les vidéos validées par la modération sont visibles
+                  // publiquement. Les vidéos "pending" ne le sont pas encore.
                   ->orWhereHas('video', function ($sub) {
-                      $sub->where('moderation_status', 'approved')
-                          ->orWhere('moderation_status', 'pending');
+                      $sub->where('moderation_status', 'approved');
                   })
                   ->orWhere(function ($sub) {
                       $sub->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");
@@ -214,9 +215,10 @@ class ProductFeedController extends Controller
             ->with(['user:id,full_name,username,avatar_url,trust_score', 'category:id,name,icon', 'video'])
             ->where(function ($q) {
                 $q->whereNotNull('poster_url')
+                  // Seules les vidéos validées par la modération sont visibles
+                  // publiquement. Les vidéos "pending" ne le sont pas encore.
                   ->orWhereHas('video', function ($sub) {
-                      $sub->where('moderation_status', 'approved')
-                          ->orWhere('moderation_status', 'pending');
+                      $sub->where('moderation_status', 'approved');
                   })
                   ->orWhere(function ($sub) {
                       $sub->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");

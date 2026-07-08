@@ -105,12 +105,17 @@ class GoogleAuthController extends Controller
         // Generate OTP for phone verification
         $otp = $user->generateOtp();
 
-        return response()->json([
+        $response = [
             'message'  => 'Numéro ajouté. Vérifiez votre téléphone.',
             'user'     => $this->formatUser($user),
             'otp_sent' => true,
-            'demo_otp' => $otp,
-        ]);
+        ];
+
+        if (app()->environment(['local', 'testing'])) {
+            $response['demo_otp'] = $otp;
+        }
+
+        return response()->json($response);
     }
 
     /**

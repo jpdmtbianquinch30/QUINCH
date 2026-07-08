@@ -54,13 +54,26 @@ class VideoStreamController extends Controller
 
     /**
      * Stream a video by direct path (for storage paths).
+     *
+     * SÉCURITÉ: le paramètre `path` ne doit JAMAIS être utilisé tel quel pour
+     * résoudre un chemin disque (risque de path traversal / lecture de fichier
+     * arbitraire, ex. ?path=../../../../.env). On exige donc que ce chemin
+     * corresponde exactement au video_path d'une ProductVideo existante en
+     * base, et on vérifie en plus que le chemin résolu reste bien à
+     * l'intérieur du dossier racine du disque "public".
      */
     public function streamByPath(Request $request): BinaryFileResponse
     {
         $path = $request->query('path');
 
-        if (!$path) {
-            abort(400, 'Path parameter required.');
+        if (!$path || str_contains($path, '..') || str_starts_with($path, '/')) {
+            abort(400, 'Path parameter invalid.');
+        }
+
+        // Le chemin doit correspondre à une vidéo réellement enregistrée.
+        $video = ProductVideo::where('video_path', $path)->first();
+        if (!$video) {
+            abort(404, 'Video not found.');
         }
 
         $disk = Storage::disk('public');
@@ -70,6 +83,15 @@ class VideoStreamController extends Controller
         }
 
         $fullPath = $disk->path($path);
+
+        // Garde-fou supplémentaire: le chemin réel résolu doit rester dans
+        // le dossier racine du disque public.
+        $root = realpath($disk->path(''));
+        $real = realpath($fullPath);
+        if (!$real || !$root || !str_starts_with($real, $root)) {
+            abort(404, 'Video file not found.');
+        }
+
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         $mimeType = $this->getMimeType($extension, $fullPath);
 

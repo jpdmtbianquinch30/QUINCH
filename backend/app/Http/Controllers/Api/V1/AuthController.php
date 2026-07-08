@@ -47,14 +47,21 @@ class AuthController extends Controller
 
         $token = $user->createToken('quinch-app')->plainTextToken;
 
-        return response()->json([
+        // TODO: brancher un vrai envoi SMS ici (ex. Orange SMS API / Twilio).
+        // En attendant, l'OTP n'est renvoyé dans la réponse qu'en environnement
+        // local/testing, jamais en production, pour ne pas contourner la 2FA.
+        $response = [
             'message' => 'Inscription réussie. Vérifiez votre téléphone.',
             'user' => $this->formatUser($user),
             'token' => $token,
             'otp_sent' => true,
-            // In production, OTP would be sent via SMS. For demo:
-            'demo_otp' => $otp,
-        ], 201);
+        ];
+
+        if (app()->environment(['local', 'testing'])) {
+            $response['demo_otp'] = $otp;
+        }
+
+        return response()->json($response, 201);
     }
 
     /**

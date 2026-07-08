@@ -247,7 +247,9 @@ public function webhookOrangeMoney(Request $request): JsonResponse
     $signature = $request->header('X-Orange-Signature');
     $secret = config('services.orange_money.webhook_secret');
 
-    if ($secret && $signature !== hash_hmac('sha256', $request->getContent(), $secret)) {
+    // Le secret doit être configuré ET la signature doit correspondre.
+    // Un secret manquant ne doit JAMAIS désactiver la vérification.
+    if (!$secret || !$signature || !hash_equals(hash_hmac('sha256', $request->getContent(), $secret), $signature)) {
         Log::warning('Webhook Orange Money: signature invalide', ['ip' => $request->ip()]);
         return response()->json(['error' => 'Signature invalide'], 401);
     }
@@ -268,7 +270,9 @@ public function webhookWave(Request $request): JsonResponse
     $signature = $request->header('X-Wave-Signature');
     $secret = config('services.wave.webhook_secret');
 
-    if ($secret && $signature !== hash_hmac('sha256', $request->getContent(), $secret)) {
+    // Le secret doit être configuré ET la signature doit correspondre.
+    // Un secret manquant ne doit JAMAIS désactiver la vérification.
+    if (!$secret || !$signature || !hash_equals(hash_hmac('sha256', $request->getContent(), $secret), $signature)) {
         Log::warning('Webhook Wave: signature invalide', ['ip' => $request->ip()]);
         return response()->json(['error' => 'Signature invalide'], 401);
     }
@@ -289,7 +293,9 @@ public function webhookFreeMoney(Request $request): JsonResponse
     $signature = $request->header('X-FreeMoney-Signature');
     $secret = config('services.free_money.webhook_secret');
 
-    if ($secret && $signature !== hash_hmac('sha256', $request->getContent(), $secret)) {
+    // Le secret doit être configuré ET la signature doit correspondre.
+    // Un secret manquant ne doit JAMAIS désactiver la vérification.
+    if (!$secret || !$signature || !hash_equals(hash_hmac('sha256', $request->getContent(), $secret), $signature)) {
         Log::warning('Webhook FreeMoney: signature invalide', ['ip' => $request->ip()]);
         return response()->json(['error' => 'Signature invalide'], 401);
     }
