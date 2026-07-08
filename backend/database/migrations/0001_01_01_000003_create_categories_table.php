@@ -14,10 +14,14 @@ return new class extends Migration
             $table->string('slug', 150)->unique();
             $table->string('icon', 50)->nullable();
             $table->text('description')->nullable();
-            $table->foreignUuid('parent_id')->nullable()->references('id')->on('categories')->nullOnDelete();
+            $table->uuid('parent_id')->nullable();
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+        });
+
+        Schema::table('categories', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('categories')->nullOnDelete();
         });
     }
 

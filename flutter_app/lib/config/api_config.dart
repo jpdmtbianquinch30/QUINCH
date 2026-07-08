@@ -11,31 +11,28 @@ class ApiConfig {
   // Real devices use 127.0.0.1 via ADB reverse port forwarding
   // (run: adb reverse tcp:8000 tcp:8000)
   // This bypasses firewall and works regardless of network config.
-  static const String _defaultRealIp = '127.0.0.1';
+  static const String _defaultRealIp = 'DIEGO.local';
   static const int _port = 8000;
 
   // ---------- Runtime state ----------
   static String _serverUrl = '';
   static bool _initialized = false;
 
-  /// Must be called once at app startup (before any API call).
-  static Future<void> init() async {
-    if (_initialized) return;
+ static Future<void> init() async {
+   if (_initialized) return;
 
-    final isEmu = _isEmulator;
-    debugPrint('[ApiConfig] _isEmulator = $isEmu, hostname = ${Platform.localHostname}');
+   // Always use WiFi IP for dev — change this if your PC IP changes
+   _serverUrl = 'http://DIEGO.local:8000';
 
-    // Always auto-detect on startup (ignore stale saved URL).
-    // User can override later via login screen config.
-    final ip = isEmu ? _emulatorIp : _defaultRealIp;
-    _serverUrl = 'http://$ip:$_port';
+   final prefs = await SharedPreferences.getInstance();
+   final saved = prefs.getString(_prefKeyServerUrl);
+   if (saved != null && saved.isNotEmpty) {
+     _serverUrl = saved;
+   }
 
-    // Clear any stale saved URL
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_prefKeyServerUrl);
-    _initialized = true;
-    debugPrint('[ApiConfig] FINAL serverUrl = $_serverUrl');
-  }
+   _initialized = true;
+   debugPrint('[ApiConfig] FINAL serverUrl = $_serverUrl');
+ }
 
   /// Change server URL at runtime (from Settings / login screen).
   static Future<void> setServerUrl(String url) async {

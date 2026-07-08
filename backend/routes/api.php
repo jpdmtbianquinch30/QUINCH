@@ -24,7 +24,8 @@ use App\Http\Controllers\Api\V1\AdminUserController;
 use App\Http\Controllers\Api\V1\ContentModerationController;
 use App\Http\Controllers\Api\V1\SecurityController;
 use App\Http\Controllers\Api\V1\VideoStreamController;
-
+use App\Http\Controllers\Api\V1\MarketplaceController;
+use App\Http\Controllers\Api\V1\GoogleAuthController;
 /*
 |--------------------------------------------------------------------------
 | QUINCH API Routes v1 - Complete Architecture
@@ -56,6 +57,7 @@ Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath'])
 
 // ─── Public ──────────────────────────────────────────────────────────────────
 Route::get('categories', [CategoryController::class, 'index']);
+Route::get('products', [MarketplaceController::class, 'index']);
 Route::get('products/feed', [ProductFeedController::class, 'index']);
 Route::get('search', [ProductFeedController::class, 'search']);
 Route::get('search/suggestions', [ProductFeedController::class, 'suggestions']);
@@ -112,6 +114,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::get('my-products', [ProductController::class, 'myProducts']);
     Route::get('my-likes', [ProductInteractionController::class, 'myLikes']);
+
+    //google auth
+    Route::post('auth/google', [GoogleAuthController::class, 'handleToken']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('auth/google/add-phone', [GoogleAuthController::class, 'addPhone']);
+    Route::post('auth/google/update-username', [GoogleAuthController::class, 'updateUsername']);
+});
 
     // Cart
     Route::prefix('cart')->group(function () {

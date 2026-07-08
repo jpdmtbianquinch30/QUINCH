@@ -12,12 +12,14 @@ class AuthService {
   Future<AuthResponse> register({
     required String phoneNumber,
     required String fullName,
+    required String username,
     required String password,
     required String passwordConfirmation,
   }) async {
     final response = await _api.post('/auth/register', data: {
       'phone_number': _normalizePhone(phoneNumber),
       'full_name': fullName,
+      'username': username,
       'password': password,
       'password_confirmation': passwordConfirmation,
     });
@@ -37,6 +39,22 @@ class AuthService {
     final authResponse = AuthResponse.fromJson(response.data);
     await _saveAuth(authResponse);
     return authResponse;
+  }
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+  }) async {
+    final response = await _api.post('/auth/google', data: {
+      'id_token': idToken,
+    });
+    final authResponse = AuthResponse.fromJson(response.data);
+    await _saveAuth(authResponse);
+    return response.data;
+  }
+
+  Future<void> addGooglePhone({required String phoneNumber}) async {
+    await _api.post('/auth/google/add-phone', data: {
+      'phone_number': phoneNumber,
+    });
   }
 
   Future<void> logout() async {

@@ -73,6 +73,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> register({
     required String phoneNumber,
     required String fullName,
+    required String username,
     required String password,
     required String passwordConfirmation,
   }) async {
@@ -84,6 +85,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await _authService.register(
         phoneNumber: phoneNumber,
         fullName: fullName,
+        username: username,
         password: password,
         passwordConfirmation: passwordConfirmation,
       );
@@ -98,6 +100,32 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+   Future<Map<String, dynamic>> loginWithGoogle({required String idToken}) async {
+     _isLoading = true;
+     _error = null;
+     notifyListeners();
+
+     try {
+       final result = await _authService.loginWithGoogle(idToken: idToken);
+       _user = result['user'] != null ? User.fromJson(result['user']) : null;
+       _isLoading = false;
+       notifyListeners();
+       return {
+         'success': true,
+         'needs_phone': result['needs_phone'] ?? false,
+         'needs_username': result['needs_username'] ?? false,
+       };
+     } catch (e) {
+       _error = _extractError(e);
+       _isLoading = false;
+       notifyListeners();
+       return {'success': false, 'error': _error};
+     }
+   }
+
+   Future<void> addGooglePhone({required String phoneNumber}) async {
+     await _authService.addGooglePhone(phoneNumber: phoneNumber);
+   }
 
   Future<void> refreshUser() async {
     try {

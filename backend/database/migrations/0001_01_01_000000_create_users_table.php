@@ -37,6 +37,7 @@ return new class extends Migration
             $table->string('device_fingerprint')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->string('google_id')->nullable()->unique();
 
             $table->index('trust_score');
             $table->index(['latitude', 'longitude']);

@@ -256,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             const SizedBox(height: 20),
 
-                            // Submit
+                            // Bouton Se connecter
                             SizedBox(
                               width: double.infinity,
                               height: 48,
@@ -276,6 +276,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: auth.isLoading
                                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                       : const Text('Se connecter', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Bouton Google
+                            OutlinedButton.icon(
+                              onPressed: () => context.go('/google-login'),
+                              icon: const Icon(Icons.g_mobiledata, size: 24),
+                              label: const Text('Continuer avec Google'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 48),
+                                side: BorderSide(color: AppColors.border),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),

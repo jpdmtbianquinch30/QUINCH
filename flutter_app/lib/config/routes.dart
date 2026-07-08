@@ -21,6 +21,8 @@ import '../screens/profile/followers_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/shell_screen.dart';
+import '../screens/auth/google_login_screen.dart';
+import '../screens/auth/google_add_phone_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -89,6 +91,8 @@ GoRouter createRouter(AuthProvider authProvider) {
             path: '/profile',
             pageBuilder: (context, state) => const NoTransitionPage(child: ProfileScreen()),
           ),
+          GoRoute(path: '/google-login', builder: (_, __) => const GoogleLoginScreen()),
+          GoRoute(path: '/google-add-phone', builder: (_, __) => const GoogleAddPhoneScreen()),
         ],
       ),
 

@@ -88,7 +88,7 @@ class ProductService {
     if (type != null) params['type'] = type;
     if (sortBy != null) params['sort_by'] = sortBy;
     if (sellerId != null) params['seller_id'] = sellerId;
-    final response = await _api.get('/products/feed', queryParameters: params);
+    final response = await _api.get('/products', queryParameters: params);
     final data = response.data;
     final list = data['data'] ?? data['products'] ?? [];
     return {
@@ -269,4 +269,5 @@ class ProductService {
     final response = await _api.put('/products/transactions/$txId/status', data: {'status': status});
     return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : {};
   }
+
 }

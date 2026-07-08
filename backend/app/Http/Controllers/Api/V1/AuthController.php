@@ -17,19 +17,25 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users'],
-            'full_name' => ['required', 'string', 'max:100'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
-        ], [
-            'phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
-            'phone_number.unique' => 'Ce numéro est déjà utilisé.',
-        ]);
+            $validated = $request->validate([
+        'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users'],
+        'full_name'    => ['required', 'string', 'max:100'],
+        'username'     => ['required', 'string', 'min:3', 'max:30', 'unique:users', 'regex:/^[a-zA-Z0-9_]+$/'],
+        'password'     => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*[0-9]).+$/'],
+    ], [
+        'phone_number.regex'  => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
+        'phone_number.unique' => 'Ce numéro est déjà utilisé.',
+        'username.unique'     => "Ce nom d'utilisateur est déjà pris.",
+        'username.regex'      => "Lettres, chiffres et _ uniquement.",
+        'password.regex'      => 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre.',
+        'password.min'        => 'Le mot de passe doit faire au moins 8 caractères.',
+    ]);
 
         $user = User::create([
             'phone_number' => $validated['phone_number'],
             'full_name' => $validated['full_name'],
             'password' => $validated['password'],
+            'username' => $validated['username'],
             'role' => 'user',
             'is_seller' => true,
             'is_buyer' => true,
@@ -57,9 +63,9 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone_number' => ['required', 'string'],
-            'password' => ['required', 'string'],
-        ]);
+    'phone_number' => ['required', 'string'],
+    'password'     => ['required', 'string'],
+]);
 
         $user = User::where('phone_number', $validated['phone_number'])->first();
 

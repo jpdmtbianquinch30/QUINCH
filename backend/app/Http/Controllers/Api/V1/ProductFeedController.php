@@ -53,7 +53,7 @@ class ProductFeedController extends Controller
                           ->orWhere('moderation_status', 'pending');
                   })
                   ->orWhere(function ($sub) {
-                      $sub->whereNotNull('images')->where('images', '!=', '[]');
+                      $sub->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");
                   });
             });
         }
@@ -105,31 +105,21 @@ class ProductFeedController extends Controller
             $query->leftJoin('product_videos', 'products.video_id', '=', 'product_videos.id')
                   ->select('products.*')
                   ->selectRaw("(
-                      -- Engagement score (weighted interactions)
-                      (COALESCE(products.like_count, 0) * 3
-                       + COALESCE(products.view_count, 0) * 0.5
-                       + COALESCE(products.share_count, 0) * 5)
-
-                      -- Freshness boost: newer posts get higher score (decays over hours)
-                      + (200.0 / (TIMESTAMPDIFF(HOUR, products.created_at, NOW()) + 1))
-
-                      -- Video quality bonus
-                      + CASE
-                          WHEN product_videos.resolution = '4k' THEN 15
-                          WHEN product_videos.resolution = '1080p' THEN 10
-                          WHEN product_videos.resolution = '720p' THEN 6
-                          WHEN product_videos.resolution = '480p' THEN 3
-                          ELSE 0
-                        END
-
-                      -- Has video boost (video content preferred in Pour toi)
-                      + CASE WHEN products.video_id IS NOT NULL THEN 20 ELSE 0 END
-
-                      -- Random factor: adds variation so the feed is never the same
-                      -- RAND with CRC32 of id+seed gives per-row deterministic randomness for a session
-                      + RAND(CRC32(CONCAT(products.id, ?))) * 40
-                  ) as feed_score", [$seed])
-                  ->orderByDesc('feed_score');
+    (COALESCE(products.like_count, 0) * 3
+     + COALESCE(products.view_count, 0) * 0.5
+     + COALESCE(products.share_count, 0) * 5)
+    + (200.0 / (EXTRACT(EPOCH FROM (NOW() - products.created_at)) / 3600 + 1))
+    + CASE
+        WHEN product_videos.resolution = '4k' THEN 15
+        WHEN product_videos.resolution = '1080p' THEN 10
+        WHEN product_videos.resolution = '720p' THEN 6
+        WHEN product_videos.resolution = '480p' THEN 3
+        ELSE 0
+      END
+    + CASE WHEN products.video_id IS NOT NULL THEN 20 ELSE 0 END
+    + random() * 40
+) as feed_score")
+->orderByDesc('feed_score');
         }
 
         $products = $query->paginate($request->get('per_page', 10));
@@ -229,7 +219,7 @@ class ProductFeedController extends Controller
                           ->orWhere('moderation_status', 'pending');
                   })
                   ->orWhere(function ($sub) {
-                      $sub->whereNotNull('images')->where('images', '!=', '[]');
+                      $sub->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");
                   });
             })
             ->latest();
