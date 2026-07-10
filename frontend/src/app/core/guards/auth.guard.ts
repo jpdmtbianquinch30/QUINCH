@@ -26,7 +26,7 @@ export const guestGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.createUrlTree(['/feed']);
+  return router.createUrlTree(['/admin']);
 };
 
 export const adminGuard: CanActivateFn = () => {
@@ -37,7 +37,7 @@ export const adminGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.createUrlTree(['/feed']);
+  return router.createUrlTree(['/auth/login']);
 };
 
 export const onboardingGuard: CanActivateFn = () => {

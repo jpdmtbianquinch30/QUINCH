@@ -11,34 +11,62 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'phone_number' => '+221' . fake()->unique()->numerify('7########'),
+            'full_name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
+            'password' => static::$password ??= Hash::make('Password1'),
+            'role' => 'user',
+            'account_status' => 'active',
+            'phone_verified' => true,
+            'is_seller' => true,
+            'is_buyer' => true,
+            'onboarding_completed' => true,
             'remember_token' => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Compte administrateur.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'admin',
+        ]);
+    }
+
+    /**
+     * Compte super administrateur.
+     */
+    public function superAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'super_admin',
+        ]);
+    }
+
+    /**
+     * Compte suspendu.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'account_status' => 'suspended',
+        ]);
+    }
+
+    /**
+     * Téléphone non vérifié (juste après inscription, avant OTP).
      */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+            'phone_verified' => false,
         ]);
     }
 }

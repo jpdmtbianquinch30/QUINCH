@@ -147,7 +147,7 @@ class AuthProvider extends ChangeNotifier {
 
   void _forceLogout() {
     _user = null;
-    _apiService.clearToken();
+    _authService.clearLocalData();
     notifyListeners();
   }
 

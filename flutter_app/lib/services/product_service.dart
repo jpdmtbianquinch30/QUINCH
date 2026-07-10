@@ -88,7 +88,7 @@ class ProductService {
     if (type != null) params['type'] = type;
     if (sortBy != null) params['sort_by'] = sortBy;
     if (sellerId != null) params['seller_id'] = sellerId;
-    final response = await _api.get('/products', queryParameters: params);
+    final response = await _api.get('/products/feed', queryParameters: params);
     final data = response.data;
     final list = data['data'] ?? data['products'] ?? [];
     return {
@@ -190,9 +190,9 @@ class ProductService {
 
   // Upload video
   Future<Map<String, dynamic>> uploadVideo(
-    FormData data, {
-    void Function(int, int)? onProgress,
-  }) async {
+      FormData data, {
+        void Function(int, int)? onProgress,
+      }) async {
     final response = await _api.upload(
       '/products/upload-video',
       data: data,
@@ -223,6 +223,11 @@ class ProductService {
   Future<List<dynamic>> getSuggestions() async {
     final response = await _api.get('/search/suggestions');
     return response.data['suggestions'] ?? response.data['data'] ?? [];
+  }
+
+  Future<List<dynamic>> getActiveSellers() async {
+    final response = await _api.get('/sellers/active');
+    return response.data['sellers'] ?? [];
   }
 
   Future<List<dynamic>> getTrending() async {
@@ -269,5 +274,4 @@ class ProductService {
     final response = await _api.put('/products/transactions/$txId/status', data: {'status': status});
     return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : {};
   }
-
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\HasUuid;
 use App\Models\Traits\Auditable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasUuid, Auditable;
+    use HasUuid, HasFactory, Auditable;
 
     protected $keyType = 'string';
     public $incrementing = false;

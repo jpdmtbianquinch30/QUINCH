@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../config/theme.dart';
 import '../../config/api_config.dart';
+import '../../config/feature_flags.dart';
 import '../../widgets/cached_avatar.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -370,7 +371,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
 
           // ═══ ATTACHMENT MENU ═══
-          if (_showAttach)
+          if (_showAttach && FeatureFlags.chatFile)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -416,8 +417,9 @@ class _ChatScreenState extends State<ChatScreen> {
             child: SafeArea(
               top: false,
               child: Row(children: [
-                // Attach button
-                GestureDetector(
+                // Attach button (V2 : envoi de fichiers désactivé en V1)
+                if (FeatureFlags.chatFile)
+                  GestureDetector(
                   onTap: _fileSending ? null : () => setState(() => _showAttach = !_showAttach),
                   child: Container(
                     width: 40, height: 40,
@@ -434,7 +436,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             color: _showAttach ? AppColors.accent : AppColors.textMuted),
                   ),
                 ),
-                const SizedBox(width: 8),
+                if (FeatureFlags.chatFile) const SizedBox(width: 8),
 
                 // Text input
                 Expanded(

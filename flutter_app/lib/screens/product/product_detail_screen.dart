@@ -13,6 +13,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../config/theme.dart';
 import '../../config/api_config.dart';
+import '../../config/feature_flags.dart';
 import '../../widgets/cached_avatar.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -78,7 +79,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (auth.isAuthenticated) {
         context.read<ProductService>().trackView(product.id).catchError((_) {});
       }
-      _loadReviews(product);
+      if (FeatureFlags.reviews) _loadReviews(product);
     } catch (e) {
       debugPrint('[ProductDetail] Error loading product: $e');
       if (mounted) setState(() => _loading = false);
@@ -661,8 +662,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 const SizedBox(height: 24),
 
-                // ═══ REVIEWS SECTION ═══
-                _buildReviewsSection(p),
+                // ═══ REVIEWS SECTION ═══ (désactivé en V1)
+                if (FeatureFlags.reviews) _buildReviewsSection(p),
 
                 const SizedBox(height: 100),
               ]),
@@ -694,8 +695,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            // Negotiate (if negotiable)
-            if (p.isNegotiable) ...[
+            // Negotiate (if negotiable) — désactivé en V1
+            if (p.isNegotiable && FeatureFlags.negotiation) ...[
               SizedBox(width: 48, height: 48,
                 child: OutlinedButton(
                   onPressed: () {

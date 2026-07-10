@@ -19,7 +19,6 @@ import '../screens/profile/edit_profile_screen.dart';
 import '../screens/profile/seller_profile_screen.dart';
 import '../screens/profile/followers_screen.dart';
 import '../screens/settings/settings_screen.dart';
-import '../screens/admin/admin_dashboard_screen.dart';
 import '../screens/shell_screen.dart';
 import '../screens/auth/google_login_screen.dart';
 import '../screens/auth/google_add_phone_screen.dart';
@@ -127,7 +126,11 @@ GoRouter createRouter(AuthProvider authProvider) {
         },
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
-      GoRoute(path: '/admin', builder: (context, state) => const AdminDashboardScreen()),
+      // Le panneau admin est retiré de l'app Flutter : Angular est l'unique
+      // interface d'administration (voir frontend/). Cette route existait
+      // sans aucune vérification de rôle : n'importe quel utilisateur connecté
+      // pouvait y accéder (les appels API échouaient ensuite en 403, mais
+      // l'écran ne devrait même pas être atteignable).
     ],
   );
 }

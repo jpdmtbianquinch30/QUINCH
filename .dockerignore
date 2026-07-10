@@ -1,0 +1,28 @@
+# Ne jamais embarquer de vrais secrets dans l'image Docker
+**/.env
+**/.env.*
+!**/.env.example
+
+# Pas besoin dans l'image backend
+.git
+*.md
+*.patch
+frontend/
+flutter_app/
+
+# Backend : dossiers générés/lourds, régénérés au build ou montés en volume
+backend/vendor
+backend/node_modules
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/app/public/*
+backend/.phpunit.cache
+backend/tests
+backend/bootstrap/cache/*.php
+
+# Divers
+.DS_Store
+.vscode
+.idea

@@ -534,16 +534,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ]),
 
-        // ═══ ADMIN ═══
-        if (user?.role == 'admin' || user?.role == 'super_admin') ...[
-          const SizedBox(height: 20),
-          _SectionTitle(icon: Icons.admin_panel_settings, text: 'Administration'),
-          _SettingsCard(children: [
-            _SettingsItem(icon: Icons.admin_panel_settings, title: 'Panel Admin',
-              subtitle: 'Gérer la plateforme Quinch',
-              onTap: () => context.push('/admin')),
-          ]),
-        ],
+        // La section "Panel Admin" a été retirée de l'app Flutter : le
+        // panneau d'administration est désormais exclusivement sur le
+        // frontend Angular (voir frontend/), pas dans l'app mobile.
 
         const SizedBox(height: 24),
 

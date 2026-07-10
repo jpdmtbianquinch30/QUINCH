@@ -13,6 +13,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../config/api_config.dart';
 import '../../config/theme.dart';
+import '../../widgets/quinch_logo.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -88,7 +89,16 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
       final ps = context.read<ProductService>();
       final feedData = await ps.getFeed(page: 1, perPage: 20);
       final categories = await ps.getCategories();
-      final suggestions = await ps.getSuggestions();
+
+      // Active sellers from dedicated endpoint
+      List<dynamic> activeSellers = [];
+      try {
+        final sellersResp = await ps.getActiveSellers();
+        activeSellers = sellersResp;
+      } catch (_) {
+        // fallback to suggestions
+        try { activeSellers = await ps.getSuggestions(); } catch (_) {}
+      }
 
       final products = feedData.data;
 
@@ -98,7 +108,7 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
           _lastPage = feedData.lastPage;
           _categories = categories;
           _videoProducts = products.where((p) => p.hasVideo).toList();
-          _sellers = suggestions;
+          _sellers = activeSellers;
           _loading = false;
         });
         if (_videoProducts.isNotEmpty) _initVideo(0);
@@ -358,15 +368,13 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
       ),
       child: Row(
         children: [
-          // Logo
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(text: 'Q', style: TextStyle(color: AppColors.accent, fontSize: 22, fontWeight: FontWeight.w900)),
-                TextSpan(text: 'UINCH', style: TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-              ],
-            ),
-          ),
+          // Logo QUINCH
+          const QuinchLogo(size: 34, withShadow: false),
+          const SizedBox(width: 4),
+          Text('QUINCH', style: TextStyle(
+            color: AppColors.textPrimary, fontSize: 19,
+            fontWeight: FontWeight.w900, letterSpacing: -0.5,
+          )),
 
           const SizedBox(width: 12),
 
@@ -422,81 +430,135 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ─── STORIES ROW ───
+  // ─── VENDEURS ACTIFS ───
   Widget _buildStoriesRow() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-          child: Text('Vendeurs actifs',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
-        ),
-        SizedBox(
-          height: 88,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _sellers.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 14),
-            itemBuilder: (context, index) {
-              final seller = _sellers[index];
-              final name = seller['full_name'] ?? seller['title'] ?? seller['name'] ?? 'Vendeur';
-              final avatar = seller['avatar_url'] ?? seller['poster'] ?? seller['image'] ?? '';
-              final username = seller['seller'] ?? seller['username'] ?? '';
-              final isFollowed = _followedIds.contains(seller['id'] ?? '');
-              return GestureDetector(
-                onTap: () {
-                  if (username.isNotEmpty) context.push('/seller/$username');
-                },
-                child: SizedBox(
-                  width: 62,
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 56, height: 56,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: isFollowed
-                              ? LinearGradient(colors: [AppColors.accent, AppColors.accentLight])
-                              : null,
-                          color: isFollowed ? null : AppColors.bgCard,
-                          border: Border.all(
-                            color: isFollowed ? Colors.transparent : AppColors.border,
-                            width: 2,
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(2),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.bgCard,
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: avatar.isNotEmpty
-                              ? CachedNetworkImage(
-                            imageUrl: ApiConfig.resolveUrl(avatar),
-                            fit: BoxFit.cover,
-                            errorWidget: (_, __, ___) => _avatarFallback(name, 52),
-                          )
-                              : _avatarFallback(name, 52),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        name.split(' ').first,
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.w500),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(width: 3, height: 14,
+                        decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 8),
+                    Text('Vendeurs actifs',
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
+                  ],
                 ),
-              );
-            },
+                GestureDetector(
+                  onTap: () => context.push('/explore'),
+                  child: Text('Voir tout',
+                      style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          SizedBox(
+            height: 96,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _sellers.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 16),
+              itemBuilder: (context, index) {
+                final seller = _sellers[index];
+                final name = (seller['full_name'] ?? seller['title'] ?? seller['name'] ?? 'Vendeur') as String;
+                final avatarRaw = (seller['avatar_url'] ?? seller['poster'] ?? seller['image'] ?? '') as String;
+                final avatar = avatarRaw.isNotEmpty ? ApiConfig.resolveUrl(avatarRaw) : '';
+                final username = (seller['seller'] ?? seller['username'] ?? '') as String;
+                final sellerId = (seller['id'] ?? '') as String;
+                final isFollowed = _followedIds.contains(sellerId);
+                final city = (seller['city'] ?? '') as String;
+
+                return GestureDetector(
+                  onTap: () {
+                    if (username.isNotEmpty) context.push('/seller/$username');
+                  },
+                  child: SizedBox(
+                    width: 66,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Avatar with gradient ring if followed
+                        Stack(
+                          children: [
+                            Container(
+                              width: 60, height: 60,
+                              padding: const EdgeInsets.all(2.5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: isFollowed
+                                      ? [AppColors.accent, AppColors.accentLight]
+                                      : [AppColors.border, AppColors.border],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.bgPrimary,
+                                ),
+                                padding: const EdgeInsets.all(2),
+                                child: ClipOval(
+                                  child: avatar.isNotEmpty
+                                      ? CachedNetworkImage(
+                                    imageUrl: avatar,
+                                    fit: BoxFit.cover,
+                                    width: 50, height: 50,
+                                    errorWidget: (_, __, ___) => _avatarFallback(name, 50),
+                                  )
+                                      : _avatarFallback(name, 50),
+                                ),
+                              ),
+                            ),
+                            // Online dot
+                            Positioned(
+                              bottom: 2, right: 2,
+                              child: Container(
+                                width: 12, height: 12,
+                                decoration: BoxDecoration(
+                                  color: AppColors.online,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.bgPrimary, width: 2),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          name.split(' ').first,
+                          style: TextStyle(color: AppColors.textPrimary, fontSize: 10, fontWeight: FontWeight.w600),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                        if (city.isNotEmpty)
+                          Text(city,
+                            style: TextStyle(color: AppColors.textMuted, fontSize: 9),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(color: AppColors.border, height: 1),
+          ),
+        ],
+      ),
     );
   }
 

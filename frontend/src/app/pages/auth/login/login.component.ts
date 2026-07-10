@@ -39,11 +39,16 @@ export class LoginComponent {
     }).subscribe({
       next: (res) => {
         this.loading.set(false);
-        if (res.user.onboarding_completed) {
-          this.router.navigate(['/feed']);
-        } else {
-          this.router.navigate(['/onboarding']);
+
+        // Cette interface web est réservée aux administrateurs — le grand
+        // public utilise l'app Flutter. On refuse ici tout compte non-admin.
+        if (!this.auth.isAdmin()) {
+          this.error.set("Cette interface est réservée aux administrateurs.");
+          this.auth.forceLogout();
+          return;
         }
+
+        this.router.navigate(['/admin']);
       },
       error: (err) => {
         this.loading.set(false);

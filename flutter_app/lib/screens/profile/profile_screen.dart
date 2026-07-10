@@ -11,6 +11,7 @@ import '../../services/product_service.dart';
 import '../../services/follow_service.dart';
 import '../../services/favorite_service.dart';
 import '../../config/api_config.dart';
+import '../../config/feature_flags.dart';
 import '../../config/theme.dart';
 import '../../widgets/cached_avatar.dart';
 
@@ -222,6 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _openFollowers() {
+    if (!FeatureFlags.follow) return;
     final auth = context.read<AuthProvider>();
     final userId = _isOwnProfile
         ? auth.user?.id
@@ -235,6 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   void _openFollowing() {
+    if (!FeatureFlags.follow) return;
     final auth = context.read<AuthProvider>();
     final userId = _isOwnProfile
         ? auth.user?.id

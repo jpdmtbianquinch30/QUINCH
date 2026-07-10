@@ -12,6 +12,7 @@ import '../../services/review_service.dart';
 import '../../services/follow_service.dart';
 import 'package:dio/dio.dart';
 import '../../config/api_config.dart';
+import '../../config/feature_flags.dart';
 import '../../config/theme.dart';
 import '../../widgets/cached_avatar.dart';
 
@@ -78,28 +79,35 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
           _products = result['data'] as List<Product>;
         }
 
-        // Load follow counts + status
-        try {
-          final followService = context.read<FollowService>();
-          final counts = await followService.getFollowCounts(sellerId);
-          debugPrint('[SellerProfile] getFollowCounts for $sellerId => $counts');
-          _followersCount = counts['followers'] ?? 0;
-          _followingCount = counts['following'] ?? 0;
-          _isFollowing = counts['is_following'] == true;
-          _isMutual = counts['is_mutual'] == true;
-        } catch (e) {
-          debugPrint('[SellerProfile] getFollowCounts error: $e');
+        // Load follow counts + status (V2 — désactivé en V1)
+        if (FeatureFlags.follow) {
+          try {
+            final followService = context.read<FollowService>();
+            final counts = await followService.getFollowCounts(sellerId);
+            debugPrint('[SellerProfile] getFollowCounts for $sellerId => $counts');
+            _followersCount = counts['followers'] ?? 0;
+            _followingCount = counts['following'] ?? 0;
+            _isFollowing = counts['is_following'] == true;
+            _isMutual = counts['is_mutual'] == true;
+          } catch (e) {
+            debugPrint('[SellerProfile] getFollowCounts error: $e');
+            _followersCount = _seller['followers_count'] ?? 0;
+            _followingCount = _seller['following_count'] ?? 0;
+          }
+        } else {
           _followersCount = _seller['followers_count'] ?? 0;
           _followingCount = _seller['following_count'] ?? 0;
         }
 
-        // Load reviews
-        try {
-          final reviewService = context.read<ReviewService>();
-          final res = await reviewService.getSellerReviews(sellerId);
-          _reviews = res['reviews']?['data'] ?? res['reviews'] ?? [];
-          _reviewStats = res['stats'];
-        } catch (_) {}
+        // Load reviews (V2 — désactivé en V1)
+        if (FeatureFlags.reviews) {
+          try {
+            final reviewService = context.read<ReviewService>();
+            final res = await reviewService.getSellerReviews(sellerId);
+            _reviews = res['reviews']?['data'] ?? res['reviews'] ?? [];
+            _reviewStats = res['stats'];
+          } catch (_) {}
+        }
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
@@ -221,6 +229,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
   }
 
   void _openFollowers() {
+    if (!FeatureFlags.follow) return;
     if (_seller == null) return;
     final sellerId = _seller['id']?.toString() ?? '';
     final name = _seller['full_name'] ?? _seller['username'] ?? 'Vendeur';
@@ -228,6 +237,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
   }
 
   void _openFollowing() {
+    if (!FeatureFlags.follow) return;
     if (_seller == null) return;
     final sellerId = _seller['id']?.toString() ?? '';
     final name = _seller['full_name'] ?? _seller['username'] ?? 'Vendeur';
@@ -391,44 +401,48 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
 
               // Action buttons
               Row(children: [
-                Expanded(child: SizedBox(height: 42,
-                  child: _isFollowing
-                      ? OutlinedButton.icon(
-                          onPressed: _followLoading ? null : _toggleFollow,
-                          icon: _followLoading
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger))
-                              : const Icon(Icons.person_remove, size: 16, color: AppColors.danger),
-                          label: Text(
-                            'Se désabonner',
-                            style: TextStyle(fontSize: 13, color: _followLoading ? AppColors.textMuted : AppColors.danger),
+                if (FeatureFlags.follow) ...[
+                  Expanded(child: SizedBox(height: 42,
+                    child: _isFollowing
+                        ? OutlinedButton.icon(
+                            onPressed: _followLoading ? null : _toggleFollow,
+                            icon: _followLoading
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger))
+                                : const Icon(Icons.person_remove, size: 16, color: AppColors.danger),
+                            label: Text(
+                              'Se désabonner',
+                              style: TextStyle(fontSize: 13, color: _followLoading ? AppColors.textMuted : AppColors.danger),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.danger,
+                              side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          )
+                        : ElevatedButton.icon(
+                            onPressed: _followLoading ? null : _toggleFollow,
+                            icon: _followLoading
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.person_add, size: 16, color: Colors.white),
+                            label: const Text('Suivre', style: TextStyle(color: Colors.white, fontSize: 13)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.danger,
-                            side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: _followLoading ? null : _toggleFollow,
-                          icon: _followLoading
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.person_add, size: 16, color: Colors.white),
-                          label: const Text('Suivre', style: TextStyle(color: Colors.white, fontSize: 13)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                        ),
-                )),
-                const SizedBox(width: 8),
-                SizedBox(height: 42,
-                  child: OutlinedButton.icon(
-                    onPressed: _startConversation,
-                    icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                    label: const Text('Message', style: TextStyle(fontSize: 13)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  )),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: SizedBox(height: 42,
+                    child: OutlinedButton.icon(
+                      onPressed: _startConversation,
+                      icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                      label: const Text('Message', style: TextStyle(fontSize: 13)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                   ),
                 ),

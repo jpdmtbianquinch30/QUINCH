@@ -61,7 +61,7 @@ class AuthService {
     try {
       await _api.post('/auth/logout');
     } catch (_) {}
-    await _api.clearToken();
+    await clearLocalData();
   }
 
   Future<User?> getMe() async {
@@ -89,7 +89,7 @@ class AuthService {
 
   Future<void> deleteAccount() async {
     await _api.delete('/auth/delete-account');
-    await _api.clearToken();
+    await clearLocalData();
   }
 
   Future<User?> loadFromStorage() async {
@@ -116,6 +116,16 @@ class AuthService {
   Future<void> _saveUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(ApiConfig.userKey, json.encode(user.toJson()));
+  }
+
+  Future<void> clearLocalData() async {
+    await _api.clearToken();
+    await _clearUser();
+  }
+
+  Future<void> _clearUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(ApiConfig.userKey);
   }
 
   String _normalizePhone(String phone) {

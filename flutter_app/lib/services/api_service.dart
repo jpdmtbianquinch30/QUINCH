@@ -1,10 +1,18 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 
 class ApiService {
   late Dio _dio;
   String? _token;
+
+  // Le token d'authentification est sensible (équivalent d'un mot de passe
+  // tant qu'il est valide) : il est stocké dans le Keychain (iOS) / Keystore
+  // chiffré (Android) via flutter_secure_storage, jamais dans
+  // SharedPreferences qui est un fichier en clair sur le disque.
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   ApiService() {
     _initDio();
@@ -60,21 +68,17 @@ class ApiService {
   String? get token => _token;
 
   Future<void> loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString(ApiConfig.tokenKey);
+    _token = await _secureStorage.read(key: ApiConfig.tokenKey);
   }
 
   Future<void> saveToken(String token) async {
     _token = token;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(ApiConfig.tokenKey, token);
+    await _secureStorage.write(key: ApiConfig.tokenKey, value: token);
   }
 
   Future<void> clearToken() async {
     _token = null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(ApiConfig.tokenKey);
-    await prefs.remove(ApiConfig.userKey);
+    await _secureStorage.delete(key: ApiConfig.tokenKey);
   }
 
   // GET request

@@ -1,108 +1,37 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, adminGuard } from './core/guards/auth.guard';
+import { guestGuard, adminGuard } from './core/guards/auth.guard';
 
+/**
+ * QUINCH V1 — Ce frontend Angular ne sert plus que de panneau d'administration.
+ * Le public (acheteurs/vendeurs) utilise exclusivement l'app Flutter.
+ *
+ * Les pages "grand public" (feed, marketplace, sell, cart, messages,
+ * favorites, notifications, transactions, profile, settings, seller-profile,
+ * product-detail, onboarding, register) existent toujours dans
+ * `src/app/pages/` mais ne sont plus routées : elles dupliquaient l'app
+ * Flutter et ne sont plus maintenues côté web. On les garde au cas où un
+ * besoin de "version web publique" reviendrait plus tard, mais elles ne
+ * doivent pas être exposées tant que ce n'est pas décidé et retesté.
+ */
 export const routes: Routes = [
-  { path: '', redirectTo: 'feed', pathMatch: 'full' },
+  { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
 
-  // Auth
+  // Connexion admin (seule page publique de cette app)
   {
     path: 'auth',
     canActivate: [guestGuard],
     children: [
       { path: 'login', loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent) },
-      { path: 'register', loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent) },
     ]
   },
 
-  // Onboarding
-  {
-    path: 'onboarding',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent),
-  },
-
-  // Main Feed (public)
-  {
-    path: 'feed',
-    loadComponent: () => import('./pages/feed/feed.component').then(m => m.FeedComponent),
-  },
-
-  // Product Detail
-  {
-    path: 'product/:slug',
-    loadComponent: () => import('./pages/product-detail/product-detail.component').then(m => m.ProductDetailComponent),
-  },
-
-  // Marketplace / Explorer
-  {
-    path: 'marketplace',
-    loadComponent: () => import('./pages/marketplace/marketplace.component').then(m => m.MarketplaceComponent),
-  },
-
-  // Authenticated pages
-  {
-    path: 'sell',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/sell/sell.component').then(m => m.SellComponent),
-  },
-  {
-    path: 'cart',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/cart/cart.component').then(m => m.CartComponent),
-  },
-  {
-    path: 'messages',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/messages/messages.component').then(m => m.MessagesComponent),
-  },
-  {
-    path: 'favorites',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent),
-  },
-  {
-    path: 'notifications',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/notifications/notifications.component').then(m => m.NotificationsComponent),
-  },
-  {
-    path: 'transactions',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent),
-  },
-
-  // Profile
-  {
-    path: 'profile',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
-  },
-  {
-    path: 'profile/edit',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/edit-profile/edit-profile.component').then(m => m.EditProfileComponent),
-  },
-
-  // Settings (separate page)
-  {
-    path: 'settings',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent),
-  },
-
-  // Public seller profile
-  {
-    path: 'seller/:username',
-    loadComponent: () => import('./pages/seller-profile/seller-profile.component').then(m => m.SellerProfileComponent),
-  },
-
-  // Admin
+  // Panneau d'administration
   {
     path: 'admin',
     canActivate: [adminGuard],
     loadComponent: () => import('./pages/admin/admin-dashboard.component').then(m => m.AdminDashboardComponent),
   },
 
-  // Fallback
-  { path: '**', redirectTo: 'feed' },
+  // Tout le reste redirige vers la connexion admin
+  { path: '**', redirectTo: 'auth/login' },
 ];

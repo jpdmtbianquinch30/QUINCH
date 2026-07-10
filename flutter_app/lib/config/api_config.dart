@@ -1,54 +1,78 @@
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kReleaseMode;
 
 class ApiConfig {
   static const String _prefKeyServerUrl = 'quinch_server_url';
 
-  // ---------- Default IPs ----------
-  // Emulator uses 10.0.2.2 to reach the host machine.
+  // ---------- Configuration de production ----------
+  // À définir au moment du build via --dart-define, ex :
+  //   flutter build apk --release --dart-define=API_BASE_URL=https://api.quinch.sn
+  // Ne JAMAIS committer une vraie URL de prod en dur ici : elle doit venir
+  // du pipeline de build (CI) pour pouvoir changer sans recompiler le code.
+  static const String _prodUrlFromEnv = String.fromEnvironment('API_BASE_URL');
+
+  // ---------- Défauts de développement ----------
+  // Emulator Android : 10.0.2.2 permet d'atteindre la machine hôte.
   static const String _emulatorIp = '10.0.2.2';
-  // Real devices use 127.0.0.1 via ADB reverse port forwarding
-  // (run: adb reverse tcp:8000 tcp:8000)
-  // This bypasses firewall and works regardless of network config.
-  static const String _defaultRealIp = 'DIEGO.local';
-  static const int _port = 8000;
+  static const int _devPort = 8000;
 
   // ---------- Runtime state ----------
   static String _serverUrl = '';
   static bool _initialized = false;
 
- static Future<void> init() async {
-   if (_initialized) return;
+  static Future<void> init() async {
+    if (_initialized) return;
 
-   // Always use WiFi IP for dev — change this if your PC IP changes
-   _serverUrl = 'http://DIEGO.local:8000';
+    if (kReleaseMode) {
+      // En release, on exige une vraie URL HTTPS définie au build. Pas de
+      // fallback silencieux vers une IP de dev en production.
+      if (_prodUrlFromEnv.isEmpty) {
+        throw StateError(
+          'API_BASE_URL manquant pour un build release. '
+          'Compiler avec --dart-define=API_BASE_URL=https://votre-domaine',
+        );
+      }
+      if (!_prodUrlFromEnv.startsWith('https://')) {
+        throw StateError('API_BASE_URL doit être en HTTPS en production.');
+      }
+      _serverUrl = _prodUrlFromEnv;
+    } else {
+      // Debug/profil : IP de dev par défaut, redéfinissable depuis l'écran
+      // Réglages (utile pour tester sur un vrai téléphone sur le même
+      // réseau que le PC de dev).
+      _serverUrl = _prodUrlFromEnv.isNotEmpty
+          ? _prodUrlFromEnv
+          : 'http://$_emulatorIp:$_devPort';
 
-   final prefs = await SharedPreferences.getInstance();
-   final saved = prefs.getString(_prefKeyServerUrl);
-   if (saved != null && saved.isNotEmpty) {
-     _serverUrl = saved;
-   }
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_prefKeyServerUrl);
+      if (saved != null && saved.isNotEmpty) {
+        _serverUrl = saved;
+      }
+    }
 
-   _initialized = true;
-   debugPrint('[ApiConfig] FINAL serverUrl = $_serverUrl');
- }
+    _initialized = true;
+    debugPrint('[ApiConfig] FINAL serverUrl = $_serverUrl');
+  }
 
   /// Change server URL at runtime (from Settings / login screen).
+  /// Disponible uniquement en dev : en release, l'URL est figée au build.
   static Future<void> setServerUrl(String url) async {
-    // Normalize: remove trailing slash
+    if (kReleaseMode) return;
     _serverUrl = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKeyServerUrl, _serverUrl);
     debugPrint('[ApiConfig] serverUrl updated to $_serverUrl');
   }
 
-  /// Reset to auto-detected default.
+  /// Reset to auto-detected default (dev uniquement).
   static Future<void> resetServerUrl() async {
+    if (kReleaseMode) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefKeyServerUrl);
-    final ip = _isEmulator ? _emulatorIp : _defaultRealIp;
-    _serverUrl = 'http://$ip:$_port';
+    final ip = _isEmulator ? _emulatorIp : _emulatorIp;
+    _serverUrl = 'http://$ip:$_devPort';
     debugPrint('[ApiConfig] serverUrl reset to $_serverUrl');
   }
 
@@ -62,10 +86,6 @@ class ApiConfig {
         host.contains('gphone') ||
         host.contains('generic');
   }
-
-  /// When using ADB reverse port forwarding (adb reverse tcp:8000 tcp:8000),
-  /// real devices can also reach the server via 127.0.0.1.
-  /// This is the most reliable method that bypasses firewall issues.
 
   // ---------- Public getters ----------
   static String get serverUrl {

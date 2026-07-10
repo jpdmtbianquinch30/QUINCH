@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/favorite_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../config/theme.dart';
+import '../../config/feature_flags.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -21,7 +22,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final fav = context.read<FavoriteProvider>();
       fav.loadFavorites();
-      fav.loadCollections();
+      if (FeatureFlags.favoritesCollections) fav.loadCollections();
     });
   }
 
@@ -50,27 +51,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ]),
       ),
       body: Column(children: [
-        // Tabs
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(children: [
-            Expanded(child: _TabBtn(
-              label: 'Tous les favoris', active: _tab == 'all',
-              onTap: () => setState(() => _tab = 'all'),
-            )),
-            const SizedBox(width: 8),
-            Expanded(child: _TabBtn(
-              label: 'Collections', active: _tab == 'collections',
-              onTap: () => setState(() => _tab = 'collections'),
-            )),
-          ]),
-        ),
+        // Tabs (V1: collections désactivées, un seul onglet visible)
+        if (FeatureFlags.favoritesCollections)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Expanded(child: _TabBtn(
+                label: 'Tous les favoris', active: _tab == 'all',
+                onTap: () => setState(() => _tab = 'all'),
+              )),
+              const SizedBox(width: 8),
+              Expanded(child: _TabBtn(
+                label: 'Collections', active: _tab == 'collections',
+                onTap: () => setState(() => _tab = 'collections'),
+              )),
+            ]),
+          ),
 
         // Content
         Expanded(
           child: fav.isLoading
               ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-              : _tab == 'all' ? _buildFavorites(fav) : _buildCollections(fav),
+              : (!FeatureFlags.favoritesCollections || _tab == 'all') ? _buildFavorites(fav) : _buildCollections(fav),
         ),
       ]),
     );

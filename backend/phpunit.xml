@@ -23,8 +23,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!-- Pas de DB_CONNECTION/DB_DATABASE ici : SQLite ne supporte pas
+             fullText() utilisé dans les migrations "products". La config DB
+             de test vient de backend/.env.testing (voir .env.testing.example),
+             qui pointe vers une vraie base Postgres dédiée aux tests. -->
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
