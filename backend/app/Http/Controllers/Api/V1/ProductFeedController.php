@@ -48,8 +48,6 @@ class ProductFeedController extends Controller
         if (!$request->has('q') || empty($request->q)) {
             $query->where(function ($q) {
                 $q->whereNotNull('poster_url')
-                  // Seules les vidéos validées par la modération sont visibles
-                  // publiquement. Les vidéos "pending" ne le sont pas encore.
                   ->orWhereHas('video', function ($sub) {
                       $sub->where('moderation_status', 'approved');
                   })
@@ -106,21 +104,31 @@ class ProductFeedController extends Controller
             $query->leftJoin('product_videos', 'products.video_id', '=', 'product_videos.id')
                   ->select('products.*')
                   ->selectRaw("(
-    (COALESCE(products.like_count, 0) * 3
-     + COALESCE(products.view_count, 0) * 0.5
-     + COALESCE(products.share_count, 0) * 5)
-    + (200.0 / (EXTRACT(EPOCH FROM (NOW() - products.created_at)) / 3600 + 1))
-    + CASE
-        WHEN product_videos.resolution = '4k' THEN 15
-        WHEN product_videos.resolution = '1080p' THEN 10
-        WHEN product_videos.resolution = '720p' THEN 6
-        WHEN product_videos.resolution = '480p' THEN 3
-        ELSE 0
-      END
-    + CASE WHEN products.video_id IS NOT NULL THEN 20 ELSE 0 END
-    + random() * 40
-) as feed_score")
-->orderByDesc('feed_score');
+                      -- Engagement score (weighted interactions)
+                      (COALESCE(products.like_count, 0) * 3
+                       + COALESCE(products.view_count, 0) * 0.5
+                       + COALESCE(products.share_count, 0) * 5)
+
+                      -- Freshness boost: newer posts get higher score (decays over hours)
+                      -- PostgreSQL: EXTRACT(EPOCH FROM ...) gives seconds, divide by 3600 for hours
+                      + (200.0 / (EXTRACT(EPOCH FROM (NOW() - products.created_at)) / 3600 + 1))
+
+                      -- Video quality bonus
+                      + CASE
+                          WHEN product_videos.resolution = '4k' THEN 15
+                          WHEN product_videos.resolution = '1080p' THEN 10
+                          WHEN product_videos.resolution = '720p' THEN 6
+                          WHEN product_videos.resolution = '480p' THEN 3
+                          ELSE 0
+                        END
+
+                      -- Has video boost (video content preferred in Pour toi)
+                      + CASE WHEN products.video_id IS NOT NULL THEN 20 ELSE 0 END
+
+                      -- Random factor using PostgreSQL random() — varies per query execution
+                      + random() * 40
+                  ) as feed_score")
+                  ->orderByDesc('feed_score');
         }
 
         $products = $query->paginate($request->get('per_page', 10));
@@ -215,8 +223,6 @@ class ProductFeedController extends Controller
             ->with(['user:id,full_name,username,avatar_url,trust_score', 'category:id,name,icon', 'video'])
             ->where(function ($q) {
                 $q->whereNotNull('poster_url')
-                  // Seules les vidéos validées par la modération sont visibles
-                  // publiquement. Les vidéos "pending" ne le sont pas encore.
                   ->orWhereHas('video', function ($sub) {
                       $sub->where('moderation_status', 'approved');
                   })
@@ -426,5 +432,47 @@ class ProductFeedController extends Controller
             ]);
 
         return response()->json(['suggestions' => $trending]);
+    }
+    /**
+     * Vendeurs les plus actifs — triés par engagement (likes + vues + produits actifs)
+     */
+    public function activeSellers(Request $request): JsonResponse
+    {
+        $sellers = \App\Models\User::query()
+            ->where('is_seller', true)
+            ->where('account_status', 'active')
+            ->whereHas('products', function ($q) {
+                $q->where('status', 'active');
+            })
+            ->withCount(['products as active_products_count' => function ($q) {
+                $q->where('status', 'active');
+            }])
+            ->withSum(['products as total_likes' => function ($q) {
+                $q->where('status', 'active');
+            }], 'like_count')
+            ->withSum(['products as total_views' => function ($q) {
+                $q->where('status', 'active');
+            }], 'view_count')
+            ->orderByRaw('(COALESCE(total_likes::numeric, 0) * 3 + COALESCE(total_views::numeric, 0) + COALESCE(active_products_count::numeric, 0) * 5) DESC')
+            ->limit(15)
+            ->get()
+            ->map(function ($u) {
+                $avatar = $u->avatar_url;
+                if ($avatar && !str_starts_with($avatar, 'http')) {
+                    $avatar = url('storage/' . $avatar);
+                }
+                return [
+                    'id'             => $u->id,
+                    'username'       => $u->username,
+                    'full_name'      => $u->full_name,
+                    'avatar_url'     => $avatar,
+                    'city'           => $u->city,
+                    'trust_score'    => $u->trust_score,
+                    'products_count' => $u->active_products_count,
+                    'total_likes'    => (int) ($u->total_likes ?? 0),
+                ];
+            });
+
+        return response()->json(['sellers' => $sellers]);
     }
 }
