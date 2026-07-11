@@ -69,7 +69,7 @@ Ton téléphone doit apparaître dans la liste.
 > 3. Tape dans PowerShell :
 > ```powershell
  adb tcpip 5555
- adb connect 192.168.1.7:5555
+ adb connect 192.168.1.3:5555
 > ```
 > 4. Débranche le câble — la connexion WiFi prend le relais
 

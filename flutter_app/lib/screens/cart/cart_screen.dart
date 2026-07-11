@@ -187,8 +187,11 @@ class _CartItemCard extends StatelessWidget {
                 // Quantity control
                 Row(children: [
                   _QtyBtn(icon: Icons.remove, onTap: () {
-                    if (item.quantity > 1) cart.updateQuantity(item.id, item.quantity - 1);
-                    else cart.removeItem(item.id);
+                    if (item.quantity > 1) {
+                      cart.updateQuantity(item.id, item.quantity - 1);
+                    } else {
+                      cart.removeItem(item.id);
+                    }
                   }),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),

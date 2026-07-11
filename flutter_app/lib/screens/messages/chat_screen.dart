@@ -305,7 +305,7 @@ class _ChatScreenState extends State<ChatScreen> {
           // ═══ PRODUCT CONTEXT CARD ═══
           if (conversation?.product != null)
             GestureDetector( 
-              onTap: () => context.push('/product/${conversation!.product!.slug}'),
+              onTap: () => context.push('/product/${conversation.product!.slug}'),
               child: Container(
                 margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 padding: const EdgeInsets.all(12),
@@ -786,7 +786,7 @@ class _MenuOption extends StatelessWidget {
   final String label;
   final Color? color;
   final VoidCallback onTap;
-  _MenuOption({required this.icon, required this.label, this.color, required this.onTap});
+  const _MenuOption({required this.icon, required this.label, this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

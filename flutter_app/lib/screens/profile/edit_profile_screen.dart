@@ -129,6 +129,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final formData = FormData.fromMap({
         'cover': await MultipartFile.fromFile(file.path),
       });
+      if (!mounted) return;
       await context.read<UserService>().uploadCover(formData);
       if (mounted) await context.read<AuthProvider>().refreshUser();
       if (mounted) {
@@ -487,7 +488,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           children: [
                             Expanded(
                               child: DropdownButtonFormField<String>(
-                                value: _selectedRegion,
+                                initialValue: _selectedRegion,
                                 isExpanded: true,
                                 dropdownColor: AppColors.bgCard,
                                 style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
@@ -505,7 +506,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: DropdownButtonFormField<String>(
-                                value: _selectedCity,
+                                initialValue: _selectedCity,
                                 isExpanded: true,
                                 dropdownColor: AppColors.bgCard,
                                 style: TextStyle(color: AppColors.textPrimary, fontSize: 14),

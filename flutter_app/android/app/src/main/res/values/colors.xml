@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- Icône application -->
+    <color name="ic_launcher_background">#0A0A12</color>
+
+    <!-- Splash QUINCH -->
+    <color name="launch_background_color">#000000</color>
+
+    <!-- Thème normal -->
     <color name="splash_bg">#000000</color>
-	<color name="ic_launcher_background">#0A0E1A</color>
+
 </resources>

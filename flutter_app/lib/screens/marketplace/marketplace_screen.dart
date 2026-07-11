@@ -21,7 +21,7 @@ class MarketplaceScreen extends StatefulWidget {
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
   final _searchController = TextEditingController();
-  List<Product> _products = [];
+  final List<Product> _products = [];
   List<Category> _categories = [];
   String? _selectedCategory;
   String? _type;

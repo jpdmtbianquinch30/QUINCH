@@ -366,7 +366,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> with SingleTi
               const SizedBox(height: 3),
               if (conv.product != null)
                 Padding(padding: const EdgeInsets.only(bottom: 2),
-                  child: Text('${conv.product!.title}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                  child: Text(conv.product!.title, maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: AppColors.accent, fontSize: 11))),
               Row(children: [
                 if (_isLastMessageMine(conv))

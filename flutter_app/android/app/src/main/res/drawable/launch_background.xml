@@ -1,12 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/splash_bg" />
-    <item
-        android:gravity="center"
-        android:width="160dp"
-        android:height="160dp">
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/splash_logo" />
+
+    <!-- Fond noir pur -->
+    <item android:drawable="@color/launch_background_color" />
+
+    <!-- Halo bleu/violet discret derrière le logo -->
+    <item android:gravity="center">
+        <shape android:shape="oval">
+            <size android:width="260dp" android:height="260dp" />
+            <gradient
+                android:type="radial"
+                android:gradientRadius="130dp"
+                android:startColor="#552A6BFF"
+                android:centerColor="#221A1AFF"
+                android:endColor="#00000000" />
+        </shape>
     </item>
+
+    <!-- Logo QUINCH centré -->
+    <item
+        android:width="180dp"
+        android:height="180dp"
+        android:gravity="center">
+        <bitmap
+            android:src="@drawable/splash_logo"
+            android:gravity="center"
+            android:filter="true" />
+    </item>
+
 </layer-list>

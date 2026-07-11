@@ -176,8 +176,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       final userService = context.read<UserService>();
       await userService.savePreferences({
         'categories': [
-          ..._selectedCategories.toList(),
-          ..._selectedInterests.toList(),
+          ..._selectedCategories,
+          ..._selectedInterests,
         ],
         'location': {
           'city': _selectedCity,
@@ -471,7 +471,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               hintText: 'Sélectionnez votre région',
               prefixIcon: Icon(Icons.map_outlined, color: AppColors.textMuted, size: 20),
             ),
-            value: _selectedRegion.isEmpty ? null : _selectedRegion,
+            initialValue: _selectedRegion.isEmpty ? null : _selectedRegion,
             dropdownColor: AppColors.bgElevated,
             style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
             items: _regionCities.keys
@@ -497,7 +497,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   : 'Sélectionnez votre ville',
               prefixIcon: Icon(Icons.location_city_outlined, color: AppColors.textMuted, size: 20),
             ),
-            value: _selectedCity.isEmpty ? null : _selectedCity,
+            initialValue: _selectedCity.isEmpty ? null : _selectedCity,
             dropdownColor: AppColors.bgElevated,
             style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
             items: _availableCities

@@ -14,7 +14,7 @@ class ApiConfig {
 
   // ---------- Défauts de développement ----------
   // Emulator Android : 10.0.2.2 permet d'atteindre la machine hôte.
-  static const String _emulatorIp = '10.0.2.2';
+  static const String _emulatorIp = '192.168.1.5';
   static const int _devPort = 8000;
 
   // ---------- Runtime state ----------

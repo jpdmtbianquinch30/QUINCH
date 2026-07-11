@@ -86,6 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (result != 'reset' && result.isNotEmpty) {
         await ApiConfig.setServerUrl(result);
       }
+      if (!mounted) return;
       // Rebuild Dio with new base URL
       context.read<ApiService>().refreshBaseUrl();
       ScaffoldMessenger.of(context).showSnackBar(

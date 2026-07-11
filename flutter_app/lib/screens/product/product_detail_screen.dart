@@ -254,6 +254,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 if (amount == null || amount <= 0) { _showMsg('Montant invalide', error: true); return; }
                 try {
                   await context.read<NegotiationService>().propose(productId: p.id.toString(), proposedPrice: amount);
+                  if (!mounted) return;
                   _showMsg('Proposition envoyée au vendeur !');
                   Navigator.pop(context);
                   _negotiationCtrl.clear();
@@ -276,7 +277,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _showPaymentSheet() {
     final p = _product;
     if (p == null) return;
-    final methods = (p.paymentMethods != null && p.paymentMethods!.isNotEmpty) ? p.paymentMethods! : ['orange_money', 'wave', 'free_money', 'cash_delivery'];
+    // V1 : seul cash_delivery est actif côté backend (voir config/quinch.php).
+    // On ne propose plus Wave/Orange Money/Free Money, qui échoueraient
+    // systématiquement à la validation tant qu'ils ne sont pas réactivés.
+    final allMethods = (p.paymentMethods != null && p.paymentMethods!.isNotEmpty) ? p.paymentMethods! : ['cash_delivery'];
+    final methods = allMethods.where((m) => FeatureFlags.enabledPaymentMethods.contains(m)).toList();
+    if (methods.isEmpty) methods.add('cash_delivery');
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.bgCard,
@@ -289,17 +295,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const SizedBox(height: 4),
             Text('Total : ${p.displayPrice}', style: const TextStyle(color: AppColors.accent, fontSize: 15, fontWeight: FontWeight.w600)),
             const SizedBox(height: 16),
-            ...methods.map((m) {
-              final labels = {'orange_money': '🟠 Orange Money', 'wave': '🔵 Wave', 'free_money': '🟢 Free Money', 'cash_delivery': '📦 Paiement à la livraison'};
-              return RadioListTile<String>(
-                value: m, groupValue: _selectedPayment,
-                onChanged: (v) => setSt(() => _selectedPayment = v),
-                title: Text(labels[m] ?? m, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
-                activeColor: AppColors.accent,
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-              );
-            }),
+            RadioGroup<String>(
+              groupValue: _selectedPayment,
+              onChanged: (v) => setSt(() => _selectedPayment = v),
+              child: Column(children: methods.map((m) {
+                final labels = {'orange_money': '🟠 Orange Money', 'wave': '🔵 Wave', 'free_money': '🟢 Free Money', 'cash_delivery': '📦 Paiement à la livraison'};
+                return RadioListTile<String>(
+                  value: m,
+                  title: Text(labels[m] ?? m, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                  activeColor: AppColors.accent,
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                );
+              }).toList()),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity, height: 48,
@@ -309,6 +318,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     await context.read<ProductService>().initiateTransaction(
                       productId: p.id, amount: p.price, paymentMethod: _selectedPayment!, deliveryType: 'delivery',
                     );
+                    if (!context.mounted) return;
                     Navigator.pop(ctx);
                     _showMsg('Commande confirmée ! Le vendeur a été notifié.');
                   } catch (_) {
@@ -387,8 +397,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 if (_videoController != null && _videoController!.value.isInitialized)
                   GestureDetector(
                     onTap: () {
-                      if (_videoController!.value.isPlaying) _videoController!.pause();
-                      else _videoController!.play();
+                      if (_videoController!.value.isPlaying) {
+                        _videoController!.pause();
+                      } else {
+                        _videoController!.play();
+                      }
                     },
                     child: FittedBox(
                       fit: BoxFit.cover,

@@ -21,7 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _emailNotif = true;
   bool _smsNotif = false;
   // Per-type notification prefs
-  Map<String, bool> _notifTypes = {
+  final Map<String, bool> _notifTypes = {
     'message': true, 'follow': true, 'like': true,
     'comment': true, 'transaction': true, 'system': true,
   };
@@ -558,7 +558,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (confirmed != true || !mounted) return;
               _showMsg('Déconnexion réussie. À bientôt !');
               await auth.logout();
-              if (mounted) context.go('/auth/login');
+              if (!context.mounted) return;
+              context.go('/auth/login');
             },
             icon: const Icon(Icons.logout, color: AppColors.danger, size: 18),
             label: const Text('Déconnexion', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
@@ -685,7 +686,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Type de problème', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500)),
         const SizedBox(height: 4),
-        DropdownButtonFormField<String>(value: _reportCategory, dropdownColor: AppColors.bgCard,
+        DropdownButtonFormField<String>(initialValue: _reportCategory, dropdownColor: AppColors.bgCard,
           style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
           decoration: InputDecoration(filled: true, fillColor: AppColors.bgInput,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),

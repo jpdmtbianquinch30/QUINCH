@@ -1,8 +1,5 @@
 import 'dart:io';
-import 'dart:ui' as ui;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -76,7 +73,7 @@ class _SellScreenState extends State<SellScreen> {
   XFile? _videoFile;
   String? _videoId;
   XFile? _posterImage;
-  List<XFile> _images = [];
+  final List<XFile> _images = [];
   bool _loading = false;
 
   // Video upload state
@@ -225,10 +222,15 @@ class _SellScreenState extends State<SellScreen> {
       final h = ctrl.value.size.height.toInt();
       final maxDim = w > h ? w : h;
       String res = 'SD';
-      if (maxDim >= 3840) res = '4K';
-      else if (maxDim >= 1920) res = '1080p';
-      else if (maxDim >= 1280) res = '720p';
-      else if (maxDim >= 854) res = '480p';
+      if (maxDim >= 3840) {
+        res = '4K';
+      } else if (maxDim >= 1920) {
+        res = '1080p';
+      } else if (maxDim >= 1280) {
+        res = '720p';
+      } else if (maxDim >= 854) {
+        res = '480p';
+      }
       setState(() => _videoResolution = res);
     }
   }
@@ -245,6 +247,7 @@ class _SellScreenState extends State<SellScreen> {
         },
       });
 
+      if (!mounted) return;
       final result = await context.read<ProductService>().uploadVideo(
         formData,
         onProgress: (sent, total) {
@@ -376,7 +379,9 @@ class _SellScreenState extends State<SellScreen> {
       String errorMsg = 'Erreur lors de la publication';
       if (e is DioException && e.response?.data != null) {
         final data = e.response!.data;
-        if (data is Map && data['message'] != null) errorMsg = data['message'].toString();
+        if (data is Map && data['message'] != null) {
+          errorMsg = data['message'].toString();
+        }
         else if (data is Map && data['errors'] != null) {
           final errors = data['errors'] as Map;
           errorMsg = errors.values.expand((v) => v is List ? v : [v]).join('\n');
@@ -450,7 +455,13 @@ class _SellScreenState extends State<SellScreen> {
                       gradient: _step == 2 ? const LinearGradient(colors: [AppColors.success, Color(0xFF34D399)]) : AppColors.primaryGradient,
                       borderRadius: BorderRadius.circular(12)),
                     child: ElevatedButton(
-                      onPressed: _loading ? null : () { if (_step < 2) setState(() => _step++); else _publish(); },
+                      onPressed: _loading ? null : () {
+                        if (_step < 2) {
+                          setState(() => _step++);
+                        } else {
+                          _publish();
+                        }
+                      },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                       child: _loading
@@ -925,7 +936,7 @@ class _SellScreenState extends State<SellScreen> {
       _Label('Catégorie *'),
       const SizedBox(height: 8),
       DropdownButtonFormField<String>(
-        value: _categoryId,
+        initialValue: _categoryId,
         decoration: const InputDecoration(hintText: 'Sélectionner une catégorie'),
         dropdownColor: AppColors.bgElevated,
         items: _categories.map((c) => DropdownMenuItem<String>(value: c.id, child: Text(c.name))).toList(),

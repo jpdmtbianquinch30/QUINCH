@@ -98,6 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
         // Load saved/favorited items
         try {
+          if (!mounted) return;
           final favService = context.read<FavoriteService>();
           _savedItems = await favService.getFavorites();
         } catch (e) {
@@ -105,9 +106,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         }
       }
 
-      // Load follow counts
-      try {
-        final followService = context.read<FollowService>();
+      // Load follow counts (V2 — désactivé en V1, voir FeatureFlags.follow)
+      if (FeatureFlags.follow) {
+        try {
+          if (!mounted) return;
+          final followService = context.read<FollowService>();
         if (_isOwnProfile && auth.user?.id != null) {
           final counts = await followService.getFollowCounts(auth.user!.id);
           _followersCount = counts['followers'] ?? 0;
@@ -127,6 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           _followersCount = auth.user?.followersCount ?? 0;
           _followingCount = auth.user?.followingCount ?? 0;
         }
+      }
+      } else if (_isOwnProfile) {
+        _followersCount = auth.user?.followersCount ?? 0;
+        _followingCount = auth.user?.followingCount ?? 0;
       }
 
       if (mounted) setState(() => _loading = false);

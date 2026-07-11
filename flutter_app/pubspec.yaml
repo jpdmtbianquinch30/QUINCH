@@ -1,6 +1,7 @@
 name: quinch
 description: QUINCH - Marketplace TikTok-style pour le Sénégal
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -10,25 +11,26 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # State management
-  provider: ^6.1.2
-
-  # HTTP & networking
-  dio: ^5.7.0
-
   # Navigation
   go_router: ^14.8.1
 
-  # Local storage
-  shared_preferences: ^2.5.3
-  flutter_secure_storage: ^9.2.2
+  # State Management
+  provider: ^6.1.2
 
-  # UI & icons
+  # UI
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
   flutter_svg: ^2.0.17
+  flutter_animate: ^4.5.0
+
+  # HTTP
+  dio: ^5.7.0
+
+  # Local Storage
+  shared_preferences: ^2.5.3
+  flutter_secure_storage: ^9.2.2
 
   # Media
   video_player: ^2.9.4
@@ -47,24 +49,29 @@ dependencies:
   infinite_scroll_pagination: ^4.1.0
   pull_to_refresh_flutter3: ^2.0.2
 
-  # Formatters
-  mask_text_input_formatter: ^2.9.0
+  # Notifications
   flutter_local_notifications: ^20.1.0
   permission_handler: ^12.0.1
+
+  # Authentication
   google_sign_in: ^6.2.1
+
+  # Inputs
+  mask_text_input_formatter: ^2.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/logo_quinch.png"
+  image_path: assets/images/logo_quinch.png
   adaptive_icon_background: "#0A0E1A"
-  adaptive_icon_foreground: "assets/images/logo_quinch.png"
+  adaptive_icon_foreground: assets/images/logo_quinch.png
 
 flutter:
   uses-material-design: true
@@ -72,13 +79,14 @@ flutter:
   assets:
     - assets/images/
 
+  # Si tu télécharges Inter dans assets/fonts/
+  # décommente cette section.
+  #
   # fonts:
-  #   - family: Quinch
+  #   - family: Inter
   #     fonts:
-  #       - asset: assets/fonts/Poppins-Regular.ttf
-  #       - asset: assets/fonts/Poppins-Medium.ttf
-  #         weight: 500
-  #       - asset: assets/fonts/Poppins-SemiBold.ttf
-  #         weight: 600
-  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter-Bold.ttf
   #         weight: 700
+  #       - asset: assets/fonts/Inter-ExtraBold.ttf
+  #         weight: 800

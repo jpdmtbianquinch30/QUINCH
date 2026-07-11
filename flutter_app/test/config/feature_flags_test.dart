@@ -39,5 +39,9 @@ void main() {
     test('favoritesCollections est desactivee', () {
       expect(FeatureFlags.favoritesCollections, isFalse);
     });
+
+    test('seul cash_delivery est active (coherent avec le backend)', () {
+      expect(FeatureFlags.enabledPaymentMethods, ['cash_delivery']);
+    });
   });
 }

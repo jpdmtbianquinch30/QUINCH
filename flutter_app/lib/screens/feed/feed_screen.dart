@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,7 +6,6 @@ import 'package:video_player/video_player.dart';
 import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../services/product_service.dart';
-import '../../services/follow_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -41,15 +39,10 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
   VideoPlayerController? _videoController;
   int _activeVideoIndex = 0;
 
-  // Search
-  bool _showSearch = false;
-  List<dynamic> _searchResults = [];
-  bool _searching = false;
-
   // Follow tracking
   final Set<String> _followedIds = {};
 
-  static const _categories_icons = {
+  static const _categoriesIcons = {
     'Téléphones & Tech': Icons.smartphone,
     'Mode & Accessoires': Icons.checkroom,
     'Alimentation': Icons.restaurant,
@@ -234,26 +227,6 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
     if (convId != null) context.push('/messages/$convId');
   }
 
-  Future<void> _toggleFollow(String userId) async {
-    final auth = context.read<AuthProvider>();
-    if (!auth.isAuthenticated) { context.push('/login'); return; }
-    final isFollowing = _followedIds.contains(userId);
-    setState(() {
-      if (isFollowing) _followedIds.remove(userId);
-      else _followedIds.add(userId);
-    });
-    try {
-      final fs = context.read<FollowService>();
-      if (isFollowing) await fs.unfollow(userId);
-      else await fs.follow(userId);
-    } catch (_) {
-      setState(() {
-        if (isFollowing) _followedIds.add(userId);
-        else _followedIds.remove(userId);
-      });
-    }
-  }
-
   String _fmtCount(int count) {
     if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
@@ -378,10 +351,12 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
 
           const SizedBox(width: 12),
 
-          // Search bar
+          // Search bar — redirige vers Marketplace, qui a une vraie recherche
+          // fonctionnelle (le feed lui-même n'affiche pas de résultats de
+          // recherche, ce bouton ne faisait auparavant rien).
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _showSearch = !_showSearch),
+              onTap: () => context.push('/marketplace'),
               child: Container(
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -605,7 +580,7 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
           }
           final cat = _categories[index - 1];
           final isSelected = _selectedCategory == cat.id;
-          final icon = _categories_icons[cat.name] ?? Icons.category;
+          final icon = _categoriesIcons[cat.name] ?? Icons.category;
           return GestureDetector(
             onTap: () => _filterByCategory(isSelected ? null : cat.id),
             child: AnimatedContainer(

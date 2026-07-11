@@ -36,8 +36,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
   bool _followLoading = false;
   int _followersCount = 0;
   int _followingCount = 0;
-  // ignore: unused_field
-  String _sortBy = 'recent';
 
   @override
   void initState() {
@@ -82,6 +80,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
         // Load follow counts + status (V2 — désactivé en V1)
         if (FeatureFlags.follow) {
           try {
+            if (!mounted) return;
             final followService = context.read<FollowService>();
             final counts = await followService.getFollowCounts(sellerId);
             debugPrint('[SellerProfile] getFollowCounts for $sellerId => $counts');
@@ -102,6 +101,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
         // Load reviews (V2 — désactivé en V1)
         if (FeatureFlags.reviews) {
           try {
+            if (!mounted) return;
             final reviewService = context.read<ReviewService>();
             final res = await reviewService.getSellerReviews(sellerId);
             _reviews = res['reviews']?['data'] ?? res['reviews'] ?? [];
@@ -641,7 +641,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
               Text('Pourquoi souhaitez-vous signaler ce profil ?', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: selectedReason,
+                initialValue: selectedReason,
                 dropdownColor: AppColors.bgCard,
                 style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
                 decoration: InputDecoration(

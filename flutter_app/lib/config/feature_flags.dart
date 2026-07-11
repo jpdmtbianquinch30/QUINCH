@@ -13,4 +13,8 @@ class FeatureFlags {
   static const bool chatAudio = false;
   static const bool chatFile = false;
   static const bool favoritesCollections = false;
+
+  /// Doit rester synchronisé avec QUINCH_PAYMENT_METHODS / config/quinch.php
+  /// côté backend. V1 : uniquement le paiement à la livraison.
+  static const List<String> enabledPaymentMethods = ['cash_delivery'];
 }
