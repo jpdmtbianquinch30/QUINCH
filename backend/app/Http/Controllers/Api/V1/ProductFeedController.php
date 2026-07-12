@@ -140,7 +140,7 @@ class ProductFeedController extends Controller
         if ($authUser) {
             $productIds = $products->pluck('id')->toArray();
             $likedIds = $authUser->likedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
-            $savedIds = $authUser->savedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
+            $savedIds = \App\Models\FavoriteItem::where('user_id', $authUser->id)->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
             $followingIds = UserFollow::where('follower_id', $authUser->id)->pluck('following_id')->toArray();
         }
 
@@ -237,7 +237,7 @@ class ProductFeedController extends Controller
         // Get interaction status
         $productIds = $products->pluck('id')->toArray();
         $likedIds = $authUser->likedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
-        $savedIds = $authUser->savedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
+        $savedIds = \App\Models\FavoriteItem::where('user_id', $authUser->id)->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
 
         $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds) {
             return [

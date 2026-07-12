@@ -105,7 +105,7 @@ class ProductController extends Controller
 
         if (auth()->check()) {
             $isLiked = $product->likedByUsers()->where('user_id', auth()->id())->exists();
-            $isSaved = $product->savedByUsers()->where('user_id', auth()->id())->exists();
+            $isSaved = \App\Models\FavoriteItem::where('user_id', auth()->id())->where('product_id', $product->id)->exists();
         }
 
         return response()->json([

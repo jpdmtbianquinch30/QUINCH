@@ -72,18 +72,29 @@ class ProductInteractionController extends Controller
 
     public function toggleSave(Request $request, Product $product): JsonResponse
     {
+        // BUG CORRIGE : ce bouton (affiché partout dans le feed) manipulait
+        // un pivot "product_saves" totalement déconnecté de la vraie page
+        // Favoris (qui lit la table favorite_items via FavoriteController).
+        // Résultat : un produit "sauvegardé" depuis le feed n'apparaissait
+        // JAMAIS dans les Favoris de l'utilisateur. On utilise maintenant
+        // la même table des deux côtés.
         $user = $request->user();
-        $isSaved = $product->savedByUsers()->where('user_id', $user->id)->exists();
+        $existing = \App\Models\FavoriteItem::where('user_id', $user->id)
+            ->where('product_id', $product->id)
+            ->first();
 
-        if ($isSaved) {
-            $product->savedByUsers()->detach($user->id);
-        } else {
-            $product->savedByUsers()->attach($user->id);
+        if ($existing) {
+            $existing->delete();
+            return response()->json(['saved' => false]);
         }
 
-        return response()->json([
-            'saved' => !$isSaved,
+        \App\Models\FavoriteItem::create([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'price_at_save' => $product->price,
         ]);
+
+        return response()->json(['saved' => true]);
     }
 
     public function report(Request $request, Product $product): JsonResponse

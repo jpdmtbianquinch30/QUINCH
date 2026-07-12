@@ -751,6 +751,27 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
                 ),
               ),
 
+            // Save/favorite button — absent jusqu'ici : impossible de
+            // sauvegarder une vidéo directement depuis ce carrousel.
+            Positioned(
+              top: 8, right: 8,
+              child: GestureDetector(
+                onTap: () => _toggleSave(product),
+                child: Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    product.isSaved ? Icons.bookmark : Icons.bookmark_border,
+                    color: product.isSaved ? AppColors.saved : Colors.white,
+                    size: 15,
+                  ),
+                ),
+              ),
+            ),
+
             // Info at bottom
             Positioned(
               bottom: 8, left: 8, right: 8,

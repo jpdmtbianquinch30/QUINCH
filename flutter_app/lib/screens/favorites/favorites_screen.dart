@@ -129,6 +129,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ? CachedNetworkImage(imageUrl: product.mediaUrl, fit: BoxFit.cover)
                       : Container(color: AppColors.bgInput, child: Icon(Icons.image, color: AppColors.textMuted)),
                 ),
+                // Indicateur vidéo — sans ça, un favori vidéo ressemble à une
+                // simple image, l'utilisateur ne sait pas qu'il peut la lire.
+                if (product.hasVideo)
+                  Center(
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), shape: BoxShape.circle),
+                      child: Icon(Icons.play_arrow, color: AppColors.accent, size: 20),
+                    ),
+                  ),
                 // Remove button
                 Positioned(top: 8, right: 8,
                   child: GestureDetector(

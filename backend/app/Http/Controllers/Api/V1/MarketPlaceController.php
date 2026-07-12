@@ -75,7 +75,7 @@ class MarketplaceController extends Controller
 
         if ($authUser && count($productIds)) {
             $likedIds = $authUser->likedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
-            $savedIds = $authUser->savedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
+            $savedIds = \App\Models\FavoriteItem::where('user_id', $authUser->id)->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
         }
 
         $items = $products->getCollection()->map(function ($product) use ($likedIds, $savedIds) {
