@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\SupportTicket;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -184,15 +185,18 @@ class UserController extends Controller
     // ─── Report Problem ──────────────────────────────────────────────────
     public function reportProblem(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'category' => ['required', 'string', 'in:bug,suggestion,security,other'],
             'description' => ['required', 'string', 'max:2000'],
         ]);
 
-        // Store the support ticket (could be a dedicated model, for now log it)
-        \Log::info('Support report from user ' . $request->user()->id, [
-            'category' => $request->category,
-            'description' => $request->description,
+        // BUG CORRIGE : avant, ce signalement n'était écrit que dans les logs
+        // applicatifs (\Log::info), jamais enregistré en base -> aucun admin
+        // ne pouvait jamais le consulter ni y répondre.
+        SupportTicket::create([
+            'user_id' => $request->user()->id,
+            'category' => $validated['category'],
+            'description' => $validated['description'],
         ]);
 
         return response()->json(['message' => 'Signalement reçu. Merci pour votre retour.']);

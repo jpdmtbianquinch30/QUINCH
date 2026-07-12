@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductReport;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -87,26 +88,30 @@ class ProductInteractionController extends Controller
 
     public function report(Request $request, Product $product): JsonResponse
     {
-        $request->validate([
-            'reason' => ['sometimes', 'string', 'max:500'],
+        // BUG CRITIQUE CORRIGE : l'ancien code faisait un DB::table()->insert()
+        // avec une colonne "user_id" qui n'existe pas dans product_reports (la
+        // vraie colonne est "reporter_id") -> l'INSERT échouait en 500 à
+        // CHAQUE appel. Aucun signalement produit n'a donc jamais été
+        // réellement enregistré jusqu'ici.
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'in:fraud,inappropriate,counterfeit,spam,other'],
+            'description' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        // Prevent duplicate reports
-        $exists = \DB::table('product_reports')
-            ->where('user_id', $request->user()->id)
+        $exists = ProductReport::where('reporter_id', $request->user()->id)
             ->where('product_id', $product->id)
+            ->where('status', 'pending')
             ->exists();
 
         if ($exists) {
-            return response()->json(['message' => 'Vous avez déjà signalé ce produit.'], 422);
+            return response()->json(['message' => 'Vous avez déjà signalé ce produit. Le signalement est en cours de traitement.'], 409);
         }
 
-        \DB::table('product_reports')->insert([
-            'user_id' => $request->user()->id,
+        ProductReport::create([
+            'reporter_id' => $request->user()->id,
             'product_id' => $product->id,
-            'reason' => $request->reason ?? 'Non spécifié',
-            'created_at' => now(),
-            'updated_at' => now(),
+            'reason' => $validated['reason'],
+            'description' => $validated['description'] ?? null,
         ]);
 
         return response()->json(['message' => 'Signalement envoyé. Merci pour votre vigilance.']);

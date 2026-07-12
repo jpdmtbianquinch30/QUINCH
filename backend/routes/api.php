@@ -37,6 +37,8 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:3,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:5,1');
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+    Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
@@ -244,6 +246,15 @@ Route::prefix('admin')
         // Moderation
         Route::get('moderation/pending', [ContentModerationController::class, 'pending']);
         Route::post('moderation/bulk-action', [ContentModerationController::class, 'bulkAction']);
+
+        // Signalements produits/utilisateurs — jusqu'ici enregistrés (ou pas,
+        // a cause d'un bug) mais jamais consultables par l'admin.
+        Route::get('reports/products', [ContentModerationController::class, 'productReports']);
+        Route::post('reports/products/{report}/resolve', [ContentModerationController::class, 'resolveProductReport']);
+        Route::get('reports/reported-users', [ContentModerationController::class, 'userReports']);
+        Route::post('reports/reported-users/{report}/resolve', [ContentModerationController::class, 'resolveUserReport']);
+        Route::get('reports/support-tickets', [ContentModerationController::class, 'supportTickets']);
+        Route::post('reports/support-tickets/{ticket}/resolve', [ContentModerationController::class, 'resolveSupportTicket']);
         Route::post('videos/{video}/moderate', [ContentModerationController::class, 'moderate']);
 
         // Security

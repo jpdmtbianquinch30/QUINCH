@@ -29,7 +29,7 @@ import 'providers/chat_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/favorite_provider.dart';
 import 'providers/theme_provider.dart';
-
+import 'widgets/quinch_logo.dart';
 
 
 void main() {
@@ -123,7 +123,13 @@ class QuinchApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             home: Scaffold(
               backgroundColor: Color(0xFF06060C),
-              body: SizedBox.expand(),
+              body: Center(
+                child: QuinchBranding(
+                  logoSize: 100,
+                  showTagline: true,
+                  showFeatures: false,
+                ),
+              ),
             ),
           );
         }

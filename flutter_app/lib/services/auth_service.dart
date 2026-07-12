@@ -40,6 +40,33 @@ class AuthService {
     await _saveAuth(authResponse);
     return authResponse;
   }
+  /// Demande un OTP par SMS pour réinitialiser le mot de passe.
+  /// Le backend renvoie toujours le même message générique, qu'un compte
+  /// existe ou non pour ce numéro (protection contre l'énumération).
+  Future<String> forgotPassword({required String phoneNumber}) async {
+    final response = await _api.post('/auth/forgot-password', data: {
+      'phone_number': _normalizePhone(phoneNumber),
+    });
+    return response.data['message'] as String;
+  }
+
+  /// Réinitialise le mot de passe avec l'OTP reçu par SMS. Déconnecte
+  /// automatiquement tous les appareils côté backend par sécurité.
+  Future<String> resetPassword({
+    required String phoneNumber,
+    required String otp,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final response = await _api.post('/auth/reset-password', data: {
+      'phone_number': _normalizePhone(phoneNumber),
+      'otp': otp,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+    });
+    return response.data['message'] as String;
+  }
+
   Future<Map<String, dynamic>> loginWithGoogle({
     required String idToken,
   }) async {

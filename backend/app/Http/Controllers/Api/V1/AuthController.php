@@ -140,6 +140,74 @@ class AuthController extends Controller
     }
 
     /**
+     * Demande de réinitialisation de mot de passe : génère un OTP envoyé par
+     * SMS (comme à l'inscription). Ne révèle jamais si le numéro existe ou
+     * non (même message dans les deux cas), pour ne pas permettre à un tiers
+     * de vérifier quels numéros sont inscrits sur la plateforme.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/'],
+        ]);
+
+        $user = User::where('phone_number', $validated['phone_number'])->first();
+
+        $response = [
+            'message' => 'Si ce numéro est associé à un compte, un code a été envoyé par SMS.',
+        ];
+
+        if ($user) {
+            $otp = $user->generateOtp();
+            // TODO: brancher un vrai envoi SMS ici (ex. Orange SMS API / Twilio).
+            if (app()->environment(['local', 'testing'])) {
+                $response['demo_otp'] = $otp;
+            }
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Réinitialise le mot de passe après vérification de l'OTP. Révoque
+     * tous les tokens existants par sécurité (déconnexion de tous les
+     * appareils), au cas où le compte aurait été compromis.
+     */
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string'],
+            'otp' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+        ], [
+            'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
+        ]);
+
+        $user = User::where('phone_number', $validated['phone_number'])->first();
+
+        if (!$user || !$user->verifyOtp($validated['otp'])) {
+            return response()->json([
+                'message' => 'Code OTP invalide ou expiré.',
+                'error' => 'invalid_otp',
+            ], 422);
+        }
+
+        $user->update([
+            'password' => $validated['password'],
+            'otp_code' => null,
+            'otp_expires_at' => null,
+        ]);
+
+        // Sécurité : un mot de passe oublié/réinitialisé peut indiquer un
+        // compte compromis -> on déconnecte tous les appareils.
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Mot de passe réinitialisé avec succès. Merci de vous reconnecter.',
+        ]);
+    }
+
+    /**
      * Get authenticated user.
      */
     public function me(Request $request): JsonResponse

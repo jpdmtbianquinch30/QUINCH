@@ -255,7 +255,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               validator: (v) => v == null || v.isEmpty ? 'Mot de passe requis' : null,
                             ),
 
-                            const SizedBox(height: 20),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () => context.push('/auth/forgot-password'),
+                                child: Text('Mot de passe oublié ?',
+                                    style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600)),
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
 
                             // Bouton Se connecter
                             SizedBox(

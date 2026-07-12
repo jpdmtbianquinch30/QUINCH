@@ -275,4 +275,4 @@ Intégration réelle prévue via PayTech Sénégal.
 
 ---
 
-Projet académique — Master Génie Logiciel
+Projet QUINCH
