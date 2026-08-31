@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpRequest, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -35,5 +35,11 @@ export class ApiService {
 
   upload<T>(path: string, formData: FormData): Observable<T> {
     return this.http.post<T>(`${this.baseUrl}/${path}`, formData);
+  }
+
+  /** Upload avec suivi de progression (pourcentage) — utilise pour les gros fichiers (video). */
+  uploadWithProgress<T>(path: string, formData: FormData): Observable<HttpEvent<T>> {
+    const req = new HttpRequest('POST', `${this.baseUrl}/${path}`, formData, { reportProgress: true });
+    return this.http.request<T>(req);
   }
 }

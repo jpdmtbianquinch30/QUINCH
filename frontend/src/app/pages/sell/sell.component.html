@@ -99,7 +99,7 @@
                 @if (videoResolution()) { <span class="res-badge">{{ videoResolution() }}</span> }
                 @if (videoEdited()) { <span class="res-badge edited-badge"><span class="material-icons" style="font-size:12px">auto_fix_high</span> Modifie</span> }
                 @if (videoId()) { <span class="upload-status success"><span class="material-icons">check_circle</span> Prete</span> }
-                @else if (loading()) { <span class="upload-status loading"><div class="loader-sm"></div> Upload...</span> }
+                                @else if (uploading()) { <span class="upload-status loading"><div class="loader-sm"></div> Upload... {{ uploadProgress() }}%</span> }
               </div>
               <div class="video-actions-bar">
                 <button type="button" class="video-action-btn" (click)="openVideoEditor()"><span class="material-icons">tune</span> Modifier</button>
@@ -107,9 +107,13 @@
               </div>
             </div>
           } @else {
+            <div class="media-hint">
+              <span class="material-icons">tips_and_updates</span>
+              <span>Photo ou video obligatoire pour publier. Les annonces avec video sont mises en avant dans le feed.</span>
+            </div>
             <div class="video-options">
               <label class="upload-area video-upload">
-                @if (loading()) { <div class="loader"></div><span>Upload en cours...</span> }
+                @if (uploading()) { <div class="loader"></div><span>Upload en cours...</span> }
                 @else { <span class="material-icons">upload_file</span><span>Importer une video</span><span class="upload-hint">MP4, MOV, WebM - max 200Mo - 4K</span> }
                 <input type="file" accept="video/*" (change)="onVideoSelected($event)" hidden />
               </label>

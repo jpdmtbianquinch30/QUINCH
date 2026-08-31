@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { Category } from '../../core/models/product.model';
+import { HttpEventType } from '@angular/common/http';
 
 @Component({
   selector: 'app-sell',
@@ -28,6 +29,8 @@ export class SellComponent implements OnInit, OnDestroy {
   videoId = signal('');
   videoPreview = signal('');
   videoResolution = signal('');
+  uploading = signal(false);
+  uploadProgress = signal(0);
 
   // Poster image (required main product image)
   posterFile: File | null = null;
@@ -344,9 +347,8 @@ export class SellComponent implements OnInit, OnDestroy {
     video.src = URL.createObjectURL(file);
   }
 
-  uploadVideo(source: 'upload' | 'camera') {
+    uploadVideo(source: 'upload' | 'camera') {
     if (!this.videoFile) return;
-    this.loading.set(true);
     const fd = new FormData();
     fd.append('video', this.videoFile);
     fd.append('source', source);
@@ -357,10 +359,25 @@ export class SellComponent implements OnInit, OnDestroy {
     v.src = URL.createObjectURL(this.videoFile);
   }
 
-  private doUpload(fd: FormData) {
-    this.productService.uploadVideoRaw(fd).subscribe({
-      next: (res: any) => { this.videoId.set(res.video.id); this.loading.set(false); this.notify.success(`Video uploadee! ${res.video.quality_label ? '(' + res.video.quality_label + ')' : ''}`); },
-      error: (err) => { this.notify.error(err.error?.message || 'Erreur upload video'); this.loading.set(false); },
+    private doUpload(fd: FormData) {
+    this.uploading.set(true);
+    this.uploadProgress.set(0);
+    this.productService.uploadVideoWithProgress(fd).subscribe({
+      next: (event: any) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          this.uploadProgress.set(Math.round((event.loaded / event.total) * 100));
+        } else if (event.type === HttpEventType.Response) {
+          const res = event.body;
+          this.videoId.set(res.video.id);
+          this.uploading.set(false);
+          this.notify.success(`Video uploadee! ${res.video.quality_label ? '(' + res.video.quality_label + ')' : ''}`);
+        }
+      },
+      error: (err) => {
+        this.uploading.set(false);
+        this.uploadProgress.set(0);
+        this.notify.error(err.error?.message || 'Erreur upload video');
+      },
     });
   }
 
@@ -705,7 +722,10 @@ export class SellComponent implements OnInit, OnDestroy {
     if (!this.form.title || !this.form.category_id) { this.notify.error('Veuillez remplir tous les champs obligatoires.'); return; }
     if (!isService && !this.form.price) { this.notify.error('Veuillez indiquer un prix.'); return; }
     if (isService && this.servicePriceType() !== 'quote' && !this.form.price) { this.notify.error('Veuillez indiquer un tarif.'); return; }
-    if (!this.posterFile) { this.notify.error('L\'image d\'affiche est obligatoire.'); return; }
+     if (!this.posterFile && this.imageFiles.length === 0 && !this.videoId()) {
+      this.notify.error('Ajoutez au moins une photo ou une video pour publier. Astuce : les annonces avec video sont mises en avant dans le fil "Pour toi".');
+      return;
+    }
     this.loading.set(true);
 
     const formData = new FormData();
@@ -736,8 +756,10 @@ export class SellComponent implements OnInit, OnDestroy {
     if (this.videoId()) {
       formData.append('video_id', this.videoId());
     }
-    // Append poster image (required)
-    formData.append('poster_file', this.posterFile);
+        // Append poster image (optionnel desormais si video ou autres images presentes)
+    if (this.posterFile) {
+      formData.append('poster_file', this.posterFile);
+    }
     // Append additional images
     this.imageFiles.forEach(file => {
       formData.append('image_files[]', file);

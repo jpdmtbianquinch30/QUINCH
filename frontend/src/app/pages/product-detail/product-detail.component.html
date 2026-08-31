@@ -424,23 +424,57 @@
           }
         </div>
 
-        <!-- Service details (service-specific) -->
+                <!-- Service details (service-specific) -->
         @if (isService()) {
           <div class="info-section">
             <h3 class="section-title">A propos du service</h3>
             <div class="service-features">
               <div class="service-feature">
-                <span class="material-icons">schedule</span>
+                <span class="material-icons">location_on</span>
                 <div>
-                  <strong>Disponibilite</strong>
-                  <span>A convenir avec le prestataire</span>
+                  <strong>Modalite</strong>
+                  <span>{{ getServiceTypeLabel() }}</span>
                 </div>
               </div>
               <div class="service-feature">
-                <span class="material-icons">workspace_premium</span>
+                <span class="material-icons">schedule</span>
                 <div>
-                  <strong>Qualite garantie</strong>
-                  <span>Score de confiance verifie</span>
+                  <strong>Disponibilite</strong>
+                  <span>{{ getServiceAvailability() }}</span>
+                </div>
+              </div>
+              @if (getServiceDuration()) {
+                <div class="service-feature">
+                  <span class="material-icons">timer</span>
+                  <div>
+                    <strong>Duree</strong>
+                    <span>{{ getServiceDuration() }}</span>
+                  </div>
+                </div>
+              }
+              @if (getServiceArea()) {
+                <div class="service-feature">
+                  <span class="material-icons">map</span>
+                  <div>
+                    <strong>Zone d'intervention</strong>
+                    <span>{{ getServiceArea() }}</span>
+                  </div>
+                </div>
+              }
+              @if (getServiceExperience()) {
+                <div class="service-feature">
+                  <span class="material-icons">workspace_premium</span>
+                  <div>
+                    <strong>Experience</strong>
+                    <span>{{ getServiceExperience() }}</span>
+                  </div>
+                </div>
+              }
+              <div class="service-feature">
+                <span class="material-icons">payments</span>
+                <div>
+                  <strong>Tarification</strong>
+                  <span>{{ getServicePriceTypeLabel() }}</span>
                 </div>
               </div>
               <div class="service-feature">

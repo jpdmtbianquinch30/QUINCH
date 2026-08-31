@@ -1,18 +1,64 @@
-# Secrets — ne doivent JAMAIS être commités
+# =========================
+# SECRETS / ENVIRONNEMENT
+# =========================
+
 .env
 .env.*
 !.env.example
-!*/.env.example
-!**/.env*.example
 
-# Patches temporaires utilisés pendant la mise en conformité du projet
-*.patch
+# Laravel
+backend/.env
+backend/.env.*
+!backend/.env.example
 
-# OS / éditeurs
+# Firebase / credentials sensibles
+**/serviceAccountKey.json
+**/firebase-adminsdk-*.json
+**/*service-account*.json
+
+# Android local / secrets
+**/key.properties
+**/*.keystore
+**/*.jks
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
 
-# Docker
-docker-compose.override.yml
+# =========================
+# LARAVEL
+# =========================
+
+backend/vendor/
+backend/storage/*.key
+backend/storage/logs/
+backend/bootstrap/cache/
+
+# =========================
+# FLUTTER
+# =========================
+
+flutter_app/.dart_tool/
+flutter_app/build/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.packages
+flutter_app/pubspec.lock
+
+# Android build
+flutter_app/android/.gradle/
+flutter_app/android/app/build/
+flutter_app/android/local.properties
+
+# =========================
+# ANGULAR
+# =========================
+
+node_modules/
+dist/
+.angular/

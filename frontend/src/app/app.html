@@ -1,5 +1,5 @@
 <div class="app-layout" [class.with-sidebar]="showSidebar()" [class.fullscreen]="isFullscreen()">
-  <!-- Sidebar Navigation (Desktop) -->
+  <!-- Sidebar Navigation (Desktop) / Bottom bar (Mobile) -->
   @if (showSidebar()) {
     <aside class="sidebar">
       <!-- Brand -->
@@ -10,17 +10,17 @@
 
       <!-- Navigation -->
       <nav class="sidebar-nav">
-        <a routerLink="/feed" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="sidebar-link">
+        <a routerLink="/feed" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="sidebar-link mobile-primary">
           <span class="sidebar-link-icon"><span class="material-icons">home</span></span>
           <span class="sidebar-link-label">Accueil</span>
         </a>
-        <a routerLink="/marketplace" routerLinkActive="active" class="sidebar-link">
+        <a routerLink="/marketplace" routerLinkActive="active" class="sidebar-link mobile-primary">
           <span class="sidebar-link-icon"><span class="material-icons">explore</span></span>
           <span class="sidebar-link-label">Explorer</span>
         </a>
 
         @if (auth.isAuthenticated()) {
-          <a routerLink="/sell" routerLinkActive="active" class="sidebar-link publish-link">
+          <a routerLink="/sell" routerLinkActive="active" class="sidebar-link publish-link mobile-primary">
             <span class="sidebar-link-icon publish-icon"><span class="material-icons">add_circle</span></span>
             <span class="sidebar-link-label">Publier</span>
           </a>
@@ -33,7 +33,7 @@
             }
           </a>
 
-          <a routerLink="/messages" routerLinkActive="active" class="sidebar-link">
+          <a routerLink="/messages" routerLinkActive="active" class="sidebar-link mobile-primary">
             <span class="sidebar-link-icon notif-icon-wrap">
               <span class="material-icons">chat</span>
               @if (chat.unreadTotal() > 0) {
@@ -73,7 +73,7 @@
             <span class="sidebar-link-icon"><span class="material-icons">receipt_long</span></span>
             <span class="sidebar-link-label">Transactions</span>
           </a>
-          <a routerLink="/profile" routerLinkActive="active" class="sidebar-link">
+          <a routerLink="/profile" routerLinkActive="active" class="sidebar-link mobile-primary">
             <span class="sidebar-link-icon"><span class="material-icons">person</span></span>
             <span class="sidebar-link-label">Profil</span>
           </a>
@@ -87,7 +87,7 @@
           }
         } @else {
           <div class="sidebar-divider"></div>
-          <a routerLink="/auth/login" class="sidebar-link">
+          <a routerLink="/auth/login" class="sidebar-link mobile-primary">
             <span class="sidebar-link-icon"><span class="material-icons">login</span></span>
             <span class="sidebar-link-label">Connexion</span>
           </a>

@@ -15,6 +15,7 @@ export class RegisterComponent {
   private router = inject(Router);
 
   fullName = '';
+  username = '';
   phoneNumber = '';
   password = '';
   passwordConfirm = '';
@@ -22,16 +23,20 @@ export class RegisterComponent {
   error = signal('');
 
   register() {
-    if (!this.fullName || !this.phoneNumber || !this.password) {
+    if (!this.fullName || !this.username || !this.phoneNumber || !this.password) {
       this.error.set('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(this.username)) {
+      this.error.set("Le nom d'utilisateur doit faire 3 à 30 caractères (lettres, chiffres, _ uniquement).");
       return;
     }
     if (this.password !== this.passwordConfirm) {
       this.error.set('Les mots de passe ne correspondent pas.');
       return;
     }
-    if (this.password.length < 6) {
-      this.error.set('Le mot de passe doit contenir au moins 6 caractères.');
+    if (this.password.length < 8 || !/(?=.*[A-Z])(?=.*[0-9])/.test(this.password)) {
+      this.error.set('Le mot de passe doit faire au moins 8 caractères, avec 1 majuscule et 1 chiffre.');
       return;
     }
 
@@ -44,6 +49,7 @@ export class RegisterComponent {
 
     this.auth.register({
       full_name: this.fullName,
+      username: this.username,
       phone_number: phone,
       password: this.password,
       password_confirmation: this.passwordConfirm,

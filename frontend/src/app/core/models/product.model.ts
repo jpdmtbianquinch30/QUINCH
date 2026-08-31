@@ -29,6 +29,15 @@ export interface Product {
   // Backend may also return as `user`
   user?: SellerInfo;
   created_at: string;
+  // Champs specifiques aux services, stockes en JSON cote backend
+  metadata?: {
+    service_type?: 'online' | 'in_person' | 'both';
+    availability?: string;
+    duration?: string;
+    service_area?: string;
+    experience_years?: string | number;
+    price_type?: 'fixed' | 'starting' | 'hourly' | 'quote';
+  };
 }
 
 export interface ProductVideo {
@@ -37,6 +46,7 @@ export interface ProductVideo {
   thumbnail: string;
   duration: number;
 }
+
 
 export interface Category {
   id: string;

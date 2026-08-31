@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { HttpEvent } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { FeedResponse, Product, Category, Transaction } from '../models/product.model';
 
@@ -34,13 +35,11 @@ export class ProductService {
   createProduct(data: any, imageFiles?: File[]): Observable<any> {
     if (imageFiles && imageFiles.length > 0) {
       const formData = new FormData();
-      // Append all text fields
       Object.keys(data).forEach(key => {
         if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
           formData.append(key, data[key]);
         }
       });
-      // Append image files
       imageFiles.forEach(file => {
         formData.append('image_files[]', file);
       });
@@ -77,6 +76,11 @@ export class ProductService {
 
   uploadVideoRaw(formData: FormData): Observable<any> {
     return this.api.upload('products/upload-video', formData);
+  }
+
+  /** Upload video avec pourcentage de progression en temps reel. */
+  uploadVideoWithProgress(formData: FormData): Observable<HttpEvent<any>> {
+    return this.api.uploadWithProgress('products/upload-video', formData);
   }
 
   getCategories(): Observable<{ categories: Category[] }> {

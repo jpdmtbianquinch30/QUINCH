@@ -676,4 +676,40 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
     formatted = formatted.replace(/\n/g, '<br>');
     return formatted;
   }
+    getServiceTypeLabel(): string {
+    const map: Record<string, string> = {
+      online: 'A distance',
+      in_person: 'En personne',
+      both: 'En personne ou a distance',
+    };
+    return map[this.product()?.metadata?.service_type || ''] || 'A convenir';
+  }
+
+  getServiceAvailability(): string {
+    return this.product()?.metadata?.availability || 'A convenir avec le prestataire';
+  }
+
+  getServiceDuration(): string {
+    return this.product()?.metadata?.duration || '';
+  }
+
+  getServiceArea(): string {
+    return this.product()?.metadata?.service_area || '';
+  }
+
+  getServiceExperience(): string {
+    const years = this.product()?.metadata?.experience_years;
+    if (!years) return '';
+    return `${years} an${Number(years) > 1 ? 's' : ''} d'experience`;
+  }
+
+  getServicePriceTypeLabel(): string {
+    const map: Record<string, string> = {
+      fixed: 'Prix fixe',
+      starting: 'A partir de',
+      hourly: 'Tarif horaire',
+      quote: 'Sur devis',
+    };
+    return map[this.product()?.metadata?.price_type || 'fixed'] || 'Prix fixe';
+  }
 }

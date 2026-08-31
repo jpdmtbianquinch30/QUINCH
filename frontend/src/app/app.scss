@@ -374,13 +374,120 @@
   transition: all var(--q-transition-fast);
 }
 
-// ─── Responsive ────────────────────────────────────────────────────────────
+// ─── Responsive — bottom bar icônes seules sur mobile ─────────────────────
 @media (max-width: 768px) {
-  .sidebar { display: none; }
+  .sidebar {
+    display: flex;
+    flex-direction: row;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 64px;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0;
+    z-index: 200;
+    overflow: visible;
+  }
+
+  .sidebar-brand,
+  .sidebar-footer,
+  .sidebar-divider {
+    display: none;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    height: 100%;
+    padding: 0 4px;
+    gap: 0;
+  }
+
+  // On ne montre que les 5 items principaux (comme Flutter) : Accueil, Explorer, Publier, Messages, Profil
+  .sidebar-link:not(.mobile-primary) {
+    display: none;
+  }
+
+  .sidebar-link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    flex: 1;
+    min-width: 0;
+
+    &.active::before {
+      display: none; // supprime la barre verticale d'indicateur actif (pensée pour le mode sidebar)
+    }
+  }
+
+  .sidebar-link-label {
+    display: none; // icônes seules
+  }
+
+  .sidebar-link-icon {
+    width: 26px;
+    height: 26px;
+    background: none;
+
+    .material-icons { font-size: 24px; }
+  }
+
+  .sidebar-link.active .sidebar-link-icon .material-icons {
+    color: var(--q-accent-light);
+  }
+
+  // Bouton "Publier" — cercle flottant bleu, comme le "+" de Flutter
+  .sidebar-link.publish-link {
+    background: none;
+    box-shadow: none;
+    margin: 0;
+    flex: 0 0 52px;
+
+    .sidebar-link-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--q-accent) 0%, var(--q-accent-light) 100%);
+      box-shadow: 0 4px 16px rgba(79, 110, 247, 0.4);
+      transform: translateY(-14px);
+
+      .material-icons { font-size: 26px; color: white; }
+    }
+
+    &:hover .sidebar-link-icon,
+    &.active .sidebar-link-icon {
+      transform: translateY(-14px);
+      background: linear-gradient(135deg, var(--q-accent-light) 0%, var(--q-accent) 100%);
+    }
+  }
+
+  // Badges — petit point sur l'icône plutôt qu'une pastille texte à côté du label
+  .sidebar-badge {
+    display: none;
+  }
+
+  .notif-badge {
+    top: -2px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 0.55rem;
+  }
 
   .app-layout.with-sidebar .main-content {
     margin-left: 0;
     width: 100%;
+    padding-bottom: 76px; // laisse la place à la barre du bas
+  }
+
+  .app-layout.fullscreen .main-content {
+    padding-bottom: 0; // feed plein écran ; la barre flotte par-dessus (z-index 200, fond flouté)
   }
 }
 

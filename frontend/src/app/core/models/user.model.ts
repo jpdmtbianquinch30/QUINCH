@@ -40,6 +40,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   phone_number: string;
   full_name: string;
+  username: string;
   password: string;
   password_confirmation: string;
 }
