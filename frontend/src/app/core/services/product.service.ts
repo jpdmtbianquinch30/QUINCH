@@ -113,10 +113,6 @@ export class ProductService {
     return this.api.post('transactions/initiate', data);
   }
 
-  confirmTransaction(transactionId: string): Observable<any> {
-    return this.api.post(`transactions/${transactionId}/confirm`);
-  }
-
   getTransactionHistory(): Observable<any> {
     return this.api.get('transactions/history');
   }

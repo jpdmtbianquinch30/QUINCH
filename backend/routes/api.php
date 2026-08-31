@@ -184,10 +184,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{negotiation}/respond', [NegotiationController::class, 'respond']);
     });
 
-    // Transactions
+        // Transactions
     Route::prefix('transactions')->group(function () {
         Route::post('initiate', [TransactionController::class, 'initiate'])->middleware('throttle:3,1');
-        Route::post('{transaction}/confirm', [TransactionController::class, 'confirm']);
         Route::get('history', [TransactionController::class, 'history']);
         Route::get('{transaction}', [TransactionController::class, 'show']);
         Route::put('{transaction}/status', [TransactionController::class, 'updateStatus']);
@@ -279,5 +278,4 @@ Route::prefix('admin')
 Route::prefix('webhooks')->group(function () {
     Route::post('orange-money', [TransactionController::class, 'webhookOrangeMoney']);
     Route::post('wave', [TransactionController::class, 'webhookWave']);
-    Route::post('free-money', [TransactionController::class, 'webhookFreeMoney']);
-});
+   });

@@ -22,6 +22,7 @@ class Transaction extends Model
         'currency',
         'payment_method',
         'payment_status',
+        'order_status',
         'payment_gateway_id',
         'security_check',
         'delivery_type',
@@ -29,6 +30,7 @@ class Transaction extends Model
         'transaction_fee',
         'risk_score',
         'payment_failure_count',
+        'paid_at',
         'completed_at',
     ];
 
@@ -40,56 +42,39 @@ class Transaction extends Model
             'risk_score' => 'float',
             'delivery_address' => 'array',
             'payment_failure_count' => 'integer',
+            'paid_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
     }
 
-    public function buyer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'buyer_id');
-    }
+    public function buyer(): BelongsTo { return $this->belongsTo(User::class, 'buyer_id'); }
+    public function seller(): BelongsTo { return $this->belongsTo(User::class, 'seller_id'); }
+    public function product(): BelongsTo { return $this->belongsTo(Product::class); }
 
-    public function seller(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'seller_id');
-    }
-
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function scopePending($query)
-    {
-        return $query->where('payment_status', 'pending');
-    }
-
-    public function scopeCompleted($query)
-    {
-        return $query->where('payment_status', 'completed');
-    }
-
-    public function scopeCancelled($query)
-    {
-        return $query->where('payment_status', 'cancelled');
-    }
-
-    public function scopeSuspicious($query)
-    {
-        return $query->where('security_check', 'manual_review');
-    }
+    public function scopePending($query) { return $query->where('payment_status', 'pending'); }
+    public function scopeCompleted($query) { return $query->where('payment_status', 'completed'); }
+    public function scopeSuspicious($query) { return $query->where('security_check', 'manual_review'); }
 
     public function getFormattedAmountAttribute(): string
     {
         return number_format($this->amount, 0, ',', '.') . ' XOF';
     }
 
-    public function markCompleted(): void
+    /** Appelé uniquement depuis un webhook vérifié — jamais depuis une requête utilisateur. */
+    public function markPaid(?string $gatewayReference = null): void
     {
         $this->update([
             'payment_status' => 'completed',
             'security_check' => 'passed',
-            'completed_at' => now(),
+            'paid_at' => now(),
+            'order_status' => 'processing',
+            'payment_gateway_id' => $gatewayReference ?? $this->payment_gateway_id,
         ]);
+    }
+
+    public function markPaymentFailed(): void
+    {
+        $this->increment('payment_failure_count');
+        $this->update(['payment_status' => 'failed']);
     }
 }

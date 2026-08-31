@@ -36,16 +36,22 @@ return [
     ],
 
 'orange_money' => [
+    // Endpoint/segment pays à confirmer avec la doc que Sonatel vous
+    // transmettra à l'activation du compte marchand (KYC RCCM/NINEA/RIB/CNI).
+    'base_url' => env('ORANGE_MONEY_BASE_URL', 'https://api.orange.com/orange-money-webpay/sn/v1'),
+    'auth_url' => env('ORANGE_MONEY_AUTH_URL', 'https://api.orange.com/oauth/v3/token'),
+    'client_id' => env('ORANGE_MONEY_CLIENT_ID'),
+    'client_secret' => env('ORANGE_MONEY_CLIENT_SECRET'),
+    'merchant_key' => env('ORANGE_MONEY_MERCHANT_KEY'),
     'webhook_secret' => env('ORANGE_MONEY_WEBHOOK_SECRET'),
 ],
 
 'wave' => [
+    'base_url' => env('WAVE_BASE_URL', 'https://api.wave.com/v1'),
+    'api_key' => env('WAVE_API_KEY'),
     'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
 ],
 
-'free_money' => [
-    'webhook_secret' => env('FREE_MONEY_WEBHOOK_SECRET'),
-],
 
 'google' => [
     'client_id'     => env('GOOGLE_CLIENT_ID'),

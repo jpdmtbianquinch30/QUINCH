@@ -664,6 +664,11 @@
               </button>
             }
           </div>
+          <div class="delivery-address-field">
+            <label>Adresse de livraison</label>
+            <textarea [ngModel]="deliveryAddressText()" (ngModelChange)="deliveryAddressText.set($event)"
+                      placeholder="Quartier, ville, point de repère..." rows="2"></textarea>
+          </div>
           <button class="modal-cta" [disabled]="!selectedPayment()" (click)="confirmPayment()">
             Confirmer le paiement - {{ formatPrice(p.price) }} F CFA
           </button>

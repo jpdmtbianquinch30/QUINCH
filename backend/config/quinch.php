@@ -17,9 +17,9 @@ return [
     | pour pouvoir activer un provider en staging sans toucher au code.
     |
     */
-    'enabled_payment_methods' => array_filter(array_map(
+        'enabled_payment_methods' => array_filter(array_map(
         'trim',
-        explode(',', env('QUINCH_PAYMENT_METHODS', 'cash_delivery'))
+        explode(',', env('QUINCH_PAYMENT_METHODS', 'wave'))
     )),
 
     /*
@@ -43,4 +43,13 @@ return [
         'favorites_collections' => env('QUINCH_FEATURE_FAVORITES_COLLECTIONS', false),
     ],
 
+        /*
+    |--------------------------------------------------------------------------
+    | URL du frontend
+    |--------------------------------------------------------------------------
+    | Utilisé pour construire les success_url/error_url envoyées aux
+    | passerelles de paiement (Wave, Orange Money) — l'utilisateur y est
+    | redirigé après le paiement.
+    */
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4200'),
 ];

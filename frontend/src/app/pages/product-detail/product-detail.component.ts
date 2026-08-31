@@ -50,6 +50,7 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   isFavorited = signal(false);
   addingToCart = signal(false);
   activeMediaTab = signal<'video' | 'photos'>('video');
+  deliveryAddressText = signal('');
 
   // Video
   videoPlaying = signal(false);
@@ -346,23 +347,25 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   }
 
   confirmPayment() {
-    const p = this.product();
-    if (!p || !this.selectedPayment()) return;
-    this.notify.info('Paiement en cours...');
-    this.productService.initiateTransaction({
-      product_id: p.id,
-      amount: p.price,
-      payment_method: this.selectedPayment(),
-      delivery_type: 'delivery',
-    }).subscribe({
-      next: () => {
-        this.showPayment.set(false);
-        this.notify.success('Commande confirmee! Le vendeur a ete notifie.');
-        this.analytics.trackPurchase(p.id, p.price);
-      },
-      error: () => this.notify.error('Erreur lors du paiement.'),
-    });
-  }
+  const p = this.product();
+  if (!p || !this.selectedPayment()) return;
+  this.notify.info('Redirection vers le paiement...');
+  this.productService.initiateTransaction({
+    product_id: p.id,
+    payment_method: this.selectedPayment(),
+    delivery_type: 'delivery',
+    delivery_address: { text: this.deliveryAddressText().trim() || 'À convenir avec le vendeur' },
+  }).subscribe({
+    next: (res: any) => {
+      if (res.payment_url) {
+        window.location.href = res.payment_url;
+      } else {
+        this.notify.error('Le lien de paiement est introuvable.');
+      }
+    },
+    error: (err: any) => this.notify.error(err?.error?.message || 'Erreur lors de l\'initialisation du paiement.'),
+  });
+}
 
   // ─── Video helpers ─────────────────────────────────────
   getProductVideoUrl(): string | null {
