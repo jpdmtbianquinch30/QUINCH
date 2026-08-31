@@ -10,10 +10,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
-    public function initiate(Request $request): JsonResponse
+        public function initiate(Request $request): JsonResponse
     {
         $enabledMethods = config('quinch.enabled_payment_methods', ['wave']);
 
@@ -22,28 +23,42 @@ class TransactionController extends Controller
             'payment_method' => ['required', Rule::in($enabledMethods)],
             'delivery_type' => ['required', 'in:pickup,delivery,meetup'],
             'delivery_address' => ['required_if:delivery_type,delivery', 'array'],
+            'quantity' => ['sometimes', 'integer', 'min:1'],
         ], [
             'payment_method.in' => 'Ce moyen de paiement n\'est pas encore disponible.',
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
+        $qty = $validated['quantity'] ?? 1;
 
-        if ($product->user_id === $request->user()->id) {
-            return response()->json(['message' => 'Vous ne pouvez pas acheter votre propre produit.'], 422);
-        }
+        // Verrou + décrément atomique du stock (règle la race condition + le multi-unités)
+        $product = DB::transaction(function () use ($validated, $request, $qty) {
+            $product = Product::where('id', $validated['product_id'])->lockForUpdate()->firstOrFail();
 
-        if ($product->status !== 'active') {
-            return response()->json(['message' => 'Ce produit n\'est plus disponible.'], 422);
-        }
+            if ($product->user_id === $request->user()->id) {
+                abort(422, 'Vous ne pouvez pas acheter votre propre produit.');
+            }
+
+            if ($product->status !== 'active' || $product->stock_quantity < $qty) {
+                abort(422, 'Ce produit n\'est plus disponible en quantité suffisante.');
+            }
+
+            $product->decrement('stock_quantity', $qty);
+            if ($product->stock_quantity <= 0) {
+                $product->update(['status' => 'reserved']);
+            }
+
+            return $product;
+        });
 
         $gateway = PaymentGatewayFactory::create($validated['payment_method']);
-        $fee = round($product->price * $gateway->getFeeRate(), 2);
+        $fee = round($product->price * $qty * $gateway->getFeeRate(), 2);
 
         $transaction = Transaction::create([
             'buyer_id' => $request->user()->id,
             'seller_id' => $product->user_id,
             'product_id' => $product->id,
-            'amount' => $product->price,
+            'quantity' => $qty,
+            'amount' => $product->price * $qty,
             'currency' => 'XOF',
             'payment_method' => $validated['payment_method'],
             'payment_status' => 'pending',
@@ -57,7 +72,7 @@ class TransactionController extends Controller
         $frontendUrl = rtrim(config('quinch.frontend_url'), '/');
 
         $result = $gateway->initiatePayment([
-            'amount' => $product->price + $fee,
+            'amount' => $product->price * $qty + $fee,
             'transaction_id' => $transaction->id,
             'success_url' => "{$frontendUrl}/transactions/{$transaction->id}/success",
             'error_url' => "{$frontendUrl}/transactions/{$transaction->id}/error",
@@ -65,6 +80,7 @@ class TransactionController extends Controller
         ]);
 
         if (!($result['success'] ?? false)) {
+            $this->releaseStock($product, $qty);
             $transaction->markPaymentFailed();
             return response()->json([
                 'message' => $result['message'] ?? 'Le paiement n\'a pas pu être initié.',
@@ -72,15 +88,43 @@ class TransactionController extends Controller
         }
 
         $transaction->update(['payment_gateway_id' => $result['gateway_reference'] ?? null]);
-        $product->update(['status' => 'reserved']);
 
         return response()->json([
             'message' => 'Redirection vers le paiement.',
             'transaction' => $transaction->fresh()->load(['product', 'seller']),
             'payment_url' => $result['payment_url'],
-            'total_amount' => $product->price + $fee,
+            'total_amount' => $product->price * $qty + $fee,
             'fee' => $fee,
         ], 201);
+    }
+
+    /**
+     * Annule un paiement en cours et restitue le stock au produit.
+     */
+    public function cancelPayment(Request $request, Transaction $transaction): JsonResponse
+    {
+        if ($transaction->buyer_id !== $request->user()->id) abort(403);
+
+        if ($transaction->order_status !== 'pending_payment') {
+            return response()->json(['message' => 'Cette transaction ne peut plus être annulée.'], 422);
+        }
+
+        $transaction->update(['order_status' => 'cancelled', 'payment_status' => 'failed']);
+        $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
+
+        return response()->json(['message' => 'Paiement annulé, stock restitué.']);
+    }
+
+    private function releaseStock(Product $product, int $qty): void
+    {
+        DB::transaction(function () use ($product, $qty) {
+            $locked = Product::where('id', $product->id)->lockForUpdate()->first();
+            if (!$locked) return;
+            $locked->increment('stock_quantity', $qty);
+            if ($locked->status === 'reserved' && $locked->stock_quantity > 0) {
+                $locked->update(['status' => 'active']);
+            }
+        });
     }
 
     public function history(Request $request): JsonResponse

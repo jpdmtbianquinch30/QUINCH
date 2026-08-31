@@ -191,7 +191,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{transaction}', [TransactionController::class, 'show']);
         Route::put('{transaction}/status', [TransactionController::class, 'updateStatus']);
         Route::post('{transaction}/dispute', [TransactionController::class, 'dispute']);
-    });
+        Route::post('{transaction}/cancel', [TransactionController::class, 'cancelPayment']);
+        });
 
     // Follows & Friends (V2 — désactivé en V1)
     Route::middleware('feature:follow')->group(function () {
