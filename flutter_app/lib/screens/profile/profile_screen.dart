@@ -8,12 +8,19 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../services/user_service.dart';
 import '../../services/product_service.dart';
-import '../../services/follow_service.dart';
 import '../../services/favorite_service.dart';
 import '../../config/api_config.dart';
-import '../../config/feature_flags.dart';
 import '../../config/theme.dart';
 import '../../widgets/cached_avatar.dart';
+
+/// ═══════════════════════════════════════════════════════════════
+/// PROFIL (le sien)
+/// ───────────────────────────────────────────────────────────────
+/// Le système d'abonnement (Abonnés/Abonnements + bouton Suivre) a
+/// été retiré : sur un marketplace, ce qui compte c'est la
+/// confiance et l'activité réelle (annonces, favoris), pas un
+/// compteur social. Remplacé par Produits / Favoris / Confiance.
+/// ═══════════════════════════════════════════════════════════════
 
 class ProfileScreen extends StatefulWidget {
   final String? username;
@@ -34,13 +41,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   // Filter for own products tab
   String _productFilter = 'all'; // 'all', 'recent', 'product', 'service'
-
-  // Follow state (for other users' profiles)
-  bool _isFollowing = false;
-  bool _isMutual = false;
-  bool _followLoading = false;
-  int _followersCount = 0;
-  int _followingCount = 0;
 
   @override
   void initState() {
@@ -106,36 +106,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         }
       }
 
-      // Load follow counts (V2 — désactivé en V1, voir FeatureFlags.follow)
-      if (FeatureFlags.follow) {
-        try {
-          if (!mounted) return;
-          final followService = context.read<FollowService>();
-        if (_isOwnProfile && auth.user?.id != null) {
-          final counts = await followService.getFollowCounts(auth.user!.id);
-          _followersCount = counts['followers'] ?? 0;
-          _followingCount = counts['following'] ?? 0;
-        } else if (!_isOwnProfile) {
-          final userId = (_profileData?['user']?['id'] ?? _profileData?['seller']?['id'])?.toString();
-          if (userId != null) {
-            final counts = await followService.getFollowCounts(userId);
-            _followersCount = counts['followers'] ?? 0;
-            _followingCount = counts['following'] ?? 0;
-            _isFollowing = counts['is_following'] == true;
-            _isMutual = counts['is_mutual'] == true;
-          }
-        }
-      } catch (_) {
-        if (_isOwnProfile) {
-          _followersCount = auth.user?.followersCount ?? 0;
-          _followingCount = auth.user?.followingCount ?? 0;
-        }
-      }
-      } else if (_isOwnProfile) {
-        _followersCount = auth.user?.followersCount ?? 0;
-        _followingCount = auth.user?.followingCount ?? 0;
-      }
-
       if (mounted) setState(() => _loading = false);
     } catch (e) {
       if (mounted) setState(() => _loading = false);
@@ -157,59 +127,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
-  Future<void> _toggleFollow() async {
-    if (_isOwnProfile) return;
-    final auth = context.read<AuthProvider>();
-    if (!auth.isAuthenticated) {
-      context.push('/auth/login');
-      return;
-    }
-
-    final userId = (_profileData?['user']?['id'] ?? _profileData?['seller']?['id'])?.toString();
-    if (userId == null) return;
-
-    setState(() => _followLoading = true);
-    try {
-      final followService = context.read<FollowService>();
-      if (_isFollowing) {
-        await followService.unfollow(userId);
-        setState(() {
-          _isFollowing = false;
-          _isMutual = false;
-          _followersCount = (_followersCount - 1).clamp(0, 999999);
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Désabonné avec succès'), duration: Duration(seconds: 2)),
-          );
-        }
-      } else {
-        final result = await followService.follow(userId);
-        final isMutualNow = result['is_mutual'] == true;
-        setState(() {
-          _isFollowing = true;
-          _isMutual = isMutualNow;
-          _followersCount++;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isMutualNow ? 'Vous êtes maintenant amis !' : 'Abonnement réussi !'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: AppColors.danger),
-        );
-      }
-    }
-    if (mounted) setState(() => _followLoading = false);
-  }
-
   Future<void> _startConversation() async {
     final auth = context.read<AuthProvider>();
     if (!auth.isAuthenticated) {
@@ -229,34 +146,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     } catch (_) {}
   }
 
-  void _openFollowers() {
-    if (!FeatureFlags.follow) return;
-    final auth = context.read<AuthProvider>();
-    final userId = _isOwnProfile
-        ? auth.user?.id
-        : (_profileData?['user']?['id'] ?? _profileData?['seller']?['id'])?.toString();
-    final name = _isOwnProfile
-        ? (auth.user?.fullName ?? 'Moi')
-        : (_profileData?['user']?['full_name'] ?? _profileData?['seller']?['full_name'] ?? 'Utilisateur');
-    if (userId != null) {
-      context.push('/followers/$userId?name=$name&tab=followers');
-    }
-  }
-
-  void _openFollowing() {
-    if (!FeatureFlags.follow) return;
-    final auth = context.read<AuthProvider>();
-    final userId = _isOwnProfile
-        ? auth.user?.id
-        : (_profileData?['user']?['id'] ?? _profileData?['seller']?['id'])?.toString();
-    final name = _isOwnProfile
-        ? (auth.user?.fullName ?? 'Moi')
-        : (_profileData?['user']?['full_name'] ?? _profileData?['seller']?['full_name'] ?? 'Utilisateur');
-    if (userId != null) {
-      context.push('/followers/$userId?name=$name&tab=following');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -272,243 +161,202 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : NestedScrollView(
-              headerSliverBuilder: (_, __) => [
-                // ═══ COVER + AVATAR HEADER ═══
-                SliverToBoxAdapter(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Cover
-                      Container(
-                        height: 200,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft, end: Alignment.bottomRight,
-                            colors: [Color(0xFF1A1F35), Color(0xFF2A2F55), Color(0xFF1A1F35)],
-                          ),
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-                        ),
-                        child: _getCoverWidget(user),
-                      ),
-
-                      // Gradient overlay
-                      Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, AppColors.bgPrimary.withValues(alpha: 0.5)],
-                          ),
-                        ),
-                      ),
-
-                      // Back button + settings (NO logout)
-                      Positioned(
-                        top: MediaQuery.of(context).padding.top + 8,
-                        left: 12, right: 12,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (!_isOwnProfile)
-                              _GlassButton(icon: Icons.arrow_back, onTap: () => Navigator.pop(context)),
-                            const Spacer(),
-                            if (_isOwnProfile)
-                              _GlassButton(icon: Icons.settings, onTap: () => context.push('/settings')),
-                          ],
-                        ),
-                      ),
-
-                      // Avatar
-                      Positioned(
-                        bottom: -45, left: 0, right: 0,
-                        child: Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.accent, width: 3),
-                              boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 20)],
-                            ),
-                            child: CachedAvatar(
-                              url: _getAvatarUrl(user),
-                              size: 100,
-                              name: _getName(user),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+        headerSliverBuilder: (_, __) => [
+          // ═══ COVER + AVATAR HEADER ═══
+          SliverToBoxAdapter(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Cover
+                Container(
+                  height: 200,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      colors: [Color(0xFF1A1F35), Color(0xFF2A2F55), Color(0xFF1A1F35)],
+                    ),
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
                   ),
+                  child: _getCoverWidget(user),
                 ),
 
-                // ═══ PROFILE INFO ═══
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 56, 24, 0),
-                    child: Column(
-                      children: [
-                        Text(_getName(user),
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                        const SizedBox(height: 4),
-                        Text('@${_getUsername(user)}',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-
-                        if (!_isOwnProfile && _isMutual) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.success.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(Icons.people, size: 14, color: AppColors.success),
-                              SizedBox(width: 4),
-                              Text('Ami(e)', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600)),
-                            ]),
-                          ),
-                        ],
-
-                        const SizedBox(height: 20),
-
-                        // Stats — clickable followers / following
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: AppColors.bgCard,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            children: [
-                              _StatButton(label: 'Produits', value: '${_myProducts.length}'),
-                              _divider(),
-                              _StatButton(label: 'Abonnés', value: _formatCount(_followersCount), onTap: _openFollowers),
-                              _divider(),
-                              _StatButton(label: 'Abonnements', value: _formatCount(_followingCount), onTap: _openFollowing),
-                              _divider(),
-                              _StatButton(
-                                label: 'Confiance',
-                                value: '${_getTrustPercent(user)}%',
-                                valueColor: _trustColor(_getTrustScore(user)),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Trust bar
-                        if (_getTrustScore(user) > 0) ...[
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: _getTrustScore(user),
-                              minHeight: 6,
-                              backgroundColor: AppColors.bgCard,
-                              valueColor: AlwaysStoppedAnimation(_trustColor(_getTrustScore(user))),
-                            ),
-                          ),
-                        ],
-
-                        // Actions
-                        const SizedBox(height: 16),
-                        if (_isOwnProfile)
-                          SizedBox(
-                            width: double.infinity, height: 44,
-                            child: OutlinedButton.icon(
-                              onPressed: () => context.push('/profile/edit'),
-                              icon: const Icon(Icons.edit, size: 16),
-                              label: const Text('Modifier le profil'),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: AppColors.border),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          )
-                        else
-                          Row(children: [
-                            Expanded(
-                              child: SizedBox(height: 44,
-                                child: _isFollowing
-                                    ? OutlinedButton.icon(
-                                        onPressed: _followLoading ? null : _toggleFollow,
-                                        icon: _followLoading
-                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger))
-                                            : const Icon(Icons.person_remove, size: 16, color: AppColors.danger),
-                                        label: Text('Se désabonner',
-                                          style: TextStyle(fontSize: 13, color: _followLoading ? AppColors.textMuted : AppColors.danger)),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: AppColors.danger,
-                                          side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
-                                      )
-                                    : ElevatedButton.icon(
-                                        onPressed: _followLoading ? null : _toggleFollow,
-                                        icon: _followLoading
-                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                            : const Icon(Icons.person_add, size: 16, color: Colors.white),
-                                        label: const Text('Suivre', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.accent,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            SizedBox(height: 44, width: 44,
-                              child: OutlinedButton(
-                                onPressed: _startConversation,
-                                style: OutlinedButton.styleFrom(padding: EdgeInsets.zero,
-                                  side: BorderSide(color: AppColors.border),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                                child: const Icon(Icons.chat, size: 18),
-                              ),
-                            ),
-                          ]),
-
-                        // Bio — displayed under "Modifier le profil"
-                        if (_getBio(user).isNotEmpty) ...[
-                          const SizedBox(height: 14),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppColors.bgCard,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
-                            child: Text(_getBio(user), textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4)),
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-                      ],
+                // Gradient overlay
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, AppColors.bgPrimary.withValues(alpha: 0.5)],
                     ),
                   ),
                 ),
 
-                // ═══ TABS ═══
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _TabHeaderDelegate(tabController: _tabController, isOwnProfile: _isOwnProfile),
+                // Back button + settings (NO logout)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 12, right: 12,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (!_isOwnProfile)
+                        _GlassButton(icon: Icons.arrow_back, onTap: () => Navigator.pop(context)),
+                      const Spacer(),
+                      if (_isOwnProfile)
+                        _GlassButton(icon: Icons.settings, onTap: () => context.push('/settings')),
+                    ],
+                  ),
+                ),
+
+                // Avatar
+                Positioned(
+                  bottom: -45, left: 0, right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.accent, width: 3),
+                        boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 20)],
+                      ),
+                      child: CachedAvatar(
+                        url: _getAvatarUrl(user),
+                        size: 100,
+                        name: _getName(user),
+                      ),
+                    ),
+                  ),
                 ),
               ],
-              body: TabBarView(
-                controller: _tabController,
+            ),
+          ),
+
+          // ═══ PROFILE INFO ═══
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 56, 24, 0),
+              child: Column(
                 children: [
-                  // Tab 1: My Products
-                  _buildProductsTab(),
-                  // Tab 2: Liked
-                  _buildLikesTab(),
-                  // Tab 3: Saved/Favorites
-                  _buildFavoritesTab(),
+                  Text(_getName(user),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text('@${_getUsername(user)}',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+
+                  const SizedBox(height: 20),
+
+                  // Stats — Produits / Favoris / Confiance (plus de
+                  // compteurs sociaux abonnés/abonnements)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgCard,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        _StatButton(label: 'Produits', value: '${_myProducts.where((p) => !p.isService).length}'),
+                        _divider(),
+                        _StatButton(label: 'Services', value: '${_myProducts.where((p) => p.isService).length}'),
+                        _divider(),
+                        _StatButton(label: 'Favoris', value: '${_savedItems.length}'),
+                        _divider(),
+                        _StatButton(
+                          label: 'Confiance',
+                          value: '${_getTrustPercent(user)}%',
+                          valueColor: _trustColor(_getTrustScore(user)),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Trust bar
+                  if (_getTrustScore(user) > 0) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _getTrustScore(user),
+                        minHeight: 6,
+                        backgroundColor: AppColors.bgCard,
+                        valueColor: AlwaysStoppedAnimation(_trustColor(_getTrustScore(user))),
+                      ),
+                    ),
+                  ],
+
+                  // Actions
+                  const SizedBox(height: 16),
+                  if (_isOwnProfile)
+                    SizedBox(
+                      width: double.infinity, height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push('/profile/edit'),
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text('Modifier le profil'),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    )
+                  else
+                  // Plus de bouton Suivre : le lien acheteur/vendeur se
+                  // fait via le message et les échanges réels, pas un
+                  // compteur social.
+                    SizedBox(
+                      width: double.infinity, height: 44,
+                      child: ElevatedButton.icon(
+                        onPressed: _startConversation,
+                        icon: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.white),
+                        label: const Text('Contacter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+
+                  // Bio — displayed under "Modifier le profil"
+                  if (_getBio(user).isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgCard,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Text(_getBio(user), textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4)),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
+          ),
+
+          // ═══ TABS ═══
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _TabHeaderDelegate(tabController: _tabController, isOwnProfile: _isOwnProfile),
+          ),
+        ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // Tab 1: My Products
+            _buildProductsTab(),
+            // Tab 2: Liked
+            _buildLikesTab(),
+            // Tab 3: Saved/Favorites
+            _buildFavoritesTab(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -528,10 +376,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               _FilterChipWidget(label: 'Récent', selected: _productFilter == 'recent', onTap: () => setState(() => _productFilter = 'recent')),
               const SizedBox(width: 8),
               _FilterChipWidget(label: 'Produits', selected: _productFilter == 'product', onTap: () => setState(() => _productFilter = 'product'),
-                count: _myProducts.where((p) => p.isProduct).length),
+                  count: _myProducts.where((p) => p.isProduct).length),
               const SizedBox(width: 8),
               _FilterChipWidget(label: 'Services', selected: _productFilter == 'service', onTap: () => setState(() => _productFilter = 'service'),
-                count: _myProducts.where((p) => p.isService).length),
+                  count: _myProducts.where((p) => p.isService).length),
             ]),
           ),
         ),
@@ -539,30 +387,30 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       Expanded(
         child: filtered.isEmpty
             ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.inventory_2_outlined, color: AppColors.textMuted, size: 48),
-                const SizedBox(height: 12),
-                Text(_isOwnProfile ? 'Vous n\'avez aucun produit' : 'Aucun produit',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
-                if (_isOwnProfile) ...[
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => context.push('/sell'),
-                    icon: const Icon(Icons.add, size: 16, color: Colors.white),
-                    label: const Text('Publier', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                  ),
-                ],
-              ]))
+          Icon(Icons.inventory_2_outlined, color: AppColors.textMuted, size: 48),
+          const SizedBox(height: 12),
+          Text(_isOwnProfile ? 'Vous n\'avez aucun produit' : 'Aucun produit',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+          if (_isOwnProfile) ...[
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () => context.push('/sell'),
+              icon: const Icon(Icons.add, size: 16, color: Colors.white),
+              label: const Text('Publier', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            ),
+          ],
+        ]))
             : GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, childAspectRatio: 0.72,
-                  crossAxisSpacing: 8, mainAxisSpacing: 8,
-                ),
-                itemCount: filtered.length,
-                itemBuilder: (_, i) => _MyProductCard(product: filtered[i], isOwn: _isOwnProfile),
-              ),
+          padding: const EdgeInsets.all(12),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, childAspectRatio: 0.72,
+            crossAxisSpacing: 8, mainAxisSpacing: 8,
+          ),
+          itemCount: filtered.length,
+          itemBuilder: (_, i) => _MyProductCard(product: filtered[i], isOwn: _isOwnProfile),
+        ),
       ),
     ]);
   }
@@ -683,12 +531,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return AppColors.danger;
   }
 
-  String _formatCount(int c) {
-    if (c >= 1000000) return '${(c / 1000000).toStringAsFixed(1)}M';
-    if (c >= 1000) return '${(c / 1000).toStringAsFixed(1)}K';
-    return '$c';
-  }
-
   Widget _divider() => Container(width: 1, height: 32, color: AppColors.border);
 }
 
@@ -764,8 +606,8 @@ class _MyProductCard extends StatelessWidget {
 
               // Gradient overlay
               const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Color(0x80000000)], stops: [0.5, 1.0])))),
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0x80000000)], stops: [0.5, 1.0])))),
 
               // Type badge — top left
               Positioned(top: 6, left: 6,
@@ -785,9 +627,9 @@ class _MyProductCard extends StatelessWidget {
               // Video icon — top right
               if (product.hasVideo)
                 Positioned(top: 6, right: 6,
-                  child: Container(width: 22, height: 22, decoration: BoxDecoration(
-                    color: Colors.black54, borderRadius: BorderRadius.circular(11)),
-                    child: const Icon(Icons.play_arrow, color: Colors.white, size: 13))),
+                    child: Container(width: 22, height: 22, decoration: BoxDecoration(
+                        color: Colors.black54, borderRadius: BorderRadius.circular(11)),
+                        child: const Icon(Icons.play_arrow, color: Colors.white, size: 13))),
 
               // Stock badge — bottom right (products only)
               if (product.isProduct && isOwn)
@@ -821,12 +663,12 @@ class _MyProductCard extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(product.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
               const SizedBox(height: 3),
               Text(product.displayPrice,
-                style: TextStyle(
-                  color: product.isService ? const Color(0xFF10B981) : AppColors.accent,
-                  fontSize: 13, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: product.isService ? const Color(0xFF10B981) : AppColors.accent,
+                      fontSize: 13, fontWeight: FontWeight.w700)),
             ]),
           ),
         ]),

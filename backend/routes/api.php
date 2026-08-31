@@ -96,6 +96,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('preferences', [UserController::class, 'savePreferences']);
         Route::post('upload-avatar', [UserController::class, 'uploadAvatar']);
         Route::post('upload-cover', [UserController::class, 'uploadCover']);
+        Route::post('phone/request-change', [UserController::class, 'requestPhoneChange'])->middleware('throttle:5,1');
+        Route::post('phone/confirm-change', [UserController::class, 'confirmPhoneChange'])->middleware('throttle:5,1');
     });
 
     // Blocked users management

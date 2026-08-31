@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
-/// QUINCH Logo — uses the real brand logo image
 class QuinchLogo extends StatelessWidget {
   final double size;
   final bool showText;
@@ -27,12 +26,12 @@ class QuinchLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(size * 0.23),
         boxShadow: withShadow
             ? [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.35),
-                  blurRadius: size * 0.3,
-                  offset: Offset(0, size * 0.06),
-                ),
-              ]
+          BoxShadow(
+            color: AppColors.accent.withValues(alpha: 0.35),
+            blurRadius: size * 0.3,
+            offset: Offset(0, size * 0.06),
+          ),
+        ]
             : null,
       ),
       child: ClipRRect(
@@ -58,7 +57,7 @@ class QuinchLogo extends StatelessWidget {
           style: TextStyle(
             color: textColor ?? AppColors.textPrimary,
             fontSize: textSize,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
             letterSpacing: -0.5,
           ),
         ),
@@ -67,7 +66,8 @@ class QuinchLogo extends StatelessWidget {
   }
 }
 
-/// Full branding widget with logo + tagline
+/// Branding complet — logo rond + QUINCH + tagline
+/// Utilisé dans : login, register, onboarding, about
 class QuinchBranding extends StatelessWidget {
   final double logoSize;
   final bool showTagline;
@@ -85,14 +85,14 @@ class QuinchBranding extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        QuinchLogo(size: logoSize),
+        QuinchLogo(size: logoSize, withShadow: true),
         const SizedBox(height: 16),
         Text(
           'QUINCH',
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: logoSize * 0.4,
-            fontWeight: FontWeight.w800,
+            fontSize: logoSize * 0.42,
+            fontWeight: FontWeight.w900,
             letterSpacing: -1,
           ),
         ),
@@ -102,17 +102,27 @@ class QuinchBranding extends StatelessWidget {
             'Investissons entre nous et chez nous',
             style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: logoSize * 0.17,
+              fontSize: logoSize * 0.175,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
         if (showFeatures) ...[
           const SizedBox(height: 32),
-          const _Feature(icon: Icons.videocam, label: 'Vidéos produits immersives'),
+          const _Feature(
+            icon: Icons.videocam_rounded,
+            label: 'Vidéos produits immersives',
+          ),
           const SizedBox(height: 12),
-          const _Feature(icon: Icons.verified_user, label: 'Transactions sécurisées'),
+          const _Feature(
+            icon: Icons.verified_user_rounded,
+            label: 'Transactions sécurisées',
+          ),
           const SizedBox(height: 12),
-          const _Feature(icon: Icons.location_on, label: 'Marché local & proximité'),
+          const _Feature(
+            icon: Icons.location_on_rounded,
+            label: 'Marché local & proximité',
+          ),
         ],
       ],
     );

@@ -12,38 +12,29 @@ class _AnimatedSplashState extends State<AnimatedSplash>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
-  late final Animation<double> _glow;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1000),
     )..forward();
 
-    _fade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-    );
-    _scale = Tween<double>(begin: 0.7, end: 1.0).animate(
+    _fade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack)),
-    );
-    _glow = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.3, 1.0, curve: Curves.easeInOut)),
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
     );
 
-    // Une fois l'entrée terminée, le halo pulse doucement en boucle
-    // tant que le bootstrap (init API/auth) n'est pas fini.
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _controller.repeat(reverse: true, min: 0.6, max: 1.0);
-      }
-    });
+    _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
+      ),
+    );
   }
 
   @override
@@ -54,66 +45,40 @@ class _AnimatedSplashState extends State<AnimatedSplash>
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          final glow = _glow.value.clamp(0.0, 1.0);
-          return Center(
-            child: Stack(
-              alignment: Alignment.center,
+      body: Center(
+        child: FadeTransition(
+          opacity: _fade,
+          child: ScaleTransition(
+            scale: _scale,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Opacity(
-                  opacity: glow * 0.6,
-                  child: Container(
-                    width: 220 + (glow * 40),
-                    height: 220 + (glow * 40),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(colors: [
-                        const Color(0xFF6A3DE8).withValues(alpha: 0.5),
-                        const Color(0xFF2A6BFF).withValues(alpha: 0.15),
-                        Colors.transparent,
-                      ]),
-                    ),
-                  ),
+                // Logo écrit QUINCH
+                Image.asset(
+                  'assets/images/quinchlogoecrit.png',
+                  width: w * 0.55,
+                  fit: BoxFit.contain,
                 ),
-                FadeTransition(
-                  opacity: _fade,
-                  child: ScaleTransition(
-                    scale: _scale,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/images/logo_splash.png',
-                          width: 140,
-                          height: 140,
-                        ),
-                        const SizedBox(height: 16),
-                        ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFF7B4DFF), Color(0xFF2A9BFF)],
-                          ).createShader(bounds),
-                          child: const Text(
-                            'QUINCH',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 4,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 14),
+                // Tagline
+                const Text(
+                  'Investissons entre nous et chez nous',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF8B92B8),
+                    fontSize: 13,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

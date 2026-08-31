@@ -219,6 +219,106 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ));
   }
 
+  String _extractError(Object e, String fallback) {
+    if (e is DioException && e.response?.data is Map) {
+      final data = e.response!.data as Map;
+      return (data['message'] ?? fallback).toString();
+    }
+    return fallback;
+  }
+
+  /// Changement de numéro en 2 étapes : (1) mot de passe actuel + nouveau
+  /// numéro -> OTP envoyé au nouveau numéro ; (2) code OTP -> confirmation.
+  /// Fonctionnalité manquante jusqu'ici (champ en lecture seule).
+  void _showChangePhoneSheet() {
+    final newPhoneCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final otpCtrl = TextEditingController();
+    bool otpSent = false;
+    bool loading = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSt) => Padding(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(otpSent ? 'Confirmer le nouveau numéro' : 'Changer de numéro',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            if (!otpSent) ...[
+              TextField(
+                controller: newPhoneCtrl,
+                keyboardType: TextInputType.phone,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: _inputDecoration(hint: 'Nouveau numéro (+221...)', prefixIcon: Icons.phone_outlined),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordCtrl,
+                obscureText: true,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: _inputDecoration(hint: 'Mot de passe actuel', prefixIcon: Icons.lock_outline),
+              ),
+            ] else
+              TextField(
+                controller: otpCtrl,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                style: TextStyle(color: AppColors.textPrimary, letterSpacing: 6, fontSize: 18),
+                decoration: _inputDecoration(hint: 'Code reçu par SMS', prefixIcon: Icons.sms_outlined).copyWith(counterText: ''),
+              ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity, height: 46,
+              child: ElevatedButton(
+                onPressed: loading ? null : () async {
+                  setSt(() => loading = true);
+                  try {
+                    if (!otpSent) {
+                      final msg = await context.read<UserService>().requestPhoneChange(
+                        newPhoneNumber: newPhoneCtrl.text.trim(),
+                        currentPassword: passwordCtrl.text,
+                      );
+                      setSt(() { loading = false; otpSent = true; });
+                      if (mounted) _showSuccess(msg);
+                    } else {
+                      await context.read<UserService>().confirmPhoneChange(otp: otpCtrl.text.trim());
+                      if (!mounted) return;
+                      await context.read<AuthProvider>().refreshUser();
+                      if (!sheetCtx.mounted) return;
+                      Navigator.pop(sheetCtx);
+                      _showSuccess('Numéro de téléphone mis à jour !');
+                      setState(() {});
+                    }
+                  } catch (e) {
+                    setSt(() => loading = false);
+                    if (mounted) {
+                      _showError(_extractError(e, otpSent ? 'Code invalide ou expiré.' : 'Erreur lors de la demande.'));
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: loading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : Text(otpSent ? 'Confirmer' : 'Envoyer le code', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
@@ -531,19 +631,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       _buildField(
                         label: 'Numéro de téléphone',
-                        hint: 'Pour changer votre numéro, contactez le support.',
-                        child: TextFormField(
-                          initialValue: user?.phoneNumber ?? '',
-                          readOnly: true,
-                          style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-                          decoration: _inputDecoration(
-                            hint: '+221 ...',
-                            prefixIcon: Icons.phone_outlined,
-                          ).copyWith(
-                            filled: true,
-                            fillColor: AppColors.bgElevated.withValues(alpha: 0.5),
+                        hint: 'Vérification par SMS requise pour changer de numéro.',
+                        child: Row(children: [
+                          Expanded(
+                            child: TextFormField(
+                              initialValue: user?.phoneNumber ?? '',
+                              readOnly: true,
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                              decoration: _inputDecoration(
+                                hint: '+221 ...',
+                                prefixIcon: Icons.phone_outlined,
+                              ).copyWith(
+                                filled: true,
+                                fillColor: AppColors.bgElevated.withValues(alpha: 0.5),
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: _showChangePhoneSheet,
+                            child: Text('Modifier', style: TextStyle(color: AppColors.accent, fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                        ]),
                       ),
                     ],
                   ),

@@ -9,12 +9,20 @@ import '../../providers/chat_provider.dart';
 import '../../services/user_service.dart';
 import '../../services/product_service.dart';
 import '../../services/review_service.dart';
-import '../../services/follow_service.dart';
 import 'package:dio/dio.dart';
 import '../../config/api_config.dart';
 import '../../config/feature_flags.dart';
 import '../../config/theme.dart';
 import '../../widgets/cached_avatar.dart';
+
+/// ═══════════════════════════════════════════════════════════════
+/// PROFIL VENDEUR (public)
+/// ───────────────────────────────────────────────────────────────
+/// Système d'abonnement retiré (Abonnés/Abonnements + Suivre) —
+/// remplacé par des stats orientées confiance marketplace :
+/// Produits / Avis / Confiance. Le lien acheteur-vendeur se fait
+/// via le message, pas un compteur social.
+/// ═══════════════════════════════════════════════════════════════
 
 class SellerProfileScreen extends StatefulWidget {
   final String username;
@@ -31,11 +39,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
   List<dynamic> _reviews = [];
   Map<String, dynamic>? _reviewStats;
   bool _loading = true;
-  bool _isFollowing = false;
-  bool _isMutual = false;
-  bool _followLoading = false;
-  int _followersCount = 0;
-  int _followingCount = 0;
 
   @override
   void initState() {
@@ -77,27 +80,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
           _products = result['data'] as List<Product>;
         }
 
-        // Load follow counts + status (V2 — désactivé en V1)
-        if (FeatureFlags.follow) {
-          try {
-            if (!mounted) return;
-            final followService = context.read<FollowService>();
-            final counts = await followService.getFollowCounts(sellerId);
-            debugPrint('[SellerProfile] getFollowCounts for $sellerId => $counts');
-            _followersCount = counts['followers'] ?? 0;
-            _followingCount = counts['following'] ?? 0;
-            _isFollowing = counts['is_following'] == true;
-            _isMutual = counts['is_mutual'] == true;
-          } catch (e) {
-            debugPrint('[SellerProfile] getFollowCounts error: $e');
-            _followersCount = _seller['followers_count'] ?? 0;
-            _followingCount = _seller['following_count'] ?? 0;
-          }
-        } else {
-          _followersCount = _seller['followers_count'] ?? 0;
-          _followingCount = _seller['following_count'] ?? 0;
-        }
-
         // Load reviews (V2 — désactivé en V1)
         if (FeatureFlags.reviews) {
           try {
@@ -111,76 +93,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
-  }
-
-  Future<void> _toggleFollow() async {
-    if (_seller == null) return;
-    final auth = context.read<AuthProvider>();
-    if (!auth.isAuthenticated) {
-      context.push('/auth/login');
-      return;
-    }
-
-    final sellerId = _seller['id'].toString();
-    setState(() => _followLoading = true);
-
-    try {
-      final followService = context.read<FollowService>();
-      if (_isFollowing) {
-        await followService.unfollow(sellerId);
-        setState(() {
-          _isFollowing = false;
-          _isMutual = false;
-          _followersCount = (_followersCount - 1).clamp(0, 999999);
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Désabonné avec succès'), duration: Duration(seconds: 2)),
-          );
-        }
-      } else {
-        try {
-          final result = await followService.follow(sellerId);
-          final isMutualNow = result['is_mutual'] == true;
-          setState(() {
-            _isFollowing = true;
-            _isMutual = isMutualNow;
-            _followersCount++;
-          });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(isMutualNow ? 'Vous êtes maintenant amis !' : 'Abonnement réussi !'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
-        } catch (followErr) {
-          // 422 = already following — sync state instead of showing error
-          final errStr = followErr.toString();
-          if (errStr.contains('422')) {
-            debugPrint('[SellerProfile] Already following — syncing state');
-            setState(() {
-              _isFollowing = true;
-            });
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vous êtes déjà abonné'), duration: Duration(seconds: 2)),
-              );
-            }
-          } else {
-            rethrow;
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: AppColors.danger),
-        );
-      }
-    }
-    if (mounted) setState(() => _followLoading = false);
   }
 
   Future<void> _startConversation() async {
@@ -228,22 +140,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
     }
   }
 
-  void _openFollowers() {
-    if (!FeatureFlags.follow) return;
-    if (_seller == null) return;
-    final sellerId = _seller['id']?.toString() ?? '';
-    final name = _seller['full_name'] ?? _seller['username'] ?? 'Vendeur';
-    context.push('/followers/$sellerId?name=$name&tab=followers');
-  }
-
-  void _openFollowing() {
-    if (!FeatureFlags.follow) return;
-    if (_seller == null) return;
-    final sellerId = _seller['id']?.toString() ?? '';
-    final name = _seller['full_name'] ?? _seller['username'] ?? 'Vendeur';
-    context.push('/followers/$sellerId?name=$name&tab=following');
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -271,6 +167,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
     final productsCount = s['products_count'] ?? _products.length;
     final bio = s['bio'] ?? '';
     final memberSince = s['created_at']?.toString().substring(0, 10) ?? '';
+    final reviewsCount = _reviewStats?['total'] ?? _reviews.length;
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -312,13 +209,13 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
               background: Stack(fit: StackFit.expand, children: [
                 if (coverUrl.isNotEmpty)
                   CachedNetworkImage(imageUrl: ApiConfig.resolveUrl(coverUrl), fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1F35)))
+                      errorWidget: (_, __, ___) => Container(color: const Color(0xFF1A1F35)))
                 else
                   Container(decoration: const BoxDecoration(gradient: LinearGradient(
-                    colors: [Color(0xFF1A1F35), Color(0xFF2A2F55), Color(0xFF1A1F35)]))),
+                      colors: [Color(0xFF1A1F35), Color(0xFF2A2F55), Color(0xFF1A1F35)]))),
                 Container(decoration: BoxDecoration(gradient: LinearGradient(
-                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, AppColors.bgPrimary.withValues(alpha: 0.8)]))),
+                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, AppColors.bgPrimary.withValues(alpha: 0.8)]))),
               ]),
             ),
           ),
@@ -358,21 +255,6 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
                       Text(city, style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                     ]),
                   ],
-                  if (_isMutual) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.people, size: 12, color: AppColors.success),
-                        SizedBox(width: 4),
-                        Text('Ami(e)', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
-                  ],
                 ])),
               ]),
               if (bio.isNotEmpty) ...[
@@ -381,72 +263,36 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
               ],
               const SizedBox(height: 16),
 
-              // Stats row — clickable followers/following
+              // Stats row — Produits / Avis / Confiance (plus de social)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border)),
+                    border: Border.all(color: AppColors.border)),
                 child: Row(children: [
                   _StatWidget(label: 'Produits', value: '$productsCount'),
                   _divider(),
-                  _StatWidget(label: 'Abonnés', value: '$_followersCount', onTap: _openFollowers),
-                  _divider(),
-                  _StatWidget(label: 'Abonnements', value: '$_followingCount', onTap: _openFollowing),
+                  _StatWidget(label: 'Avis', value: '$reviewsCount'),
                   _divider(),
                   _StatWidget(label: 'Confiance', value: '$trust%',
-                    valueColor: trust >= 80 ? AppColors.success : trust >= 50 ? AppColors.warning : AppColors.danger),
+                      valueColor: trust >= 80 ? AppColors.success : trust >= 50 ? AppColors.warning : AppColors.danger),
                 ]),
               ),
               const SizedBox(height: 12),
 
-              // Action buttons
-              Row(children: [
-                if (FeatureFlags.follow) ...[
-                  Expanded(child: SizedBox(height: 42,
-                    child: _isFollowing
-                        ? OutlinedButton.icon(
-                            onPressed: _followLoading ? null : _toggleFollow,
-                            icon: _followLoading
-                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.danger))
-                                : const Icon(Icons.person_remove, size: 16, color: AppColors.danger),
-                            label: Text(
-                              'Se désabonner',
-                              style: TextStyle(fontSize: 13, color: _followLoading ? AppColors.textMuted : AppColors.danger),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.danger,
-                              side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          )
-                        : ElevatedButton.icon(
-                            onPressed: _followLoading ? null : _toggleFollow,
-                            icon: _followLoading
-                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.person_add, size: 16, color: Colors.white),
-                            label: const Text('Suivre', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                  )),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: SizedBox(height: 42,
-                    child: OutlinedButton.icon(
-                      onPressed: _startConversation,
-                      icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                      label: const Text('Message', style: TextStyle(fontSize: 13)),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
+              // Action — un seul bouton clair : contacter. Le lien
+              // acheteur/vendeur passe par l'échange réel, pas un abonnement.
+              SizedBox(
+                width: double.infinity, height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: _startConversation,
+                  icon: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.white),
+                  label: const Text('Contacter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
-              ]),
+              ),
               const SizedBox(height: 16),
 
               // Tab bar
@@ -488,7 +334,7 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, childAspectRatio: 0.75, crossAxisSpacing: 10, mainAxisSpacing: 10),
+          crossAxisCount: 2, childAspectRatio: 0.75, crossAxisSpacing: 10, mainAxisSpacing: 10),
       itemCount: _products.length,
       itemBuilder: (_, i) {
         final p = _products[i];
@@ -564,8 +410,8 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> with SingleTi
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               CircleAvatar(radius: 16, backgroundColor: AppColors.accentSubtle,
-                child: Text((r['reviewer']?['full_name'] ?? '?')[0].toUpperCase(),
-                    style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600, fontSize: 12))),
+                  child: Text((r['reviewer']?['full_name'] ?? '?')[0].toUpperCase(),
+                      style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600, fontSize: 12))),
               const SizedBox(width: 8),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(r['reviewer']?['full_name'] ?? 'Utilisateur',

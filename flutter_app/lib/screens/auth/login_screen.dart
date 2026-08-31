@@ -308,29 +308,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-
-                      const SizedBox(height: 14),
-
-                      // Demo credentials
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.infoSubtle,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.info.withValues(alpha: 0.2)),
-                        ),
-                        child: Row(children: [
-                          Icon(Icons.info_outline, color: AppColors.info, size: 16),
-                          SizedBox(width: 8),
-                          Expanded(child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Admin : 770000001 / password', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                              Text('Client : 770000010 / password', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                            ],
-                          )),
-                        ]),
-                      ),
                     ],
                   ),
                 ),

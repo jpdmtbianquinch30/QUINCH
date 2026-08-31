@@ -12,6 +12,27 @@ class UserService {
     return User.fromJson(response.data['user'] ?? response.data);
   }
 
+  /// Étape 1 du changement de numéro : vérifie le mot de passe et envoie un
+  /// OTP au NOUVEAU numéro. Le numéro réel ne change pas encore.
+  Future<String> requestPhoneChange({
+    required String newPhoneNumber,
+    required String currentPassword,
+  }) async {
+    final response = await _api.post('/user/phone/request-change', data: {
+      'new_phone_number': newPhoneNumber,
+      'current_password': currentPassword,
+    });
+    return response.data['message'] as String;
+  }
+
+  /// Étape 2 : confirme avec l'OTP reçu sur le nouveau numéro.
+  Future<User> confirmPhoneChange({required String otp}) async {
+    final response = await _api.post('/user/phone/confirm-change', data: {
+      'otp': otp,
+    });
+    return User.fromJson(response.data['user']);
+  }
+
   Future<User> updateProfile({
     String? fullName,
     String? username,

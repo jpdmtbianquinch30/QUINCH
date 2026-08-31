@@ -247,27 +247,10 @@ class ProductService {
     await _api.post('/products/$productId/report', data: {'reason': reason});
   }
 
-  // Transaction
-  Future<Map<String, dynamic>> initiateTransaction({
-    required dynamic productId,
-    required dynamic amount,
-    required String paymentMethod,
-    required String deliveryType,
-  }) async {
-    final response = await _api.post('/products/transactions', data: {
-      'product_id': productId,
-      'amount': amount,
-      'payment_method': paymentMethod,
-      'delivery_type': deliveryType,
-    });
-    return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : {};
-  }
-
-  // Transaction history
-  Future<Map<String, dynamic>> getTransactionHistory() async {
-    final response = await _api.get('/products/transactions/history');
-    return response.data is Map<String, dynamic> ? response.data as Map<String, dynamic> : {};
-  }
+  // Achat / historique des transactions : voir TransactionService, qui
+  // appelle les vraies routes (/transactions/initiate, /transactions/history).
+  // Les anciennes méthodes ici postaient sur /products/transactions[...],
+  // qui n'a jamais existé côté backend (404 systématique) — supprimées.
 
   // Update transaction status
   Future<Map<String, dynamic>> updateTransactionStatus(dynamic txId, String status) async {

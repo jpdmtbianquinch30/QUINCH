@@ -52,6 +52,75 @@ class UserController extends Controller
     }
 
     /**
+     * Demande de changement de numéro de téléphone : vérifie le mot de passe
+     * actuel (empêche qu'une session déjà ouverte suffise à détourner le
+     * compte), puis envoie un OTP au NOUVEAU numéro pour prouver qu'on le
+     * possède bien. Le numéro réel n'est jamais modifié à cette étape.
+     */
+    public function requestPhoneChange(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'new_phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number'],
+            'current_password' => ['required', 'string'],
+        ], [
+            'new_phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
+            'new_phone_number.unique' => 'Ce numéro est déjà utilisé par un autre compte.',
+        ]);
+
+        $user = $request->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'Mot de passe incorrect.',
+                'error' => 'invalid_password',
+            ], 422);
+        }
+
+        $user->pending_phone_number = $validated['new_phone_number'];
+        $user->save();
+        $otp = $user->generateOtp();
+
+        $response = ['message' => 'Un code de vérification a été envoyé au nouveau numéro.'];
+        if (app()->environment(['local', 'testing'])) {
+            $response['demo_otp'] = $otp;
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Confirme le changement de numéro avec l'OTP reçu sur le NOUVEAU
+     * numéro. C'est seulement ici que "phone_number" change réellement.
+     */
+    public function confirmPhoneChange(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'otp' => ['required', 'string', 'size:6'],
+        ]);
+
+        $user = $request->user();
+
+        if (!$user->pending_phone_number || !$user->verifyOtp($validated['otp'])) {
+            return response()->json([
+                'message' => 'Code invalide ou expiré.',
+                'error' => 'invalid_otp',
+            ], 422);
+        }
+
+        $user->update([
+            'phone_number' => $user->pending_phone_number,
+            'pending_phone_number' => null,
+            'otp_code' => null,
+            'otp_expires_at' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'Numéro de téléphone mis à jour avec succès.',
+            'user' => $user->fresh(),
+        ]);
+    }
+
+    /**
      * Upload avatar image.
      */
     public function uploadAvatar(Request $request): JsonResponse

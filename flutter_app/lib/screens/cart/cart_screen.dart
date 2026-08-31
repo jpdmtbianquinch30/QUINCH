@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/cart_item.dart';
 import '../../providers/cart_provider.dart';
 import '../../config/theme.dart';
+import '../../services/transaction_service.dart';
 
 
 class CartScreen extends StatefulWidget {
@@ -15,6 +16,8 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  bool _isCheckingOut = false;
+
   @override
   void initState() {
     super.initState();
@@ -45,75 +48,164 @@ class _CartScreenState extends State<CartScreen> {
         actions: [
           if (cart.items.isNotEmpty)
             TextButton(onPressed: () => _showClearDialog(context),
-              child: const Text('Vider', style: TextStyle(color: AppColors.danger, fontSize: 13))),
+                child: const Text('Vider', style: TextStyle(color: AppColors.danger, fontSize: 13))),
         ],
       ),
       body: cart.isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
           : cart.items.isEmpty
-              ? _EmptyCart()
-              : Column(
-                  children: [
-                    // Items
-                    Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: cart.items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _CartItemCard(item: cart.items[i]),
-                      ),
-                    ),
+          ? _EmptyCart()
+          : Column(
+        children: [
+          // Items
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: cart.items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) => _CartItemCard(item: cart.items[i]),
+            ),
+          ),
 
-                    // Summary
-                    Container(
-                      padding: const EdgeInsets.all(20),
+          // Summary
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.bgSecondary,
+              border: Border(top: BorderSide(color: AppColors.border)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  _SummaryRow('Sous-total', cart.formattedSubtotal),
+                  const SizedBox(height: 6),
+                  _SummaryRow(
+                    'Livraison',
+                    cart.deliveryTotal > 0
+                        ? '${cart.deliveryTotal.toStringAsFixed(0)} F CFA'
+                        : 'Gratuite',
+                    valueColor: cart.deliveryTotal > 0 ? AppColors.warning : AppColors.success,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Divider(color: AppColors.border),
+                  ),
+                  _SummaryRow('Total', cart.formattedTotal, isBold: true, valueColor: AppColors.accentLight),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity, height: 50,
+                    child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: AppColors.bgSecondary,
-                        border: Border(top: BorderSide(color: AppColors.border)),
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 4))],
                       ),
-                      child: SafeArea(
-                        top: false,
-                        child: Column(
-                          children: [
-                            _SummaryRow('Sous-total', cart.formattedSubtotal),
-                            const SizedBox(height: 6),
-                            _SummaryRow(
-                              'Livraison',
-                              cart.deliveryTotal > 0
-                                  ? '${cart.deliveryTotal.toStringAsFixed(0)} F CFA'
-                                  : 'Gratuite',
-                              valueColor: cart.deliveryTotal > 0 ? AppColors.warning : AppColors.success,
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              child: Divider(color: AppColors.border),
-                            ),
-                            _SummaryRow('Total', cart.formattedTotal, isBold: true, valueColor: AppColors.accentLight),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity, height: 50,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.primaryGradient,
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 4))],
-                                ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () => context.push('/messages'),
-                                  icon: const Icon(Icons.lock, size: 18, color: Colors.white),
-                                  label: const Text('Passer la commande', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white)),
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: ElevatedButton.icon(
+                        onPressed: _isCheckingOut ? null : () => _confirmCheckout(context, cart),
+                        icon: _isCheckingOut
+                            ? const SizedBox(width: 16, height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.lock, size: 18, color: Colors.white),
+                        label: Text(_isCheckingOut ? 'Commande en cours...' : 'Passer la commande',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  /// Affiche un récapitulatif avant de déclencher les achats.
+  ///
+  /// V1 : le backend n'accepte que le paiement à la livraison
+  /// (`cash_delivery`, voir `backend/config/quinch.php`), donc pas besoin
+  /// de choix de moyen de paiement ici — contrairement à la fiche produit,
+  /// qui elle affiche un choix car un article seul peut avoir plusieurs
+  /// moyens de paiement configurés par le vendeur.
+  void _confirmCheckout(BuildContext context, CartProvider cart) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        title: const Text('Confirmer la commande'),
+        content: Text(
+          '${cart.items.length} article(s) pour un total de ${cart.formattedTotal}.\n\n'
+              'Paiement à la livraison. Chaque vendeur sera notifié séparément.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              _processCheckout(context, cart);
+            },
+            child: const Text('Confirmer', style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Le backend n'a pas de route de commande groupée : on crée une
+  /// transaction par article (`POST /transactions/initiate`), séquentiellement,
+  /// et on retire du panier chaque article acheté avec succès. Si un article
+  /// échoue (ex: produit devenu indisponible entre-temps), il reste dans le
+  /// panier et l'erreur est signalée pour que l'utilisateur puisse réessayer.
+  Future<void> _processCheckout(BuildContext context, CartProvider cart) async {
+    setState(() => _isCheckingOut = true);
+
+    final txService = context.read<TransactionService>();
+    final itemsToBuy = List<CartItem>.from(cart.items);
+    var successCount = 0;
+    final failedTitles = <String>[];
+
+    for (final item in itemsToBuy) {
+      try {
+        await txService.initiate(
+          productId: item.productId,
+          paymentMethod: 'cash_delivery',
+          deliveryType: 'delivery',
+        );
+        await cart.removeItem(item.id);
+        successCount++;
+      } catch (_) {
+        failedTitles.add(item.product?.title ?? 'un article');
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _isCheckingOut = false);
+
+    if (successCount > 0 && failedTitles.isEmpty) {
+      _showMsg('$successCount commande(s) créée(s) ! Les vendeurs ont été notifiés.');
+      // BUG CORRIGÉ : '/transactions' n'est PAS une route du shell (bottom
+      // nav) — contrairement à /feed, /marketplace, /sell, /messages,
+      // /profile. Utiliser context.go() dessus provoquait une erreur de
+      // GlobalKey dupliquée dans le Navigator (écran rouge) juste après
+      // la commande. context.push() est la bonne méthode ici, comme pour
+      // toutes les routes "poussées" par-dessus (ex: /product/:slug).
+      context.push('/transactions');
+    } else if (successCount > 0) {
+      _showMsg('$successCount commande(s) créée(s). Échec pour : ${failedTitles.join(', ')}.', error: true);
+    } else {
+      _showMsg('Impossible de passer la commande. Vérifiez votre connexion et réessayez.', error: true);
+    }
+  }
+
+  void _showMsg(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: const TextStyle(color: Colors.white, fontSize: 13)),
+      backgroundColor: error ? AppColors.danger : const Color(0xFF1E293B),
+    ));
   }
 
   void _showClearDialog(BuildContext context) {
@@ -125,7 +217,7 @@ class _CartScreenState extends State<CartScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
           TextButton(onPressed: () { Navigator.pop(context); context.read<CartProvider>().clearCart(); },
-            child: const Text('Vider', style: TextStyle(color: AppColors.danger))),
+              child: const Text('Vider', style: TextStyle(color: AppColors.danger))),
         ],
       ),
     );
@@ -154,7 +246,7 @@ class _CartItemCard extends StatelessWidget {
             child: item.product != null && item.product!.mediaUrl.isNotEmpty
                 ? CachedNetworkImage(imageUrl: item.product!.mediaUrl, width: 80, height: 80, fit: BoxFit.cover)
                 : Container(width: 80, height: 80, color: AppColors.bgElevated,
-                    child: Icon(Icons.shopping_bag, color: AppColors.textMuted)),
+                child: Icon(Icons.shopping_bag, color: AppColors.textMuted)),
           ),
           const SizedBox(width: 12),
 
@@ -164,10 +256,10 @@ class _CartItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item.product?.title ?? 'Produit', maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                    style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
                 Text(item.formattedPrice,
-                  style: const TextStyle(color: AppColors.accentLight, fontSize: 15, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(color: AppColors.accentLight, fontSize: 15, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 // Delivery fee per item
                 Row(children: [
@@ -175,13 +267,13 @@ class _CartItemCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   if (item.product?.deliveryFee != null && item.product!.deliveryFee! > 0)
                     Text('+${item.product!.deliveryFee!.toStringAsFixed(0)} F livraison',
-                      style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w500))
+                        style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w500))
                   else if (item.product?.deliveryOption == 'free')
                     Text('Livraison gratuite',
-                      style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w500))
+                        style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w500))
                   else
                     Text('Livraison à convenir',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
                 ]),
                 const SizedBox(height: 6),
                 // Quantity control
@@ -200,7 +292,7 @@ class _CartItemCard extends StatelessWidget {
                   _QtyBtn(icon: Icons.add, onTap: () => cart.updateQuantity(item.id, item.quantity + 1)),
                   const Spacer(),
                   IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
-                    onPressed: () => cart.removeItem(item.id)),
+                      onPressed: () => cart.removeItem(item.id)),
                 ]),
               ],
             ),
@@ -265,7 +357,7 @@ class _EmptyCart extends StatelessWidget {
           Text('Votre panier est vide', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Text('Découvrez nos produits et commencez vos achats', textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
           const SizedBox(height: 24),
           SizedBox(
             height: 44,

@@ -229,7 +229,7 @@ class _ChatScreenState extends State<ChatScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('Supprimer', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
         content: Text('Supprimer cette conversation ? Cette action est irréversible.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Annuler', style: TextStyle(color: AppColors.textMuted))),
           TextButton(
@@ -271,23 +271,23 @@ class _ChatScreenState extends State<ChatScreen> {
                 CachedAvatar(url: otherUser.avatarUrl, size: 36, name: otherUser.fullName ?? 'U'),
                 if (otherUser.isOnline)
                   Positioned(right: 0, bottom: 0,
-                    child: Container(width: 10, height: 10,
-                      decoration: BoxDecoration(color: AppColors.online, shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.bgSecondary, width: 2)))),
+                      child: Container(width: 10, height: 10,
+                          decoration: BoxDecoration(color: AppColors.online, shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.bgSecondary, width: 2)))),
               ]),
               const SizedBox(width: 10),
             ],
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(otherUser?.fullName ?? 'Chat',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                 if (otherUser?.isOnline == true)
                   Text('En ligne', style: TextStyle(fontSize: 11, color: AppColors.online))
                 else
                   Text('Hors ligne', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
                 if (conversation?.product != null)
                   Text(conversation!.product!.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: AppColors.accent)),
+                      style: TextStyle(fontSize: 10, color: AppColors.accent)),
               ]),
             ),
           ]),
@@ -303,8 +303,11 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           // ═══ PRODUCT CONTEXT CARD ═══
+          // Affiche maintenant la vraie miniature du produit (avant : une
+          // simple icône générique panier/service, peu utile pour se
+          // rappeler de quelle annonce il s'agit).
           if (conversation?.product != null)
-            GestureDetector( 
+            GestureDetector(
               onTap: () => context.push('/product/${conversation.product!.slug}'),
               child: Container(
                 margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -315,25 +318,49 @@ class _ChatScreenState extends State<ChatScreen> {
                   border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
                 ),
                 child: Row(children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentSubtle,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      conversation!.product!.isService ? Icons.handyman : Icons.shopping_bag,
-                      color: AppColors.accent, size: 20,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: conversation!.product!.mediaUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                      imageUrl: conversation.product!.mediaUrl,
+                      width: 40, height: 40, fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        width: 40, height: 40,
+                        color: AppColors.accentSubtle,
+                        child: const Center(child: SizedBox(
+                          width: 14, height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.accent),
+                        )),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        width: 40, height: 40,
+                        color: AppColors.accentSubtle,
+                        child: Icon(
+                          conversation.product!.isService ? Icons.handyman : Icons.shopping_bag,
+                          color: AppColors.accent, size: 20,
+                        ),
+                      ),
+                    )
+                        : Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSubtle,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        conversation.product!.isService ? Icons.handyman : Icons.shopping_bag,
+                        color: AppColors.accent, size: 20,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('Conversation à propos de',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
                     Text(conversation.product!.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
                     Text(conversation.product!.displayPrice,
-                      style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600)),
+                        style: TextStyle(color: AppColors.accent, fontSize: 12, fontWeight: FontWeight.w600)),
                   ])),
                   Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
                 ]),
@@ -345,29 +372,29 @@ class _ChatScreenState extends State<ChatScreen> {
             child: chat.isLoading && messages.isEmpty
                 ? Center(child: CircularProgressIndicator(color: AppColors.accent))
                 : messages.isEmpty
-                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.chat_bubble_outline, size: 48, color: AppColors.textMuted.withValues(alpha: 0.5)),
-                        const SizedBox(height: 12),
-                        Text('Aucun message', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
-                        const SizedBox(height: 4),
-                        Text('Envoyez le premier message !', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                      ]))
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(12),
-                        itemCount: messages.length,
-                        itemBuilder: (_, i) {
-                          final msg = messages[i];
-                          final showDate = i == 0 || !_sameDay(messages[i - 1].createdAt, msg.createdAt);
-                          return Column(children: [
-                            if (showDate) _DateSeparator(date: msg.createdAt),
-                            if (msg.type == 'system')
-                              _SystemMessage(message: msg)
-                            else
-                              _MessageBubble(message: msg, myUserId: _myUserId),
-                          ]);
-                        },
-                      ),
+                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.chat_bubble_outline, size: 48, color: AppColors.textMuted.withValues(alpha: 0.5)),
+              const SizedBox(height: 12),
+              Text('Aucun message', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+              const SizedBox(height: 4),
+              Text('Envoyez le premier message !', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            ]))
+                : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(12),
+              itemCount: messages.length,
+              itemBuilder: (_, i) {
+                final msg = messages[i];
+                final showDate = i == 0 || !_sameDay(messages[i - 1].createdAt, msg.createdAt);
+                return Column(children: [
+                  if (showDate) _DateSeparator(date: msg.createdAt),
+                  if (msg.type == 'system')
+                    _SystemMessage(message: msg)
+                  else
+                    _MessageBubble(message: msg, myUserId: _myUserId),
+                ]);
+              },
+            ),
           ),
 
           // ═══ ATTACHMENT MENU ═══
@@ -420,22 +447,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 // Attach button (V2 : envoi de fichiers désactivé en V1)
                 if (FeatureFlags.chatFile)
                   GestureDetector(
-                  onTap: _fileSending ? null : () => setState(() => _showAttach = !_showAttach),
-                  child: Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(
-                      color: _showAttach ? AppColors.accentSubtle : AppColors.bgInput,
-                      borderRadius: BorderRadius.circular(12),
+                    onTap: _fileSending ? null : () => setState(() => _showAttach = !_showAttach),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: _showAttach ? AppColors.accentSubtle : AppColors.bgInput,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: _fileSending
+                          ? const Padding(
+                        padding: EdgeInsets.all(10),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+                      )
+                          : Icon(Icons.attach_file, size: 20,
+                          color: _showAttach ? AppColors.accent : AppColors.textMuted),
                     ),
-                    child: _fileSending
-                        ? const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
-                          )
-                        : Icon(Icons.attach_file, size: 20,
-                            color: _showAttach ? AppColors.accent : AppColors.textMuted),
                   ),
-                ),
                 if (FeatureFlags.chatFile) const SizedBox(width: 8),
 
                 // Text input
@@ -578,7 +605,7 @@ class _MessageBubble extends StatelessWidget {
                           const SizedBox(width: 10),
                           Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Text(message.fileName ?? 'Fichier', maxLines: 1, overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: isMe ? Colors.white : AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                style: TextStyle(color: isMe ? Colors.white : AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
                             if (_fileSize.isNotEmpty)
                               Text(_fileSize, style: TextStyle(color: isMe ? Colors.white60 : AppColors.textMuted, fontSize: 10)),
                           ])),
@@ -599,8 +626,8 @@ class _MessageBubble extends StatelessWidget {
                           Container(
                             width: 120, height: 4,
                             decoration: BoxDecoration(
-                              color: (isMe ? Colors.white : AppColors.accent).withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(2)),
+                                color: (isMe ? Colors.white : AppColors.accent).withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(2)),
                           ),
                           const SizedBox(height: 4),
                           Text(_audioDuration, style: TextStyle(color: isMe ? Colors.white60 : AppColors.textMuted, fontSize: 10)),
@@ -624,11 +651,11 @@ class _MessageBubble extends StatelessWidget {
                     padding: _isImage ? const EdgeInsets.fromLTRB(14, 0, 14, 8) : EdgeInsets.zero,
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text(_formatTime(message.createdAt),
-                        style: TextStyle(color: isMe ? Colors.white60 : AppColors.textMuted, fontSize: 10)),
+                          style: TextStyle(color: isMe ? Colors.white60 : AppColors.textMuted, fontSize: 10)),
                       if (isMe) ...[
                         const SizedBox(width: 3),
                         Icon(message.isRead ? Icons.done_all : Icons.done,
-                          size: 13, color: message.isRead ? Colors.white : (isMe ? Colors.white60 : AppColors.textMuted)),
+                            size: 13, color: message.isRead ? Colors.white : (isMe ? Colors.white60 : AppColors.textMuted)),
                       ],
                     ]),
                   ),
@@ -741,7 +768,7 @@ class _DateSeparator extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border)),
+              border: Border.all(color: AppColors.border)),
           child: Text(label, style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
         ),
       ),

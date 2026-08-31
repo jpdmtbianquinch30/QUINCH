@@ -44,7 +44,7 @@ class ProductFeedController extends Controller
             }
         }
 
-        // Require at least one visual: poster, video, or images
+       
         if (!$request->has('q') || empty($request->q)) {
             $query->where(function ($q) {
                 $q->whereNotNull('poster_url')
@@ -57,12 +57,12 @@ class ProductFeedController extends Controller
             });
         }
 
-        // Filter by type (product / service)
+        
         if ($request->has('type') && in_array($request->type, ['product', 'service'])) {
             $query->where('type', $request->type);
         }
 
-        // Filter by category
+       
         if ($request->has('category')) {
             $query->where('category_id', $request->category);
         }

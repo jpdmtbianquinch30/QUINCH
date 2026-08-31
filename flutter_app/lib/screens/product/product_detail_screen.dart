@@ -8,6 +8,7 @@ import '../../models/product.dart';
 import '../../services/product_service.dart';
 import '../../services/review_service.dart';
 import '../../services/negotiation_service.dart';
+import '../../services/transaction_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/chat_provider.dart';
@@ -28,6 +29,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Product? _product;
   bool _loading = true;
   VideoPlayerController? _videoController;
+  bool _videoMuted = true;
 
   // Reviews
   List<dynamic> _reviews = [];
@@ -69,6 +71,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ..initialize().then((_) {
             if (mounted) {
               _videoController!.setLooping(true);
+              // Muet par défaut à l'ouverture d'une fiche produit / profil
+              // vendeur — évite le son qui démarre sans prévenir.
+              _videoController!.setVolume(0);
               _videoController!.play();
               setState(() {});
             }
@@ -86,8 +91,29 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  // ─── CONTACT SELLER ───
-  Future<void> _contactSeller() async {
+  void _toggleVideoPlayback() {
+    if (_videoController == null || !_videoController!.value.isInitialized) return;
+    setState(() {
+      _videoController!.value.isPlaying ? _videoController!.pause() : _videoController!.play();
+    });
+  }
+
+  void _toggleVideoMute() {
+    if (_videoController == null) return;
+    setState(() {
+      _videoMuted = !_videoMuted;
+      _videoController!.setVolume(_videoMuted ? 0 : 1);
+    });
+  }
+
+  // ─── CONTACT SELLER — propose un choix, PUIS un aperçu éditable ───
+  // Avant : le message partait automatiquement dès le choix, et un bug
+  // pouvait l'envoyer plusieurs fois (voir capture : même message envoyé
+  // 3 fois). Maintenant : 2 étapes claires — (1) type de message, (2)
+  // aperçu éditable avec un vrai bouton "Envoyer" — un seul tap dessus
+  // envoie une seule fois. L'image/lien du produit reste visible dans la
+  // conversation grâce à productId, peu importe le texte envoyé.
+  void _showContactOptionsSheet() {
     final p = _product;
     if (p == null || p.seller == null) return;
     if (!context.read<AuthProvider>().isAuthenticated) {
@@ -95,14 +121,108 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return;
     }
 
-    _showMsg('Ouverture de la conversation...');
+    final draftCtrl = TextEditingController();
+    bool showingPreview = false;
+    bool sending = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)))),
+
+            if (!showingPreview) ...[
+              Text('Contacter le vendeur', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(p.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
+              const SizedBox(height: 16),
+              _ContactOptionTile(
+                icon: Icons.shopping_bag_outlined,
+                iconColor: AppColors.accent,
+                title: 'Je suis intéressé(e) par ce produit',
+                subtitle: 'Propose un message — vous le voyez avant l\'envoi',
+                onTap: () {
+                  draftCtrl.text = 'Bonjour, je suis intéressé(e) par "${p.title}" (${p.displayPrice}).';
+                  setSt(() => showingPreview = true);
+                },
+              ),
+              const SizedBox(height: 10),
+              _ContactOptionTile(
+                icon: Icons.chat_bubble_outline,
+                iconColor: AppColors.textSecondary,
+                title: 'Juste discuter',
+                subtitle: 'Un message simple, modifiable avant l\'envoi',
+                onTap: () {
+                  draftCtrl.text = 'Bonjour !';
+                  setSt(() => showingPreview = true);
+                },
+              ),
+            ] else ...[
+              Row(children: [
+                GestureDetector(
+                  onTap: () => setSt(() => showingPreview = false),
+                  child: Icon(Icons.arrow_back, color: AppColors.textSecondary, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Text('Aperçu du message', style: TextStyle(color: AppColors.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+              ]),
+              const SizedBox(height: 4),
+              Text('Modifiez-le si besoin, rien n\'est envoyé tant que vous n\'appuyez pas sur Envoyer.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              const SizedBox(height: 14),
+              TextField(
+                controller: draftCtrl,
+                maxLines: 4,
+                minLines: 2,
+                autofocus: true,
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(
+                  filled: true, fillColor: AppColors.bgInput,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.all(14),
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity, height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: sending || draftCtrl.text.trim().isEmpty ? null : () async {
+                    setSt(() => sending = true);
+                    await _startConversationWithSeller(message: draftCtrl.text.trim());
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  },
+                  icon: sending
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.send, size: 18, color: Colors.white),
+                  label: Text(sending ? 'Envoi...' : 'Envoyer', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+              ),
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startConversationWithSeller({required String message}) async {
+    final p = _product;
+    if (p == null || p.seller == null) return;
 
     try {
       final chatProvider = context.read<ChatProvider>();
       final convId = await chatProvider.startConversation(
         sellerId: p.seller!.id,
         productId: p.id,
-        message: 'Bonjour, je suis intéressé(e) par "${p.title}" (${p.displayPrice}).',
+        message: message,
       );
       if (!mounted) return;
       if (convId != null) {
@@ -208,11 +328,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
           Positioned(top: 8, right: 8,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(18)),
-                child: const Icon(Icons.close, color: Colors.white, size: 20)),
-            )),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(18)),
+                    child: const Icon(Icons.close, color: Colors.white, size: 20)),
+              )),
         ]),
       ),
     );
@@ -277,12 +397,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _showPaymentSheet() {
     final p = _product;
     if (p == null) return;
-    // V1 : seul cash_delivery est actif côté backend (voir config/quinch.php).
-    // On ne propose plus Wave/Orange Money/Free Money, qui échoueraient
-    // systématiquement à la validation tant qu'ils ne sont pas réactivés.
-    final allMethods = (p.paymentMethods != null && p.paymentMethods!.isNotEmpty) ? p.paymentMethods! : ['cash_delivery'];
-    final methods = allMethods.where((m) => FeatureFlags.enabledPaymentMethods.contains(m)).toList();
+    // V1 : uniquement Orange Money, Wave et paiement à la livraison.
+    // Toute autre méthode éventuellement configurée par le vendeur
+    // (ex: Free Money) est filtrée ici tant qu'elle n'est pas prise en
+    // charge côté paiement pour cette version.
+    const allowedMethods = ['orange_money', 'wave', 'cash_delivery'];
+    final rawMethods = (p.paymentMethods != null && p.paymentMethods!.isNotEmpty)
+        ? p.paymentMethods!
+        : allowedMethods;
+    final methods = rawMethods.where(allowedMethods.contains).toList();
     if (methods.isEmpty) methods.add('cash_delivery');
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.bgCard,
@@ -299,7 +424,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               groupValue: _selectedPayment,
               onChanged: (v) => setSt(() => _selectedPayment = v),
               child: Column(children: methods.map((m) {
-                final labels = {'orange_money': '🟠 Orange Money', 'wave': '🔵 Wave', 'free_money': '🟢 Free Money', 'cash_delivery': '📦 Paiement à la livraison'};
+                const labels = {'orange_money': '🟠 Orange Money', 'wave': '🔵 Wave', 'cash_delivery': '📦 Paiement à la livraison'};
                 return RadioListTile<String>(
                   value: m,
                   title: Text(labels[m] ?? m, style: TextStyle(color: AppColors.textPrimary, fontSize: 14)),
@@ -315,12 +440,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: ElevatedButton(
                 onPressed: _selectedPayment == null ? null : () async {
                   try {
-                    await context.read<ProductService>().initiateTransaction(
-                      productId: p.id, amount: p.price, paymentMethod: _selectedPayment!, deliveryType: 'delivery',
+                    // BUG CORRIGÉ : ProductService.initiateTransaction()
+                    // n'existe pas (erreur déjà présente dans le fichier
+                    // d'origine). C'est TransactionService.initiate() qu'il
+                    // faut appeler, exactement comme dans cart_screen.dart.
+                    await context.read<TransactionService>().initiate(
+                      productId: p.id, paymentMethod: _selectedPayment!, deliveryType: 'delivery',
                     );
                     if (!context.mounted) return;
                     Navigator.pop(ctx);
-                    _showMsg('Commande confirmée ! Le vendeur a été notifié.');
+                    // Le vendeur voit le mode de paiement choisi dans sa
+                    // fiche transaction (déjà transmis via paymentMethod).
+                    // L'acheteur doit maintenant contacter le vendeur pour
+                    // finaliser le paiement selon le mode sélectionné.
+                    _showOrderConfirmedDialog(_selectedPayment!);
                   } catch (_) {
                     _showMsg('Erreur lors du paiement.', error: true);
                   }
@@ -334,6 +467,86 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ]),
         ),
+      ),
+    );
+  }
+
+  static const _paymentLabels = {
+    'orange_money': 'Orange Money',
+    'wave': 'Wave',
+    'cash_delivery': 'paiement à la livraison',
+  };
+
+  void _showOrderConfirmedDialog(String paymentMethod) {
+    final p = _product;
+    final label = _paymentLabels[paymentMethod] ?? paymentMethod;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          const Icon(Icons.check_circle, color: AppColors.success, size: 22),
+          const SizedBox(width: 8),
+          Text('Commande confirmée', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+        ]),
+        content: Text(
+          'Merci pour votre commande. Veuillez maintenant contacter directement le vendeur '
+              'afin de finaliser le paiement par $label.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx),
+              child: Text('Plus tard', style: TextStyle(color: AppColors.textMuted))),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              if (p != null) _showContactOptionsSheet();
+            },
+            icon: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.white),
+            label: const Text('Contacter le vendeur', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Ajout au panier : on propose d'ouvrir le panier au lieu de juste
+  // afficher un snackbar qui passe inaperçu.
+  void _showAddedToCartDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(children: [
+          const Icon(Icons.check_circle, color: AppColors.success, size: 22),
+          const SizedBox(width: 8),
+          Text('Ajouté au panier', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+        ]),
+        content: Text('Voulez-vous ouvrir votre panier ?',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Non, continuer', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.push('/cart');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Oui, ouvrir', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          ),
+        ],
       ),
     );
   }
@@ -379,6 +592,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             backgroundColor: AppColors.bgSecondary,
             leading: _BackBtn(),
             actions: [
+              if (_videoController != null)
+                _ActionBtn(
+                  icon: _videoMuted ? Icons.volume_off : Icons.volume_up,
+                  onTap: _toggleVideoMute,
+                ),
               _ActionBtn(
                 icon: p.isLiked ? Icons.favorite : Icons.favorite_border,
                 color: p.isLiked ? AppColors.liked : Colors.white,
@@ -396,13 +614,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 // Video or Image
                 if (_videoController != null && _videoController!.value.isInitialized)
                   GestureDetector(
-                    onTap: () {
-                      if (_videoController!.value.isPlaying) {
-                        _videoController!.pause();
-                      } else {
-                        _videoController!.play();
-                      }
-                    },
+                    onTap: _toggleVideoPlayback,
                     child: FittedBox(
                       fit: BoxFit.cover,
                       child: SizedBox(
@@ -419,25 +631,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 // Gradient
                 const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(
-                  gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Color(0x40000000), Colors.transparent, Color(0xCC000000)], stops: [0, 0.3, 1])))),
+                    gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                        colors: [Color(0x40000000), Colors.transparent, Color(0xCC000000)], stops: [0, 0.3, 1])))),
 
                 // Type badge
                 Positioned(top: 100, left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: p.isService ? const Color(0xCC10B981) : const Color(0xCC6366F1),
-                      borderRadius: BorderRadius.circular(50)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(p.isService ? Icons.handyman : Icons.shopping_bag, color: Colors.white, size: 13),
-                      const SizedBox(width: 4),
-                      Text(p.isService ? 'Service' : 'Produit', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                    ]),
-                  )),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                          color: p.isService ? const Color(0xCC10B981) : const Color(0xCC6366F1),
+                          borderRadius: BorderRadius.circular(50)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(p.isService ? Icons.handyman : Icons.shopping_bag, color: Colors.white, size: 13),
+                        const SizedBox(width: 4),
+                        Text(p.isService ? 'Service' : 'Produit', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    )),
 
-                // Play button overlay
-                if (_videoController != null && !_videoController!.value.isPlaying)
+                // Play button overlay — recalé sur l'état réel de lecture
+                // (setState manquait avant : la pause fonctionnait mais
+                // l'icône ne se remettait jamais à jour).
+                if (_videoController != null && _videoController!.value.isInitialized && !_videoController!.value.isPlaying)
                   Center(child: Container(
                     width: 60, height: 60,
                     decoration: BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
@@ -472,7 +686,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: AppColors.warningSubtle, borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
+                          border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
                       child: const Text('Négociable', style: TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w600)),
                     ),
                 ]),
@@ -535,9 +749,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 imageUrl: imgUrl,
                                 width: 100, height: 100, fit: BoxFit.cover,
                                 placeholder: (_, __) => Container(width: 100, height: 100, color: AppColors.bgCard,
-                                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent))),
+                                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent))),
                                 errorWidget: (_, __, ___) => Container(width: 100, height: 100, color: AppColors.bgCard,
-                                  child: Icon(Icons.broken_image, color: AppColors.textMuted, size: 24)),
+                                    child: Icon(Icons.broken_image, color: AppColors.textMuted, size: 24)),
                               ),
                             ),
                           ),
@@ -552,7 +766,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border)),
+                      border: Border.all(color: AppColors.border)),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
                     _StatItem(icon: Icons.visibility, label: '${p.viewCount} vues'),
                     _StatItem(icon: Icons.favorite, label: '${p.likeCount} likes'),
@@ -574,16 +788,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border)),
+                      border: Border.all(color: AppColors.border)),
                   child: Column(children: [
                     if (p.condition.isNotEmpty) _InfoRow(Icons.fiber_new, 'État', _conditionLabel(p.condition)),
                     if (p.category != null) _InfoRow(Icons.category, 'Catégorie', p.category!.name),
                     if (p.isProduct && p.stockQuantity != null)
                       _InfoRow(Icons.inventory_2, 'Stock', '${p.stockQuantity} disponible${(p.stockQuantity ?? 0) > 1 ? 's' : ''}'),
                     _InfoRow(Icons.local_shipping, 'Livraison',
-                      p.deliveryOption == 'fixed' && p.deliveryFee != null && p.deliveryFee! > 0
-                          ? '${p.deliveryFee!.toStringAsFixed(0)} F CFA'
-                          : p.deliveryAvailable ? 'Disponible' : 'À convenir'),
+                        p.deliveryOption == 'fixed' && p.deliveryFee != null && p.deliveryFee! > 0
+                            ? '${p.deliveryFee!.toStringAsFixed(0)} F CFA'
+                            : p.deliveryAvailable ? 'Disponible' : 'À convenir'),
                     _InfoRow(Icons.location_on, 'Localisation', p.location ?? 'Sénégal'),
                   ]),
                 ),
@@ -608,15 +822,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('Livraison : ${p.deliveryFee!.toStringAsFixed(0)} F CFA',
-                            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
                           Text('Frais de livraison en plus du prix du produit',
-                            style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
                         ])),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(color: AppColors.accent, borderRadius: BorderRadius.circular(8)),
                           child: Text('+${p.deliveryFee!.toStringAsFixed(0)} F',
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
                         ),
                       ]),
                     )
@@ -637,9 +851,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('Livraison à convenir',
-                            style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
                           Text('Contactez le vendeur pour les frais et modalités',
-                            style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
                         ])),
                       ]),
                     ),
@@ -654,7 +868,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border)),
+                          border: Border.all(color: AppColors.border)),
                       child: Row(children: [
                         CachedAvatar(url: p.seller!.avatarUrl, size: 48, name: p.seller!.displayName),
                         const SizedBox(width: 12),
@@ -695,10 +909,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: SafeArea(
           top: false,
           child: Row(children: [
-            // Contact seller
+            // Contact seller — ouvre maintenant un choix (intéressé / juste discuter)
             SizedBox(width: 48, height: 48,
               child: OutlinedButton(
-                onPressed: _contactSeller,
+                onPressed: _showContactOptionsSheet,
                 style: OutlinedButton.styleFrom(
                   padding: EdgeInsets.zero,
                   side: BorderSide(color: p.isService ? const Color(0xFF10B981) : AppColors.accent),
@@ -734,7 +948,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     onPressed: () {
                       if (!auth.isAuthenticated) { context.push('/auth/login'); return; }
                       context.read<CartProvider>().addToCart(p.id, quantity: 1);
-                      _showMsg('Ajouté au panier !');
+                      _showAddedToCartDialog();
                     },
                     icon: const Icon(Icons.shopping_cart, size: 16),
                     label: const Text('Panier', style: TextStyle(fontSize: 12)),
@@ -765,7 +979,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     label: Text(p.isService ? 'Devis' : 'Acheter',
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                 ),
               ),
@@ -879,8 +1093,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               CircleAvatar(radius: 16, backgroundColor: AppColors.accentSubtle,
-                child: Text((r['reviewer']?['full_name'] ?? '?')[0].toUpperCase(),
-                    style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600, fontSize: 12))),
+                  child: Text((r['reviewer']?['full_name'] ?? '?')[0].toUpperCase(),
+                      style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600, fontSize: 12))),
               const SizedBox(width: 8),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(r['reviewer']?['full_name'] ?? 'Utilisateur',
@@ -942,7 +1156,7 @@ class _BackBtn extends StatelessWidget {
         onTap: () => Navigator.pop(context),
         child: Container(
           decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white10)),
+              border: Border.all(color: Colors.white10)),
           child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
         ),
       ),
@@ -965,7 +1179,7 @@ class _ActionBtn extends StatelessWidget {
         child: Container(
           width: 38, height: 38,
           decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white10)),
+              border: Border.all(color: Colors.white10)),
           child: Icon(icon, color: color, size: 18),
         ),
       ),
@@ -1004,6 +1218,51 @@ class _InfoRow extends StatelessWidget {
         const Spacer(),
         Text(value, style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)),
       ]),
+    );
+  }
+}
+
+class _ContactOptionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  const _ContactOptionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.bgInput,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(children: [
+          Container(
+            width: 42, height: 42,
+            decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: TextStyle(color: AppColors.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: TextStyle(color: AppColors.textMuted, fontSize: 11.5)),
+          ])),
+          Icon(Icons.chevron_right, color: AppColors.textMuted, size: 18),
+        ]),
+      ),
     );
   }
 }
