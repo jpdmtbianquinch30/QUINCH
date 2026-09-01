@@ -76,8 +76,12 @@ class DisabledFeatureTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_cash_delivery_remains_the_only_enabled_payment_method(): void
+    public function test_wave_is_the_default_enabled_payment_method(): void
     {
-        $this->assertSame(['cash_delivery'], config('quinch.enabled_payment_methods'));
+        // V1 : Wave est la seule passerelle réellement intégrée et activée
+        // par défaut (voir app/Services/PaymentGateway/WaveGateway.php).
+        // cash_delivery a été retiré : PaymentGatewayFactory ne sait plus le
+        // gérer (voir WavePurchaseTest pour le flux d'achat complet).
+        $this->assertSame(['wave'], config('quinch.enabled_payment_methods'));
     }
 }

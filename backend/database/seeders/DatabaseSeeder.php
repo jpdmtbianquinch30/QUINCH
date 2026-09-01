@@ -14,6 +14,23 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Le seeder assigne délibérément des champs privilégiés (role,
+        // trust_score, kyc_status) pour construire des comptes de démo
+        // précis (admin, utilisateurs vérifiés...). C'est un script lancé
+        // intentionnellement par un développeur, jamais déclenché par une
+        // requête HTTP : on lève donc le guard de mass assignment pour la
+        // durée du seed, puis on le restaure à la fin.
+        \Illuminate\Database\Eloquent\Model::unguard();
+
+        try {
+            $this->seed();
+        } finally {
+            \Illuminate\Database\Eloquent\Model::reguard();
+        }
+    }
+
+    private function seed(): void
+    {
         // ─── Categories ─────────────────────────────────────────────────
         $categories = [
             ['name' => 'Téléphones & Tech', 'slug' => 'telephones-tech', 'icon' => 'phone_iphone', 'sort_order' => 1],

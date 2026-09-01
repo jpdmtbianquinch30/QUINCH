@@ -44,22 +44,23 @@ class GoogleAuthController extends Controller
         $isNewUser = false;
 
         if (!$user) {
-            // New user — create account
+            // New user — create account. `google_id` est volontairement
+            // hors de $fillable (champ d'identité lié à l'auth, jamais
+            // assignable via une requête externe) : forceFill nécessaire.
             $isNewUser = true;
             $username  = $this->generateUsername($fullName, $email);
 
             $user = User::create([
-                'google_id'    => $googleId,
                 'email'        => $email,
                 'full_name'    => $fullName,
                 'username'     => $username,
                 'avatar_url'   => $avatar,
                 'password'     => bcrypt(Str::random(32)), // random unusable password
-                'role'         => 'user',
                 'is_seller'    => true,
                 'is_buyer'     => true,
                 'phone_verified' => false,
             ]);
+            $user->forceFill(['google_id' => $googleId])->save();
 
             app(NotificationService::class)->notifyWelcome($user);
         } else {
@@ -67,7 +68,7 @@ class GoogleAuthController extends Controller
             $updates = [];
             if (!$user->google_id) $updates['google_id'] = $googleId;
             if (!$user->avatar_url && $avatar) $updates['avatar_url'] = $avatar;
-            if (!empty($updates)) $user->update($updates);
+            if (!empty($updates)) $user->forceFill($updates)->save();
         }
 
         // Revoke old tokens & create new one

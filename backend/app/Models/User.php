@@ -18,6 +18,16 @@ class User extends Authenticatable
     protected $keyType = 'string';
     public $incrementing = false;
 
+    /**
+     * Champs mass-assignables via User::create()/update($array). Les champs
+     * privilégiés (rôle, statut du compte, scores de confiance, KYC,
+     * premium, sécurité) sont volontairement EXCLUS d'ici : ils ne doivent
+     * jamais pouvoir être écrits via une requête HTTP validée de façon trop
+     * large (ex. $request->validated() qui grossirait par erreur). Ces
+     * champs ne sont modifiables qu'en interne via forceFill()/attribution
+     * directe + save() — voir generateOtp(), TrustScoreCalculator,
+     * PremiumSubscription::activate(), AdminUserController.
+     */
     protected $fillable = [
         'phone_number',
         'pending_phone_number',
@@ -28,21 +38,12 @@ class User extends Authenticatable
         'avatar_url',
         'cover_url',
         'bio',
-        'trust_score',
-        'kyc_status',
-        'kyc_data',
         'city',
         'region',
         'latitude',
         'longitude',
         'is_seller',
         'is_buyer',
-        'role',
-        'security_level',
-        'account_status',
-        'last_suspicious_activity',
-        'otp_code',
-        'otp_expires_at',
         'phone_verified',
         'preferences',
         'onboarding_completed',
@@ -68,6 +69,8 @@ class User extends Authenticatable
             'phone_verified' => 'boolean',
             'onboarding_completed' => 'boolean',
             'trust_score' => 'float',
+            'is_premium' => 'boolean',
+            'premium_expires_at' => 'datetime',
             'otp_expires_at' => 'datetime',
             'last_suspicious_activity' => 'datetime',
             'latitude' => 'float',
@@ -109,6 +112,25 @@ class User extends Authenticatable
     public function badges(): HasMany
     {
         return $this->hasMany(UserBadge::class);
+    }
+
+    public function premiumSubscriptions(): HasMany
+    {
+        return $this->hasMany(PremiumSubscription::class);
+    }
+
+    /**
+     * Un utilisateur est réellement premium si le flag est actif ET que la
+     * date d'expiration n'est pas dépassée. On ne se fie jamais au seul
+     * booléen `is_premium` : la désactivation à l'échéance se fait via le
+     * scheduler (job ExpirePremiumSubscriptions), mais entre deux
+     * exécutions ce contrôle évite qu'un abonnement expiré reste actif.
+     */
+    public function isPremiumActive(): bool
+    {
+        return $this->is_premium
+            && $this->premium_expires_at !== null
+            && $this->premium_expires_at->isFuture();
     }
 
     public function followers()
@@ -188,13 +210,20 @@ class User extends Authenticatable
         return $this->account_status === 'suspended';
     }
 
+    public function isBanned(): bool
+    {
+        return $this->account_status === 'banned';
+    }
+
     public function generateOtp(): string
     {
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $this->update([
+        // forceFill : otp_code/otp_expires_at ne sont plus dans $fillable
+        // (champs sensibles, jamais assignables via une requête externe).
+        $this->forceFill([
             'otp_code' => bcrypt($otp),
             'otp_expires_at' => now()->addMinutes(10),
-        ]);
+        ])->save();
         return $otp;
     }
 

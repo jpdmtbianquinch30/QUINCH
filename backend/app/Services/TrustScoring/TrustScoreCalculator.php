@@ -54,7 +54,9 @@ class TrustScoreCalculator
         User::chunk(100, function ($users) use (&$count) {
             foreach ($users as $user) {
                 $newScore = $this->calculate($user);
-                $user->update(['trust_score' => $newScore]);
+                // trust_score n'est plus dans $fillable (champ sensible) :
+                // forceFill nécessaire pour ce recalcul batch interne.
+                $user->forceFill(['trust_score' => $newScore])->save();
                 $count++;
             }
         });

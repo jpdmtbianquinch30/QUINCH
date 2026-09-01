@@ -50,7 +50,20 @@ class TransactionController extends Controller
             return $product;
         });
 
-        $gateway = PaymentGatewayFactory::create($validated['payment_method']);
+        try {
+            $gateway = PaymentGatewayFactory::create($validated['payment_method']);
+        } catch (\InvalidArgumentException $e) {
+            // Garde-fou : évite un 500 si QUINCH_PAYMENT_METHODS autorise une
+            // méthode que PaymentGatewayFactory ne sait pas encore gérer.
+            $this->releaseStock($product, $qty);
+            Log::error('Transaction: passerelle de paiement non supportée', [
+                'payment_method' => $validated['payment_method'],
+            ]);
+            return response()->json([
+                'message' => 'Ce moyen de paiement n\'est pas disponible pour le moment.',
+            ], 422);
+        }
+
         $fee = round($product->price * $qty * $gateway->getFeeRate(), 2);
 
         $transaction = Transaction::create([

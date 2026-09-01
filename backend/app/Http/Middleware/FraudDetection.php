@@ -37,7 +37,9 @@ class FraudDetection
                     'patterns' => $suspiciousPatterns,
                 ]);
 
-                $user->update(['last_suspicious_activity' => now()]);
+                // last_suspicious_activity n'est plus fillable (champ de
+                // sécurité, jamais assignable via une requête externe).
+                $user->forceFill(['last_suspicious_activity' => now()])->save();
             }
         }
 

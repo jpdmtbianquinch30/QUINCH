@@ -88,7 +88,7 @@ class AdminUserController extends Controller
             'duration' => ['nullable', 'integer', 'min:1', 'max:365'],
         ]);
 
-        $user->update(['account_status' => 'suspended']);
+        $user->forceFill(['account_status' => 'suspended'])->save();
         $user->tokens()->delete();
 
         AdminActionLog::create([
@@ -108,7 +108,7 @@ class AdminUserController extends Controller
 
     public function activate(Request $request, User $user): JsonResponse
     {
-        $user->update(['account_status' => 'active']);
+        $user->forceFill(['account_status' => 'active'])->save();
 
         AdminActionLog::create([
             'admin_id' => $request->user()->id,
@@ -131,7 +131,7 @@ class AdminUserController extends Controller
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $user->update(['kyc_status' => $request->status]);
+        $user->forceFill(['kyc_status' => $request->status])->save();
 
         if ($request->status === 'verified') {
             $user->incrementTrustScore(0.2);
@@ -167,7 +167,7 @@ class AdminUserController extends Controller
         ]);
 
         $oldScore = $user->trust_score;
-        $user->update(['trust_score' => $request->score]);
+        $user->forceFill(['trust_score' => $request->score])->save();
 
         AdminActionLog::create([
             'admin_id' => $request->user()->id,
@@ -238,13 +238,18 @@ class AdminUserController extends Controller
             return response()->json(['message' => 'Impossible de bannir un super administrateur.'], 403);
         }
 
-        // Revoke tokens and ban
+        // Revoke tokens and ban. Les anciennes clés 'status'/'ban_reason'/
+        // 'banned_at' n'ont jamais existé en base (aucune migration ne les
+        // créait) : le bannissement était donc silencieusement ignoré et le
+        // compte restait 'active'. Corrigé pour écrire dans account_status
+        // (colonne existante, 'banned' déjà valide dans l'enum) + les
+        // nouvelles colonnes ban_reason/banned_at ajoutées en migration.
         $user->tokens()->delete();
-        $user->update([
-            'status' => 'banned',
+        $user->forceFill([
+            'account_status' => 'banned',
             'ban_reason' => $request->reason,
             'banned_at' => now(),
-        ]);
+        ])->save();
 
         AdminActionLog::create([
             'admin_id' => $request->user()->id,

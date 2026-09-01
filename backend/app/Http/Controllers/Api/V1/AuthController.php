@@ -36,7 +36,6 @@ class AuthController extends Controller
             'full_name' => $validated['full_name'],
             'password' => $validated['password'],
             'username' => $validated['username'],
-            'role' => 'user',
             'is_seller' => true,
             'is_buyer' => true,
             'device_fingerprint' => $request->header('X-Device-Fingerprint'),
@@ -80,6 +79,13 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'phone_number' => ['Les identifiants sont incorrects.'],
             ]);
+        }
+
+        if ($user->isBanned()) {
+            return response()->json([
+                'message' => 'Votre compte a été banni.' . ($user->ban_reason ? ' Raison : ' . $user->ban_reason : ''),
+                'error' => 'account_banned',
+            ], 403);
         }
 
         if ($user->isSuspended()) {
@@ -127,11 +133,14 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user->update([
+        // phone_verified est fillable, mais otp_code/otp_expires_at ne le
+        // sont plus (champs sensibles) : forceFill nécessaire pour les
+        // effacer après vérification réussie.
+        $user->forceFill([
             'phone_verified' => true,
             'otp_code' => null,
             'otp_expires_at' => null,
-        ]);
+        ])->save();
 
         return response()->json([
             'message' => 'Téléphone vérifié avec succès.',
@@ -192,11 +201,13 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user->update([
+        // password est fillable, mais otp_code/otp_expires_at ne le sont
+        // plus (champs sensibles) : forceFill nécessaire pour les effacer.
+        $user->forceFill([
             'password' => $validated['password'],
             'otp_code' => null,
             'otp_expires_at' => null,
-        ]);
+        ])->save();
 
         // Sécurité : un mot de passe oublié/réinitialisé peut indiquer un
         // compte compromis -> on déconnecte tous les appareils.
