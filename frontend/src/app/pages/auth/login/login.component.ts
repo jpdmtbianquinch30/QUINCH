@@ -40,15 +40,20 @@ export class LoginComponent {
       next: (res) => {
         this.loading.set(false);
 
-        // Cette interface web est réservée aux administrateurs — le grand
-        // public utilise l'app Flutter. On refuse ici tout compte non-admin.
-        if (!this.auth.isAdmin()) {
-          this.error.set("Cette interface est réservée aux administrateurs.");
-          this.auth.forceLogout();
+        // Redirection selon le rôle : admin vers le back-office, utilisateur
+        // normal vers le feed (ou l'onboarding s'il ne l'a pas terminé).
+        if (this.auth.isAdmin()) {
+          this.router.navigate(['/admin']);
           return;
         }
 
-        this.router.navigate(['/admin']);
+        const user = this.auth.user();
+        if (user && !user.onboarding_completed) {
+          this.router.navigate(['/onboarding']);
+          return;
+        }
+
+        this.router.navigate(['/feed']);
       },
       error: (err) => {
         this.loading.set(false);
