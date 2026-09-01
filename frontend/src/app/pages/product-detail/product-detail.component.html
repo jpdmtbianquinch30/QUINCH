@@ -636,45 +636,53 @@
     <!-- ═══════ MODALS ═══════ -->
 
     <!-- Payment Modal (products) -->
-    @if (showPayment()) {
-      <div class="modal-overlay" (click)="showPayment.set(false)">
-        <div class="modal-box" (click)="$event.stopPropagation()">
-          <div class="modal-head">
-            <h2>Choisir un moyen de paiement</h2>
-            <button class="modal-close" (click)="showPayment.set(false)">
-              <span class="material-icons">close</span>
-            </button>
-          </div>
-          <div class="modal-summary">
-            <span>{{ p.title }}</span>
-            <strong>{{ formatPrice(p.price) }} F CFA</strong>
-          </div>
-          <div class="payment-list">
-            @for (method of sellerPaymentMethods; track method.id) {
-              <button class="payment-item" [class.selected]="selectedPayment() === method.id"
-                      (click)="selectedPayment.set(method.id)">
-                <span class="material-icons pay-icon">{{ method.icon }}</span>
-                <div class="pay-info">
-                  <span class="pay-name">{{ method.name }}</span>
-                  <span class="pay-desc">{{ method.desc }}</span>
-                </div>
-                @if (selectedPayment() === method.id) {
-                  <span class="material-icons pay-check">check_circle</span>
-                }
-              </button>
+@if (showPayment()) {
+  <div class="modal-overlay" (click)="cancelCurrentPayment()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <h2>Choisir un moyen de paiement</h2>
+        <button class="modal-close" (click)="cancelCurrentPayment()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="modal-summary">
+        <span>{{ p.title }}</span>
+        <strong>{{ formatPrice(p.price * buyQuantity()) }} F CFA</strong>
+      </div>
+      <div class="payment-list">
+        @for (method of sellerPaymentMethods; track method.id) {
+          <button class="payment-item" [class.selected]="selectedPayment() === method.id"
+                  (click)="selectedPayment.set(method.id)">
+            <span class="material-icons pay-icon">{{ method.icon }}</span>
+            <div class="pay-info">
+              <span class="pay-name">{{ method.name }}</span>
+              <span class="pay-desc">{{ method.desc }}</span>
+            </div>
+            @if (selectedPayment() === method.id) {
+              <span class="material-icons pay-check">check_circle</span>
             }
-          </div>
-          <div class="delivery-address-field">
-            <label>Adresse de livraison</label>
-            <textarea [ngModel]="deliveryAddressText()" (ngModelChange)="deliveryAddressText.set($event)"
-                      placeholder="Quartier, ville, point de repère..." rows="2"></textarea>
-          </div>
-          <button class="modal-cta" [disabled]="!selectedPayment()" (click)="confirmPayment()">
-            Confirmer le paiement - {{ formatPrice(p.price) }} F CFA
           </button>
+        }
+      </div>
+      <div class="qty-selector">
+        <label>Quantité</label>
+        <div class="qty-controls">
+          <button type="button" (click)="decrementQty()" [disabled]="buyQuantity() <= 1">−</button>
+          <span>{{ buyQuantity() }}</span>
+          <button type="button" (click)="incrementQty()" [disabled]="buyQuantity() >= (p.stock_quantity || 1)">+</button>
         </div>
       </div>
-    }
+      <div class="delivery-address-field">
+        <label>Adresse de livraison</label>
+        <textarea [ngModel]="deliveryAddressText()" (ngModelChange)="deliveryAddressText.set($event)"
+                  placeholder="Quartier, ville, point de repère..." rows="2"></textarea>
+      </div>
+      <button class="modal-cta" [disabled]="!selectedPayment()" (click)="confirmPayment()">
+        Confirmer le paiement - {{ formatPrice(p.price * buyQuantity()) }} F CFA
+      </button>
+    </div>
+  </div>
+}
 
     <!-- Share Modal -->
     @if (showShareModal()) {

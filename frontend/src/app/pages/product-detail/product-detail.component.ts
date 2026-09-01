@@ -51,6 +51,8 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   addingToCart = signal(false);
   activeMediaTab = signal<'video' | 'photos'>('video');
   deliveryAddressText = signal('');
+  buyQuantity = signal(1);
+  pendingTransactionId = signal<string | null>(null);
 
   // Video
   videoPlaying = signal(false);
@@ -346,24 +348,57 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
     }
   }
 
+  incrementQty() {
+  const max = this.product()?.stock_quantity ?? 1;
+  this.buyQuantity.update(q => Math.min(q + 1, max));
+}
+
+decrementQty() {
+  this.buyQuantity.update(q => Math.max(q - 1, 1));
+}
+
   confirmPayment() {
   const p = this.product();
   if (!p || !this.selectedPayment()) return;
+
   this.notify.info('Redirection vers le paiement...');
   this.productService.initiateTransaction({
     product_id: p.id,
     payment_method: this.selectedPayment(),
     delivery_type: 'delivery',
     delivery_address: { text: this.deliveryAddressText().trim() || 'À convenir avec le vendeur' },
+    quantity: this.buyQuantity(),
   }).subscribe({
     next: (res: any) => {
       if (res.payment_url) {
+        this.pendingTransactionId.set(res.transaction?.id ?? null);
         window.location.href = res.payment_url;
       } else {
         this.notify.error('Le lien de paiement est introuvable.');
       }
     },
     error: (err: any) => this.notify.error(err?.error?.message || 'Erreur lors de l\'initialisation du paiement.'),
+  });
+}
+cancelCurrentPayment() {
+  const id = this.pendingTransactionId();
+  if (!id) {
+    this.showPayment.set(false);
+    return;
+  }
+  this.productService.cancelTransaction(id).subscribe({
+    next: () => {
+      this.notify.info('Paiement annulé, stock restitué.');
+      this.pendingTransactionId.set(null);
+      this.showPayment.set(false);
+    },
+    error: (err: any) => {
+      // Même si l'annulation échoue côté serveur (déjà payé, déjà expiré...),
+      // on referme la modale : le job d'expiration reprendra la main de toute façon.
+      this.notify.error(err?.error?.message || 'Impossible d\'annuler pour le moment.');
+      this.pendingTransactionId.set(null);
+      this.showPayment.set(false);
+    },
   });
 }
 

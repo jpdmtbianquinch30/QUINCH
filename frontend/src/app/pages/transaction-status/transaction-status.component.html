@@ -1,0 +1,41 @@
+<div class="status-page">
+  @if (loading()) {
+    <div class="status-loading">
+      <div class="loader"></div>
+      <p>Vérification du paiement...</p>
+    </div>
+  } @else {
+    @if (transaction() && transaction().payment_status === 'completed') {
+      <div class="status-card success">
+        <span class="material-icons status-icon">check_circle</span>
+        <h1>Paiement confirmé</h1>
+        <p>Votre commande pour <strong>{{ transaction().product?.title }}</strong> a bien été enregistrée.</p>
+        <p class="status-sub">Le vendeur a été notifié et va préparer votre commande.</p>
+      </div>
+    } @else if (transaction() && transaction().payment_status === 'pending') {
+      <div class="status-card pending">
+        <span class="material-icons status-icon">hourglass_top</span>
+        <h1>Paiement en cours de vérification</h1>
+        <p>Nous n'avons pas encore reçu la confirmation de la passerelle de paiement.</p>
+        <p class="status-sub">Si le paiement a bien été effectué, il sera confirmé automatiquement dans quelques instants. Sinon, la réservation sera annulée sous peu.</p>
+      </div>
+    } @else if (outcome() === 'error' || (transaction() && transaction().payment_status === 'failed')) {
+      <div class="status-card error">
+        <span class="material-icons status-icon">cancel</span>
+        <h1>Paiement annulé ou échoué</h1>
+        <p>Le paiement n'a pas abouti. Le produit reste disponible, vous pouvez réessayer.</p>
+      </div>
+    } @else {
+      <div class="status-card error">
+        <span class="material-icons status-icon">error_outline</span>
+        <h1>Transaction introuvable</h1>
+        <p>Impossible de retrouver les détails de cette transaction.</p>
+      </div>
+    }
+
+    <div class="status-actions">
+      <button class="btn-primary" (click)="goToTransactions()">Voir mes commandes</button>
+      <a routerLink="/feed" class="btn-secondary">Retour à l'accueil</a>
+    </div>
+  }
+</div>

@@ -113,6 +113,10 @@ export class ProductService {
     return this.api.post('transactions/initiate', data);
   }
 
+  cancelTransaction(transactionId: string): Observable<any> {
+  return this.api.post(`transactions/${transactionId}/cancel`);
+ }
+
   getTransactionHistory(): Observable<any> {
     return this.api.get('transactions/history');
   }

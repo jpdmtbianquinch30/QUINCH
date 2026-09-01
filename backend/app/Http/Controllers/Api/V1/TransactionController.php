@@ -281,9 +281,13 @@ class TransactionController extends Controller
         }
 
         if (($payload['type'] ?? null) === 'checkout.session.payment_failed') {
-            $transaction = Transaction::find($data['client_reference'] ?? null);
-            $transaction?->markPaymentFailed();
-        }
+                $transaction = Transaction::find($data['client_reference'] ?? null);
+                if ($transaction && $transaction->order_status === 'pending_payment') {
+                    $transaction->update(['order_status' => 'cancelled']);
+                    $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
+                }
+                $transaction?->markPaymentFailed();
+         }
 
         return response()->json(['status' => 'received']);
     }

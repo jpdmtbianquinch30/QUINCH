@@ -5,13 +5,14 @@ namespace App\Jobs;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\Transaction;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\DB;
 
 class ReleaseExpiredReservations implements ShouldQueue
 {
-    use Dispatchable;
+    use Dispatchable, Queueable;
 
     public function handle(): void
     {
