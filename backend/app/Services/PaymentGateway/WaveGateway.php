@@ -20,13 +20,24 @@ class WaveGateway implements PaymentGatewayInterface
         // Le XOF n'accepte pas de décimales côté Wave.
         $amount = (string) round($request['amount']);
 
-        $response = Http::withToken($apiKey)->timeout(10)->post("{$baseUrl}/checkout/sessions", [
+        $payload = [
             'amount' => $amount,
             'currency' => 'XOF',
             'client_reference' => $request['transaction_id'],
             'success_url' => $request['success_url'],
             'error_url' => $request['error_url'],
-        ]);
+        ];
+
+        // notif_url est optionnel : utilisé pour les flux qui doivent être
+        // notifiés sur un webhook différent de celui par défaut du compte
+        // marchand (ex. abonnements premium -> /webhooks/wave-premium).
+        // Sans ce champ, Wave enverrait la confirmation de paiement sur
+        // l'URL webhook par défaut du dashboard, jamais sur wave-premium.
+        if (!empty($request['notif_url'])) {
+            $payload['notif_url'] = $request['notif_url'];
+        }
+
+        $response = Http::withToken($apiKey)->timeout(10)->post("{$baseUrl}/checkout/sessions", $payload);
 
         if ($response->failed()) {
             Log::error('Wave: échec création session checkout', [

@@ -56,6 +56,15 @@ class PremiumSubscriptionTest extends TestCase
 
         // L'utilisateur n'est pas premium tant que le webhook n'a pas confirmé.
         $this->assertFalse($user->fresh()->is_premium);
+
+        // Anti-régression : notif_url doit être transmis à Wave, sinon la
+        // confirmation de paiement atterrit sur le mauvais webhook (celui
+        // par défaut du compte marchand) et l'abonnement reste bloqué en
+        // 'pending' indéfiniment (voir WaveGateway::initiatePayment).
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.wave.com/v1/checkout/sessions'
+                && str_ends_with($request['notif_url'] ?? '', '/webhooks/wave-premium');
+        });
     }
 
     public function test_rejects_an_invalid_plan(): void

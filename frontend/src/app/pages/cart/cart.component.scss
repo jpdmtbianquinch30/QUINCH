@@ -266,6 +266,37 @@
   &:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
 }
 
+.buy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  background: var(--q-primary, #6366f1);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: opacity 0.15s;
+  .material-icons { font-size: 17px; }
+  &:hover { opacity: 0.85; }
+}
+
+.cart-info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--q-text-muted);
+  line-height: 1.4;
+  .material-icons { font-size: 18px; color: var(--q-primary, #6366f1); flex-shrink: 0; }
+}
+
 .clear-btn {
   display: flex;
   align-items: center;

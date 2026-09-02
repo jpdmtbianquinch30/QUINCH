@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { CartService, CartItem } from '../../core/services/cart.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { ProductService } from '../../core/services/product.service';
 
 @Component({
   selector: 'app-cart',
@@ -16,38 +15,12 @@ export class CartComponent implements OnInit {
   cart = inject(CartService);
   private notify = inject(NotificationService);
   loading = signal(false);
-  checkoutMode = signal(false);
-  selectedPayment = signal('');
 
-  // Master list of all payment methods — source unique de vérité,
-  // reflète PaymentGatewayFactory côté backend (voir ProductService).
-  allPaymentMethods = ProductService.ALL_PAYMENT_METHODS;
-
-  // Compute common payment methods across all cart items
-  commonPaymentMethods = computed(() => {
-    const items = this.cart.items();
-    if (items.length === 0) return [];
-
-    // Get payment methods for each product
-    const methodSets = items
-      .map(item => item.product.payment_methods || [])
-      .filter(methods => methods.length > 0);
-
-    if (methodSets.length === 0) return [];
-
-    // Find intersection of all sets
-    let common = methodSets[0];
-    for (let i = 1; i < methodSets.length; i++) {
-      common = common.filter(m => methodSets[i].includes(m));
-    }
-
-    return this.allPaymentMethods.filter(m => common.includes(m.id));
-  });
-
-  // Check if any items have no payment methods set
-  hasItemsWithoutPayment = computed(() => {
-    return this.cart.items().some(item => !item.product.payment_methods || item.product.payment_methods.length === 0);
-  });
+  // Le panier est une liste d'envies : Wave/Orange Money ne gèrent qu'une
+  // transaction = un produit, un paiement groupé multi-vendeurs n'est pas
+  // possible avec ces passerelles. L'achat réel se fait donc article par
+  // article, directement depuis la fiche produit (déjà fonctionnel et
+  // testé — voir WavePurchaseTest côté backend).
 
   // Items with delivery fees
   itemsWithDeliveryFee = computed(() => {
@@ -101,29 +74,5 @@ export class CartComponent implements OnInit {
     this.cart.clearCart().subscribe({
       next: () => this.notify.success('Panier vide.'),
     });
-  }
-
-  startCheckout() {
-    if (this.commonPaymentMethods().length > 0) {
-      this.selectedPayment.set(this.commonPaymentMethods()[0].id);
-    }
-    this.checkoutMode.set(true);
-  }
-
-  // ⚠️ TOUJOURS FACTICE — non branché au backend. Décision d'architecture
-  // en attente : Wave/Orange Money ne gèrent qu'une transaction = un produit.
-  // Un panier multi-vendeurs ne peut pas donner lieu à un seul paiement.
-  // Voir la conversation précédente pour les options envisagées.
-  processPayment() {
-    if (!this.selectedPayment()) {
-      this.notify.error('Veuillez choisir un moyen de paiement.');
-      return;
-    }
-    this.notify.info('Paiement en cours de traitement...');
-    setTimeout(() => {
-      this.notify.success('Commande confirmee! Le vendeur a ete notifie.');
-      this.cart.clearCart().subscribe();
-      this.checkoutMode.set(false);
-    }, 2000);
   }
 }

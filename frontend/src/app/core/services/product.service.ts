@@ -9,6 +9,7 @@ export interface PaymentMethodOption {
   name: string;
   desc: string;
   icon: string;
+  color: string;
   available: boolean;
 }
 
@@ -20,8 +21,8 @@ export class ProductService {
   // exactement PaymentGatewayFactory côté backend. Ne plus dupliquer
   // cette liste ailleurs dans l'app : importer ProductService.ALL_PAYMENT_METHODS.
   static readonly ALL_PAYMENT_METHODS: PaymentMethodOption[] = [
-    { id: 'wave', name: 'Wave', desc: 'Paiement mobile Wave', icon: 'account_balance_wallet', available: true },
-    { id: 'orange_money', name: 'Orange Money', desc: 'Bientôt disponible', icon: 'smartphone', available: false },
+    { id: 'wave', name: 'Wave', desc: 'Paiement mobile Wave', icon: 'account_balance_wallet', color: '#1dc3e4', available: true },
+    { id: 'orange_money', name: 'Orange Money', desc: 'Bientôt disponible', icon: 'smartphone', color: '#ff6600', available: false },
   ];
 
   getFeed(page: number = 1, params?: Record<string, any>): Observable<FeedResponse> {

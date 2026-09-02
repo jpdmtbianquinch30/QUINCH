@@ -173,7 +173,6 @@ export class SellComponent implements OnInit, OnDestroy {
 
   // Payment methods the seller accepts
   availablePaymentMethods = ProductService.ALL_PAYMENT_METHODS;
-  servicePaymentMethods = ProductService.ALL_PAYMENT_METHODS;
   selectedPaymentMethods = signal<string[]>([]);
 
   // Delivery options: 'fixed' = seller sets a fee the buyer pays, 'contact' = buyer contacts seller

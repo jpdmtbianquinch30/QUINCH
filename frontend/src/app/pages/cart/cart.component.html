@@ -28,7 +28,7 @@
         </a>
       </div>
     } @else {
-      <div class="cart-layout" [class.checkout-active]="checkoutMode()">
+      <div class="cart-layout">
         <!-- ═══════ CART ITEMS ═══════ -->
         <div class="cart-items">
           @for (item of cart.items(); track item.id) {
@@ -96,6 +96,10 @@
                   <span class="material-icons">delete_outline</span>
                   Retirer
                 </button>
+                <a class="buy-btn" [routerLink]="['/product', item.product.slug]">
+                  <span class="material-icons">shopping_bag</span>
+                  Acheter
+                </a>
               </div>
             </div>
           }
@@ -155,64 +159,10 @@
               }
             </div>
 
-            @if (!checkoutMode()) {
-              <button class="checkout-btn" (click)="startCheckout()">
-                <span class="material-icons">lock</span>
-                Passer la commande
-              </button>
-            } @else {
-              <!-- ═══ Payment Selection ═══ -->
-              <div class="payment-section">
-                <h4>Moyen de paiement</h4>
-
-                @if (commonPaymentMethods().length > 0) {
-                  <div class="payment-options">
-                    @for (method of commonPaymentMethods(); track method.id) {
-                      <label class="payment-option" [class.selected]="selectedPayment() === method.id">
-                        <input type="radio" name="payment" [value]="method.id" (change)="selectedPayment.set(method.id)" [checked]="selectedPayment() === method.id">
-                        <span class="material-icons pay-method-icon">{{ method.icon }}</span>
-                        <div class="payment-info">
-                          <span class="payment-name">{{ method.name }}</span>
-                          <span class="payment-desc">{{ method.desc }}</span>
-                        </div>
-                        @if (selectedPayment() === method.id) {
-                          <span class="material-icons check-mark">check_circle</span>
-                        }
-                      </label>
-                    }
-                  </div>
-                } @else if (hasItemsWithoutPayment()) {
-                  <!-- Some sellers haven't set payment methods -->
-                  <div class="no-payment-notice">
-                    <span class="material-icons">info</span>
-                    <div>
-                      <strong>Methode de paiement non definie</strong>
-                      <span>Un ou plusieurs vendeurs n'ont pas configure de methode de paiement. Contactez-les directement pour finaliser l'achat.</span>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="no-payment-notice">
-                    <span class="material-icons">info</span>
-                    <div>
-                      <strong>Aucune methode commune</strong>
-                      <span>Les vendeurs n'ont pas de methode de paiement en commun. Contactez chaque vendeur individuellement.</span>
-                    </div>
-                  </div>
-                }
-
-                @if (commonPaymentMethods().length > 0) {
-                  <button class="checkout-btn confirm" (click)="processPayment()" [disabled]="!selectedPayment()">
-                    <span class="material-icons">payment</span>
-                    Confirmer - {{ cart.total() | number:'1.0-0' }} F CFA
-                  </button>
-                }
-
-                <button class="back-btn" (click)="checkoutMode.set(false)">
-                  <span class="material-icons">arrow_back</span>
-                  Retour au panier
-                </button>
-              </div>
-            }
+            <div class="cart-info-note">
+              <span class="material-icons">info</span>
+              <span>Le panier est une liste d'envies. L'achat se fait individuellement, depuis la fiche de chaque produit, avec le vendeur concerné.</span>
+            </div>
           </div>
 
           <!-- Delivery details per item -->
