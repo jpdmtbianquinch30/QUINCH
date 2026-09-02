@@ -12,10 +12,14 @@ class DisabledFeatureTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Par défaut (config/quinch.php), toutes les fonctionnalités V2 sont
-     * désactivées. Un utilisateur authentifié qui tape directement sur ces
-     * routes doit recevoir un 404 propre (voir EnsureFeatureEnabled), pas une
-     * page d'erreur ni un comportement incohérent avec l'UI qui les cache.
+     * Par défaut (config/quinch.php), les fonctionnalités V2 restantes
+     * (négociation, avis, badges) sont désactivées. Un utilisateur
+     * authentifié qui tape directement sur ces routes doit recevoir un 404
+     * propre (voir EnsureFeatureEnabled), pas une page d'erreur ni un
+     * comportement incohérent avec l'UI qui les cache.
+     *
+     * Le suivi (follow) a été activé pour de vrai — voir
+     * Tests\Feature\Follow\FollowTest pour sa couverture fonctionnelle.
      */
     public function test_negotiation_routes_are_disabled_by_default(): void
     {
@@ -26,16 +30,6 @@ class DisabledFeatureTest extends TestCase
             'product_id' => $product->id,
             'proposed_price' => 1000,
         ]);
-
-        $response->assertNotFound();
-    }
-
-    public function test_follow_routes_are_disabled_by_default(): void
-    {
-        $user = User::factory()->create();
-        $target = User::factory()->create();
-
-        $response = $this->actingAs($user, 'sanctum')->postJson("/api/v1/follow/{$target->id}");
 
         $response->assertNotFound();
     }
@@ -61,19 +55,38 @@ class DisabledFeatureTest extends TestCase
         $response->assertNotFound();
     }
 
-    public function test_feature_can_be_re_enabled_via_config(): void
+    public function test_follow_is_enabled_by_default(): void
     {
-        // Vérifie que le mécanisme de flag lui-même fonctionne dans les deux
-        // sens : si on l'active, la route redevient accessible (le 404 vient
-        // bien du flag, pas d'un problème de route cassée).
-        config(['quinch.features.follow' => true]);
-
+        // Contrairement aux autres fonctionnalités V2, le suivi a été
+        // activé pour de vrai (voir FollowTest pour la couverture complète).
         $user = User::factory()->create();
         $target = User::factory()->create();
 
         $response = $this->actingAs($user, 'sanctum')->postJson("/api/v1/follow/{$target->id}");
 
-        $response->assertStatus(200);
+        $response->assertOk();
+    }
+
+    public function test_feature_flag_mechanism_works_in_both_directions(): void
+    {
+        // Vérifie que le mécanisme de flag lui-même fonctionne : si on
+        // active une fonctionnalité encore désactivée par défaut, la route
+        // redevient accessible (le 404 vient bien du flag, pas d'une route
+        // cassée). On utilise "reviews" ici puisque follow n'est plus
+        // désactivé par défaut.
+        config(['quinch.features.reviews' => true]);
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/reviews', [
+            'transaction_id' => (string) \Illuminate\Support\Str::uuid(),
+            'rating' => 5,
+        ]);
+
+        // On s'attend à autre chose qu'un 404 (validation, 422, etc.) —
+        // preuve que le flag a bien laissé passer la requête jusqu'au
+        // contrôleur, peu importe ce qu'il en fait ensuite.
+                $this->assertNotEquals(404, $response->getStatusCode());
     }
 
     public function test_wave_is_the_default_enabled_payment_method(): void
