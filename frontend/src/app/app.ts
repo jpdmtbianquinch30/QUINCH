@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { CartService } from './core/services/cart.service';
@@ -39,6 +39,16 @@ export class App implements OnInit {
     return !hiddenRoutes.some(r => url.includes(r));
   });
 
+    mobileMenuOpen = signal(false);
+
+  toggleMobileMenu() {
+    this.mobileMenuOpen.update(v => !v);
+  }
+
+  closeMobileMenu() {
+    this.mobileMenuOpen.set(false);
+  }
+
   isFullscreen = computed(() => {
     const url = this.currentUrl();
     return url === '/feed' || url === '/' || url === '' || url.startsWith('/messages');
@@ -50,7 +60,7 @@ export class App implements OnInit {
     return url.includes('/marketplace') && url.includes(`type=${type}`);
   }
 
-  ngOnInit() {
+    ngOnInit() {
     // Load all counts immediately when authenticated
     if (this.auth.isAuthenticated()) {
       this.cart.getCount().subscribe();
@@ -58,6 +68,11 @@ export class App implements OnInit {
       this.chat.getConversations().subscribe();
       this.fav.getCount().subscribe();
     }
+
+    // Referme le tiroir mobile à chaque changement de route
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      this.mobileMenuOpen.set(false);
+    });
 
     // Listen for welcome notification
     window.addEventListener('quinch:welcome', ((event: CustomEvent) => {

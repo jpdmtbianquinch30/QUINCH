@@ -133,3 +133,33 @@
   gap: 16px;
   margin-top: 40px;
 }
+// ─── Responsive mobile ────────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .step-content {
+    padding: 24px 16px;
+    max-width: 100%;
+  }
+
+  .choices-grid.categories,
+  .choices-grid.locations {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .skip-btn {
+    top: 16px;
+    right: 16px;
+    font-size: 0.8rem;
+  }
+
+  .step-title { font-size: 1.5rem; }
+  .step-subtitle { font-size: 0.9rem; margin-bottom: 28px; }
+}
+
+@media (max-width: 360px) {
+  .choices-grid.categories,
+  .choices-grid.locations {
+    gap: 8px;
+  }
+
+  .choice-card { padding: 14px 8px; }
+}

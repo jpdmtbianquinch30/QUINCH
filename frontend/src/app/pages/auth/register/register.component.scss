@@ -101,3 +101,36 @@
 
   .auth-form-side { background: #f0f2f5; border-left: 1px solid #e5e7eb; }
 }
+// ─── Responsive mobile ────────────────────────────────────────────────────
+@media (max-width: 860px) {
+  .auth-split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+  }
+
+  .auth-brand {
+    padding: 32px 24px 20px;
+    min-height: auto;
+
+    &::before { display: none; }
+  }
+
+  .brand-logo { width: 56px; height: 56px; margin-bottom: 12px; }
+  .brand-title { font-size: 1.75rem; margin-bottom: 4px; }
+  .brand-tagline { font-size: 0.9rem; margin-bottom: 0; }
+  .brand-features { display: none; }
+
+  .auth-form-side { padding: 24px; }
+  .auth-form-container { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-brand, .auth-form-side { padding: 20px 16px; }
+}

@@ -2084,3 +2084,25 @@ $r-sm: 8px;
   }
 }
 
+// ─── Correctif hauteur réelle mobile (barre d'adresse) ────────────────────
+@media (max-width: 768px) {
+  .video-card {
+    height: 100dvh; // hauteur de viewport "dynamique", exclut la zone
+                     // cachée derrière la barre d'adresse — contrairement
+                     // à 100vh qui la compte comme si elle était visible
+  }
+}
+
+// ─── Compression sur petits écrans / écrans courts ────────────────────────
+@media (max-width: 768px) and (max-height: 700px) {
+  .side-actions {
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    gap: 14px;
+  }
+
+  .avatar-wrap { width: 42px; height: 42px; }
+  .follow-badge { width: 20px; height: 20px; }
+
+  .side-btn .material-icons { font-size: 26px; }
+  .side-label { font-size: 0.7rem; }
+}
