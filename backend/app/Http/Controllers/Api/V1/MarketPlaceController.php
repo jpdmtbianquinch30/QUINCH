@@ -15,13 +15,15 @@ class MarketplaceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with(['user:id,username,avatar_url,trust_score', 'category:id,name,slug', 'video'])
-            ->where('status', 'active')
+        $query = Product::with(['user:id,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
+            ->leftJoin('users', 'products.user_id', '=', 'users.id')
+            ->select('products.*')
+            ->where('products.status', 'active')
             ->where(function ($q) {
-                $q->whereNotNull('poster_url')
+                $q->whereNotNull('products.poster_url')
                   ->orWhereHas('video', fn($s) => $s->whereIn('moderation_status', ['approved', 'pending']))
                   ->orWhere(function ($s) {
-                      $s->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");
+                      $s->whereNotNull('products.images')->whereRaw("products.images::jsonb != '[]'::jsonb");
                   });
             });
 
@@ -29,41 +31,45 @@ class MarketplaceController extends Controller
         if ($request->filled('q')) {
             $search = '%' . $request->q . '%';
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'ilike', $search)
-                  ->orWhere('description', 'ilike', $search);
+                $q->where('products.title', 'ilike', $search)
+                  ->orWhere('products.description', 'ilike', $search);
             });
         }
 
         // Filtre catégorie
         if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
+            $query->where('products.category_id', $request->category);
         }
 
         // Filtre type (product / service)
         if ($request->filled('type') && in_array($request->type, ['product', 'service'])) {
-            $query->where('type', $request->type);
+            $query->where('products.type', $request->type);
         }
 
         // Filtre vendeur
         if ($request->filled('seller_id')) {
-            $query->where('user_id', $request->seller_id);
+            $query->where('products.user_id', $request->seller_id);
         }
 
         // Filtre prix
         if ($request->filled('price_min')) {
-            $query->where('price', '>=', (int) $request->price_min);
+            $query->where('products.price', '>=', (int) $request->price_min);
         }
         if ($request->filled('price_max')) {
-            $query->where('price', '<=', (int) $request->price_max);
+            $query->where('products.price', '<=', (int) $request->price_max);
         }
 
-        // Tri
+        // Tri — le boost premium ne s'applique jamais sur un tri prix
+        // explicite (l'acheteur a demandé ce tri précis, on ne le trahit
+        // pas), seulement sur "recent" et "popular".
+        $premiumFirst = "(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC";
+
         $sortBy = $request->get('sort_by', 'recent');
         match ($sortBy) {
-            'price_asc'  => $query->orderBy('price', 'asc'),
-            'price_desc' => $query->orderBy('price', 'desc'),
-            'popular'    => $query->orderByDesc('like_count'),
-            default      => $query->latest(),
+            'price_asc'  => $query->orderBy('products.price', 'asc'),
+            'price_desc' => $query->orderBy('products.price', 'desc'),
+            'popular'    => $query->orderByRaw($premiumFirst)->orderByDesc('products.like_count'),
+            default      => $query->orderByRaw($premiumFirst)->orderByDesc('products.created_at'),
         };
 
         $perPage = min((int) $request->get('per_page', 20), 50);
@@ -103,6 +109,7 @@ class MarketplaceController extends Controller
                     'username'    => $product->user?->username,
                     'avatar'      => $product->user?->avatar_url,
                     'trust_score' => $product->user?->trust_score,
+                    'is_premium'  => $product->user?->isPremiumActive() ?? false,
                 ],
                 'is_liked'     => in_array($product->id, $likedIds),
                 'is_saved'     => in_array($product->id, $savedIds),

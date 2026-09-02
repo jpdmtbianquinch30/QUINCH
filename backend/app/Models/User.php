@@ -118,7 +118,6 @@ class User extends Authenticatable
     {
         return $this->hasMany(PremiumSubscription::class);
     }
-
     /**
      * Un utilisateur est réellement premium si le flag est actif ET que la
      * date d'expiration n'est pas dépassée. On ne se fie jamais au seul

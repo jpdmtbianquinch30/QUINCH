@@ -44,7 +44,7 @@ class ProductFeedController extends Controller
             }
         }
 
-       
+
         if (!$request->has('q') || empty($request->q)) {
             $query->where(function ($q) {
                 $q->whereNotNull('poster_url')
@@ -57,12 +57,12 @@ class ProductFeedController extends Controller
             });
         }
 
-        
+
         if ($request->has('type') && in_array($request->type, ['product', 'service'])) {
             $query->where('type', $request->type);
         }
 
-       
+
         if ($request->has('category')) {
             $query->where('category_id', $request->category);
         }
@@ -101,7 +101,10 @@ class ProductFeedController extends Controller
             // The random factor ensures different ordering on every refresh
             $seed = (int) $request->get('seed', time());
 
+                        $premiumBoost = config('quinch.premium.feed_boost', 30);
+
             $query->leftJoin('product_videos', 'products.video_id', '=', 'product_videos.id')
+                  ->leftJoin('users', 'products.user_id', '=', 'users.id')
                   ->select('products.*')
                   ->selectRaw("(
                       -- Engagement score (weighted interactions)
@@ -125,6 +128,12 @@ class ProductFeedController extends Controller
                       -- Has video boost (video content preferred in Pour toi)
                       + CASE WHEN products.video_id IS NOT NULL THEN 20 ELSE 0 END
 
+                    -- Boost vendeur premium (actif uniquement, pas juste le flag)
+                      + CASE
+                          WHEN users.is_premium = true AND users.premium_expires_at > NOW()
+                          THEN {$premiumBoost}
+                          ELSE 0
+                        END
                       -- Random factor using PostgreSQL random() — varies per query execution
                       + random() * 40
                   ) as feed_score")
@@ -436,7 +445,7 @@ class ProductFeedController extends Controller
     /**
      * Vendeurs les plus actifs — triés par engagement (likes + vues + produits actifs)
      */
-    public function activeSellers(Request $request): JsonResponse
+        public function activeSellers(Request $request): JsonResponse
     {
         $sellers = \App\Models\User::query()
             ->where('is_seller', true)
@@ -453,9 +462,18 @@ class ProductFeedController extends Controller
             ->withSum(['products as total_views' => function ($q) {
                 $q->where('status', 'active');
             }], 'view_count')
-            ->orderByRaw('(COALESCE(total_likes::numeric, 0) * 3 + COALESCE(total_views::numeric, 0) + COALESCE(active_products_count::numeric, 0) * 5) DESC')
-            ->limit(15)
             ->get()
+            ->map(function ($u) {
+                $premiumBoost = $u->isPremiumActive() ? config('quinch.premium.feed_boost', 30) : 0;
+                $u->engagement_score = ((float) ($u->total_likes ?? 0)) * 3
+                    + ((float) ($u->total_views ?? 0))
+                    + ((float) ($u->active_products_count ?? 0)) * 5
+                    + $premiumBoost;
+                return $u;
+            })
+            ->sortByDesc('engagement_score')
+            ->take(15)
+            ->values()
             ->map(function ($u) {
                 $avatar = $u->avatar_url;
                 if ($avatar && !str_starts_with($avatar, 'http')) {
@@ -470,6 +488,7 @@ class ProductFeedController extends Controller
                     'trust_score'    => $u->trust_score,
                     'products_count' => $u->active_products_count,
                     'total_likes'    => (int) ($u->total_likes ?? 0),
+                    'is_premium'     => $u->isPremiumActive(),
                 ];
             });
 

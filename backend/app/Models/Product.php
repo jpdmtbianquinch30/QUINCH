@@ -43,6 +43,9 @@ class Product extends Model
         'like_count',
         'share_count',
         'expires_at',
+        'listing_fee_amount',
+        'listing_fee_status',
+        'listing_fee_gateway_id',
     ];
 
     protected function casts(): array

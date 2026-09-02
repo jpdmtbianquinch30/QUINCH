@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\SecurityController;
 use App\Http\Controllers\Api\V1\VideoStreamController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\GoogleAuthController;
+use App\Http\Controllers\Api\V1\PremiumController;
 /*
 |--------------------------------------------------------------------------
 | QUINCH API Routes v1 - Complete Architecture
@@ -61,6 +62,7 @@ Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath'])
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('products', [MarketplaceController::class, 'index']);
 Route::get('products/feed', [ProductFeedController::class, 'index']);
+Route::get('products/active-sellers', [ProductFeedController::class, 'activeSellers']);
 Route::get('search', [ProductFeedController::class, 'search']);
 Route::get('search/suggestions', [ProductFeedController::class, 'suggestions']);
 Route::get('search/trending', [ProductFeedController::class, 'trending']);
@@ -194,6 +196,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{transaction}/cancel', [TransactionController::class, 'cancelPayment']);
         });
 
+            // Premium (abonnement vendeur)
+    Route::prefix('premium')->group(function () {
+        Route::get('plans', [PremiumController::class, 'plans']);
+        Route::post('subscribe', [PremiumController::class, 'subscribe'])->middleware('throttle:3,1');
+        Route::get('status', [PremiumController::class, 'status']);
+    });
+
     // Follows & Friends (V2 — désactivé en V1)
     Route::middleware('feature:follow')->group(function () {
         Route::post('follow/{user}', [FollowController::class, 'follow']);
@@ -269,7 +278,7 @@ Route::prefix('admin')
         Route::get('reports/fraud', [AdminController::class, 'fraudReport']);
         Route::get('reports/users', [AdminController::class, 'userReport']);
         Route::get('reports/overview', [AdminController::class, 'overviewReport']);
-        
+
         // System — reset/delete-all-videos déplacés en commandes Artisan
         // (quinch:reset-data / quinch:delete-all-videos), volontairement non
         // exposés en HTTP même sous rôle admin (action destructrice).
@@ -279,4 +288,6 @@ Route::prefix('admin')
 Route::prefix('webhooks')->group(function () {
     Route::post('orange-money', [TransactionController::class, 'webhookOrangeMoney']);
     Route::post('wave', [TransactionController::class, 'webhookWave']);
-   });
+    Route::post('wave-premium', [PremiumController::class, 'webhookWave']);
+    Route::post('wave-listing', [ProductController::class, 'webhookWaveListingFee']);
+});

@@ -11,9 +11,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use App\Support\VerifiesWaveWebhook;
 
 class TransactionController extends Controller
 {
+    use VerifiesWaveWebhook;
         public function initiate(Request $request): JsonResponse
     {
         $enabledMethods = config('quinch.enabled_payment_methods', ['wave']);
@@ -303,28 +305,6 @@ class TransactionController extends Controller
          }
 
         return response()->json(['status' => 'received']);
-    }
-
-    private function verifyWaveSignature(string $header, string $body, string $secret): bool
-    {
-        $parts = collect(explode(',', $header))->mapWithKeys(function ($part) {
-            [$key, $value] = array_pad(explode('=', $part, 2), 2, null);
-            return [$key => $value];
-        });
-
-        $timestamp = $parts->get('t');
-        $signature = $parts->get('v1');
-
-        if (!$timestamp || !$signature) {
-            return false;
-        }
-
-        // Anti-rejeu (Wave rejette au-delà de 5 min dans le passé).
-        if (abs(time() - (int) $timestamp) > 300) {
-            return false;
-        }
-
-        return hash_equals(hash_hmac('sha256', $timestamp . $body, $secret), $signature);
     }
 
     public function webhookOrangeMoney(Request $request): JsonResponse
