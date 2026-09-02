@@ -10,6 +10,8 @@ export interface User {
   trust_level: string;
   trust_badge: string;
   kyc_status: 'pending' | 'verified' | 'rejected';
+  is_premium?: boolean;
+  premium_expires_at?: string | null;
   bio?: string;
   city?: string;
   region?: string;

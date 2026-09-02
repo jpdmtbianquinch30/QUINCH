@@ -85,15 +85,9 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   submittingReview = signal(false);
   reviewSubmitted = signal(false);
 
-  // All known payment methods (master list)
-  allPaymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', desc: 'Paiement mobile', icon: 'phone_android' },
-    { id: 'wave', name: 'Wave', desc: 'Transfert rapide', icon: 'waves' },
-    { id: 'free_money', name: 'Free Money', desc: 'Paiement mobile', icon: 'smartphone' },
-    { id: 'cash_delivery', name: 'Paiement a la livraison', desc: 'Especes', icon: 'local_shipping' },
-    { id: 'cash_hand', name: 'Especes (en main propre)', desc: 'Paiement direct', icon: 'payments' },
-    { id: 'bank_transfer', name: 'Virement bancaire', desc: 'Transfert bancaire', icon: 'account_balance' },
-  ];
+  // All known payment methods (master list) — source unique de vérité,
+  // reflète PaymentGatewayFactory côté backend (voir ProductService).
+  allPaymentMethods = ProductService.ALL_PAYMENT_METHODS;
 
   // Seller's accepted payment methods (filtered from product data)
   get sellerPaymentMethods() {
@@ -349,58 +343,59 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   }
 
   incrementQty() {
-  const max = this.product()?.stock_quantity ?? 1;
-  this.buyQuantity.update(q => Math.min(q + 1, max));
-}
+    const max = this.product()?.stock_quantity ?? 1;
+    this.buyQuantity.update(q => Math.min(q + 1, max));
+  }
 
-decrementQty() {
-  this.buyQuantity.update(q => Math.max(q - 1, 1));
-}
+  decrementQty() {
+    this.buyQuantity.update(q => Math.max(q - 1, 1));
+  }
 
   confirmPayment() {
-  const p = this.product();
-  if (!p || !this.selectedPayment()) return;
+    const p = this.product();
+    if (!p || !this.selectedPayment()) return;
 
-  this.notify.info('Redirection vers le paiement...');
-  this.productService.initiateTransaction({
-    product_id: p.id,
-    payment_method: this.selectedPayment(),
-    delivery_type: 'delivery',
-    delivery_address: { text: this.deliveryAddressText().trim() || 'À convenir avec le vendeur' },
-    quantity: this.buyQuantity(),
-  }).subscribe({
-    next: (res: any) => {
-      if (res.payment_url) {
-        this.pendingTransactionId.set(res.transaction?.id ?? null);
-        window.location.href = res.payment_url;
-      } else {
-        this.notify.error('Le lien de paiement est introuvable.');
-      }
-    },
-    error: (err: any) => this.notify.error(err?.error?.message || 'Erreur lors de l\'initialisation du paiement.'),
-  });
-}
-cancelCurrentPayment() {
-  const id = this.pendingTransactionId();
-  if (!id) {
-    this.showPayment.set(false);
-    return;
+    this.notify.info('Redirection vers le paiement...');
+    this.productService.initiateTransaction({
+      product_id: p.id,
+      payment_method: this.selectedPayment(),
+      delivery_type: 'delivery',
+      delivery_address: { text: this.deliveryAddressText().trim() || 'À convenir avec le vendeur' },
+      quantity: this.buyQuantity(),
+    }).subscribe({
+      next: (res: any) => {
+        if (res.payment_url) {
+          this.pendingTransactionId.set(res.transaction?.id ?? null);
+          window.location.href = res.payment_url;
+        } else {
+          this.notify.error('Le lien de paiement est introuvable.');
+        }
+      },
+      error: (err: any) => this.notify.error(err?.error?.message || 'Erreur lors de l\'initialisation du paiement.'),
+    });
   }
-  this.productService.cancelTransaction(id).subscribe({
-    next: () => {
-      this.notify.info('Paiement annulé, stock restitué.');
-      this.pendingTransactionId.set(null);
+
+  cancelCurrentPayment() {
+    const id = this.pendingTransactionId();
+    if (!id) {
       this.showPayment.set(false);
-    },
-    error: (err: any) => {
-      // Même si l'annulation échoue côté serveur (déjà payé, déjà expiré...),
-      // on referme la modale : le job d'expiration reprendra la main de toute façon.
-      this.notify.error(err?.error?.message || 'Impossible d\'annuler pour le moment.');
-      this.pendingTransactionId.set(null);
-      this.showPayment.set(false);
-    },
-  });
-}
+      return;
+    }
+    this.productService.cancelTransaction(id).subscribe({
+      next: () => {
+        this.notify.info('Paiement annulé, stock restitué.');
+        this.pendingTransactionId.set(null);
+        this.showPayment.set(false);
+      },
+      error: (err: any) => {
+        // Même si l'annulation échoue côté serveur (déjà payé, déjà expiré...),
+        // on referme la modale : le job d'expiration reprendra la main de toute façon.
+        this.notify.error(err?.error?.message || 'Impossible d\'annuler pour le moment.');
+        this.pendingTransactionId.set(null);
+        this.showPayment.set(false);
+      },
+    });
+  }
 
   // ─── Video helpers ─────────────────────────────────────
   getProductVideoUrl(): string | null {
@@ -714,7 +709,8 @@ cancelCurrentPayment() {
     formatted = formatted.replace(/\n/g, '<br>');
     return formatted;
   }
-    getServiceTypeLabel(): string {
+
+  getServiceTypeLabel(): string {
     const map: Record<string, string> = {
       online: 'A distance',
       in_person: 'En personne',

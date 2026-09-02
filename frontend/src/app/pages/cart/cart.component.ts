@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { CartService, CartItem } from '../../core/services/cart.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ProductService } from '../../core/services/product.service';
 
 @Component({
   selector: 'app-cart',
@@ -18,15 +19,9 @@ export class CartComponent implements OnInit {
   checkoutMode = signal(false);
   selectedPayment = signal('');
 
-  // Master list of all payment methods
-  allPaymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', desc: 'Paiement mobile', icon: 'phone_android' },
-    { id: 'wave', name: 'Wave', desc: 'Transfert rapide', icon: 'waves' },
-    { id: 'free_money', name: 'Free Money', desc: 'Paiement mobile', icon: 'smartphone' },
-    { id: 'cash_delivery', name: 'Paiement a la livraison', desc: 'Especes', icon: 'local_shipping' },
-    { id: 'cash_hand', name: 'Especes (en main propre)', desc: 'Paiement direct', icon: 'payments' },
-    { id: 'bank_transfer', name: 'Virement bancaire', desc: 'Transfert bancaire', icon: 'account_balance' },
-  ];
+  // Master list of all payment methods — source unique de vérité,
+  // reflète PaymentGatewayFactory côté backend (voir ProductService).
+  allPaymentMethods = ProductService.ALL_PAYMENT_METHODS;
 
   // Compute common payment methods across all cart items
   commonPaymentMethods = computed(() => {
@@ -115,6 +110,10 @@ export class CartComponent implements OnInit {
     this.checkoutMode.set(true);
   }
 
+  // ⚠️ TOUJOURS FACTICE — non branché au backend. Décision d'architecture
+  // en attente : Wave/Orange Money ne gèrent qu'une transaction = un produit.
+  // Un panier multi-vendeurs ne peut pas donner lieu à un seul paiement.
+  // Voir la conversation précédente pour les options envisagées.
   processPayment() {
     if (!this.selectedPayment()) {
       this.notify.error('Veuillez choisir un moyen de paiement.');

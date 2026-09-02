@@ -852,14 +852,7 @@ export class FeedComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // Payment methods
-  allPaymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', icon: 'phone_android' },
-    { id: 'wave', name: 'Wave', icon: 'waves' },
-    { id: 'free_money', name: 'Free Money', icon: 'smartphone' },
-    { id: 'cash_delivery', name: 'Paiement a la livraison', icon: 'local_shipping' },
-    { id: 'cash_hand', name: 'Especes (en main propre)', icon: 'payments' },
-    { id: 'bank_transfer', name: 'Virement bancaire', icon: 'account_balance' },
-  ];
+    allPaymentMethods = ProductService.ALL_PAYMENT_METHODS;
 
   dpPaymentMethods(): { id: string; name: string; icon: string }[] {
     const p = this.dp();

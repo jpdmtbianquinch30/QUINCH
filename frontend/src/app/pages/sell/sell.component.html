@@ -24,9 +24,8 @@
   <form class="sell-form" (ngSubmit)="submit()">
     @if (currentStep() === 1) {
       <div class="form-step">
-        <h2>{{ publishType() === 'service' ? 'Visuels de votre service' : 'Medias obligatoires' }}</h2>
-        <p class="step-desc">{{ publishType() === 'service' ? '1 image d\'affiche (obligatoire) + photos/videos de vos realisations' : '1 image d\'affiche (obligatoire) + video + images supplementaires' }}</p>
-
+        <h2>{{ publishType() === 'service' ? 'Visuels de votre service' : 'Photos et video' }}</h2>
+        <p class="step-desc">{{ publishType() === 'service' ? '1 image d\'affiche obligatoire + photos/videos de vos realisations (optionnelles)' : '1 image d\'affiche obligatoire. La video est optionnelle, mais met votre annonce en avant.' }}</p>
         <!-- ═══════ POSTER IMAGE (Required) ═══════ -->
         <div class="upload-section poster-section">
           <h3>
@@ -63,7 +62,7 @@
 
         <!-- ═══════ VIDEO (optional) ═══════ -->
         <div class="upload-section">
-          <h3>Video de presentation <span style="color: var(--q-text-muted); font-weight: 400; font-size: 0.82rem;">(optionnelle)</span></h3>
+          <h3>Video de presentation <span style="color: var(--q-text-muted); font-weight: 400; font-size: 0.82rem;">(optionnelle, mais recommandee)</span></h3>
           @if (cameraMode()) {
             <div class="camera-view">
               <video #cameraPreview autoplay playsinline muted class="camera-feed"></video>
@@ -109,7 +108,7 @@
           } @else {
             <div class="media-hint">
               <span class="material-icons">tips_and_updates</span>
-              <span>Photo ou video obligatoire pour publier. Les annonces avec video sont mises en avant dans le feed.</span>
+              <span>L'image d'affiche suffit pour publier. Ajouter une video est facultatif, mais booste votre visibilite dans le feed — et ajoute {{ 500 - 300 }} F CFA au frais de publication pour un compte gratuit.</span>
             </div>
             <div class="video-options">
               <label class="upload-area video-upload">
@@ -164,7 +163,7 @@
           </div>
         }
 
-        <button type="button" class="q-btn q-btn-primary q-btn-full q-btn-lg" (click)="nextStep()" [disabled]="publishType() === 'product' && !videoId()">
+          <button type="button" class="q-btn q-btn-primary q-btn-full q-btn-lg" (click)="nextStep()" [disabled]="!posterFile && !videoId()">
           Suivant <span class="material-icons">arrow_forward</span>
         </button>
       </div>

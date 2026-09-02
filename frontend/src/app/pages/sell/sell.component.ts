@@ -1,10 +1,11 @@
-import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, HostListener } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ViewChild, ElementRef, HostListener, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { Category } from '../../core/models/product.model';
+import { AuthService } from '../../core/services/auth.service';
 import { HttpEventType } from '@angular/common/http';
 
 @Component({
@@ -22,6 +23,8 @@ export class SellComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
   private router = inject(Router);
   private notify = inject(NotificationService);
+
+  auth = inject(AuthService);
 
   categories = signal<Category[]>([]);
   loading = signal(false);
@@ -169,14 +172,8 @@ export class SellComponent implements OnInit, OnDestroy {
   };
 
   // Payment methods the seller accepts
-  availablePaymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', icon: 'phone_android', color: '#ff6600' },
-    { id: 'wave', name: 'Wave', icon: 'waves', color: '#1dc3e4' },
-    { id: 'free_money', name: 'Free Money', icon: 'smartphone', color: '#00a651' },
-    { id: 'cash_delivery', name: 'Paiement a la livraison', icon: 'local_shipping', color: '#f59e0b' },
-    { id: 'cash_hand', name: 'Especes (en main propre)', icon: 'payments', color: '#22c55e' },
-    { id: 'bank_transfer', name: 'Virement bancaire', icon: 'account_balance', color: '#6366f1' },
-  ];
+  availablePaymentMethods = ProductService.ALL_PAYMENT_METHODS;
+  servicePaymentMethods = ProductService.ALL_PAYMENT_METHODS;
   selectedPaymentMethods = signal<string[]>([]);
 
   // Delivery options: 'fixed' = seller sets a fee the buyer pays, 'contact' = buyer contacts seller
@@ -238,14 +235,7 @@ export class SellComponent implements OnInit, OnDestroy {
   ];
 
   // Payment methods filtered for services (no cash_delivery)
-  servicePaymentMethods = [
-    { id: 'orange_money', name: 'Orange Money', icon: 'phone_android', color: '#ff6600' },
-    { id: 'wave', name: 'Wave', icon: 'waves', color: '#1dc3e4' },
-    { id: 'free_money', name: 'Free Money', icon: 'smartphone', color: '#00a651' },
-    { id: 'cash_hand', name: 'Especes (en main propre)', icon: 'payments', color: '#22c55e' },
-    { id: 'bank_transfer', name: 'Virement bancaire', icon: 'account_balance', color: '#6366f1' },
-    { id: 'online_payment', name: 'Paiement en ligne', icon: 'credit_card', color: '#8b5cf6' },
-  ];
+  servicePaymentMethods = ProductService.ALL_PAYMENT_METHODS;
 
   /** Price type for services */
   servicePriceType = signal<'fixed' | 'starting' | 'hourly' | 'quote'>('fixed');
@@ -639,6 +629,18 @@ export class SellComponent implements OnInit, OnDestroy {
   formatRecordingTime(): string { const t = this.recordingTime(), m = Math.floor(t / 60), s = t % 60; return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }
   formatTime(sec: number): string { const m = Math.floor(sec / 60), s = Math.floor(sec % 60); return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }
   removeVideo() { this.videoFile = null; this.videoId.set(''); this.videoPreview.set(''); this.videoResolution.set(''); }
+
+    isPremiumActive = computed(() => {
+    const user = this.auth.user();
+    if (!user?.is_premium) return false;
+    if (!user.premium_expires_at) return false;
+    return new Date(user.premium_expires_at) > new Date();
+  });
+
+  listingFee = computed(() => {
+    if (this.isPremiumActive()) return 0;
+    return this.videoId() ? 500 : 300;
+  });
 
   // ═══════ IMAGES ═══════
   onImagesSelected(event: Event) {

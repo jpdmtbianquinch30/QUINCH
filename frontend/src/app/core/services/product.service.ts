@@ -4,9 +4,25 @@ import { HttpEvent } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { FeedResponse, Product, Category, Transaction } from '../models/product.model';
 
+export interface PaymentMethodOption {
+  id: string;
+  name: string;
+  desc: string;
+  icon: string;
+  available: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   constructor(private api: ApiService) {}
+
+  // Source unique de vérité pour les moyens de paiement — reflète
+  // exactement PaymentGatewayFactory côté backend. Ne plus dupliquer
+  // cette liste ailleurs dans l'app : importer ProductService.ALL_PAYMENT_METHODS.
+  static readonly ALL_PAYMENT_METHODS: PaymentMethodOption[] = [
+    { id: 'wave', name: 'Wave', desc: 'Paiement mobile Wave', icon: 'account_balance_wallet', available: true },
+    { id: 'orange_money', name: 'Orange Money', desc: 'Bientôt disponible', icon: 'smartphone', available: false },
+  ];
 
   getFeed(page: number = 1, params?: Record<string, any>): Observable<FeedResponse> {
     return this.api.get<FeedResponse>('products/feed', { page, per_page: 10, ...params });
@@ -114,8 +130,8 @@ export class ProductService {
   }
 
   cancelTransaction(transactionId: string): Observable<any> {
-  return this.api.post(`transactions/${transactionId}/cancel`);
- }
+    return this.api.post(`transactions/${transactionId}/cancel`);
+  }
 
   getTransactionHistory(): Observable<any> {
     return this.api.get('transactions/history');
