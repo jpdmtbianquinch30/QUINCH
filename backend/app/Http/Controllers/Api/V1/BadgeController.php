@@ -45,7 +45,7 @@ class BadgeController extends Controller
 
         $badge = UserBadge::updateOrCreate(
             ['user_id' => $user->id, 'badge_type' => $validated['badge_type']],
-            ['awarded_by' => $request->user()->id, 'reason' => $validated['reason']]
+            ['awarded_by' => $request->user()->id, 'reason' => $validated['reason'] ?? null]
         );
 
         return response()->json(['badge' => $this->enrichBadge($badge), 'message' => 'Badge attribué.']);

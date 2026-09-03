@@ -33,7 +33,7 @@ class NegotiationController extends Controller
             'seller_id' => $product->user_id,
             'product_id' => $product->id,
             'proposed_price' => $validated['proposed_price'],
-            'buyer_message' => $validated['message'],
+            'buyer_message' => $validated['message'] ?? null,
             'expires_at' => now()->addHours(24),
         ]);
 
@@ -64,7 +64,7 @@ class NegotiationController extends Controller
          $negotiation->update([
             'status' => $validated['action'] === 'counter' ? 'countered' : $validated['action'] . 'ed',
             'counter_price' => $validated['counter_price'] ?? null,
-            'seller_message' => $validated['message'],
+            'seller_message' => $validated['message'] ?? null,
         ]);
 
         $this->notif->notifyNegotiation(

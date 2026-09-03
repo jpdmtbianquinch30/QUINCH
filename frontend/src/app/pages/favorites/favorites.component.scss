@@ -95,6 +95,24 @@
   &:hover { background: var(--q-danger); }
 }
 
+// ─── Responsive mobile ────────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .favorites-page { padding-top: var(--q-space-lg); }
+
+  .page-header h1 { font-size: 1.4rem; }
+
+  // Pas de :hover fiable au toucher : le bouton supprimer doit rester
+  // visible en permanence sur mobile, sinon il est totalement inaccessible.
+  .fav-remove { opacity: 1; }
+
+  .fav-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .fav-info { padding: 10px; }
+  .fav-title { font-size: 0.85rem; }
+  .fav-price { font-size: 1rem; }
+
+  .collections-grid { grid-template-columns: 1fr; }
+}
+
 .fav-info {
   padding: 14px;
 }
