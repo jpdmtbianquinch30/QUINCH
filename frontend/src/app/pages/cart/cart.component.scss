@@ -521,6 +521,20 @@
   span { font-size: 0.8rem; color: var(--q-text-secondary); line-height: 1.5; }
 }
 
+
+.no-payment-methods {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+
+  strong { display: block; margin-bottom: 2px; }
+  span { color: rgba(255,255,255,0.5); font-size: 0.8rem; }
+}
+
 // ─── Delivery details card ──────────────────────────────
 .delivery-details-card {
   padding: 18px;
@@ -649,4 +663,210 @@
     strong { color: var(--q-text-primary, #1a1d26); }
     span { color: #6b7280; }
   }
+}
+// ─── Bouton Contacter à côté d'Acheter ─────────────────────────────────
+.item-cta-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.buy-btn, .contact-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+
+  .material-icons { font-size: 18px; }
+}
+
+.buy-btn {
+  background: #6366f1;
+  color: white;
+}
+
+.contact-btn {
+  background: rgba(255,255,255,0.06);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+// ─── Modales (achat / contact) ──────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 16px;
+}
+
+.modal-box {
+  background: #14141f;
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+
+  &.modal-sm { max-width: 360px; }
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h2 { font-size: 1.1rem; margin: 0; }
+}
+
+.modal-close {
+  background: rgba(255,255,255,0.06);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+}
+
+.payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.payment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  text-align: left;
+
+  &.selected { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+  &.disabled, &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .pay-icon { color: rgba(255,255,255,0.7); }
+  .pay-info { flex: 1; display: flex; flex-direction: column; }
+  .pay-name { font-weight: 600; font-size: 0.9rem; }
+  .pay-desc { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+  .pay-check { color: #6366f1; }
+}
+
+.qty-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 16px;
+
+  label { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.5); }
+}
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  button {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.3; cursor: not-allowed; }
+  }
+
+  span { min-width: 20px; text-align: center; font-weight: 700; }
+}
+
+.delivery-address-field, .form-field {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 6px;
+  }
+
+  textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: white;
+    font-size: 0.88rem;
+    resize: vertical;
+  }
+}
+
+.modal-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+}
+
+.modal-cta {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  background: #6366f1;
+  color: white;
+  font-weight: 600;
+  font-size: 0.92rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
 }

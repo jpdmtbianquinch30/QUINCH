@@ -245,8 +245,8 @@ class NotificationService
     {
         $labels = [
             'proposed' => $sender->full_name . ' propose ' . number_format($amount, 0, ',', ' ') . ' F pour "' . mb_substr($productTitle, 0, 30) . '"',
-            'accepted' => 'Votre offre de ' . number_format($amount, 0, ',', ' ') . ' F pour "' . mb_substr($productTitle, 0, 30) . '" a été acceptée !',
-            'rejected' => 'Votre offre pour "' . mb_substr($productTitle, 0, 30) . '" a été refusée.',
+            'accept'   => 'Votre offre de ' . number_format($amount, 0, ',', ' ') . ' F pour "' . mb_substr($productTitle, 0, 30) . '" a été acceptée !',
+            'reject'   => 'Votre offre pour "' . mb_substr($productTitle, 0, 30) . '" a été refusée.',
             'counter'  => $sender->full_name . ' a fait une contre-offre de ' . number_format($amount, 0, ',', ' ') . ' F',
         ];
 

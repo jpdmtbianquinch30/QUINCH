@@ -61,22 +61,16 @@ class NegotiationController extends Controller
             'message' => 'nullable|string|max:500',
         ]);
 
-        $negotiation->update([
+         $negotiation->update([
             'status' => $validated['action'] === 'counter' ? 'countered' : $validated['action'] . 'ed',
             'counter_price' => $validated['counter_price'] ?? null,
             'seller_message' => $validated['message'],
         ]);
 
-        $statusText = match ($validated['action']) {
-            'accept' => 'a accepté votre offre',
-            'reject' => 'a refusé votre offre',
-            'counter' => 'a fait une contre-offre de ' . number_format($validated['counter_price']) . ' F',
-        };
-
         $this->notif->notifyNegotiation(
             $negotiation->buyer_id,
             $request->user(),
-            $validated['status'],
+            $validated['action'], // 'accept' | 'reject' | 'counter' — correspond aux clés de notifyNegotiation()
             $negotiation->product->title ?? 'Produit',
             $validated['counter_price'] ?? $negotiation->proposed_price
         );

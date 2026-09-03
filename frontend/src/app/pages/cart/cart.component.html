@@ -96,10 +96,16 @@
                   <span class="material-icons">delete_outline</span>
                   Retirer
                 </button>
-                <a class="buy-btn" [routerLink]="['/product', item.product.slug]">
-                  <span class="material-icons">shopping_bag</span>
-                  Acheter
-                </a>
+                <div class="item-cta-row">
+                  <button class="buy-btn" (click)="openBuyModal(item)">
+                    <span class="material-icons">shopping_bag</span>
+                    Acheter
+                  </button>
+                  <button class="contact-btn" (click)="openContactModal(item)">
+                    <span class="material-icons">chat</span>
+                    Contacter
+                  </button>
+                </div>
               </div>
             </div>
           }
@@ -161,7 +167,7 @@
 
             <div class="cart-info-note">
               <span class="material-icons">info</span>
-              <span>Le panier est une liste d'envies. L'achat se fait individuellement, depuis la fiche de chaque produit, avec le vendeur concerné.</span>
+              <span>Chaque article s'achète individuellement avec son propre vendeur — cliquez "Acheter" sur l'article souhaité.</span>
             </div>
           </div>
 
@@ -197,6 +203,96 @@
               <span>Livraison suivie</span>
             </div>
           </div>
+        </div>
+      </div>
+    }
+
+    <!-- ═══════ MODALE ACHAT ═══════ -->
+    @if (buyingItem(); as item) {
+      <div class="modal-overlay" (click)="cancelCartPurchase()">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Choisir un moyen de paiement</h2>
+            <button class="modal-close" (click)="cancelCartPurchase()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="modal-summary">
+            <span>{{ item.product.title }}</span>
+            <strong>{{ formatNum(item.price_at_add * buyQuantity()) }} F CFA</strong>
+          </div>
+
+          @if (itemPaymentMethods().length === 0) {
+            <div class="no-payment-methods">
+              <span class="material-icons">chat_bubble_outline</span>
+              <div>
+                <strong>Aucun moyen de paiement configure</strong>
+                <span>Contactez le vendeur pour convenir d'un arrangement.</span>
+              </div>
+            </div>
+          } @else {
+            <div class="payment-list">
+              @for (method of itemPaymentMethods(); track method.id) {
+                <button class="payment-item" [class.selected]="selectedPayment() === method.id" [class.disabled]="!method.available"
+                        [disabled]="!method.available"
+                        (click)="selectedPayment.set(method.id)">
+                  <span class="material-icons pay-icon">{{ method.icon }}</span>
+                  <div class="pay-info">
+                    <span class="pay-name">{{ method.name }}</span>
+                    <span class="pay-desc">{{ method.desc }}</span>
+                  </div>
+                  @if (selectedPayment() === method.id) {
+                    <span class="material-icons pay-check">check_circle</span>
+                  }
+                </button>
+              }
+            </div>
+
+            <div class="qty-selector">
+              <label>Quantité</label>
+              <div class="qty-controls">
+                <button type="button" (click)="decrementBuyQty()" [disabled]="buyQuantity() <= 1">−</button>
+                <span>{{ buyQuantity() }}</span>
+                <button type="button" (click)="incrementBuyQty()" [disabled]="buyQuantity() >= (item.product.stock_quantity || 1)">+</button>
+              </div>
+            </div>
+
+            <div class="delivery-address-field">
+              <label>Adresse de livraison</label>
+              <textarea [ngModel]="deliveryAddressText()" (ngModelChange)="deliveryAddressText.set($event)"
+                        placeholder="Quartier, ville, point de repère..." rows="2"></textarea>
+            </div>
+
+            <button class="modal-cta" [disabled]="!selectedPayment() || submittingPurchase()" (click)="confirmCartPurchase()">
+              {{ submittingPurchase() ? 'Redirection...' : 'Confirmer le paiement - ' + formatNum(item.price_at_add * buyQuantity()) + ' F CFA' }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ═══════ MODALE CONTACT ═══════ -->
+    @if (contactingItem(); as item) {
+      <div class="modal-overlay" (click)="closeContactModal()">
+        <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Contacter le vendeur</h2>
+            <button class="modal-close" (click)="closeContactModal()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="modal-info-row">
+            <span class="material-icons">storefront</span>
+            {{ item.product.seller?.full_name }} — {{ item.product.title }}
+          </div>
+          <div class="form-field">
+            <label>Votre message</label>
+            <textarea [ngModel]="contactMessage()" (ngModelChange)="contactMessage.set($event)" rows="3"></textarea>
+          </div>
+          <button class="modal-cta" [disabled]="!contactMessage().trim() || sendingContact()" (click)="sendCartContactMessage()">
+            <span class="material-icons">send</span>
+            {{ sendingContact() ? 'Envoi...' : 'Envoyer' }}
+          </button>
         </div>
       </div>
     }

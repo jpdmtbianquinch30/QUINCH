@@ -34,5 +34,12 @@
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <env name="QUINCH_FEATURE_FOLLOW" value="true"/>
+        <env name="QUINCH_FEATURE_NEGOTIATION" value="true"/>
+        <env name="QUINCH_FEATURE_REVIEWS" value="true"/>
+        <env name="QUINCH_FEATURE_BADGES" value="true"/>
+        <env name="QUINCH_FEATURE_SHARING" value="true"/>
+        <env name="QUINCH_FEATURE_CHAT_AUDIO" value="true"/>
+        <env name="QUINCH_FEATURE_CHAT_FILE" value="true"/>
+        <env name="QUINCH_FEATURE_FAVORITES_COLLECTIONS" value="true"/>
     </php>
 </phpunit>

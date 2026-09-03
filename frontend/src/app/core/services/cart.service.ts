@@ -24,6 +24,7 @@ export interface CartItem {
     delivery_option?: string;   // 'fixed' | 'contact'
     delivery_fee?: number;      // F CFA
     payment_methods?: string[]; // e.g. ['orange_money', 'wave']
+    stock_quantity?: number;
   };
 }
 

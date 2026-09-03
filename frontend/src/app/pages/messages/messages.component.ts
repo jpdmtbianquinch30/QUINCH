@@ -69,11 +69,10 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   });
 
-  ngOnInit() {
+    ngOnInit() {
     this.loading.set(true);
     this.chat.getConversations().subscribe({
       next: () => {
-        // Auto-select conversation from query param (e.g. from notification redirect)
         const convId = this.route.snapshot.queryParamMap.get('conversation');
         if (convId) {
           const match = this.chat.conversations().find(c => c.id === convId);
@@ -81,6 +80,10 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
             this.selectConversation(match);
           }
         }
+      },
+      error: () => {
+        this.loading.set(false);
+        this.notify.error('Impossible de charger les conversations.');
       },
       complete: () => this.loading.set(false),
     });
@@ -103,7 +106,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  selectConversation(conv: Conversation) {
+    selectConversation(conv: Conversation) {
     this.selectedConv.set(conv);
     this.mobileShowChat.set(true);
     this.showDropdown.set(false);
@@ -115,7 +118,10 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.chat.getConversation(conv.id).subscribe({
       next: () => {
         this.shouldScroll = true;
-      }
+      },
+      error: () => {
+        this.notify.error('Impossible de charger cette conversation.');
+      },
     });
   }
 

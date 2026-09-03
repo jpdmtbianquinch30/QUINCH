@@ -50,6 +50,7 @@ class CartController extends Controller
                     ] : null,
                     'delivery_option' => $product->delivery_option ?? 'contact',
                     'delivery_fee' => $product->delivery_fee ?? 0,
+                    'stock_quantity' => $product->stock_quantity ?? 0,
                     'payment_methods' => $product->payment_methods ?? [],
                 ],
             ];
