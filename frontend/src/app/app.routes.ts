@@ -23,6 +23,8 @@ export const routes: Routes = [
 
   // ─── Pages publiques ─────────────────────────────────────────────────────
   { path: 'feed', loadComponent: () => import('./pages/feed/feed.component').then(m => m.FeedComponent) },
+  { path: 'videos', loadComponent: () => import('./pages/video-feed/video-feed.component').then(m => m.VideoFeedComponent) },
+  { path: 'search', loadComponent: () => import('./pages/search/search.component').then(m => m.SearchComponent) },
   { path: 'marketplace', loadComponent: () => import('./pages/marketplace/marketplace.component').then(m => m.MarketplaceComponent) },
   { path: 'product/:slug', loadComponent: () => import('./pages/product-detail/product-detail.component').then(m => m.ProductDetailComponent) },
   { path: 'seller/:username', loadComponent: () => import('./pages/seller-profile/seller-profile.component').then(m => m.SellerProfileComponent) },

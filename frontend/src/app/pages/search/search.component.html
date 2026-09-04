@@ -1,0 +1,68 @@
+<div class="search-page">
+  <div class="search-topbar">
+    <button class="back-btn" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div class="search-input-wrap">
+      <span class="material-icons">search</span>
+      <input type="text" [ngModel]="query()" (ngModelChange)="onInput($event)"
+             placeholder="Rechercher un produit, un vendeur…" autofocus />
+    </div>
+  </div>
+
+  <div class="search-results">
+    @if (loading()) {
+      <div class="search-loading"><div class="loader"></div></div>
+    } @else if (!searched()) {
+      <div class="search-hint">
+        <span class="material-icons">search</span>
+        <p>Tapez pour rechercher un produit, un service ou un vendeur</p>
+      </div>
+    } @else if (products().length === 0 && users().length === 0) {
+      <div class="search-hint">
+        <span class="material-icons">search_off</span>
+        <p>Aucun résultat pour "{{ query() }}"</p>
+      </div>
+    } @else {
+      @if (users().length > 0) {
+        <div class="result-section">
+          <h3>Vendeurs</h3>
+          @for (u of users(); track u.id) {
+            <button class="user-row" (click)="goToSeller(u.username)">
+              @if (u.avatar_url) {
+                <img [src]="u.avatar_url" class="user-avatar" />
+              } @else {
+                <div class="user-avatar-placeholder"><span class="material-icons">person</span></div>
+              }
+              <div class="user-info">
+                <strong>{{ u.full_name }}</strong>
+                <span>&#64;{{ u.username }}</span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+
+      @if (products().length > 0) {
+        <div class="result-section">
+          <h3>Produits</h3>
+          <div class="result-grid">
+            @for (p of products(); track p.id) {
+              <button class="result-card" (click)="goToProduct(p.slug)">
+                @if (p.image) {
+                  <img [src]="p.image" [alt]="p.title" />
+                } @else {
+                  <div class="result-placeholder"><span class="material-icons">image</span></div>
+                }
+                <div class="result-info">
+                  <span class="result-title">{{ p.title }}</span>
+                  <span class="result-price">{{ p.price | number:'1.0-0' }} F</span>
+                </div>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>
