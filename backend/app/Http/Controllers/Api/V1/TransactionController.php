@@ -326,7 +326,15 @@ class TransactionController extends Controller
             $transaction = Transaction::find($transactionRef);
             if ($transaction && $status === 'SUCCESS' && $transaction->payment_status !== 'completed') {
                 $transaction->markPaid($request->input('txnid'));
-            } elseif ($transaction && $status === 'FAILED') {
+               } elseif ($transaction && $status === 'FAILED') {
+                // Restitution explicite du stock (comme pour le webhook Wave
+                // juste au-dessus) : on ne compte plus sur le job planifié
+                // ReleaseExpiredReservations pour le faire, puisque
+                // markPaymentFailed() clôture désormais order_status tout de
+                // suite (voir Transaction::markPaymentFailed).
+                if ($transaction->order_status === 'pending_payment') {
+                    $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
+                }
                 $transaction->markPaymentFailed();
             }
         }

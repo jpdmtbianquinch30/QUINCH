@@ -61,6 +61,31 @@ services:
     networks:
       - quinch
 
+  # Scheduler Laravel (routes/console.php) : sans ce service, les jobs
+  # planifiés ne tournent JAMAIS en prod (ReleaseExpiredReservations,
+  # ExpirePremiumSubscriptions, CleanupAbandonedDraftListings). Conséquence
+  # concrète sans ce service : le stock décrémenté par une transaction Wave
+  # abandonnée (order_status=pending_payment) n'est jamais restitué après
+  # les 20 min prévues -> le stock se vide silencieusement au fil du temps.
+  # `schedule:work` tourne en boucle et déclenche schedule:run chaque
+  # minute, sans dépendre d'un cron système dans le conteneur.
+  scheduler:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: quinch_scheduler
+    restart: unless-stopped
+    command: ["php", "artisan", "schedule:work"]
+    env_file:
+      - backend/.env.docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - storage_data:/var/www/html/storage/app/public
+    networks:
+      - quinch
+
   nginx:
     image: nginx:1.27-alpine
     container_name: quinch_nginx

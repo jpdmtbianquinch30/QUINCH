@@ -75,6 +75,9 @@ class Transaction extends Model
     public function markPaymentFailed(): void
     {
         $this->increment('payment_failure_count');
-        $this->update(['payment_status' => 'failed']);
+        $this->update([
+            'payment_status' => 'failed',
+            'order_status' => 'cancelled',
+        ]);
     }
 }
