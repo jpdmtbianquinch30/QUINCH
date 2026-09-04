@@ -777,8 +777,17 @@ export class SellComponent implements OnInit, OnDestroy {
       }
     }
 
-    this.productService.createProductWithPoster(formData).subscribe({
-      next: () => { this.loading.set(false); this.notify.success(isService ? 'Service publie avec succes!' : 'Produit publie avec succes!'); this.router.navigate(['/feed']); },
+        this.productService.createProductWithPoster(formData).subscribe({
+      next: (res: any) => {
+        this.loading.set(false);
+        if (res.payment_url) {
+          this.notify.info('Redirection vers le paiement des frais de publication...');
+          window.location.href = res.payment_url;
+          return;
+        }
+        this.notify.success(isService ? 'Service publié avec succès !' : 'Produit publié avec succès !');
+        this.router.navigate(['/feed']);
+      },
       error: (err) => { this.loading.set(false); this.notify.error(err.error?.message || 'Erreur lors de la publication'); },
     });
   }

@@ -49,7 +49,11 @@ return [
 'wave' => [
     'base_url' => env('WAVE_BASE_URL', 'https://api.wave.com/v1'),
     'api_key' => env('WAVE_API_KEY'),
-    'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
+    // En local/dev, si aucun secret n'est configuré, on en fixe un par défaut
+// pour que la simulation de paiement fonctionne sans configuration
+// manuelle. Jamais en production : une valeur par défaut y serait un vrai
+// risque de sécurité (n'importe qui pourrait forger un webhook valide).
+'webhook_secret' => env('WAVE_WEBHOOK_SECRET', app()->environment('production') ? null : 'dev-simulation-secret'),
 ],
 
 

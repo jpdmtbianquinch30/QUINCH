@@ -470,7 +470,7 @@
           <div class="summary-row"><span>Image d'affiche</span><strong>{{ posterFile ? 'Ajoutee' : 'Non' }}</strong></div>
           <div class="summary-row"><span>Video</span><strong>{{ videoId() ? 'Uploadee' : 'Aucune' }} {{ videoResolution() ? '(' + videoResolution() + ')' : '' }}</strong></div>
           <div class="summary-row"><span>{{ publishType() === 'service' ? 'Portfolio' : 'Images suppl.' }}</span><strong>{{ imagePreviews().length }} image(s)</strong></div>
-          <div class="summary-row">
+                    <div class="summary-row">
             <span>Paiement</span>
             <strong>
               @if (selectedPaymentMethods().length > 0) {
@@ -480,6 +480,22 @@
               }
             </strong>
           </div>
+        </div>
+
+        <div class="listing-fee-notice" [class.free]="listingFee() === 0">
+          @if (listingFee() === 0) {
+            <span class="material-icons">verified</span>
+            <div>
+              <strong>Publication gratuite</strong>
+              <span>Compte Premium — aucun frais de publication.</span>
+            </div>
+          } @else {
+            <span class="material-icons">payments</span>
+            <div>
+              <strong>Frais de publication : {{ listingFee() }} F CFA</strong>
+              <span>À régler via Wave après validation. Votre annonce reste invisible tant que le paiement n'est pas confirmé.</span>
+            </div>
+          }
         </div>
 
         <div class="step-nav">
