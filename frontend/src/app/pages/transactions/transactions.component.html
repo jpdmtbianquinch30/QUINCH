@@ -86,13 +86,13 @@
     @if (filteredTransactions().length > 0) {
       <div class="tx-list">
         @for (tx of filteredTransactions(); track tx.id) {
-          <div class="tx-card" [class.expanded]="expandedTxId() === tx.id" [class]="getStatusClass(tx.payment_status)">
+          <div class="tx-card" [class.expanded]="expandedTxId() === tx.id" [class]="getStatusClass(tx.order_status)">
 
             <!-- Main row -->
             <div class="tx-main" (click)="toggleExpand(tx.id)">
               <div class="tx-left">
-                <div class="tx-status-icon" [class]="getStatusClass(tx.payment_status)">
-                  <span class="material-icons">{{ getStatusIcon(tx.payment_status) }}</span>
+                <div class="tx-status-icon" [class]="getStatusClass(tx.order_status)">
+                  <span class="material-icons">{{ getStatusIcon(tx.order_status) }}</span>
                 </div>
                 <div class="tx-info">
                   <span class="tx-product">{{ tx.product?.title || 'Produit' }}</span>
@@ -114,8 +114,8 @@
                 <span class="tx-amount" [class.amount-green]="activeTab() === 'sales'" [class.amount-red]="activeTab() === 'purchases'">
                   {{ activeTab() === 'sales' ? '+' : '-' }}{{ formatPrice(tx.amount) }}
                 </span>
-                <span class="tx-status-badge" [class]="getStatusClass(tx.payment_status)">
-                  {{ getStatusLabel(tx.payment_status) }}
+                <span class="tx-status-badge" [class]="getStatusClass(tx.order_status)">
+                  {{ getStatusLabel(tx.order_status) }}
                 </span>
                 <span class="material-icons tx-expand-icon">{{ expandedTxId() === tx.id ? 'expand_less' : 'expand_more' }}</span>
               </div>
@@ -127,17 +127,17 @@
 
                 <!-- Status Timeline -->
                 <div class="tx-timeline">
-                  <div class="timeline-step" [class.done]="getStatusStep(tx.payment_status) >= 1" [class.active]="getStatusStep(tx.payment_status) === 1">
+                  <div class="timeline-step" [class.done]="getStatusStep(tx.order_status) >= 1" [class.active]="getStatusStep(tx.order_status) === 1">
                     <div class="step-dot"><span class="material-icons">schedule</span></div>
                     <span>En attente</span>
                   </div>
-                  <div class="timeline-line" [class.done]="getStatusStep(tx.payment_status) >= 2"></div>
-                  <div class="timeline-step" [class.done]="getStatusStep(tx.payment_status) >= 2" [class.active]="getStatusStep(tx.payment_status) === 2">
+                  <div class="timeline-line" [class.done]="getStatusStep(tx.order_status) >= 2"></div>
+                  <div class="timeline-step" [class.done]="getStatusStep(tx.order_status) >= 2" [class.active]="getStatusStep(tx.order_status) === 2">
                     <div class="step-dot"><span class="material-icons">local_shipping</span></div>
                     <span>En cours</span>
                   </div>
-                  <div class="timeline-line" [class.done]="getStatusStep(tx.payment_status) >= 3"></div>
-                  <div class="timeline-step" [class.done]="getStatusStep(tx.payment_status) >= 3" [class.active]="getStatusStep(tx.payment_status) === 3">
+                  <div class="timeline-line" [class.done]="getStatusStep(tx.order_status) >= 3"></div>
+                  <div class="timeline-step" [class.done]="getStatusStep(tx.order_status) >= 3" [class.active]="getStatusStep(tx.order_status) === 3">
                     <div class="step-dot"><span class="material-icons">check_circle</span></div>
                     <span>Terminé</span>
                   </div>
@@ -200,7 +200,7 @@
 
                   <!-- SELLER actions -->
                   @if (activeTab() === 'sales') {
-                    @if (tx.payment_status === 'pending') {
+                    @if (tx.order_status === 'pending') {
                       <button class="action-btn action-accept" (click)="acceptOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">check</span> Accepter }
@@ -212,7 +212,7 @@
                         <span class="material-icons">close</span> Refuser
                       </button>
                     }
-                    @if (tx.payment_status === 'processing') {
+                    @if (tx.order_status === 'processing') {
                       <button class="action-btn action-ship" (click)="shipOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">local_shipping</span> Marquer expédié }
@@ -224,32 +224,32 @@
                         <span class="material-icons">close</span> Annuler
                       </button>
                     }
-                    @if (tx.payment_status === 'completed') {
+                    @if (tx.order_status === 'completed') {
                       <div class="action-done"><span class="material-icons">verified</span> Vente terminée</div>
                     }
-                    @if (tx.payment_status === 'cancelled') {
+                    @if (tx.order_status === 'cancelled') {
                       <div class="action-cancelled"><span class="material-icons">block</span> Annulée</div>
                     }
                   }
 
                   <!-- BUYER actions -->
                   @if (activeTab() === 'purchases') {
-                    @if (tx.payment_status === 'pending') {
+                    @if (tx.order_status === 'pending') {
                       <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">close</span> Annuler la commande }
                       </button>
                     }
-                    @if (tx.payment_status === 'processing') {
+                    @if (tx.order_status === 'processing') {
                       <button class="action-btn action-confirm" (click)="confirmReceipt(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">done_all</span> Confirmer la réception }
                       </button>
                     }
-                    @if (tx.payment_status === 'completed') {
+                    @if (tx.order_status === 'completed') {
                       <div class="action-done"><span class="material-icons">verified</span> Achat terminé</div>
                     }
-                    @if (tx.payment_status === 'cancelled') {
+                    @if (tx.order_status === 'cancelled') {
                       <div class="action-cancelled"><span class="material-icons">block</span> Annulée</div>
                     }
                   }

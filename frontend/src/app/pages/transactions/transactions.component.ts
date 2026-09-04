@@ -180,42 +180,52 @@ export class TransactionsComponent implements OnInit {
     return new Intl.NumberFormat('fr-SN').format(amount) + ' F';
   }
 
-  getStatusLabel(status: string): string {
+   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      pending: 'En attente', processing: 'En cours', completed: 'Terminé',
-      failed: 'Échoué', refunded: 'Remboursé', cancelled: 'Annulé',
+      pending_payment: 'Paiement en attente',
+      processing: 'Acceptée',
+      shipped: 'Expédiée',
+      delivered: 'Livrée',
+      completed: 'Terminée',
+      cancelled: 'Annulée',
+      disputed: 'Litige en cours',
     };
     return labels[status] || status;
   }
 
   getStatusIcon(status: string): string {
     const icons: Record<string, string> = {
-      pending: 'schedule', processing: 'local_shipping', completed: 'check_circle',
-      failed: 'cancel', refunded: 'replay', cancelled: 'block',
+      pending_payment: 'hourglass_top',
+      processing: 'inventory_2',
+      shipped: 'local_shipping',
+      delivered: 'mark_email_read',
+      completed: 'check_circle',
+      cancelled: 'cancel',
+      disputed: 'gavel',
     };
     return icons[status] || 'help';
   }
 
   getStatusClass(status: string): string {
     const classes: Record<string, string> = {
-      pending: 'status-warning', processing: 'status-info', completed: 'status-success',
-      failed: 'status-danger', refunded: 'status-muted', cancelled: 'status-danger',
+      pending_payment: 'status-warning',
+      processing: 'status-info',
+      shipped: 'status-info',
+      delivered: 'status-info',
+      completed: 'status-success',
+      cancelled: 'status-danger',
+      disputed: 'status-danger',
     };
     return classes[status] || '';
   }
 
-  getPaymentLabel(method: string): string {
-    const labels: Record<string, string> = {
-      orange_money: 'Orange Money', wave: 'Wave', free_money: 'Free Money',
-      cash_delivery: 'Paiement à la livraison',
-    };
+    getPaymentLabel(method: string): string {
+    const labels: Record<string, string> = { orange_money: 'Orange Money', wave: 'Wave' };
     return labels[method] || method;
   }
 
   getPaymentIcon(method: string): string {
-    const icons: Record<string, string> = {
-      orange_money: '🟠', wave: '🔵', free_money: '🟢', cash: '💵', cash_delivery: '📦',
-    };
+    const icons: Record<string, string> = { orange_money: '🟠', wave: '🔵' };
     return icons[method] || '💳';
   }
 
@@ -233,10 +243,14 @@ export class TransactionsComponent implements OnInit {
     return icons[type] || 'local_shipping';
   }
 
-  /** Step progress for status timeline */
   getStatusStep(status: string): number {
+    // Timeline à 3 paliers (réutilise le HTML existant) : paiement →
+    // traitement (regroupe processing/shipped/delivered) → terminé.
     const steps: Record<string, number> = {
-      pending: 1, processing: 2, completed: 3, failed: 0, cancelled: 0, refunded: 0,
+      pending_payment: 1,
+      processing: 2, shipped: 2, delivered: 2,
+      completed: 3,
+      cancelled: 0, disputed: 0,
     };
     return steps[status] || 0;
   }
