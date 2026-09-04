@@ -11,8 +11,15 @@ export const routes: Routes = [
     children: [
       { path: 'login', loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent) },
       { path: 'register', loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent) },
-      { path: 'auth/verify-otp', canActivate: [authGuard], loadComponent: () => import('./pages/auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent) },
     ]
+  },
+
+  // ─── Verification OTP (necessite d'etre connecte : le token est emis des
+  // /auth/register, avant meme la verification du telephone) ──────────────
+  {
+    path: 'auth/verify-otp',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent),
   },
 
   // ─── Onboarding ──────────────────────────────────────────────────────────
