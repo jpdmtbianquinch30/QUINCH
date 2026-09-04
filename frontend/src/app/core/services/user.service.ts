@@ -25,4 +25,6 @@ export class UserService {
     fd.append('cover', file);
     return this.api.upload('user/upload-cover', fd);
   }
+  
 }
+

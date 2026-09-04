@@ -48,6 +48,10 @@ export class LoginComponent {
         }
 
         const user = this.auth.user();
+        if (user && !user.phone_verified) {
+          this.router.navigate(['/auth/verify-otp']);
+          return;
+        }
         if (user && !user.onboarding_completed) {
           this.router.navigate(['/onboarding']);
           return;

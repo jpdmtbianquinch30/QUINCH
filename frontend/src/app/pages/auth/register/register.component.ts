@@ -56,7 +56,10 @@ export class RegisterComponent {
     }).subscribe({
       next: () => {
         this.loading.set(false);
-        this.router.navigate(['/onboarding']);
+        // Le telephone n'est pas encore verifie a ce stade (OTP envoye par
+        // register() cote backend) : on passe par l'ecran de verification
+        // avant l'onboarding, sinon phone_verified reste false a vie.
+        this.router.navigate(['/auth/verify-otp']);
       },
       error: (err) => {
         this.loading.set(false);

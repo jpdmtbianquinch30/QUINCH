@@ -1,0 +1,71 @@
+<div class="auth-page">
+  <div class="auth-split">
+    <div class="auth-brand">
+      <div class="brand-content">
+        <img src="logoquinch.png" alt="QUINCH" class="brand-logo" />
+        <h1 class="brand-title">QUINCH</h1>
+        <p class="brand-tagline">Derniere etape avant de commencer</p>
+        <div class="brand-features">
+          <div class="feature"><span class="material-icons">sms</span><span>Code envoye par SMS</span></div>
+          <div class="feature"><span class="material-icons">verified_user</span><span>Compte securise</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-form-side">
+      <div class="auth-form-container">
+        <h2>Verifiez votre numero</h2>
+        <p class="auth-subtitle">
+          Entrez le code a 6 chiffres envoye au {{ phoneNumber }}
+        </p>
+
+        @if (error()) {
+          <div class="error-message">{{ error() }}</div>
+        }
+        @if (info()) {
+          <div class="success-message">{{ info() }}</div>
+        }
+
+        <form (ngSubmit)="verify()">
+          <div class="form-group">
+            <label>Code de verification</label>
+            <input
+              type="text"
+              inputmode="numeric"
+              class="q-input otp-input"
+              [(ngModel)]="otp"
+              name="otp"
+              placeholder="123456"
+              maxlength="6"
+              autocomplete="one-time-code"
+            />
+          </div>
+
+          <button type="submit" class="q-btn q-btn-primary q-btn-full q-btn-lg" [disabled]="loading()">
+            @if (loading()) {
+              <span class="spinner"></span> Verification...
+            } @else {
+              Verifier
+            }
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          <p>Vous n'avez rien recu ?</p>
+          <button
+            type="button"
+            class="q-btn q-btn-secondary q-btn-full"
+            [disabled]="resending()"
+            (click)="resend()"
+          >
+            @if (resending()) {
+              <span class="spinner"></span> Envoi...
+            } @else {
+              Renvoyer le code
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

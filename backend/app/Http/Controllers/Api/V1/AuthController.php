@@ -148,6 +148,36 @@ class AuthController extends Controller
         ]);
     }
 
+        /**
+     * Re-generate and re-send an OTP code (used when the previous one has
+     * expired — generateOtp() reset otp_expires_at à 10 min, voir User.php).
+     * On répond 200 générique même si le numéro n'existe pas ou si le
+     * téléphone est déjà vérifié, pour ne pas laisser deviner quels numéros
+     * sont inscrits (énumération de comptes).
+     */
+    public function resendOtp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string'],
+        ]);
+
+        $user = User::where('phone_number', $validated['phone_number'])->first();
+
+        $response = [
+            'message' => 'Si ce numéro est inscrit et non vérifié, un nouveau code a été envoyé.',
+        ];
+
+        if ($user && !$user->phone_verified) {
+            $otp = $user->generateOtp();
+
+            if (app()->environment(['local', 'testing'])) {
+                $response['demo_otp'] = $otp;
+            }
+        }
+
+        return response()->json($response);
+    }
+
     /**
      * Demande de réinitialisation de mot de passe : génère un OTP envoyé par
      * SMS (comme à l'inscription). Ne révèle jamais si le numéro existe ou

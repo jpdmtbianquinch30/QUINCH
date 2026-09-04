@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductVideo;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\PaymentGateway\PaymentGatewayFactory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -178,9 +179,15 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // ─── Sample Transactions ────────────────────────────────────────
+                // ─── Sample Transactions ────────────────────────────────────────
+        // On tire la liste depuis PaymentGatewayFactory (source de vérité)
+        // plutôt que de la recopier en dur : la contrainte CHECK sur
+        // transactions.payment_method (migration restrict_payment_methods)
+        // n'autorise que les passerelles réellement implémentées, et un
+        // hardcode ici finit toujours par diverger (cf. bug free_money /
+        // cash_delivery qui faisait planter migrate:fresh --seed).
         $products = Product::all();
-        $paymentMethods = ['orange_money', 'wave', 'free_money', 'cash_delivery'];
+        $paymentMethods = array_column(PaymentGatewayFactory::getAvailableGateways(), 'id');
 
         for ($i = 0; $i < 15; $i++) {
             $product = $products->random();

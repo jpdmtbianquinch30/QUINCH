@@ -38,6 +38,7 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:3,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:5,1');
+    Route::post('resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 

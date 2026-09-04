@@ -46,3 +46,13 @@ export interface RegisterRequest {
   password: string;
   password_confirmation: string;
 }
+
+export interface VerifyOtpRequest {
+  phone_number: string;
+  otp: string;
+}
+
+export interface ResendOtpResponse {
+  message: string;
+  demo_otp?: string;
+}

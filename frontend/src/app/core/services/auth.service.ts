@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
-import { User, AuthResponse, LoginRequest, RegisterRequest } from '../models/user.model';
+import { User, AuthResponse, LoginRequest, RegisterRequest, ResendOtpResponse, VerifyOtpRequest } from '../models/user.model';
 import { Observable, tap, catchError, of } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +34,7 @@ export class AuthService {
     );
   }
 
+
   private showWelcomeNotification(user: User): void {
     // Small delay to let the app initialize
     setTimeout(() => {
@@ -53,6 +54,22 @@ export class AuthService {
     this.clearAuth();
     sessionStorage.removeItem('quinch_welcomed');
     this.router.navigate(['/auth/login']);
+  }
+
+    /** Verify the OTP sent by SMS at registration. Does not issue a new
+   *  token (already set by register()) — just refreshes phone_verified. */
+  verifyOtp(data: VerifyOtpRequest): Observable<{ message: string; user: User }> {
+    return this.api.post<{ message: string; user: User }>('auth/verify-otp', data).pipe(
+      tap(res => {
+        this.currentUser.set(res.user);
+        localStorage.setItem('quinch_user', JSON.stringify(res.user));
+      })
+    );
+  }
+
+  /** Ask the backend for a fresh OTP (the previous one expires after 10 min). */
+  resendOtp(phoneNumber: string): Observable<ResendOtpResponse> {
+    return this.api.post<ResendOtpResponse>('auth/resend-otp', { phone_number: phoneNumber });
   }
 
   /** Force-clear auth state (used by error interceptor on 401) — no API call */
