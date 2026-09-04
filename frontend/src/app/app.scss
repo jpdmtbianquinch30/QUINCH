@@ -384,185 +384,155 @@
   transition: all var(--q-transition-fast);
 }
 
-// ─── Responsive — bottom bar icônes seules sur mobile ─────────────────────
+// ─── Responsive — rail vertical fixe collé à gauche sur mobile ────────────
+// Remplace l'ancienne barre du bas + tiroir à ouvrir : plus aucun bouton à
+// cliquer, tout est visible en permanence, sans défilement.
 @media (max-width: 768px) {
+  .mobile-menu-trigger,
+  .mobile-menu-backdrop {
+    display: none !important;
+  }
+
   .sidebar {
     display: flex;
-    flex-direction: row;
-    top: auto;
+    position: fixed;
+    flex-direction: column;
+    align-items: center;
+    top: 0;
     bottom: 0;
     left: 0;
-    right: 0;
-    width: 100%;
-    height: 64px;
-    border-right: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 0;
+    right: auto;
+    width: 60px;
+    height: 100vh;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: none;
+    padding: 10px 0 14px;
     z-index: 200;
-    overflow: visible;
+    overflow: hidden; // jamais de scroll — tout doit tenir dans la hauteur
   }
 
-  .sidebar-brand,
-  .sidebar-footer,
-  .sidebar-divider {
-    display: none;
+  .sidebar-brand {
+    display: flex;
+    justify-content: center;
+    padding: 0 0 10px;
+    margin: 0;
   }
 
-  .sidebar-nav {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    width: 100%;
-    height: 100%;
-    padding: 0 4px;
+  .sidebar-logo {
+    width: 26px;
+    height: 26px;
+  }
+
+  .sidebar-title {
+    display: none; // logo seul, pas de place pour le texte dans 60px
+  }
+
+  .sidebar-footer {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 0;
+    margin: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .sidebar-user {
     gap: 0;
   }
 
-  // On ne montre que les 5 items principaux (comme Flutter) : Accueil, Explorer, Publier, Messages, Profil
-  .sidebar-link:not(.mobile-primary) {
-    display: none;
+  .sidebar-user-info,
+  .sidebar-user-chevron {
+    display: none; // seul l'avatar tient dans le rail
   }
 
+  .sidebar-avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  // Tous les liens sont visibles désormais (plus de restriction aux 5
+  // principaux de l'ancienne barre du bas) — "tout doit y être".
   .sidebar-link {
+    display: flex !important;
     flex-direction: column;
     justify-content: center;
-    gap: 2px;
-    padding: 6px 4px;
-    flex: 1;
-    min-width: 0;
+    align-items: center;
+    gap: 0;
+    padding: 4px 0;
+    width: 100%;
+    flex: 0 0 auto;
 
     &.active::before {
-      display: none; // supprime la barre verticale d'indicateur actif (pensée pour le mode sidebar)
+      display: none;
     }
   }
 
   .sidebar-link-label {
-    display: none; // icônes seules
+    display: none; // icônes seules : ce qui permet de tout faire tenir sans défiler
   }
-
-    // ─── Bouton déclencheur du tiroir ──────────────────────────────────────
-  .mobile-menu-trigger {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    z-index: 250;
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    background: rgba(20, 20, 30, 0.85);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-
-    .material-icons { font-size: 22px; }
-  }
-
-  // ─── Fond sombre ────────────────────────────────────────────────────────
-  .mobile-menu-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 220;
-    animation: fadeIn 0.2s ease;
-  }
-
-  // ─── Tiroir déroulant (réutilise la même liste que le sidebar desktop) ──
-  .sidebar.mobile-drawer-open {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 78%;
-    max-width: 300px;
-    height: 100vh;
-    flex-direction: column;
-    align-items: stretch;
-    background: #0c0c14;
-    border-right: 1px solid rgba(255,255,255,0.08);
-    border-top: none;
-    z-index: 230;
-    padding: 24px 12px;
-    animation: slideInLeft 0.25s ease;
-    overflow-y: auto;
-
-    .sidebar-nav {
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 4px;
-      height: auto;
-    }
-
-    // Dans le tiroir ouvert, on montre TOUS les liens, pas seulement
-    // les 5 principaux de la barre du bas.
-    .sidebar-link {
-      display: flex !important;
-      flex-direction: row;
-      justify-content: flex-start;
-      gap: 14px;
-      padding: 12px 14px;
-      border-radius: 12px;
-
-      &:hover, &.active { background: rgba(255,255,255,0.06); }
-    }
-
-    .sidebar-link-label {
-      display: inline !important;
-      font-size: 0.92rem;
-      font-weight: 600;
-    }
-
-    .sidebar-divider {
-      display: block !important;
-      height: 1px;
-      background: rgba(255,255,255,0.08);
-      margin: 10px 4px;
-    }
-  }
-
 
   .sidebar-link-icon {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     background: none;
 
-    .material-icons { font-size: 24px; }
+    .material-icons { font-size: 21px; }
   }
 
   .sidebar-link.active .sidebar-link-icon .material-icons {
     color: var(--q-accent-light);
   }
 
-  // Bouton "Publier" — cercle flottant bleu, comme le "+" de Flutter
+  // Bouton "Publier" — cercle bleu mis en avant, sans le décalage vertical
+  // pensé pour une barre horizontale (n'a plus de sens dans un rail vertical).
   .sidebar-link.publish-link {
     background: none;
     box-shadow: none;
-    margin: 0;
-    flex: 0 0 52px;
+    margin: 2px 0;
+    flex: 0 0 auto;
 
     .sidebar-link-icon {
-      width: 48px;
-      height: 48px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--q-accent) 0%, var(--q-accent-light) 100%);
-      box-shadow: 0 4px 16px rgba(79, 110, 247, 0.4);
-      transform: translateY(-14px);
+      box-shadow: 0 4px 14px rgba(79, 110, 247, 0.4);
+      transform: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-      .material-icons { font-size: 26px; color: white; }
+      .material-icons { font-size: 20px; color: white; }
     }
 
     &:hover .sidebar-link-icon,
     &.active .sidebar-link-icon {
-      transform: translateY(-14px);
+      transform: none;
       background: linear-gradient(135deg, var(--q-accent-light) 0%, var(--q-accent) 100%);
     }
   }
 
-  // Badges — petit point sur l'icône plutôt qu'une pastille texte à côté du label
+  .sidebar-divider {
+    display: block;
+    width: 60%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 2px 0;
+  }
+
+  // Badges — petit point sur l'icône, pas de pastille texte (pas la place)
   .sidebar-badge {
     display: none;
   }
@@ -576,13 +546,25 @@
   }
 
   .app-layout.with-sidebar .main-content {
-    margin-left: 0;
-    width: 100%;
-    padding-bottom: 76px; // laisse la place à la barre du bas
+    margin-left: 60px;
+    width: calc(100% - 60px);
+    padding-bottom: 0; // plus de barre du bas à réserver
   }
 
   .app-layout.fullscreen .main-content {
-    padding-bottom: 0; // feed plein écran ; la barre flotte par-dessus (z-index 200, fond flouté)
+    margin-left: 0;
+    width: 100%;
+  }
+
+  // Filet de sécurité pour les très petits écrans (iPhone SE en hauteur
+  // réduite, mode paysage...) : resserre encore pour garantir qu'il n'y
+  // ait jamais besoin de défiler.
+  @media (max-height: 620px) {
+    .sidebar { padding: 6px 0 8px; }
+    .sidebar-logo { width: 22px; height: 22px; }
+    .sidebar-link-icon { width: 20px; height: 20px; .material-icons { font-size: 19px; } }
+    .sidebar-link.publish-link .sidebar-link-icon { width: 32px; height: 32px; .material-icons { font-size: 18px; } }
+    .sidebar-avatar { width: 26px; height: 26px; }
   }
 }
 

@@ -32,11 +32,29 @@ export class FeedComponent implements OnInit {
 
   videoProducts = computed(() => this.products().filter(p => !!p.video));
 
-  productsCount = computed(() => this.products().filter(p => p.type !== 'service').length);
-  servicesCount = computed(() => this.products().filter(p => p.type === 'service').length);
+  // Vrai total du catalogue (pas juste ce qui est chargé à l'écran) —
+  // récupéré via deux requêtes légères dédiées (per_page: 1, on ne lit que
+  // le champ "total" de la pagination), indépendantes du scroll infini.
+  // Avant : comptait products()/services() dans la page déjà chargée,
+  // donc le chiffre changeait et grossissait au fil du scroll au lieu de
+  // représenter le vrai total.
+  productsCount = signal(0);
+  servicesCount = signal(0);
 
   ngOnInit() {
     this.loadData();
+  }
+
+  private loadCounts() {
+    const categoryParams: Record<string, any> = {};
+    if (this.selectedCategory()) categoryParams['category_id'] = this.selectedCategory();
+
+    this.productService.getFeed(1, { ...categoryParams, type: 'product', per_page: 1 }).subscribe({
+      next: (res: any) => this.productsCount.set(res.total ?? 0),
+    });
+    this.productService.getFeed(1, { ...categoryParams, type: 'service', per_page: 1 }).subscribe({
+      next: (res: any) => this.servicesCount.set(res.total ?? 0),
+    });
   }
 
   loadData() {
@@ -54,6 +72,7 @@ export class FeedComponent implements OnInit {
     this.productService.getCategories().subscribe({
       next: (res: any) => this.categories.set(res.categories || []),
     });
+    this.loadCounts();
   }
 
   loadMore() {

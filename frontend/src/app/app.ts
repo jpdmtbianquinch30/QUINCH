@@ -35,7 +35,7 @@ export class App implements OnInit {
 
   showSidebar = computed(() => {
     const url = this.currentUrl();
-    const hiddenRoutes = ['/auth/', '/onboarding'];
+    const hiddenRoutes = ['/auth/', '/onboarding', '/videos'];
     return !hiddenRoutes.some(r => url.includes(r));
   });
 
@@ -51,7 +51,10 @@ export class App implements OnInit {
 
   isFullscreen = computed(() => {
     const url = this.currentUrl();
-    return url === '/feed' || url === '/' || url === '' || url.startsWith('/messages');
+    // /feed est maintenant une grille normale (topbar, sidebar filtres,
+    // navigation visible) — seul /videos reprend le plein écran immersif
+    // que /feed avait avant le redesign.
+    return url.startsWith('/videos') || url.startsWith('/messages');
   });
 
   /** Check if the sidebar "Produits" or "Services" link is active based on current URL query params */

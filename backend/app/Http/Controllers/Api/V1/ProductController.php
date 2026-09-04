@@ -162,7 +162,7 @@ class ProductController extends Controller
 
     public function webhookWaveListingFee(Request $request): JsonResponse
     {
-        $secret = config('services.wave.webhook_secret');
+        $secret = $this->waveWebhookSecret();
         $header = $request->header('Wave-Signature');
 
         if (!$secret || !$header || !$this->verifyWaveSignature($header, $request->getContent(), $secret)) {

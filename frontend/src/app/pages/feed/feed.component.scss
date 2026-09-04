@@ -23,7 +23,14 @@
   gap: 6px;
   flex-shrink: 0;
 
-  .logo-icon { color: #6366f1; font-size: 26px; }
+  .logo-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+    // Dimensions explicites : évite tout décalage de mise en page (flash)
+    // le temps que l'image se charge, cohérent avec .sidebar-logo.
+  }
   .logo-text { font-weight: 800; font-size: 1rem; letter-spacing: -0.3px; }
 }
 
