@@ -21,6 +21,7 @@ class ProductController extends Controller
             'description' => ['sometimes', 'string', 'max:5000'],
             'category_id' => ['required', 'uuid', 'exists:categories,id'],
             'price' => ['required', 'numeric', 'min:0'],
+            'intent' => ['sometimes', 'in:draft,publish'],
             'currency' => ['sometimes', 'in:XOF,EUR,USD'],
             'stock_quantity' => ['sometimes', 'integer', 'min:1'],
             'condition' => ['sometimes', 'in:new,like_new,good,fair'],
@@ -101,6 +102,23 @@ class ProductController extends Controller
         unset($validated['image_files'], $validated['poster_file']);
 
         $validated['user_id'] = $user->id;
+
+        $intent = $validated['intent'] ?? 'publish';
+        unset($validated['intent']);
+
+        // ─── Enregistrer comme brouillon (aucun paiement tenté) ────────────
+        if ($intent === 'draft') {
+            $validated['status'] = 'draft';
+            $validated['listing_fee_status'] = 'none';
+
+            $product = Product::create($validated);
+            $product->load(['category', 'video']);
+
+            return response()->json([
+                'message' => 'Brouillon enregistré. Vous pourrez le publier plus tard.',
+                'product' => $product,
+            ], 201);
+        }
 
         // ─── Frais de publication ────────────────────────────────────────
         // Gratuit pour les comptes premium. Sinon, le montant dépend de la

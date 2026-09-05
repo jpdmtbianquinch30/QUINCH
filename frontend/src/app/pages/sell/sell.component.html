@@ -331,11 +331,15 @@
           <p class="desc-hint">Utilisez # pour les hashtags et &#64; pour mentionner</p>
         </div>
 
-        <div class="step-nav">
+                <div class="step-nav step-nav-three">
           <button type="button" class="q-btn q-btn-ghost" (click)="prevStep()"><span class="material-icons">arrow_back</span> Retour</button>
-          <button type="button" class="q-btn q-btn-primary q-btn-lg" (click)="nextStep()"
-                  [disabled]="!form.title || !form.category_id || (publishType() === 'product' && !form.price) || (publishType() === 'service' && servicePriceType() !== 'quote' && !form.price)">
-            Suivant <span class="material-icons">arrow_forward</span>
+          <button type="button" class="q-btn q-btn-secondary" [disabled]="loading()" (click)="saveDraft()">
+            <span class="material-icons">save</span>
+            Enregistrer en brouillon
+          </button>
+          <button type="submit" class="q-btn q-btn-primary q-btn-lg" [disabled]="loading()">
+            <span class="material-icons">{{ listingFee() === 0 ? 'publish' : 'payments' }}</span>
+            {{ loading() ? 'Publication...' : (listingFee() === 0 ? (publishType() === 'service' ? 'Publier le service' : 'Publier l\'annonce') : 'Payer et publier — ' + listingFee() + ' F CFA') }}
           </button>
         </div>
       </div>

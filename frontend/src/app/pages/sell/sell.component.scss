@@ -1455,3 +1455,12 @@
     .material-icons { color: #22c55e; }
   }
 }
+.step-nav-three {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .q-btn-ghost { flex: 0 0 auto; }
+  .q-btn-secondary { flex: 1; min-width: 160px; }
+  .q-btn-primary { flex: 1; min-width: 200px; }
+}

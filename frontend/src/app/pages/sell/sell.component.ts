@@ -718,7 +718,11 @@ export class SellComponent implements OnInit, OnDestroy {
     return this.availablePaymentMethods.find(m => m.id === id)?.name || id;
   }
 
-  submit() {
+    saveDraft() {
+    this.submit(true);
+  }
+
+    submit(asDraft: boolean = false){
     const isService = this.publishType() === 'service';
     if (!this.form.title || !this.form.category_id) { this.notify.error('Veuillez remplir tous les champs obligatoires.'); return; }
     if (!isService && !this.form.price) { this.notify.error('Veuillez indiquer un prix.'); return; }
@@ -776,7 +780,7 @@ export class SellComponent implements OnInit, OnDestroy {
         formData.append('delivery_fee', String(this.deliveryFee()));
       }
     }
-
+        formData.append('intent', asDraft ? 'draft' : 'publish');
         this.productService.createProductWithPoster(formData).subscribe({
       next: (res: any) => {
         this.loading.set(false);
@@ -785,7 +789,7 @@ export class SellComponent implements OnInit, OnDestroy {
           window.location.href = res.payment_url;
           return;
         }
-        this.notify.success(isService ? 'Service publié avec succès !' : 'Produit publié avec succès !');
+        this.notify.success(asDraft ? 'Brouillon enregistré.' : (isService ? 'Service publié avec succès !' : 'Produit publié avec succès !'));
         this.router.navigate(['/feed']);
       },
       error: (err) => { this.loading.set(false); this.notify.error(err.error?.message || 'Erreur lors de la publication'); },
