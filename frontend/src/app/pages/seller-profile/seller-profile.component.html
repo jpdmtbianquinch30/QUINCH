@@ -118,10 +118,11 @@
 
       <!-- ▸ RIGHT MAIN CONTENT ───────────────────── -->
       <div class="sp-main-area">
-        <!-- Cover Banner -->
-        <div class="sp-cover" [style.background-image]="profile().user.cover_url ? 'url(' + profile().user.cover_url + ')' : ''">
-          <div class="sp-cover-overlay"></div>
-        </div>
+         @if (profile().user.cover_url) {
+          <div class="sp-cover" [style.background-image]="'url(' + profile().user.cover_url + ')'">
+            <div class="sp-cover-overlay"></div>
+          </div>
+        }
 
       <main class="sp-main">
         <!-- Tabs -->

@@ -295,7 +295,5 @@ export class SellerProfileComponent implements OnInit {
   paymentMethodsList = [
     { name: 'Orange Money', icon: 'phone_android' },
     { name: 'Wave', icon: 'waves' },
-    { name: 'Free Money', icon: 'smartphone' },
-    { name: 'Paiement a la livraison', icon: 'local_shipping' },
   ];
 }

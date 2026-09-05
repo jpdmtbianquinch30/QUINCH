@@ -551,9 +551,13 @@
     padding-bottom: 0; // plus de barre du bas à réserver
   }
 
-  .app-layout.fullscreen .main-content {
-    margin-left: 0;
-    width: 100%;
+    // /messages a besoin du plein écran (pas de padding, hauteur fixe) MAIS
+  // garde le sidebar visible — contrairement à /videos qui masque tout.
+  // Sans cette règle, la classe .fullscreen écrase la marge réservée pour
+  // le sidebar, provoquant un chevauchement du contenu sous les icônes.
+  .app-layout.with-sidebar.fullscreen .main-content {
+    margin-left: 60px;
+    width: calc(100% - 60px);
   }
 
   // Filet de sécurité pour les très petits écrans (iPhone SE en hauteur

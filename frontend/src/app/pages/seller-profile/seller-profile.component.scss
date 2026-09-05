@@ -1089,11 +1089,11 @@ $card-border: 1px solid var(--q-border);
     gap: 0;
     min-height: auto;
   }
-  .sp-sidebar {
+    .sp-sidebar {
     position: static;
     height: auto;
-    overflow: visible;
-    padding: 0 16px;
+    align-self: stretch;
+    width: 100%;
   }
   .sp-cover { height: 150px; }
   .sp-main { padding: 16px; }
