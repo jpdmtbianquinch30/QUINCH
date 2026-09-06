@@ -385,35 +385,14 @@
 }
 
 @media (max-width: 768px) {
-  // Le rail d'icônes (60px) reste la vue par défaut. Le bouton menu ouvre un
-  // vrai tiroir plein-largeur avec les noms visibles — avant ce fix, le
-  // bouton et le fond noir étaient forcés invisibles et .mobile-drawer-open
-  // n'avait aucun style : le tiroir ne s'ouvrait jamais.
-  .mobile-menu-trigger {
-    display: flex !important;
-    position: fixed;
-    top: 14px;
-    left: 14px;
-    z-index: 250;
-    width: 40px;
-    height: 40px;
-    align-items: center;
-    justify-content: center;
-    background: rgba(11, 15, 28, 0.85);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--q-radius-md);
-    color: var(--q-text-primary);
-
-    .material-icons { font-size: 22px; }
-  }
-
+  // Historique (voir commit 2a46701) : le rail d'icônes permanent remplace
+  // volontairement une ancienne barre du bas + tiroir à ouvrir, justement
+  // pour n'avoir aucun bouton à cliquer. Le bouton menu et son fond restent
+  // donc désactivés ici — les réactiver recrée un second système de
+  // navigation qui rentre en conflit avec ce rail permanent.
+  .mobile-menu-trigger,
   .mobile-menu-backdrop {
-    display: block !important;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 210;
+    display: none !important;
   }
 
   .sidebar {
@@ -492,7 +471,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 0;
+    gap: 2px;
     padding: 4px 0;
     width: 100%;
     flex: 0 0 auto;
@@ -502,16 +481,31 @@
     }
   }
 
+  // Libellé permanent sous l'icône : le rail reste sans bouton ni tiroir
+  // (voir commentaire plus haut), mais affiche quand même le nom de chaque
+  // section — c'est ce qui manquait, pas un panneau à ouvrir.
   .sidebar-link-label {
-    display: none; // icônes seules : ce qui permet de tout faire tenir sans défiler
+    display: block;
+    font-size: 0.6rem;
+    line-height: 1;
+    text-align: center;
+    color: var(--q-text-muted);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-link.active .sidebar-link-label {
+    color: var(--q-accent-light);
   }
 
   .sidebar-link-icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     background: none;
 
-    .material-icons { font-size: 21px; }
+    .material-icons { font-size: 19px; }
   }
 
   .sidebar-link.active .sidebar-link-icon .material-icons {
@@ -582,85 +576,17 @@
     margin-left: 60px;
     width: calc(100% - 60px);
   }
-
-  // ─── Tiroir ouvert : le rail 60px devient un panneau plein de noms ───────
-  .sidebar.mobile-drawer-open {
-    width: 240px;
-    align-items: stretch;
-    padding: 16px 12px;
-    z-index: 220;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
-
-    .sidebar-brand {
-      justify-content: flex-start;
-      padding: 0 8px 16px;
-    }
-
-    .sidebar-title {
-      display: block;
-    }
-
-    .sidebar-nav {
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 2px;
-      overflow-y: auto;
-    }
-
-    .sidebar-link {
-      flex-direction: row;
-      justify-content: flex-start;
-      gap: 14px;
-      padding: 10px 12px;
-      width: 100%;
-
-      &.active::before { display: block; }
-    }
-
-    .sidebar-link-label {
-      display: inline;
-    }
-
-    .sidebar-link-icon {
-      width: 26px;
-      height: 26px;
-    }
-
-    .sidebar-link.publish-link .sidebar-link-icon {
-      width: 40px;
-      height: 40px;
-    }
-
-    .sidebar-divider {
-      width: 100%;
-    }
-
-    .sidebar-badge {
-      display: inline-flex;
-    }
-
-    .sidebar-footer {
-      justify-content: flex-start;
-      padding: 12px 8px 0;
-    }
-
-    .sidebar-user-info,
-    .sidebar-user-chevron {
-      display: flex;
-    }
-
-    .sidebar-avatar {
-      width: 36px;
-      height: 36px;
-    }
-  }
-
+  
   @media (max-height: 620px) {
     .sidebar { padding: 6px 0 8px; }
     .sidebar-logo { width: 22px; height: 22px; }
     .sidebar-link-icon { width: 20px; height: 20px; .material-icons { font-size: 19px; } }
     .sidebar-link.publish-link .sidebar-link-icon { width: 32px; height: 32px; .material-icons { font-size: 18px; } }
     .sidebar-avatar { width: 26px; height: 26px; }
+    // Écran trop court pour tenir icône + libellé sur chacun des 9 liens
+    // sans dépasser (le rail n'a pas de scroll) : on repasse en icônes
+    // seules plutôt que de couper le bas de la liste.
+    .sidebar-link-label { display: none; }
   }
 }
 

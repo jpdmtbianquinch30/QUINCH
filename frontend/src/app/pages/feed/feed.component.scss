@@ -17,22 +17,6 @@
   flex-shrink: 0;
 }
 
-.logo-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-
-  .logo-img {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-    flex-shrink: 0;
-    // Dimensions explicites : évite tout décalage de mise en page (flash)
-    // le temps que l'image se charge, cohérent avec .sidebar-logo.
-  }
-  .logo-text { font-weight: 800; font-size: 1rem; letter-spacing: -0.3px; }
-}
 
 .search-bar {
   flex: 1;
