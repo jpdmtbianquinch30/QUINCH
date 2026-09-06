@@ -384,13 +384,36 @@
   transition: all var(--q-transition-fast);
 }
 
-// ─── Responsive — rail vertical fixe collé à gauche sur mobile ────────────
-// Remplace l'ancienne barre du bas + tiroir à ouvrir : plus aucun bouton à
-// cliquer, tout est visible en permanence, sans défilement.
 @media (max-width: 768px) {
-  .mobile-menu-trigger,
+  // Le rail d'icônes (60px) reste la vue par défaut. Le bouton menu ouvre un
+  // vrai tiroir plein-largeur avec les noms visibles — avant ce fix, le
+  // bouton et le fond noir étaient forcés invisibles et .mobile-drawer-open
+  // n'avait aucun style : le tiroir ne s'ouvrait jamais.
+  .mobile-menu-trigger {
+    display: flex !important;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 250;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(11, 15, 28, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--q-radius-md);
+    color: var(--q-text-primary);
+
+    .material-icons { font-size: 22px; }
+  }
+
   .mobile-menu-backdrop {
-    display: none !important;
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 210;
   }
 
   .sidebar {
@@ -560,9 +583,78 @@
     width: calc(100% - 60px);
   }
 
-  // Filet de sécurité pour les très petits écrans (iPhone SE en hauteur
-  // réduite, mode paysage...) : resserre encore pour garantir qu'il n'y
-  // ait jamais besoin de défiler.
+  // ─── Tiroir ouvert : le rail 60px devient un panneau plein de noms ───────
+  .sidebar.mobile-drawer-open {
+    width: 240px;
+    align-items: stretch;
+    padding: 16px 12px;
+    z-index: 220;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+
+    .sidebar-brand {
+      justify-content: flex-start;
+      padding: 0 8px 16px;
+    }
+
+    .sidebar-title {
+      display: block;
+    }
+
+    .sidebar-nav {
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 2px;
+      overflow-y: auto;
+    }
+
+    .sidebar-link {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 14px;
+      padding: 10px 12px;
+      width: 100%;
+
+      &.active::before { display: block; }
+    }
+
+    .sidebar-link-label {
+      display: inline;
+    }
+
+    .sidebar-link-icon {
+      width: 26px;
+      height: 26px;
+    }
+
+    .sidebar-link.publish-link .sidebar-link-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .sidebar-divider {
+      width: 100%;
+    }
+
+    .sidebar-badge {
+      display: inline-flex;
+    }
+
+    .sidebar-footer {
+      justify-content: flex-start;
+      padding: 12px 8px 0;
+    }
+
+    .sidebar-user-info,
+    .sidebar-user-chevron {
+      display: flex;
+    }
+
+    .sidebar-avatar {
+      width: 36px;
+      height: 36px;
+    }
+  }
+
   @media (max-height: 620px) {
     .sidebar { padding: 6px 0 8px; }
     .sidebar-logo { width: 22px; height: 22px; }
@@ -571,6 +663,8 @@
     .sidebar-avatar { width: 26px; height: 26px; }
   }
 }
+
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Light Mode — Sidebar & Layout overrides
