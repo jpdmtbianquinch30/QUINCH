@@ -2,10 +2,14 @@
   <!-- ═══════ TOP BAR ═══════ -->
   <div class="feed-topbar">
     <button class="search-bar" (click)="openSearch()">
+      <span class="material-icons">search</span>
+      <span>Rechercher un produit, un vendeur…</span>
+    </button>
+
+    <button class="topbar-icon-btn" routerLink="/notifications">
       <span class="material-icons">notifications</span>
     </button>
   </div>
-
   <div class="feed-layout">
     <!-- ═══════ SIDEBAR FILTRES (desktop uniquement, voir CSS) ═══════ -->
     <aside class="filters-sidebar">
