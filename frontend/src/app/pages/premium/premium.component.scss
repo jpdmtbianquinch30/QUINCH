@@ -1,0 +1,239 @@
+.premium-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+  min-height: 100vh;
+}
+
+.premium-loading {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner, .mini-spinner {
+  border-radius: 50%;
+  border: 3px solid var(--q-border);
+  border-top-color: var(--q-accent);
+  animation: spin 0.7s linear infinite;
+}
+.spinner { width: 32px; height: 32px; }
+.mini-spinner { width: 16px; height: 16px; border-width: 2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ─── Header ────────────────────────────────────────────────────────────
+.premium-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 0;
+
+  h1 { font-size: 1.15rem; font-weight: 800; color: var(--q-text-primary); margin: 0; }
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--q-bg-card);
+  border: none;
+  color: var(--q-text-secondary);
+  cursor: pointer;
+  .material-icons { font-size: 20px; }
+  &:hover { background: var(--q-bg-card-hover); }
+}
+
+// ─── Statut actuel (déjà premium) ────────────────────────────────────────
+.current-status-card {
+  text-align: center;
+  padding: 40px 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--q-accent-subtle), transparent);
+  border: 1px solid rgba(79, 110, 247, 0.25);
+  margin-bottom: 24px;
+
+  .status-icon { font-size: 48px; color: var(--q-accent); margin-bottom: 12px; }
+  h2 { font-size: 1.3rem; font-weight: 800; color: var(--q-text-primary); margin: 0 0 8px; }
+  p { color: var(--q-text-secondary); margin: 4px 0; }
+  .expiry { color: var(--q-text-muted); font-size: 0.85rem; }
+}
+
+.pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
+  color: #f59e0b;
+  font-size: 0.85rem;
+  .material-icons { font-size: 20px; }
+}
+
+.premium-tagline {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--q-text-secondary);
+  margin: 8px 0 28px;
+}
+
+// ─── Avantages ───────────────────────────────────────────────────────────
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--q-text-secondary);
+    font-size: 0.9rem;
+
+    .material-icons { font-size: 20px; color: var(--q-accent); flex-shrink: 0; }
+  }
+}
+
+// ─── Plans ───────────────────────────────────────────────────────────────
+.plans-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 16px 20px;
+  border-radius: 18px;
+  background: var(--q-bg-card);
+  border: 1px solid var(--q-border);
+
+  &.highlighted {
+    border-color: var(--q-accent);
+    background: linear-gradient(180deg, var(--q-accent-subtle), var(--q-bg-card) 60%);
+  }
+}
+
+.plan-tag {
+  position: absolute;
+  top: -11px;
+  padding: 4px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: white;
+  background: var(--q-accent);
+  border-radius: 50px;
+}
+
+.plan-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--q-text-secondary);
+  margin-bottom: 6px;
+}
+
+.plan-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--q-text-primary);
+  small { font-size: 0.7rem; font-weight: 600; color: var(--q-text-muted); }
+}
+
+.plan-period {
+  font-size: 0.75rem;
+  color: var(--q-text-muted);
+  margin-bottom: 18px;
+}
+
+.subscribe-btn {
+  width: 100%;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--q-accent);
+  color: white;
+  border: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover:not(:disabled) { background: var(--q-accent-light); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.payment-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--q-text-muted);
+  .material-icons { font-size: 15px; }
+}
+
+// ─── Résultat (succès / erreur) ──────────────────────────────────────────
+.result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+  margin: 20vh auto 0;
+  padding: 20px;
+
+  .result-icon { font-size: 56px; margin-bottom: 16px; }
+  h1 { font-size: 1.3rem; font-weight: 800; color: var(--q-text-primary); margin: 0 0 10px; }
+  p { color: var(--q-text-secondary); margin: 0 0 24px; line-height: 1.5; }
+
+  &.success .result-icon { color: #22c55e; }
+  &.error .result-icon { color: #ef4444; }
+}
+
+.primary-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--q-accent);
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  &:hover { background: var(--q-accent-light); }
+}
+
+.ghost-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  background: none;
+  color: var(--q-text-secondary);
+  border: 1px solid var(--q-border);
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { background: var(--q-bg-card); }
+}
+
+// ─── Responsive ───────────────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .premium-page { padding: 0 16px 50px; }
+  .plans-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .plan-card { padding: 22px 10px 16px; }
+  .plan-price { font-size: 1.25rem; }
+}

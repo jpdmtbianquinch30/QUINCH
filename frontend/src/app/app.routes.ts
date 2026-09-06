@@ -43,6 +43,10 @@ export const routes: Routes = [
   { path: 'messages', canActivate: [authGuard], loadComponent: () => import('./pages/messages/messages.component').then(m => m.MessagesComponent) },
   { path: 'favorites', canActivate: [authGuard], loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent) },
   { path: 'notifications', canActivate: [authGuard], loadComponent: () => import('./pages/notifications/notifications.component').then(m => m.NotificationsComponent) },
+  // URLs exactes attendues par PremiumController::subscribe() (success_url/error_url) — ne pas renommer.
+  { path: 'premium', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
+  { path: 'premium/success', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
+  { path: 'premium/error', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
   { path: 'transactions', canActivate: [authGuard], loadComponent: () => import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent) },
   { path: 'transactions/:id/:outcome', canActivate: [authGuard], loadComponent: () => import('./pages/transaction-status/transaction-status.component').then(m => m.TransactionStatusComponent) },
   { path: 'profile', canActivate: [authGuard], loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },

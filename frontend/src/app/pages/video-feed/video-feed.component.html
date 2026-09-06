@@ -143,23 +143,27 @@
   }
 
   <!-- ═══════ HEADER ═══════ -->
-  <div class="feed-header">
-    <div class="feed-tabs">
-      @if (auth.isAuthenticated()) {
-        <button class="tab" [class.active]="activeTab() === 'following'" (click)="switchTab('following')">
-          Abonnements
+  <!-- Masqué en mode détail : ces onglets de navigation du feed n'ont pas
+       leur place au-dessus d'une fiche produit consultée en détail. -->
+  @if (!detailMode()) {
+    <div class="feed-header">
+      <div class="feed-tabs">
+        @if (auth.isAuthenticated()) {
+          <button class="tab" [class.active]="activeTab() === 'following'" (click)="switchTab('following')">
+            Abonnements
+          </button>
+        }
+        <button class="tab" [class.active]="activeTab() === 'foryou'" (click)="switchTab('foryou')">
+          Pour toi
         </button>
-      }
-      <button class="tab" [class.active]="activeTab() === 'foryou'" (click)="switchTab('foryou')">
-        Pour toi
-      </button>
+      </div>
+      <div class="header-right">
+        <button class="header-btn" (click)="openSearch()">
+          <span class="material-icons">search</span>
+        </button>
+      </div>
     </div>
-    <div class="header-right">
-      <button class="header-btn" (click)="openSearch()">
-        <span class="material-icons">search</span>
-      </button>
-    </div>
-  </div>
+  }
 
   <!-- ═══════ SWIPER CONTAINER ═══════ -->
   <div class="swiper-container" #swiperRef (wheel)="onWheel($event)">
@@ -267,21 +271,55 @@
                 </div>
               }
 
-              <!-- Bottom gradient -->
-              <div class="card-gradient"></div>
-
               <!-- ══ BOTTOM INFO OVERLAY ══ -->
               <div class="card-info">
-                <!-- Seller row -->
-                <div class="info-seller-row" (click)="viewSellerProfile(product, $event)">
-                  <span class="seller-username">&#64;{{ product.seller?.username || 'vendeur' }}</span>
+                <!-- Seller row (avatar + pseudo + suivre) -->
+                <div class="info-seller-row">
+                  <div class="seller-avatar-sm" (click)="viewSellerProfile(product, $event)">
+                    @if (product.seller?.avatar) {
+                      <img [src]="product.seller.avatar" alt="" (error)="onImgError($event)" />
+                    } @else {
+                      <span class="material-icons">person</span>
+                    }
+                  </div>
+                  <span class="seller-username" (click)="viewSellerProfile(product, $event)">&#64;{{ product.seller?.username || 'vendeur' }}</span>
                   @if (product.seller?.trust_score >= 0.7) {
                     <span class="material-icons verified-icon">verified</span>
+                  }
+                  @if (!isFollowing(product.seller?.id)) {
+                    <button class="follow-inline-btn" (click)="toggleFollow(product, $event)">Suivre</button>
                   }
                 </div>
 
                 <!-- Title -->
                 <p class="info-title">{{ product.title }}</p>
+
+                <!-- ══ ACTIONS — rangée horizontale ══ -->
+                <div class="info-actions-row" [class.hidden-split]="detailMode() && currentIndex() === i">
+                  <button class="h-action" (click)="toggleLike(product)">
+                    <span class="material-icons" [class.liked]="product.is_liked">
+                      {{ product.is_liked ? 'favorite' : 'favorite_border' }}
+                    </span>
+                    <span>{{ formatCount(product.like_count) }}</span>
+                  </button>
+
+                  <button class="h-action" (click)="openCommentPanel(product, $event)">
+                    <span class="material-icons">chat_bubble_outline</span>
+                    <span>Avis</span>
+                  </button>
+
+                  <button class="h-action" (click)="shareProduct(product, $event)">
+                    <span class="material-icons">reply</span>
+                    <span>{{ formatCount(product.share_count) }}</span>
+                  </button>
+
+                  <button class="h-action" (click)="toggleSave(product, $event)">
+                    <span class="material-icons" [class.saved]="product.is_saved">
+                      {{ product.is_saved ? 'bookmark' : 'bookmark_border' }}
+                    </span>
+                    <span>Sauver</span>
+                  </button>
+                </div>
 
                 <!-- Description preview -->
                 @if (product.description) {
@@ -333,52 +371,6 @@
               </div>
             </div>
 
-            <!-- ══ SIDE ACTIONS ══ -->
-            <div class="side-actions" [class.hidden-split]="detailMode() && currentIndex() === i">
-              <!-- Avatar + Follow -->
-              <div class="action-avatar">
-                <div class="avatar-wrap" (click)="viewSellerProfile(product, $event)">
-                  @if (product.seller?.avatar) {
-                    <img [src]="product.seller.avatar" alt="" (error)="onImgError($event)" />
-                  } @else {
-                    <span class="material-icons">person</span>
-                  }
-                </div>
-                @if (!isFollowing(product.seller?.id)) {
-                  <button class="follow-badge" (click)="toggleFollow(product, $event)">
-                    <span class="material-icons">add</span>
-                  </button>
-                }
-              </div>
-
-              <!-- Like -->
-              <button class="side-btn" (click)="toggleLike(product)">
-                <span class="material-icons" [class.liked]="product.is_liked">
-                  {{ product.is_liked ? 'favorite' : 'favorite_border' }}
-                </span>
-                <span class="side-label">{{ formatCount(product.like_count) }}</span>
-              </button>
-
-              <!-- Comment -->
-              <button class="side-btn" (click)="openCommentPanel(product, $event)">
-                <span class="material-icons">chat_bubble_outline</span>
-                <span class="side-label">Avis</span>
-              </button>
-
-              <!-- Share -->
-              <button class="side-btn" (click)="shareProduct(product, $event)">
-                <span class="material-icons">reply</span>
-                <span class="side-label">{{ formatCount(product.share_count) }}</span>
-              </button>
-
-              <!-- Save -->
-              <button class="side-btn" (click)="toggleSave(product, $event)">
-                <span class="material-icons" [class.saved]="product.is_saved">
-                  {{ product.is_saved ? 'bookmark' : 'bookmark_border' }}
-                </span>
-                <span class="side-label">Sauver</span>
-              </button>
-            </div>
 
             <!-- ══ RESIZE HANDLE + DETAIL PANEL ══ -->
             @if (detailMode() && currentIndex() === i && dp(); as p) {

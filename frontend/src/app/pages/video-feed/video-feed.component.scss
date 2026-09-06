@@ -38,11 +38,10 @@ $service-glow: rgba(16, 185, 129, 0.3);
   justify-content: center;
   padding: 14px 28px;
   z-index: 50;
-  background: linear-gradient(to bottom,
-    rgba(6,6,12,0.95) 0%,
-    rgba(6,6,12,0.7) 60%,
-    transparent 100%
-  );
+  // Pas de dégradé qui assombrit la vidéo : les onglets et le bouton
+  // recherche ont déjà leur propre fond en verre dépoli, donc restent
+  // parfaitement lisibles sans avoir besoin d'un voile sur toute la largeur.
+  background: none;
   pointer-events: none;
   > * { pointer-events: auto; }
 }
@@ -256,11 +255,11 @@ $service-glow: rgba(16, 185, 129, 0.3);
   }
 }
 
-// ─── Quality Badge (top-right) ─────────────────────────────
+// ─── Quality Badge (top-right, à gauche du bouton muet — jamais superposés) ─
 .quality-badge {
   position: absolute;
   top: 18px;
-  right: 18px;
+  right: 66px;
   z-index: 6;
   padding: 4px 10px;
   border-radius: 6px;
@@ -399,22 +398,11 @@ video.card-video { display: block; }
   }
 }
 
-// Bottom gradient — smoother
+// Plus de voile sombre plein écran : .card-info porte désormais son propre
+// fond (carte flottante en verre dépoli), donc ce voile n'est plus
+// nécessaire pour garder le texte lisible.
 .card-gradient {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
-  background: linear-gradient(to top,
-    rgba(0,0,0,0.88) 0%,
-    rgba(0,0,0,0.55) 30%,
-    rgba(0,0,0,0.2) 55%,
-    rgba(0,0,0,0.05) 75%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 // ─── Like Animation ──────────────────────────────────────────────
@@ -440,44 +428,55 @@ video.card-video { display: block; }
   100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
 }
 
-// ─── Card Info (bottom overlay) ──────────────────────────────────
+// ─── Card Info — carte flottante en verre dépoli ──────────────────
+// Design original : au lieu de texte posé directement sur la vidéo
+// assombrie (le classique "TikTok"), l'info vit dans sa propre carte
+// détachée, avec une marge à droite qui réserve structurellement la
+// place des actions (.side-actions) — élimine tout risque de
+// chevauchement, plutôt que de deviner un décalage en pixels.
 .card-info {
   position: absolute;
-  bottom: 10px;
-  left: 0;
-  right: 0;
-  padding: 0 24px 20px;
+  bottom: 18px;
+  left: 16px;
+  right: 20px;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(8, 8, 16, 0.55);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
 // Seller row
 .info-seller-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
+  gap: 8px;
 }
 
 .seller-avatar-sm {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.25);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255,255,255,0.06);
+  cursor: pointer;
   transition: border-color 0.25s, box-shadow 0.25s;
   img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .material-icons { font-size: 18px; color: rgba(255,255,255,0.35); }
+  .material-icons { font-size: 15px; color: rgba(255,255,255,0.35); }
 
-  .info-seller-row:hover & {
-    border-color: rgba(99,102,241,0.4);
+  &:hover {
+    border-color: rgba(99,102,241,0.5);
     box-shadow: 0 0 12px rgba(99,102,241,0.15);
   }
 }
@@ -493,23 +492,38 @@ video.card-video { display: block; }
 .seller-username {
   color: white;
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
 }
 
 .verified-icon {
-  font-size: 16px !important;
+  font-size: 14px !important;
   color: #4f9cf7;
   flex-shrink: 0;
 }
 
+.follow-inline-btn {
+  margin-left: auto;
+  padding: 4px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: white;
+  background: rgba(99, 102, 241, 0.9);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  &:hover { background: $accent-light; }
+}
 
-// Title & description
+// Title & description — tailles réduites, plus compact et lisible
 .info-title {
   color: white;
-  font-size: 1rem;
+  font-size: 0.86rem;
   font-weight: 600;
   margin: 0;
   display: -webkit-box;
@@ -517,21 +531,61 @@ video.card-video { display: block; }
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.1px;
 }
 
 .info-desc {
   color: rgba(255,255,255,0.5);
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.5;
+  line-height: 1.45;
 
   ::ng-deep .hashtag { color: #818cf8; font-weight: 600; cursor: pointer; }
   ::ng-deep .mention { color: #34d399; font-weight: 600; cursor: pointer; }
+}
+
+// ─── Actions — rangée horizontale, entre le titre et la description ──────
+// Design original : plus de colonne flottante à droite de la vidéo — les
+// actions vivent maintenant dans la carte d'info elle-même, alignées
+// horizontalement, cohérentes avec le reste du contenu.
+.info-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 2px 0 4px;
+
+  &.hidden-split { opacity: 0; pointer-events: none; }
+}
+
+.h-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s;
+
+  .material-icons {
+    font-size: 19px;
+    transition: color 0.2s, filter 0.2s;
+    &.liked { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239,68,68,0.35)); }
+    &.saved { color: #fbbf24; filter: drop-shadow(0 0 5px rgba(251,191,36,0.35)); }
+  }
+
+  span:last-child {
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+
+  &:hover { color: white; transform: translateY(-1px); }
+  &:active { transform: scale(0.92); }
 }
 
 // Commerce row
@@ -556,9 +610,9 @@ video.card-video { display: block; }
 .price-amount {
   background: linear-gradient(135deg, $accent, $accent-light);
   color: white;
-  padding: 7px 18px;
+  padding: 6px 14px;
   border-radius: 50px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 800;
   box-shadow: 0 2px 16px $accent-glow;
   white-space: nowrap;
@@ -621,16 +675,16 @@ video.card-video { display: block; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 13px 20px;
-  border-radius: 16px;
-  font-size: 0.86rem;
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-size: 0.8rem;
   font-weight: 700;
   border: none;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-decoration: none;
   white-space: nowrap;
-  .material-icons { font-size: 18px; }
+  .material-icons { font-size: 16px; }
 
   &.cta-buy {
     background: linear-gradient(135deg, $accent, $accent-light);
@@ -666,98 +720,6 @@ video.card-video { display: block; }
   }
 }
 
-
-// ─── Side Actions ────────────────────────────────────────────────
-.side-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding-bottom: 28px;
-}
-
-.action-avatar {
-  position: relative;
-  margin-bottom: 10px;
-}
-
-.avatar-wrap {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2.5px solid rgba(255,255,255,0.85);
-  cursor: pointer;
-  transition: all 0.25s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1a1f35;
-  img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .material-icons { font-size: 24px; color: rgba(255,255,255,0.5); }
-  &:hover {
-    border-color: $accent-light;
-    transform: scale(1.08);
-    box-shadow: 0 0 16px rgba(99,102,241,0.2);
-  }
-}
-
-.follow-badge {
-  position: absolute;
-  bottom: -7px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #6366f1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #06060c;
-  cursor: pointer;
-  transition: all 0.25s;
-  z-index: 5;
-  padding: 0;
-  .material-icons { font-size: 14px; color: white; }
-  &:hover { transform: translateX(-50%) scale(1.2); background: #4f46e5; }
-}
-
-.side-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  color: rgba(255,255,255,0.75);
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  transition: transform 0.2s;
-  padding: 0;
-  position: relative;
-
-  .material-icons {
-    font-size: 28px;
-    transition: color 0.2s, transform 0.25s, filter 0.25s;
-    &.liked { color: #ef4444; filter: drop-shadow(0 0 6px rgba(239,68,68,0.3)); }
-    &.saved { color: #fbbf24; filter: drop-shadow(0 0 6px rgba(251,191,36,0.3)); }
-  }
-
-  &:hover {
-    transform: scale(1.1);
-    .material-icons { color: white; }
-  }
-  &:active { transform: scale(0.9); }
-
-}
-
-.side-label {
-  font-size: 0.62rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.45);
-  letter-spacing: 0.2px;
-}
 
 // ─── Nav Arrows — subtle, fade ──────────────────────────────────
 .nav-arrow {
@@ -1145,7 +1107,6 @@ $r-sm: 8px;
   }
   .card-info, .card-gradient, .type-indicator { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
   .mute-btn { z-index: 12; }
-  .side-actions.hidden-split { display: none; }
 }
 
 // ─── Resize Divider ─────────────────────────────────────────────
@@ -1485,10 +1446,10 @@ $r-sm: 8px;
     box-shadow: none;
   }
 
-  .side-actions {
-    position: absolute;
-    right: 10px;
-    bottom: 200px;
+  .card-info {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
   }
 
   .nav-arrow { display: none; }
@@ -1498,8 +1459,6 @@ $r-sm: 8px;
     width: 100%;
     height: 100%;
   }
-
-  .card-info { padding: 0 16px 20px; }
 
   .cta-section { flex-direction: column; }
 
@@ -1641,17 +1600,14 @@ $r-sm: 8px;
     background: rgba(0,0,0,0.1);
   }
 
-  .card-gradient {
-    background: linear-gradient(to top,
-      rgba(255,255,255,0.92) 0%,
-      rgba(255,255,255,0.6) 30%,
-      rgba(255,255,255,0.25) 55%,
-      rgba(255,255,255,0.08) 75%,
-      transparent 100%
-    );
+  // ─── Card Info ──────────────────────────────────────────────────
+  // ─── Card Info / Side Actions — capsules en verre dépoli, version claire ──
+  .card-info {
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   }
 
-  // ─── Card Info ──────────────────────────────────────────────────
   .seller-avatar-sm {
     border-color: rgba(0,0,0,0.15);
     background: rgba(0,0,0,0.04);
@@ -1680,24 +1636,10 @@ $r-sm: 8px;
     }
   }
 
-  // ─── Side Actions ──────────────────────────────────────────────
-  .avatar-wrap {
-    border-color: rgba(0,0,0,0.2);
-    background: #e8eaef;
-    .material-icons { color: rgba(0,0,0,0.5); }
-  }
-
-  .follow-badge {
-    border-color: #f5f7fa;
-  }
-
-  .side-btn {
-    color: rgba(0,0,0,0.75);
-    &:hover .material-icons { color: #111827; }
-  }
-
-  .side-label {
-    color: rgba(0,0,0,0.55);
+  // ─── Actions horizontales ────────────────────────────────────────
+  .h-action {
+    color: rgba(0,0,0,0.65);
+    &:hover { color: #111827; }
   }
 
   // ─── Nav Arrow ──────────────────────────────────────────────────
@@ -2095,14 +2037,11 @@ $r-sm: 8px;
 
 // ─── Compression sur petits écrans / écrans courts ────────────────────────
 @media (max-width: 768px) and (max-height: 700px) {
-  .side-actions {
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-    gap: 14px;
+  .card-info {
+    padding: 12px 14px;
+    gap: 6px;
   }
 
-  .avatar-wrap { width: 42px; height: 42px; }
-  .follow-badge { width: 20px; height: 20px; }
-
-  .side-btn .material-icons { font-size: 26px; }
-  .side-label { font-size: 0.7rem; }
+  .seller-avatar-sm { width: 26px; height: 26px; }
+  .h-action .material-icons { font-size: 17px; }
 }

@@ -1,0 +1,99 @@
+<div class="premium-page">
+
+  @if (loading()) {
+    <div class="premium-loading">
+      <div class="spinner"></div>
+    </div>
+  } @else {
+
+    @switch (mode()) {
+
+      @case ('success') {
+        <div class="result-card success">
+          <span class="material-icons result-icon">check_circle</span>
+          <h1>Paiement reçu</h1>
+          @if (status()?.is_premium) {
+            <p>Votre abonnement Premium <strong>{{ planLabel(status()?.plan ?? null) }}</strong> est actif. Merci pour votre confiance !</p>
+          } @else {
+            <p>Votre paiement a été reçu et est en cours de confirmation. Ça ne devrait prendre que quelques instants — rechargez cette page si le statut ne change pas.</p>
+          }
+          <button class="primary-btn" (click)="backToApp()">Retour à l'application</button>
+        </div>
+      }
+
+      @case ('error') {
+        <div class="result-card error">
+          <span class="material-icons result-icon">cancel</span>
+          <h1>Paiement non abouti</h1>
+          <p>Le paiement a été annulé ou n'a pas pu être finalisé. Aucun montant n'a été prélevé.</p>
+          <button class="primary-btn" (click)="retry()">Réessayer</button>
+          <button class="ghost-btn" (click)="backToApp()">Retour à l'application</button>
+        </div>
+      }
+
+      @default {
+        <header class="premium-header">
+          <button class="back-btn" (click)="backToApp()"><span class="material-icons">arrow_back</span></button>
+          <h1>QUINCH Premium</h1>
+        </header>
+
+        @if (status()?.is_premium) {
+          <!-- Déjà abonné -->
+          <div class="current-status-card">
+            <span class="material-icons status-icon">verified</span>
+            <h2>Vous êtes Premium</h2>
+            <p>Forfait <strong>{{ planLabel(status()?.plan ?? null) }}</strong></p>
+            @if (status()?.expires_at) {
+              <p class="expiry">Renouvellement le {{ status()?.expires_at | date:'d MMMM yyyy' }}</p>
+            }
+          </div>
+        } @else {
+          @if (status()?.pending_subscription) {
+            <div class="pending-banner">
+              <span class="material-icons">hourglass_top</span>
+              Un abonnement est en attente de confirmation de paiement.
+            </div>
+          }
+
+          <p class="premium-tagline">Boostez votre boutique et vendez plus vite avec QUINCH Premium.</p>
+
+          <!-- Avantages -->
+          <ul class="benefits-list">
+            @for (b of benefits; track b.icon) {
+              <li>
+                <span class="material-icons">{{ b.icon }}</span>
+                {{ b.label }}
+              </li>
+            }
+          </ul>
+
+          <!-- Plans -->
+          <div class="plans-grid">
+            @for (plan of plans(); track plan.id) {
+              <div class="plan-card" [class.highlighted]="plan.id === 'annual'">
+                @if (plan.id === 'annual') {
+                  <span class="plan-tag">2 mois offerts</span>
+                }
+                <span class="plan-label">{{ plan.label }}</span>
+                <span class="plan-price">{{ plan.price | number:'1.0-0' }} <small>F CFA</small></span>
+                <span class="plan-period">{{ plan.id === 'annual' ? 'par an' : 'par mois' }}</span>
+                <button class="subscribe-btn" [disabled]="subscribing() !== null" (click)="subscribe(plan.id)">
+                  @if (subscribing() === plan.id) {
+                    <span class="mini-spinner"></span>
+                  } @else {
+                    S'abonner
+                  }
+                </button>
+              </div>
+            }
+          </div>
+
+          <p class="payment-note">
+            <span class="material-icons">lock</span>
+            Paiement sécurisé via Wave. Sans engagement, résiliable à tout moment.
+          </p>
+        }
+      }
+    }
+  }
+</div>
