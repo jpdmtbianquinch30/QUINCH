@@ -120,61 +120,24 @@ class ProductController extends Controller
             ], 201);
         }
 
-        // ─── Frais de publication ────────────────────────────────────────
-        // Gratuit pour les comptes premium. Sinon, le montant dépend de la
-        // présence d'une vidéo. Tant que le frais n'est pas réglé, le
-        // produit reste en 'draft' (invisible du feed/marketplace).
-        $hasVideo = !empty($validated['video_id']);
-        $fee = $isPremium ? 0 : ($hasVideo
-            ? config('quinch.premium.listing_fee_with_video')
-            : config('quinch.premium.listing_fee_without_video'));
-
-        if ($fee === 0) {
-            $validated['status'] = 'active';
-            $validated['listing_fee_status'] = 'none';
-
-            $product = Product::create($validated);
-            $product->load(['category', 'video', 'user']);
-
-            return response()->json([
-                'message' => 'Produit créé avec succès.',
-                'product' => $product,
-            ], 201);
-        }
-
-        $validated['status'] = 'draft';
-        $validated['listing_fee_status'] = 'pending';
-        $validated['listing_fee_amount'] = $fee;
+        // ─── Publication directe ────────────────────────────────────────
+        // Sur demande explicite : "Publier" doit toujours publier tout de
+        // suite, exactement comme "Enregistrer en brouillon" enregistre tout
+        // de suite - seule la visibilité change (draft = vendeur seul,
+        // active = public). Le système de frais de publication payants
+        // (Wave) reste dans le code (webhookWaveListingFee ci-dessous,
+        // config quinch.premium.listing_fee_*) mais n'est plus déclenché
+        // depuis ce endpoint - à réactiver explicitement si le produit
+        // business le demande un jour.
+        $validated['status'] = 'active';
+        $validated['listing_fee_status'] = 'none';
 
         $product = Product::create($validated);
-
-        $gateway = PaymentGatewayFactory::create('wave');
-        $frontendUrl = rtrim(config('quinch.frontend_url'), '/');
-
-        $result = $gateway->initiatePayment([
-            'amount' => $fee,
-            'transaction_id' => 'listing_' . $product->id,
-            'success_url' => "{$frontendUrl}/sell/success/{$product->id}",
-            'error_url' => "{$frontendUrl}/sell/error/{$product->id}",
-            'notif_url' => url('/api/v1/webhooks/wave-listing'),
-        ]);
-
-        if (!($result['success'] ?? false)) {
-            $product->update(['listing_fee_status' => 'failed']);
-            return response()->json([
-                'message' => $result['message'] ?? "Le paiement des frais de publication n'a pas pu être initié.",
-                'product' => $product,
-            ], 502);
-        }
-
-        $product->update(['listing_fee_gateway_id' => $result['gateway_reference'] ?? null]);
         $product->load(['category', 'video', 'user']);
 
         return response()->json([
-            'message' => 'Redirection vers le paiement des frais de publication.',
+            'message' => 'Produit créé avec succès.',
             'product' => $product,
-            'payment_url' => $result['payment_url'],
-            'fee' => $fee,
         ], 201);
     }
 

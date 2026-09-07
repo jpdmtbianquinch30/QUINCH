@@ -42,38 +42,8 @@ class ListingFeeTest extends TestCase
             'price' => 15000,
             'poster_file' => UploadedFile::fake()->image('poster.jpg'),
         ], $overrides);
-    }
 
-    public function test_free_account_listing_without_video_costs_300_and_stays_draft_until_paid(): void
-    {
-        $this->fakeSuccessfulWaveCheckout();
-
-        $user = User::factory()->create(['is_premium' => false]);
-
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload());
-
-        $response->assertCreated()
-            ->assertJsonPath('product.status', 'draft')
-            ->assertJsonPath('product.listing_fee_status', 'pending')
-            ->assertJsonPath('fee', 300)
-            ->assertJsonStructure(['payment_url']);
-
-        $this->assertDatabaseHas('products', ['status' => 'draft', 'listing_fee_amount' => 300]);
-    }
-
-    public function test_free_account_listing_with_video_costs_500(): void
-    {
-        $this->fakeSuccessfulWaveCheckout();
-
-        $user = User::factory()->create(['is_premium' => false]);
-        $video = \App\Models\ProductVideo::factory()->create(['user_id' => $user->id]);
-
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
-            'video_id' => $video->id,
-        ]));
-
-        $response->assertCreated()->assertJsonPath('fee', 500);
-    }
+        }
 
     public function test_premium_account_publishes_immediately_for_free(): void
     {
@@ -125,18 +95,50 @@ class ListingFeeTest extends TestCase
         $response->assertCreated();
     }
 
-    public function test_listing_fee_price_cannot_be_overridden_by_the_client(): void
+        public function test_free_account_listing_publishes_immediately_without_fee(): void
     {
-        $this->fakeSuccessfulWaveCheckout();
+        // Le "Publier" doit toujours publier tout de suite, même pour un
+        // compte gratuit : le système de frais de publication payants reste
+        // dans le code (webhookWaveListingFee plus bas) mais n'est plus
+        // déclenché depuis ce endpoint, sur demande produit explicite.
+        $user = User::factory()->create(['is_premium' => false]);
 
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload());
+
+        $response->assertCreated()
+            ->assertJsonPath('product.status', 'active')
+            ->assertJsonPath('product.listing_fee_status', 'none')
+            ->assertJsonMissingPath('payment_url');
+
+        $this->assertDatabaseHas('products', ['status' => 'active']);
+    }
+
+    public function test_free_account_listing_with_video_also_publishes_immediately(): void
+    {
+        $user = User::factory()->create(['is_premium' => false]);
+        $video = \App\Models\ProductVideo::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
+            'video_id' => $video->id,
+        ]));
+
+        $response->assertCreated()->assertJsonPath('product.status', 'active');
+    }
+
+        public function test_listing_fee_amount_cannot_be_overridden_by_the_client(): void
+    {
+        // Le champ n'est plus renseigné automatiquement (plus de calcul de
+        // frais dans store()), mais il ne doit pas non plus être possible de
+        // le faire passer à une valeur choisie par le client : 'listing_fee_amount'
+        // n'est pas dans la liste des champs validés/fillable exposés au client.
         $user = User::factory()->create(['is_premium' => false]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
-            'listing_fee_amount' => 1,
+            'listing_fee_amount' => 999999,
         ]));
 
-        $response->assertCreated()->assertJsonPath('fee', 300);
-        $this->assertDatabaseHas('products', ['listing_fee_amount' => 300]);
+        $response->assertCreated();
+        $this->assertDatabaseMissing('products', ['listing_fee_amount' => 999999]);
     }
 
     public function test_wave_webhook_activates_draft_listing_with_valid_signature(): void
