@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { guestGuard, adminGuard, authGuard } from './core/guards/auth.guard';
+import { guestGuard, adminGuard, authGuard, otpGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'feed', pathMatch: 'full' },
@@ -15,10 +15,12 @@ export const routes: Routes = [
   },
 
   // ─── Verification OTP (necessite d'etre connecte : le token est emis des
-  // /auth/register, avant meme la verification du telephone) ──────────────
+  // /auth/register, avant meme la verification du telephone). otpGuard (pas
+  // authGuard !) : authGuard redirige les non-verifies VERS cette route,
+  // donc l'utiliser ici cree une boucle infinie sur elle-meme. ────────────
   {
     path: 'auth/verify-otp',
-    canActivate: [authGuard],
+    canActivate: [otpGuard],
     loadComponent: () => import('./pages/auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent),
   },
 
