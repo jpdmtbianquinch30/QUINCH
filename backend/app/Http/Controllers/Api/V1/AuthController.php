@@ -248,6 +248,49 @@ class AuthController extends Controller
         ]);
     }
 
+        /**
+     * Réinitialisation par email — nécessite téléphone ET email
+     * correspondant au même compte (double facteur), pas d'OTP. L'email
+     * est optionnel sur un compte : si l'utilisateur n'en a jamais
+     * configuré, ce chemin échoue simplement (message générique, sans
+     * révéler pourquoi — même posture que resetPassword()).
+     */
+    public function resetPasswordByEmail(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'phone_number' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+        ], [
+            'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
+        ]);
+
+        $user = User::where('phone_number', $validated['phone_number'])->first();
+
+        $emailMatches = $user
+            && $user->email
+            && strcasecmp($user->email, $validated['email']) === 0;
+
+        if (!$emailMatches) {
+            return response()->json([
+                'message' => 'Les informations fournies ne correspondent à aucun compte.',
+                'error' => 'invalid_credentials',
+            ], 422);
+        }
+
+        $user->forceFill([
+            'password' => $validated['password'],
+            'otp_code' => null,
+            'otp_expires_at' => null,
+        ])->save();
+
+        $user->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Mot de passe réinitialisé avec succès. Merci de vous reconnecter.',
+        ]);
+    }
+
     /**
      * Get authenticated user.
      */

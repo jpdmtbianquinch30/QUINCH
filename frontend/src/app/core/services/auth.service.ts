@@ -89,6 +89,28 @@ export class AuthService {
     sessionStorage.removeItem('quinch_welcomed');
   }
 
+    forgotPassword(phoneNumber: string): Observable<any> {
+    return this.api.post('auth/forgot-password', { phone_number: phoneNumber });
+  }
+
+  resetPassword(phoneNumber: string, otp: string, password: string, passwordConfirmation: string): Observable<any> {
+    return this.api.post('auth/reset-password', {
+      phone_number: phoneNumber,
+      otp,
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+  }
+
+  resetPasswordByEmail(phoneNumber: string, email: string, password: string, passwordConfirmation: string): Observable<any> {
+    return this.api.post('auth/reset-password-email', {
+      phone_number: phoneNumber,
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+  }
+
   getMe(): Observable<{ user: User }> {
     return this.api.get<{ user: User }>('auth/me').pipe(
       tap(res => this.currentUser.set(res.user)),

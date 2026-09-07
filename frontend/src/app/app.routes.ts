@@ -11,6 +11,7 @@ export const routes: Routes = [
     children: [
       { path: 'login', loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent) },
       { path: 'register', loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent) },
+      { path: 'forgot-password', loadComponent: () => import('./pages/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },
     ]
   },
 
@@ -23,6 +24,7 @@ export const routes: Routes = [
     canActivate: [otpGuard],
     loadComponent: () => import('./pages/auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent),
   },
+
 
   // ─── Onboarding ──────────────────────────────────────────────────────────
   {
