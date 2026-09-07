@@ -11,7 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
   styleUrl: './verify-otp.component.scss',
 })
 export class VerifyOtpComponent {
-  private auth = inject(AuthService);
+  auth = inject(AuthService);
   private router = inject(Router);
 
   otp = '';
@@ -20,15 +20,25 @@ export class VerifyOtpComponent {
   error = signal('');
   info = signal('');
 
-  // L'utilisateur est déjà authentifié à ce stade (le token est émis dès
-  // /auth/register) : on lit son numéro depuis la session en cours, pas
-  // besoin de le faire ressaisir.
   phoneNumber = this.auth.user()?.phone_number ?? '';
+
+  // Code de démo (environnements local/testing) transmis par register()/
+  // resendOtp() via AuthService.lastDemoOtp. Avant ce fix, ce code n'était
+  // jamais affiché sur cet écran : rien ne permettait de savoir qu'il fallait
+  // cliquer sur "Renvoyer le code" pour le voir apparaître.
+  demoOtp = this.auth.lastDemoOtp;
 
   constructor() {
     if (this.auth.user()?.phone_verified) {
       this.router.navigate(['/onboarding']);
     }
+  }
+
+  /** Pré-remplit le champ avec le code de démo (raccourci dev uniquement,
+   *  n'existe que quand demoOtp() est non-null, cf. template). */
+  fillDemoOtp() {
+    const code = this.demoOtp();
+    if (code) this.otp = code;
   }
 
   verify() {

@@ -26,6 +26,17 @@
           <div class="success-message">{{ info() }}</div>
         }
 
+        <!-- Code de démo (environnements local/testing uniquement, voir
+             AuthController::register/resendOtp). N'apparaît jamais en
+             production : demoOtp() reste null si le backend ne renvoie pas
+             ce champ. -->
+        @if (demoOtp()) {
+          <div class="demo-otp-banner" (click)="fillDemoOtp()">
+            <span class="material-icons">bug_report</span>
+            <span>Mode démo — code : <strong>{{ demoOtp() }}</strong> (cliquer pour remplir)</span>
+          </div>
+        }
+
         <form (ngSubmit)="verify()">
           <div class="form-group">
             <label>Code de verification</label>

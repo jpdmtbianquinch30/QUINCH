@@ -8,6 +8,11 @@ import { Observable, tap, catchError, of } from 'rxjs';
 export class AuthService {
   private currentUser = signal<User | null>(null);
   private token = signal<string | null>(null);
+  // Code OTP de démo (environnements local/testing uniquement, voir
+  // AuthController::register/resendOtp) : transite ici en mémoire le temps
+  // que l'écran /auth/verify-otp puisse l'afficher directement, sans quoi
+  // l'utilisateur n'a aucun moyen de voir son code sans cliquer "Renvoyer".
+  lastDemoOtp = signal<string | null>(null);
 
   user = this.currentUser.asReadonly();
   isAuthenticated = computed(() => !!this.token());
@@ -20,7 +25,10 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('auth/register', data).pipe(
-      tap(res => this.handleAuth(res))
+      tap(res => {
+        this.handleAuth(res);
+        this.lastDemoOtp.set(res.demo_otp ?? null);
+      })
     );
   }
 
@@ -63,13 +71,16 @@ export class AuthService {
       tap(res => {
         this.currentUser.set(res.user);
         localStorage.setItem('quinch_user', JSON.stringify(res.user));
+        this.lastDemoOtp.set(null);
       })
     );
   }
 
   /** Ask the backend for a fresh OTP (the previous one expires after 10 min). */
   resendOtp(phoneNumber: string): Observable<ResendOtpResponse> {
-    return this.api.post<ResendOtpResponse>('auth/resend-otp', { phone_number: phoneNumber });
+    return this.api.post<ResendOtpResponse>('auth/resend-otp', { phone_number: phoneNumber }).pipe(
+      tap(res => this.lastDemoOtp.set(res.demo_otp ?? null))
+    );
   }
 
   /** Force-clear auth state (used by error interceptor on 401) — no API call */
