@@ -1,125 +1,153 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { ProductService } from '../../core/services/product.service';
+import { AuthService } from '../../core/services/auth.service';
+import { Category } from '../../core/models/product.model';
 
-interface OnboardingStep {
-  title: string;
-  subtitle: string;
-  question: string | null;
-  multiSelect: boolean;
-  choices: { icon: string; label: string; value: string; description: string }[] | null;
-}
-
+/**
+ * Onboarding après inscription — adapté du design Flutter (OnboardingScreen) :
+ * 3 étapes (bienvenue, centres d'intérêt, localisation), régions/villes du
+ * Sénégal en cascade. Design (couleurs, composants) réadapté aux tokens
+ * --q-* existants de l'app web plutôt que repris tel quel de Flutter, pour
+ * rester cohérent avec le reste de QUINCH.
+ */
 @Component({
   selector: 'app-onboarding',
   standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './onboarding.component.html',
   styleUrl: './onboarding.component.scss',
 })
-export class OnboardingComponent {
+export class OnboardingComponent implements OnInit {
   private router = inject(Router);
   private api = inject(ApiService);
+  private productService = inject(ProductService);
+  auth = inject(AuthService);
 
-  currentStep = signal(0);
-  selectedCategories = signal<string[]>([]);
+  step = signal(0); // 0 = bienvenue, 1 = interets, 2 = localisation
+  loading = signal(false);
+
+  categories = signal<Category[]>([]);
+  selectedCategories = signal<Set<string>>(new Set());
+  selectedInterests = signal<Set<string>>(new Set());
+
+  selectedRegion = signal('');
   selectedCity = signal('');
-  animating = signal(false);
 
-  steps: OnboardingStep[] = [
-    {
-      title: 'Bienvenue sur QUINCH !',
-      subtitle: 'La nouvelle façon de shopper au Sénégal.\nAchetez et vendez en toute simplicité.',
-      question: null,
-      multiSelect: false,
-      choices: null,
-    },
-    {
-      title: 'Quelles catégories vous intéressent ?',
-      subtitle: 'Personnalisez votre fil d\'actualité',
-      question: 'categories',
-      multiSelect: true,
-      choices: [
-        { icon: 'phone_iphone', label: 'Téléphones & Tech', value: 'electronics', description: '' },
-        { icon: 'style', label: 'Mode & Accessoires', value: 'fashion', description: '' },
-        { icon: 'home', label: 'Maison & Déco', value: 'home', description: '' },
-        { icon: 'directions_car', label: 'Véhicules', value: 'vehicles', description: '' },
-        { icon: 'sports_basketball', label: 'Sports & Loisirs', value: 'sports', description: '' },
-        { icon: 'spa', label: 'Beauté & Santé', value: 'beauty', description: '' },
-        { icon: 'kitchen', label: 'Électroménager', value: 'appliances', description: '' },
-        { icon: 'handyman', label: 'Services', value: 'services', description: '' },
-      ],
-    },
-    {
-      title: 'Où vous trouvez-vous ?',
-      subtitle: 'Pour des suggestions proches de chez vous',
-      question: 'location',
-      multiSelect: false,
-      choices: [
-        { icon: 'location_on', label: 'Dakar', value: 'Dakar', description: 'Capitale' },
-        { icon: 'location_on', label: 'Saint-Louis', value: 'Saint-Louis', description: 'Nord' },
-        { icon: 'location_on', label: 'Thiès', value: 'Thiès', description: 'Centre-Ouest' },
-        { icon: 'location_on', label: 'Kaolack', value: 'Kaolack', description: 'Centre' },
-        { icon: 'location_on', label: 'Ziguinchor', value: 'Ziguinchor', description: 'Sud' },
-        { icon: 'location_on', label: 'Touba', value: 'Touba', description: 'Centre' },
-        { icon: 'location_on', label: 'Mbour', value: 'Mbour', description: 'Petite Côte' },
-        { icon: 'location_on', label: 'Autre', value: 'other', description: 'Autre ville' },
-      ],
-    },
+  totalSelected = computed(() => this.selectedCategories().size + this.selectedInterests().size);
+
+  // ─── Régions -> villes du Sénégal ────────────────────────────────────────
+  regionCities: Record<string, string[]> = {
+    'Dakar': ['Dakar Plateau', 'Médina', 'Grand Dakar', 'Parcelles Assainies', 'Guédiawaye', 'Pikine', 'Rufisque', 'Bargny', 'Diamniadio', 'Sébikhotane', 'Keur Massar', 'Sangalkam', 'Yoff', 'Ngor', 'Ouakam', 'Mermoz', 'Almadies', 'Gorée'],
+    'Thiès': ['Thiès', 'Mbour', 'Saly', 'Somone', 'Tivaouane', 'Joal-Fadiouth', 'Kayar', 'Pout', 'Mboro', 'Nguekhokh', 'Sindia', 'Popenguine', 'La Petite Côte'],
+    'Diourbel': ['Diourbel', 'Touba', 'Mbacké', 'Bambey', 'Dinguiraye', 'Ndame', 'Lambaye'],
+    'Saint-Louis': ['Saint-Louis', 'Richard-Toll', 'Dagana', 'Podor', 'Ross-Béthio', 'Gandon', 'Mpal', 'Thilogne'],
+    'Kaolack': ['Kaolack', 'Nioro du Rip', 'Guinguinéo', 'Ndoffane', 'Keur Madiabel', 'Gandiaye', 'Sibassor'],
+    'Fatick': ['Fatick', 'Foundiougne', 'Sokone', 'Gossas', 'Diofior', 'Passy', 'Toubacouta', 'Djilor'],
+    'Ziguinchor': ['Ziguinchor', 'Bignona', 'Oussouye', 'Cap Skirring', 'Diouloulou', 'Thionk Essyl', 'Kafountine'],
+    'Kolda': ['Kolda', 'Vélingara', 'Médina Yoro Foulah', 'Dabo', 'Salikégné', 'Kounkané'],
+    'Tambacounda': ['Tambacounda', 'Bakel', 'Kidira', 'Goudiry', 'Koumpentoum', 'Missirah', 'Diankhe Makha'],
+    'Kédougou': ['Kédougou', 'Saraya', 'Salémata', 'Bandafassi', 'Dindefelo', 'Fongolembi'],
+    'Louga': ['Louga', 'Linguère', 'Kébémer', 'Dahra', 'Sakal', 'Coki', 'Ndande'],
+    'Matam': ['Matam', 'Kanel', 'Ranérou', 'Ourossogui', 'Waoundé', 'Semme'],
+    'Kaffrine': ['Kaffrine', 'Koungheul', 'Birkelane', 'Malem Hodar', 'Nganda', 'Diamagadio'],
+    'Sédhiou': ['Sédhiou', 'Bounkiling', 'Goudomp', 'Marsassoum', 'Diattacounda', 'Tanaff'],
+  };
+
+  get regions(): string[] {
+    return Object.keys(this.regionCities);
+  }
+
+  get availableCities(): string[] {
+    return this.regionCities[this.selectedRegion()] || [];
+  }
+
+  // ─── Centres d'intérêt par défaut (en plus des catégories du backend) ────
+  defaultInterests = [
+    { id: 'electronics', name: 'Électronique & Tech', icon: 'devices' },
+    { id: 'phones', name: 'Téléphones & Tablettes', icon: 'smartphone' },
+    { id: 'fashion_men', name: 'Mode Homme', icon: 'checkroom' },
+    { id: 'fashion_women', name: 'Mode Femme', icon: 'dry_cleaning' },
+    { id: 'shoes', name: 'Chaussures', icon: 'ice_skating' },
+    { id: 'bags', name: 'Sacs & Accessoires', icon: 'shopping_bag' },
+    { id: 'beauty', name: 'Beauté & Cosmétiques', icon: 'face_retouching_natural' },
+    { id: 'jewelry', name: 'Bijoux & Montres', icon: 'watch' },
+    { id: 'home', name: 'Maison & Décoration', icon: 'home' },
+    { id: 'furniture', name: 'Meubles', icon: 'chair' },
+    { id: 'appliances', name: 'Électroménager', icon: 'kitchen' },
+    { id: 'auto', name: 'Auto & Moto', icon: 'directions_car' },
+    { id: 'sports', name: 'Sports & Loisirs', icon: 'sports_soccer' },
+    { id: 'health', name: 'Santé & Bien-être', icon: 'health_and_safety' },
+    { id: 'food', name: 'Alimentation & Boissons', icon: 'restaurant' },
+    { id: 'books', name: 'Livres & Éducation', icon: 'menu_book' },
+    { id: 'kids', name: 'Enfants & Bébés', icon: 'child_care' },
+    { id: 'gaming', name: 'Jeux Vidéo & Consoles', icon: 'sports_esports' },
+    { id: 'music', name: 'Musique & Instruments', icon: 'music_note' },
+    { id: 'photo', name: 'Photo & Vidéo', icon: 'camera_alt' },
+    { id: 'agriculture', name: 'Agriculture & Élevage', icon: 'grass' },
+    { id: 'construction', name: 'BTP & Matériaux', icon: 'construction' },
+    { id: 'services', name: 'Services & Freelance', icon: 'handyman' },
+    { id: 'immobilier', name: 'Immobilier', icon: 'apartment' },
+    { id: 'artisanat', name: 'Artisanat Local', icon: 'palette' },
+    { id: 'textile', name: 'Tissus & Couture', icon: 'cut' },
+    { id: 'event', name: 'Événementiel', icon: 'celebration' },
+    { id: 'transport', name: 'Transport & Logistique', icon: 'local_shipping' },
   ];
 
-  get step() { return this.steps[this.currentStep()]; }
-  get progress() { return ((this.currentStep() + 1) / this.steps.length) * 100; }
-
-  selectChoice(value: string) {
-    const question = this.step.question;
-    if (question === 'categories') {
-      const current = this.selectedCategories();
-      if (current.includes(value)) {
-        this.selectedCategories.set(current.filter(c => c !== value));
-      } else {
-        this.selectedCategories.set([...current, value]);
-      }
-    } else if (question === 'location') {
-      this.selectedCity.set(value);
-      this.nextStep();
-    }
+  ngOnInit() {
+    this.productService.getCategories().subscribe({
+      next: (res) => this.categories.set(res.categories || []),
+    });
   }
 
-  isCategorySelected(value: string): boolean {
-    return this.selectedCategories().includes(value);
+  toggleCategory(id: string) {
+    const set = new Set(this.selectedCategories());
+    set.has(id) ? set.delete(id) : set.add(id);
+    this.selectedCategories.set(set);
   }
 
-  isSelected(value: string): boolean {
-    if (this.step.question === 'categories') return this.isCategorySelected(value);
-    if (this.step.question === 'location') return this.selectedCity() === value;
-    return false;
+  toggleInterest(id: string) {
+    const set = new Set(this.selectedInterests());
+    set.has(id) ? set.delete(id) : set.add(id);
+    this.selectedInterests.set(set);
+  }
+
+  isCategorySelected(id: string): boolean { return this.selectedCategories().has(id); }
+  isInterestSelected(id: string): boolean { return this.selectedInterests().has(id); }
+
+  chooseRegion(region: string) {
+    this.selectedRegion.set(region);
+    this.selectedCity.set(''); // reset la ville si on change de region
   }
 
   nextStep() {
-    this.animating.set(true);
-    setTimeout(() => {
-      if (this.currentStep() < this.steps.length - 1) {
-        this.currentStep.update(s => s + 1);
-      } else {
-        this.completeOnboarding();
-      }
-      this.animating.set(false);
-    }, 300);
+    if (this.step() < 2) this.step.update(s => s + 1);
+    else this.finish();
   }
 
   prevStep() {
-    if (this.currentStep() > 0) {
-      this.currentStep.update(s => s - 1);
-    }
+    if (this.step() > 0) this.step.update(s => s - 1);
   }
 
-  completeOnboarding() {
+  skip() {
+    this.router.navigate(['/feed']);
+  }
+
+  finish() {
+    this.loading.set(true);
+    const categories = [...this.selectedCategories(), ...this.selectedInterests()];
+
     this.api.post('user/preferences', {
-      categories: this.selectedCategories(),
-      location: { city: this.selectedCity(), region: this.selectedCity() },
+      categories,
+      location: { city: this.selectedCity(), region: this.selectedRegion() },
     }).subscribe({
-      next: () => this.router.navigate(['/feed']),
-      error: () => this.router.navigate(['/feed']),
+      next: () => { this.loading.set(false); this.router.navigate(['/feed']); },
+      // Même en cas d'échec de la sauvegarde des préférences, on laisse
+      // l'utilisateur entrer dans l'app plutôt que de le bloquer ici.
+      error: () => { this.loading.set(false); this.router.navigate(['/feed']); },
     });
   }
 }

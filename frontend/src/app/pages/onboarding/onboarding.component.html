@@ -1,69 +1,141 @@
-<div class="onboarding" [class.animating]="animating()">
-  <!-- Progress bar -->
-  <div class="progress-bar">
-    <div class="progress-fill" [style.width.%]="progress"></div>
+<div class="onboarding-page">
+
+  <!-- ─── Barre de progression ─────────────────────────────────────────── -->
+  <div class="progress-row">
+    <div class="progress-bar">
+      @for (i of [0, 1, 2]; track i) {
+        <div class="progress-seg" [class.filled]="i <= step()"></div>
+      }
+    </div>
+    <span class="progress-label">Étape {{ step() + 1 }}/3</span>
   </div>
 
-  <!-- Skip button -->
-  <button class="skip-btn" (click)="completeOnboarding()">Passer</button>
+  <!-- ─── Contenu de l'étape ───────────────────────────────────────────── -->
+  <div class="step-body">
 
-  <!-- Step content -->
-  <div class="step-content">
-    <!-- Background gradient -->
-    <div class="step-bg" [attr.data-step]="currentStep()"></div>
+    @switch (step()) {
 
-    <div class="step-inner">
-      <!-- Logo on first step -->
-      @if (currentStep() === 0) {
-        <div class="welcome-logo">
-          <div class="logo-circle">
-            <span class="material-icons">bolt</span>
+      @case (0) {
+        <!-- ══ BIENVENUE ══ -->
+        <div class="welcome-step">
+          <img src="logoquinch.png" alt="QUINCH" class="welcome-logo" />
+          <h1>Bienvenue{{ auth.user()?.full_name ? ' ' + auth.user()!.full_name : '' }} !</h1>
+          <p class="welcome-sub">Personnalisons votre expérience QUINCH pour vous proposer les meilleurs produits et services près de chez vous.</p>
+
+          <div class="feature-list">
+            <div class="feature-row">
+              <span class="feature-icon accent"><span class="material-icons">interests</span></span>
+              <div>
+                <strong>Centres d'intérêt</strong>
+                <small>Choisissez ce qui vous plaît</small>
+              </div>
+            </div>
+            <div class="feature-row">
+              <span class="feature-icon secondary"><span class="material-icons">location_on</span></span>
+              <div>
+                <strong>Localisation</strong>
+                <small>Trouvez des offres près de vous</small>
+              </div>
+            </div>
+            <div class="feature-row">
+              <span class="feature-icon warning"><span class="material-icons">rocket_launch</span></span>
+              <div>
+                <strong>C'est parti !</strong>
+                <small>Découvrez QUINCH en 30 secondes</small>
+              </div>
+            </div>
           </div>
         </div>
       }
 
-      <h1 class="step-title">{{ step.title }}</h1>
-      <p class="step-subtitle">{{ step.subtitle }}</p>
+      @case (1) {
+        <!-- ══ CENTRES D'INTÉRÊT ══ -->
+        <div class="interests-step">
+          <h1>Vos centres d'intérêt</h1>
+          <p class="step-sub">Sélectionnez au moins 3 catégories ({{ totalSelected() }} sélectionnée{{ totalSelected() > 1 ? 's' : '' }})</p>
 
-      <!-- Choices grid -->
-      @if (step.choices) {
-        <div class="choices-grid" [class.categories]="step.question === 'categories'" [class.locations]="step.question === 'location'">
-          @for (choice of step.choices; track choice.value) {
-            <button
-              class="choice-card"
-              [class.selected]="isSelected(choice.value)"
-              (click)="selectChoice(choice.value)"
-            >
-              <span class="material-icons choice-icon">{{ choice.icon }}</span>
-              <span class="choice-label">{{ choice.label }}</span>
-              @if (choice.description) {
-                <span class="choice-desc">{{ choice.description }}</span>
+          @if (categories().length > 0) {
+            <span class="group-label">Catégories</span>
+            <div class="chip-grid">
+              @for (cat of categories(); track cat.id) {
+                <button class="chip" [class.selected]="isCategorySelected(cat.id)" (click)="toggleCategory(cat.id)">
+                  <span class="material-icons">{{ isCategorySelected(cat.id) ? 'check_circle' : (cat.icon || 'category') }}</span>
+                  {{ cat.name }}
+                </button>
               }
-            </button>
+            </div>
           }
+
+          <span class="group-label">Plus d'intérêts</span>
+          <div class="chip-grid">
+            @for (item of defaultInterests; track item.id) {
+              <button class="chip" [class.selected]="isInterestSelected(item.id)" (click)="toggleInterest(item.id)">
+                <span class="material-icons">{{ isInterestSelected(item.id) ? 'check_circle' : item.icon }}</span>
+                {{ item.name }}
+              </button>
+            }
+          </div>
         </div>
       }
 
-      <!-- Navigation -->
-      <div class="step-nav">
-        @if (currentStep() > 0) {
-          <button class="q-btn q-btn-secondary" (click)="prevStep()">
-            <span class="material-icons">arrow_back</span> Retour
-          </button>
-        }
+      @case (2) {
+        <!-- ══ LOCALISATION ══ -->
+        <div class="location-step">
+          <h1>Votre localisation</h1>
+          <p class="step-sub">Pour vous proposer des offres près de chez vous</p>
 
-        @if (currentStep() === 0) {
-          <button class="q-btn q-btn-primary q-btn-lg" (click)="nextStep()">
-            Commencer <span class="material-icons">arrow_forward</span>
-          </button>
-        }
+          <label class="field-label">Région</label>
+          <select class="field-select" [ngModel]="selectedRegion()" (ngModelChange)="chooseRegion($event)">
+            <option value="" disabled>Sélectionnez votre région</option>
+            @for (r of regions; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
 
-        @if (step.question === 'categories' && selectedCategories().length > 0) {
-          <button class="q-btn q-btn-primary q-btn-lg" (click)="nextStep()">
-            Continuer ({{ selectedCategories().length }}) <span class="material-icons">arrow_forward</span>
-          </button>
-        }
-      </div>
-    </div>
+          <label class="field-label">Ville</label>
+          <select class="field-select" [ngModel]="selectedCity()" (ngModelChange)="selectedCity.set($event)" [disabled]="!selectedRegion()">
+            <option value="" disabled>{{ selectedRegion() ? 'Sélectionnez votre ville' : "Choisissez d'abord une région" }}</option>
+            @for (c of availableCities; track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+
+          @if (selectedRegion()) {
+            <div class="location-preview">
+              <span class="preview-icon"><span class="material-icons">location_on</span></span>
+              <div class="preview-text">
+                <strong>{{ selectedCity() ? selectedCity() + ', ' + selectedRegion() : 'Région de ' + selectedRegion() }}</strong>
+                <small>{{ availableCities.length }} villes disponibles</small>
+              </div>
+              <span class="material-icons preview-check">check_circle</span>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+
+  <!-- ─── Navigation ───────────────────────────────────────────────────── -->
+  <div class="step-nav">
+    @if (step() > 0) {
+      <button class="nav-btn ghost" (click)="prevStep()">
+        <span class="material-icons">arrow_back</span> Retour
+      </button>
+    }
+
+    <div class="nav-spacer"></div>
+
+    @if (step() === 0) {
+      <button class="nav-btn text" (click)="skip()">Passer</button>
+    }
+
+    <button class="nav-btn primary" [class.success]="step() === 2" [disabled]="loading()" (click)="nextStep()">
+      @if (loading()) {
+        <span class="mini-spinner"></span>
+      } @else {
+        {{ step() === 2 ? 'Commencer' : 'Suivant' }}
+        <span class="material-icons">{{ step() === 2 ? 'check' : 'arrow_forward' }}</span>
+      }
+    </button>
   </div>
 </div>

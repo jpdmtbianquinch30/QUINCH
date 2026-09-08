@@ -41,7 +41,7 @@ Route::prefix('auth')->group(function () {
     Route::post('resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
-    Route::post('auth/reset-password-email', [AuthController::class, 'resetPasswordByEmail']);
+    Route::post('reset-password-email', [AuthController::class, 'resetPasswordByEmail']);
     
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
