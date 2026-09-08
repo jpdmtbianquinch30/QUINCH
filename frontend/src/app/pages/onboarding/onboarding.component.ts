@@ -140,13 +140,21 @@ export class OnboardingComponent implements OnInit {
     this.loading.set(true);
     const categories = [...this.selectedCategories(), ...this.selectedInterests()];
 
-    this.api.post('user/preferences', {
+    this.api.post<{ message: string; user: any }>('user/preferences', {
       categories,
       location: { city: this.selectedCity(), region: this.selectedRegion() },
     }).subscribe({
-      next: () => { this.loading.set(false); this.router.navigate(['/feed']); },
-      // Même en cas d'échec de la sauvegarde des préférences, on laisse
-      // l'utilisateur entrer dans l'app plutôt que de le bloquer ici.
+      next: (res) => {
+        // Sans ce updateUser(), le signal AuthService.user() (lu par la
+        // page profil et le reste de l'app) restait sur l'ancienne valeur
+        // de city/region jusqu'à un rechargement complet de la page (seul
+        // moment où getMe() est réappelé) : la ville/région choisie ici
+        // semblait ne "jamais s'appliquer" au profil alors qu'elle était
+        // bien enregistrée en base côté backend.
+        if (res.user) this.auth.updateUser(res.user);
+        this.loading.set(false);
+        this.router.navigate(['/feed']);
+      },
       error: () => { this.loading.set(false); this.router.navigate(['/feed']); },
     });
   }

@@ -35,8 +35,44 @@ export class EditProfileComponent implements OnInit {
   canChangeName = signal(true);
   nameChangeCountdown = signal('');
 
-  cities = ['Dakar', 'Thies', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Touba', 'Mbour', 'Rufisque', 'Tambacounda', 'Kolda'];
-  regions = ['Dakar', 'Thies', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Fatick', 'Kaffrine', 'Kedougou', 'Kolda', 'Louga', 'Matam', 'Sedhiou', 'Tambacounda'];
+  // ─── Régions -> villes du Sénégal ────────────────────────────────────────
+  // Même mapping que onboarding.component.ts : avant ce fix, "cities" et
+  // "regions" étaient deux listes plates indépendantes qui se chevauchaient
+  // presque entièrement (ex: "Dakar" existait dans les deux), donc rien
+  // n'empêchait de choisir "Dakar" comme ville ET "Dakar" comme région -
+  // d'où l'affichage dupliqué "Dakar, Dakar" sur le profil.
+  regionCities: Record<string, string[]> = {
+    'Dakar': ['Dakar Plateau', 'Médina', 'Grand Dakar', 'Parcelles Assainies', 'Guédiawaye', 'Pikine', 'Rufisque', 'Bargny', 'Diamniadio', 'Sébikhotane', 'Keur Massar', 'Sangalkam', 'Yoff', 'Ngor', 'Ouakam', 'Mermoz', 'Almadies', 'Gorée'],
+    'Thiès': ['Thiès', 'Mbour', 'Saly', 'Somone', 'Tivaouane', 'Joal-Fadiouth', 'Kayar', 'Pout', 'Mboro', 'Nguekhokh', 'Sindia', 'Popenguine', 'La Petite Côte'],
+    'Diourbel': ['Diourbel', 'Touba', 'Mbacké', 'Bambey', 'Dinguiraye', 'Ndame', 'Lambaye'],
+    'Saint-Louis': ['Saint-Louis', 'Richard-Toll', 'Dagana', 'Podor', 'Ross-Béthio', 'Gandon', 'Mpal', 'Thilogne'],
+    'Kaolack': ['Kaolack', 'Nioro du Rip', 'Guinguinéo', 'Ndoffane', 'Keur Madiabel', 'Gandiaye', 'Sibassor'],
+    'Fatick': ['Fatick', 'Foundiougne', 'Sokone', 'Gossas', 'Diofior', 'Passy', 'Toubacouta', 'Djilor'],
+    'Ziguinchor': ['Ziguinchor', 'Bignona', 'Oussouye', 'Cap Skirring', 'Diouloulou', 'Thionk Essyl', 'Kafountine'],
+    'Kolda': ['Kolda', 'Vélingara', 'Médina Yoro Foulah', 'Dabo', 'Salikégné', 'Kounkané'],
+    'Tambacounda': ['Tambacounda', 'Bakel', 'Kidira', 'Goudiry', 'Koumpentoum', 'Missirah', 'Diankhe Makha'],
+    'Kédougou': ['Kédougou', 'Saraya', 'Salémata', 'Bandafassi', 'Dindefelo', 'Fongolembi'],
+    'Louga': ['Louga', 'Linguère', 'Kébémer', 'Dahra', 'Sakal', 'Coki', 'Ndande'],
+    'Matam': ['Matam', 'Kanel', 'Ranérou', 'Ourossogui', 'Waoundé', 'Semme'],
+    'Kaffrine': ['Kaffrine', 'Koungheul', 'Birkelane', 'Malem Hodar', 'Nganda', 'Diamagadio'],
+    'Sédhiou': ['Sédhiou', 'Bounkiling', 'Goudomp', 'Marsassoum', 'Diattacounda', 'Tanaff'],
+  };
+
+  get regions(): string[] {
+    return Object.keys(this.regionCities);
+  }
+
+  get availableCities(): string[] {
+    const region = this.profileForm?.get('region')?.value;
+    return region ? (this.regionCities[region] || []) : [];
+  }
+
+  onRegionChange(): void {
+    // La ville précédemment choisie n'a probablement aucun sens dans la
+    // nouvelle région (ex: rester sur "Touba" après être passé de Diourbel
+    // à Dakar) : on la réinitialise pour forcer un nouveau choix cohérent.
+    this.profileForm.get('city')?.setValue('');
+  }
 
   ngOnInit() {
     const u = this.user();

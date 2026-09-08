@@ -93,16 +93,16 @@
       <div class="form-group">
         <label>Localisation</label>
         <div class="location-row">
-          <select class="q-input" formControlName="city">
-            <option value="">Ville</option>
-            @for (c of cities; track c) {
-              <option [value]="c">{{ c }}</option>
-            }
-          </select>
-          <select class="q-input" formControlName="region">
-            <option value="">Region</option>
+          <select class="q-input" formControlName="region" (change)="onRegionChange()">
+            <option value="">Région</option>
             @for (r of regions; track r) {
               <option [value]="r">{{ r }}</option>
+            }
+          </select>
+          <select class="q-input" formControlName="city" [class.disabled]="!profileForm.get('region')?.value">
+            <option value="">{{ profileForm.get('region')?.value ? 'Ville' : "Choisissez d'abord une région" }}</option>
+            @for (c of availableCities; track c) {
+              <option [value]="c">{{ c }}</option>
             }
           </select>
         </div>
