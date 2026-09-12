@@ -62,36 +62,42 @@ class ListingFeeTest extends TestCase
         $this->assertDatabaseHas('products', ['status' => 'active', 'listing_fee_amount' => 0]);
     }
 
-    public function test_free_account_is_limited_to_three_photos(): void
+    public function test_free_account_is_limited_to_five_additional_photos(): void
     {
         $user = User::factory()->create(['is_premium' => false]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
-            'image_files' => [
-                UploadedFile::fake()->image('1.jpg'),
-                UploadedFile::fake()->image('2.jpg'),
-                UploadedFile::fake()->image('3.jpg'),
-            ],
+            'image_files' => array_map(fn($i) => UploadedFile::fake()->image("{$i}.jpg"), range(1, 6)),
         ]));
 
-        // 1 poster + 3 images = 4 photos, au-dessus de la limite de 3 pour un compte gratuit.
+        // Couverture à part : 6 images supplémentaires dépasse la limite de 5 pour un compte gratuit.
         $response->assertUnprocessable();
     }
 
-    public function test_premium_account_can_use_up_to_ten_photos(): void
+    public function test_free_account_can_use_up_to_five_additional_photos(): void
     {
-        $this->fakeSuccessfulWaveCheckout();
+        $user = User::factory()->create(['is_premium' => false]);
 
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
+            'image_files' => array_map(fn($i) => UploadedFile::fake()->image("{$i}.jpg"), range(1, 5)),
+        ]));
+
+        // Couverture + 5 images supplémentaires = exactement la limite gratuite.
+        $response->assertCreated();
+    }
+
+    public function test_premium_account_can_use_up_to_ten_additional_photos(): void
+    {
         $user = User::factory()->create([
             'is_premium' => true,
             'premium_expires_at' => now()->addMonth(),
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
-            'image_files' => array_map(fn($i) => UploadedFile::fake()->image("{$i}.jpg"), range(1, 9)),
+            'image_files' => array_map(fn($i) => UploadedFile::fake()->image("{$i}.jpg"), range(1, 10)),
         ]));
 
-        // 1 poster + 9 images = 10 photos, à la limite exacte pour un compte premium.
+        // Couverture + 10 images supplémentaires = exactement la limite premium.
         $response->assertCreated();
     }
 

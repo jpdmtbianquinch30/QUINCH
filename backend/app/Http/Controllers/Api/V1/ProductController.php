@@ -29,7 +29,7 @@ class ProductController extends Controller
             'video_id' => ['sometimes', 'uuid', 'exists:product_videos,id'],
             'type' => ['sometimes', 'in:product,service'],
             'poster_file' => ['required_without_all:image_files,video_id', 'sometimes', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
-            'image_files' => ['required_without_all:poster_file,video_id', 'sometimes', 'array', 'max:9'],
+            'image_files' => ['required_without_all:poster_file,video_id', 'sometimes', 'array', 'max:10'],
             'image_files.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'images' => ['sometimes', 'array'],
             'images.*' => ['string', 'max:500'],
@@ -52,17 +52,20 @@ class ProductController extends Controller
         $isPremium = $user->isPremiumActive();
 
         // ─── Limite de photos ────────────────────────────────────────────
-        // 1 photo de base toujours incluse (le poster) + jusqu'à 2
-        // supplémentaires pour un compte non-premium (3 au total),
-        // jusqu'à 10 pour un compte premium.
-        $photoCount = ($request->hasFile('poster_file') ? 1 : 0) + count($request->file('image_files', []));
-        $maxPhotos = $isPremium ? config('quinch.premium.premium_photos_max') : config('quinch.premium.free_photos_max_non_premium');
+        // La couverture (poster) est toujours à part, jamais comptée dans
+        // cette limite : jusqu'à 5 photos supplémentaires pour un compte
+        // non-premium (6 au total), jusqu'à 10 pour un compte premium (11
+        // au total).
+        $additionalCount = count($request->file('image_files', []));
+        $maxAdditional = $isPremium
+            ? config('quinch.premium.premium_additional_photos_max')
+            : config('quinch.premium.free_additional_photos_max');
 
-        if ($photoCount > $maxPhotos) {
+        if ($additionalCount > $maxAdditional) {
             return response()->json([
                 'message' => $isPremium
-                    ? "Vous pouvez ajouter jusqu'à {$maxPhotos} photos."
-                    : "Les comptes gratuits sont limités à {$maxPhotos} photos. Passez Premium pour aller jusqu'à " . config('quinch.premium.premium_photos_max') . ' photos.',
+                    ? "Vous pouvez ajouter jusqu'à {$maxAdditional} photos supplémentaires (en plus de la couverture)."
+                    : "Les comptes gratuits sont limités à {$maxAdditional} photos supplémentaires (en plus de la couverture). Passez Premium pour aller jusqu'à " . config('quinch.premium.premium_additional_photos_max') . '.',
             ], 422);
         }
 

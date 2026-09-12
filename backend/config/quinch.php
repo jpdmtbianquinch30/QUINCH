@@ -68,10 +68,17 @@ return [
             'annual'  => (int) env('QUINCH_PREMIUM_PRICE_ANNUAL', 20000),
         ],
 
-        // Nombre de photos autorisées par annonce.
-        'free_photos_included'       => 1,  // photo de base, toujours gratuite
-        'free_photos_max_non_premium' => 3, // 1 incluse + 2 supplémentaires max
-        'premium_photos_max'         => 10,
+        // Photo de couverture (poster) toujours à part, jamais comptée dans
+        // ces limites : gratuit = 1 couverture + 5 supplémentaires (6 au
+        // total), premium = 1 couverture + 10 supplémentaires (11 au
+        // total). Avant ce fix, le backend comptait encore le poster DANS
+        // le total (3 pour gratuit, 10 pour premium) alors que le
+        // frontend (sell.component.ts, maxAdditionalImages) traite déjà
+        // ces deux nombres comme des limites "supplémentaires" séparées de
+        // la couverture — un compte gratuit se faisait donc rejeter dès sa
+        // 3e photo alors que l'interface en autorisait jusqu'à 6.
+        'free_additional_photos_max'    => 5,
+        'premium_additional_photos_max' => 10,
 
         // Frais de publication d'annonce pour un compte NON premium.
         // Gratuit pour les comptes premium (is_premium=true et non expiré).
