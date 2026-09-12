@@ -105,10 +105,10 @@
                 <button type="button" class="video-action-btn danger" (click)="removeVideo()"><span class="material-icons">delete</span> Supprimer</button>
               </div>
             </div>
-          } @else {
+                    } @else {
             <div class="media-hint">
               <span class="material-icons">tips_and_updates</span>
-              <span>L'image d'affiche suffit pour publier. Ajouter une video est facultatif, mais booste votre visibilite dans le feed — et ajoute {{ 500 - 300 }} F CFA au frais de publication pour un compte gratuit.</span>
+              <span>L'image d'affiche suffit pour publier. Ajouter une video est facultatif, mais booste votre visibilite dans le feed.</span>
             </div>
             <div class="video-options">
               <label class="upload-area video-upload">
@@ -124,7 +124,8 @@
         </div>
 
         <div class="upload-section">
-          <h3>{{ publishType() === 'service' ? 'Portfolio / Realisations' : 'Images supplementaires' }} ({{ imagePreviews().length }}/5)</h3>
+          <h3>{{ publishType() === 'service' ? 'Portfolio / Realisations' : 'Images supplementaires' }} <span class="count-pill">{{ imagePreviews().length }}/{{ maxAdditionalImages() }}</span></h3>
+          <p class="poster-hint">En plus de l'image d'affiche. {{ isPremiumActive() ? 'Compte Premium : jusqu\'à 10 photos.' : 'Compte gratuit : jusqu\'à 5 photos (10 avec Premium).' }}</p>
           <div class="images-grid">
             @for (img of imagePreviews(); track $index; let i = $index) {
               <div class="image-preview" (click)="openImageEditor(i)">
@@ -133,7 +134,7 @@
                 <div class="edit-overlay"><span class="material-icons">tune</span></div>
               </div>
             }
-            @if (imagePreviews().length < 5) {
+            @if (imagePreviews().length < maxAdditionalImages()) {
               <label class="upload-area image-upload">
                 <span class="material-icons">add_photo_alternate</span><span>Ajouter</span>
                 <input type="file" accept="image/*" multiple (change)="onImagesSelected($event)" hidden />
@@ -425,8 +426,7 @@
         <div class="publish-summary">
           <h3>Resume de la publication</h3>
           <div class="summary-row"><span>Type</span><strong>{{ publishType() === 'product' ? 'Produit' : 'Service' }}</strong></div>
-          <div class="summary-row"><span>{{ publishType() === 'service' ? 'Service' : 'Titre' }}</span><strong>{{ form.title || '-' }}</strong></div>
-
+          <div class="summary-row"><span>{{ publishType() === 'service' ? 'Portfolio' : 'Images suppl.' }}</span><strong>{{ imagePreviews().length }}/{{ maxAdditionalImages() }} image(s)</strong></div>
           @if (publishType() === 'service') {
             <!-- Service summary -->
             <div class="summary-row">
@@ -482,20 +482,19 @@
           </div>
         </div>
 
-        <div class="listing-fee-notice" [class.free]="listingFee() === 0">
-          @if (listingFee() === 0) {
-            <span class="material-icons">verified</span>
-            <div>
-              <strong>Publication gratuite</strong>
-              <span>Compte Premium — aucun frais de publication.</span>
-            </div>
-          } @else {
-            <span class="material-icons">payments</span>
-            <div>
-              <strong>Frais de publication : {{ listingFee() }} F CFA</strong>
-              <span>À régler via Wave après validation. Votre annonce reste invisible tant que le paiement n'est pas confirmé.</span>
-            </div>
-          }
+        <!-- ═══════ À QUOI S'ATTENDRE ═══════ -->
+        <div class="expect-notice" [class.premium]="isPremiumActive()">
+          <span class="material-icons">{{ isPremiumActive() ? 'workspace_premium' : 'rocket_launch' }}</span>
+          <div>
+            <strong>{{ isPremiumActive() ? 'Compte Premium actif' : 'Publication immédiate et gratuite' }}</strong>
+            <span>
+              @if (isPremiumActive()) {
+                Votre annonce sera visible tout de suite, mise en avant dans le feed et le marketplace.
+              } @else {
+                Votre annonce sera visible tout de suite, sans frais. Passez Premium pour la mettre en avant et débloquer jusqu'à 10 photos.
+              }
+            </span>
+          </div>
         </div>
 
         <div class="step-nav step-nav-three">
@@ -505,8 +504,8 @@
             Enregistrer en brouillon
           </button>
           <button type="submit" class="q-btn q-btn-primary q-btn-lg" [disabled]="loading()">
-            <span class="material-icons">{{ listingFee() === 0 ? 'publish' : 'payments' }}</span>
-            {{ loading() ? 'Publication...' : (listingFee() === 0 ? (publishType() === 'service' ? 'Publier le service' : 'Publier l\'annonce') : 'Payer et publier — ' + listingFee() + ' F CFA') }}
+            <span class="material-icons">publish</span>
+            {{ loading() ? 'Publication...' : (publishType() === 'service' ? 'Publier le service' : 'Publier l\'annonce') }}
           </button>
         </div>
       </div>

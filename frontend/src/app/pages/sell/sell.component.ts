@@ -637,18 +637,12 @@ export class SellComponent implements OnInit, OnDestroy {
   });
 
   // Doit rester synchronisé avec config/quinch.php côté backend
-  // (free_photos_max_non_premium: 3, premium_photos_max: 10) - le backend
-  // reste la seule limite qui compte réellement (validation serveur), mais
-  // sans ce plafond dynamique côté front, un compte gratuit pouvait choisir
-  // jusqu'à 6 photos (1 poster + 5, valeur fixe qui ignorait complètement le
-  // statut premium) puis se faire rejeter seulement à la soumission - et à
-  // l'inverse, un compte premium plafonnait à 6 alors qu'il a droit à 10.
-  maxAdditionalImages = computed(() => (this.isPremiumActive() ? 10 : 3) - 1);
-
-  listingFee = computed(() => {
-    if (this.isPremiumActive()) return 0;
-    return this.videoId() ? 500 : 300;
-  });
+  // (free_additional_photos_max: 5, premium_additional_photos_max: 10). La
+  // couverture (poster) est toujours à part et ne compte jamais dans cette
+  // limite - le backend reste la seule limite qui compte réellement
+  // (validation serveur), ce plafond côté front n'est qu'un confort pour
+  // éviter à l'utilisateur de sélectionner des photos rejetées ensuite.
+  maxAdditionalImages = computed(() => (this.isPremiumActive() ? 10 : 5));
 
   // ═══════ IMAGES ═══════
   onImagesSelected(event: Event) {
@@ -658,8 +652,8 @@ export class SellComponent implements OnInit, OnDestroy {
       if (input.files.length > files.length) {
         this.notify.error(
           this.isPremiumActive()
-            ? `Maximum ${this.maxAdditionalImages() + 1} photos au total (1 affiche + ${this.maxAdditionalImages()}).`
-            : `Compte gratuit : maximum ${this.maxAdditionalImages() + 1} photos au total. Passez Premium pour aller jusqu'à 10.`
+            ? `Maximum ${this.maxAdditionalImages()} photos supplémentaires (en plus de la couverture).`
+            : `Compte gratuit : maximum ${this.maxAdditionalImages()} photos supplémentaires (en plus de la couverture). Passez Premium pour aller jusqu'à 10.`
         );
       }
       for (const file of files) {
