@@ -629,12 +629,21 @@ export class SellComponent implements OnInit, OnDestroy {
   formatTime(sec: number): string { const m = Math.floor(sec / 60), s = Math.floor(sec % 60); return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }
   removeVideo() { this.videoFile = null; this.videoId.set(''); this.videoPreview.set(''); this.videoResolution.set(''); }
 
-    isPremiumActive = computed(() => {
+  isPremiumActive = computed(() => {
     const user = this.auth.user();
     if (!user?.is_premium) return false;
     if (!user.premium_expires_at) return false;
     return new Date(user.premium_expires_at) > new Date();
   });
+
+  // Doit rester synchronisé avec config/quinch.php côté backend
+  // (free_photos_max_non_premium: 3, premium_photos_max: 10) - le backend
+  // reste la seule limite qui compte réellement (validation serveur), mais
+  // sans ce plafond dynamique côté front, un compte gratuit pouvait choisir
+  // jusqu'à 6 photos (1 poster + 5, valeur fixe qui ignorait complètement le
+  // statut premium) puis se faire rejeter seulement à la soumission - et à
+  // l'inverse, un compte premium plafonnait à 6 alors qu'il a droit à 10.
+  maxAdditionalImages = computed(() => (this.isPremiumActive() ? 10 : 3) - 1);
 
   listingFee = computed(() => {
     if (this.isPremiumActive()) return 0;
@@ -645,7 +654,14 @@ export class SellComponent implements OnInit, OnDestroy {
   onImagesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files) {
-      const files = Array.from(input.files).slice(0, 5 - this.imageFiles.length);
+      const files = Array.from(input.files).slice(0, this.maxAdditionalImages() - this.imageFiles.length);
+      if (input.files.length > files.length) {
+        this.notify.error(
+          this.isPremiumActive()
+            ? `Maximum ${this.maxAdditionalImages() + 1} photos au total (1 affiche + ${this.maxAdditionalImages()}).`
+            : `Compte gratuit : maximum ${this.maxAdditionalImages() + 1} photos au total. Passez Premium pour aller jusqu'à 10.`
+        );
+      }
       for (const file of files) {
         if (file.size > 10 * 1024 * 1024) { this.notify.error(`Image ${file.name} trop lourde (max 10 Mo)`); continue; }
         this.imageFiles.push(file);
