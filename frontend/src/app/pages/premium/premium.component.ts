@@ -3,6 +3,7 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PremiumService, PremiumPlan, PremiumStatus } from '../../core/services/premium.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AuthService } from '../../core/services/auth.service';
 
 type ViewMode = 'plans' | 'success' | 'error';
 
@@ -25,6 +26,7 @@ export class PremiumComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private notify = inject(NotificationService);
+    private auth = inject(AuthService);
 
   mode = signal<ViewMode>('plans');
   loading = signal(true);
@@ -34,7 +36,7 @@ export class PremiumComponent implements OnInit {
   status = signal<PremiumStatus | null>(null);
 
   benefits = [
-    { icon: 'verified', label: 'Badge vérifié sur votre profil et vos annonces' },
+    { icon: 'workspace_premium', label: 'Badge Premium doré sur votre profil et vos annonces' },
     { icon: 'trending_up', label: 'Boutique mise en avant dans le feed et le marketplace' },
     { icon: 'photo_library', label: "Jusqu'à 10 photos par annonce (au lieu de 3)" },
     { icon: 'campaign', label: 'Publication gratuite (vidéo ou photos), sans frais par annonce' },
@@ -49,7 +51,14 @@ export class PremiumComponent implements OnInit {
 
     this.loading.set(true);
     this.premiumService.getStatus().subscribe({
-      next: (res) => { this.status.set(res); this.loading.set(false); },
+      next: (res) => {
+        this.status.set(res);
+        this.loading.set(false);
+        // Rafraîchit l'utilisateur global (auth.user()) : sans ça, le reste
+        // de l'app (frais de publication, badges...) reste sur l'ancien
+        // statut premium jusqu'à une reconnexion.
+        this.auth.getMe().subscribe();
+      },
       error: () => this.loading.set(false),
     });
 

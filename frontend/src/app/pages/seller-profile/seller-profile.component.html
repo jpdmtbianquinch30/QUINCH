@@ -19,13 +19,18 @@
             @if (profile().user.kyc_status === 'verified') {
               <span class="sp-verified" title="Verifie"><span class="material-icons">verified</span></span>
             }
+            @if (profile().user.is_premium) {
+              <span class="material-icons premium-badge" title="Compte Premium">workspace_premium</span>
+            }
           </div>
 
           <h1 class="sp-name">{{ profile().user.full_name }}</h1>
           <p class="sp-username">&#64;{{ profile().user.username }}</p>
 
-          @if (profile().user.bio) {
-            <p class="sp-bio">{{ profile().user.bio }}</p>
+          @if (profile().user.is_premium) {
+            <span class="q-badge q-badge-premium sp-premium-badge">
+              <span class="material-icons">workspace_premium</span> Vendeur Premium
+            </span>
           }
 
           <div class="sp-info-tags">

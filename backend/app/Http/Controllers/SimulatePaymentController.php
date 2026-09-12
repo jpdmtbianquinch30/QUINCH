@@ -61,7 +61,13 @@ class SimulatePaymentController extends Controller
             $body
         );
 
-        app()->handle($fakeRequest);
+        $webhookResponse = app()->handle($fakeRequest);
+
+        \Illuminate\Support\Facades\Log::info('Simulation paiement : réponse du webhook interne', [
+            'reference' => $reference,
+            'status' => $webhookResponse->getStatusCode(),
+            'body' => $webhookResponse->getContent(),
+        ]);
 
         $redirect = $validated['outcome'] === 'success' ? $validated['success_url'] : $validated['error_url'];
 

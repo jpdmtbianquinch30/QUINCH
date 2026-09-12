@@ -420,6 +420,15 @@ textarea.q-input { resize: vertical; min-height: 100px; }
   &-danger { background: rgba(239, 68, 68, 0.15); color: var(--q-danger); }
   &-info { background: rgba(59, 130, 246, 0.15); color: var(--q-info); }
   &-accent { background: var(--q-accent-subtle); color: var(--q-accent-light); }
+  // Doré : distingue visuellement l'abonnement payant (is_premium) du badge
+  // "Vérifié" (kyc_status), deux concepts différents qui se ressemblaient
+  // trop pour être confondus avec la même couleur violette.
+  &-premium {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    gap: 4px;
+    .material-icons { font-size: 14px; }
+  }
 }
 
 // ─── Material Icons ─────────────────────────────────────────────────────────

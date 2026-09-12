@@ -50,6 +50,9 @@
         <div class="hero-info">
           <h2 class="hero-name">
             {{ user()!.full_name }}
+                        @if (user()!.is_premium) {
+              <span class="material-icons premium-badge" title="Compte Premium">workspace_premium</span>
+            }
             @if (user()!.kyc_status === 'verified') {
               <span class="material-icons verified-badge">verified</span>
             }
@@ -59,8 +62,10 @@
             @if (user()!.city) {
               <span class="meta-pill"><span class="material-icons">location_on</span> {{ user()!.city }}, {{ user()!.region }}</span>
             }
-            @if (auth.isAdmin()) {
+                       @if (auth.isAdmin()) {
               <span class="q-badge q-badge-warning">ADMIN</span>
+            } @else if (user()!.is_premium) {
+              <span class="q-badge q-badge-premium"><span class="material-icons">workspace_premium</span> Premium</span>
             } @else if (user()!.kyc_status === 'verified') {
               <span class="q-badge q-badge-accent">Vérifié</span>
             }

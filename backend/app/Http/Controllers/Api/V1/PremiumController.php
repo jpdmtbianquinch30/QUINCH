@@ -90,6 +90,11 @@ class PremiumController extends Controller
         $secret = $this->waveWebhookSecret();
         $header = $request->header('Wave-Signature');
 
+           \Illuminate\Support\Facades\Log::info('DEBUG webhook premium', [
+            'header_recu' => $header,
+            'secret_utilise' => $secret,
+            'body_len' => strlen($request->getContent()),
+        ]);
         if (!$secret || !$header || !$this->verifyWaveSignature($header, $request->getContent(), $secret)) {
             Log::warning('Webhook Wave Premium: signature invalide', ['ip' => $request->ip()]);
             return response()->json(['error' => 'Signature invalide'], 401);

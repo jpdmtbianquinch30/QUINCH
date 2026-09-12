@@ -63,6 +63,7 @@ class PublicProfileController extends Controller
                 'trust_score' => $user->trust_score,
                 'trust_badge' => $user->trust_badge,
                 'kyc_status' => $user->kyc_status,
+                'is_premium' => $user->isPremiumActive(),
                 'member_since' => $user->created_at->format('M Y'),
                 'created_at' => $user->created_at->toISOString(),
                 'account_age_days' => $user->account_age_days,

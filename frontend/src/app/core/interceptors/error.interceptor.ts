@@ -11,10 +11,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError(error => {
       if (error.status === 401) {
-        // Don't redirect if already on auth pages or if this is the login/register request itself
         const isAuthRequest = req.url.includes('auth/login') || req.url.includes('auth/register');
-        if (!isAuthRequest) {
-          auth.forceLogout(); // Clear both signals AND localStorage
+        const isSilentRefresh = req.url.includes('auth/me');
+        if (!isAuthRequest && !isSilentRefresh) {
+          auth.forceLogout();
           router.navigate(['/auth/login']);
         }
       }
