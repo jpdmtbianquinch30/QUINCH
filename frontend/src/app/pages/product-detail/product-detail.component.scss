@@ -787,6 +787,17 @@ $radius-sm: 8px;
   text-overflow: ellipsis;
 }
 
+.premium-badge {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 5px;
+  .material-icons {
+    font-size: 15px;
+    color: #fbbf24;
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
+  }
+}
+
 .seller-username {
   font-size: 0.78rem;
   color: rgba(255,255,255,0.35);
@@ -1589,6 +1600,45 @@ $radius-sm: 8px;
   .topbar-type-badge { font-size: 0.7rem; padding: 4px 10px; }
   .cta-row { flex-direction: column; }
   .share-grid { grid-template-columns: repeat(2, 1fr); }
+
+  // ─── Stats, miniatures ────────────────────────────────────────────
+  .info-stats { gap: 14px; flex-wrap: wrap; }
+  .stat { font-size: 0.76rem; }
+
+  .thumb-item { width: 60px; height: 60px; }
+  .media-main { aspect-ratio: 4/5; max-height: 56vh; }
+
+  // ─── Carte vendeur — plus compacte, ne déborde jamais ─────────────
+  .seller-card { padding: 14px 16px; gap: 10px; }
+  .seller-avatar { width: 40px; height: 40px; }
+  .seller-name { font-size: 0.88rem; }
+  .seller-trust { align-items: flex-end; }
+
+  // ─── Caractéristiques / paiement / livraison — resserrés ──────────
+  .spec-item { padding: 12px 14px; gap: 10px; }
+  .spec-value { font-size: 0.82rem; }
+  .service-feature { padding: 13px; gap: 12px; }
+  .delivery-banner, .no-payment-methods { padding: 12px 14px; }
+  .accepted-pay-chip { padding: 7px 12px; font-size: 0.78rem; }
+
+  // ─── Avis ──────────────────────────────────────────────────────────
+  .review-card { padding: 14px; }
+  .write-review { padding: 14px; }
+
+  // ─── Modales — respirent sur petit écran, ne touchent pas les bords ─
+  .modal-overlay { padding: 0 16px; align-items: flex-end; }
+  .modal-box {
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-radius: 20px 20px 0 0;
+    max-height: 85vh;
+    animation: slideUpSheet 0.25s ease;
+  }
+  .modal-head h2 { font-size: 1.05rem; }
+}
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 // ═══════════════════════════════════════════════════════════════════

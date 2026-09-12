@@ -202,6 +202,7 @@ class ProductController extends Controller
                 'trust_badge' => $product->user->trust_badge,
                 'products_count' => $product->user->products()->active()->count(),
                 'member_since' => $product->user->created_at->format('M Y'),
+                'is_premium' => $product->user->isPremiumActive(),
             ],
             'is_liked' => $isLiked,
             'is_saved' => $isSaved,

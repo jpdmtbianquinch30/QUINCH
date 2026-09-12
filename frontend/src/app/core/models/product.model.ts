@@ -71,6 +71,7 @@ export interface SellerInfo {
   products_count?: number;
   member_since?: string;
   is_following?: boolean;
+  is_premium?: boolean;
 }
 
 export interface FeedResponse {

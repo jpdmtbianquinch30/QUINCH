@@ -319,7 +319,14 @@
             }
           </div>
           <div class="seller-info">
-            <span class="seller-name">{{ getSellerName() }}</span>
+            <span class="seller-name">
+              {{ getSellerName() }}
+              @if (p.seller?.is_premium) {
+                <span class="premium-badge" title="Vendeur Premium">
+                  <span class="material-icons">workspace_premium</span>
+                </span>
+              }
+            </span>
             <span class="seller-username">&#64;{{ getSellerUsername() }}</span>
           </div>
           <div class="seller-trust">
