@@ -1,63 +1,80 @@
-# QUINCH — Social commerce vidéo pour le Sénégal
+# QUINCH — Commerce social vidéo pour le Sénégal
 
-> Plateforme mobile de commerce social inspirée de TikTok et Facebook Marketplace, pensée pour le marché sénégalais et ouest-africain.
+> Marketplace social sénégalais combinant un feed vidéo courte, une grille produits façon marketplace, et un système de paiement mobile (Wave / Orange Money). Pensé pour Dakar et les principales villes du pays.
+
+---
+
+## Sommaire
+
+- [État du projet](#état-du-projet)
+- [Stack technique](#stack-technique)
+- [Installation](#installation)
+- [Variables d'environnement](#variables-denvironnement)
+- [Paiement — mode simulation](#paiement--mode-simulation-développement)
+- [Feature flags](#feature-flags)
+- [Fonctionnalités par domaine](#fonctionnalités-par-domaine)
+- [Décisions d'architecture à connaître](#décisions-darchitecture-à-connaître)
+- [Tâches planifiées (jobs)](#tâches-planifiées-jobs)
+- [Tests](#tests)
+- [Chantiers ouverts](#chantiers-ouverts-connus-non-résolus)
+- [Déploiement production — checklist](#déploiement-production--checklist)
+- [Structure du dépôt](#structure-du-dépôt)
+
+---
+
+## État du projet
+
+Application web complète en développement actif, pré-production. Le backend est solide et largement testé (paiements, abonnements Premium, modération, feature flags — plus de 90 tests automatisés). Le frontend Angular a été entièrement reconstruit comme application publique complète (et non plus un simple panneau d'administration — voir historique Git, ce point a changé plusieurs fois).
 
 ---
 
 ## Stack technique
 
 | Couche | Technologie |
-|--------|-------------|
-| Application mobile (public — acheteurs/vendeurs) | Flutter (iOS + Android), go_router |
-| Panneau d'administration (interne uniquement) | Angular, guards `guestGuard`/`adminGuard` |
+|---|---|
+| Frontend web (public) | Angular (standalone components, signals, sans NgModules) |
 | Backend API | Laravel 12 + Sanctum (`api/v1/*`) |
-| Base de données | PostgreSQL 16 |
-| Stockage médias | Local (dev, disque `public`) — Cloudflare R2 prévu en prod |
-
----
-
-## Prérequis
-
-- Flutter 3.x + Dart 3.x
-- PHP 8.2+ (image Docker en 8.3) avec Composer
-- PostgreSQL 16 (via Docker, voir `docker-compose.yml` — recommandé même en dev)
-- Node.js 18+ (panneau admin Angular)
+| Base de données | PostgreSQL 16 (clés primaires UUID partout) |
+| Paiement | Wave (intégration réelle + mode simulation dev) ; Orange Money (code prêt, en attente des identifiants marchand Sonatel) |
+| Stockage médias | Disque local (`storage/app/public`) en dev ; à migrer vers un stockage objet en prod |
+| Infra | Docker Compose (app, queue, scheduler, nginx, postgres, pgadmin) |
+| Tests | PHPUnit (backend), Karma/Jasmine (frontend, ciblé) |
 
 ---
 
 ## Installation
 
-### 1. Backend (Laravel)
+### 1. Base de données (Docker)
 
 ```bash
-# Démarrer PostgreSQL (voir section Docker plus bas pour le détail)
 docker compose up -d postgres
+```
 
+### 2. Backend (Laravel)
+
+```bash
 cd backend
 composer install
 cp .env.example .env
 php artisan key:generate
 
-# Configurer la base de données dans .env (DB_CONNECTION=pgsql par défaut,
-# adapter DB_PASSWORD à la valeur définie dans le .env à la racine)
+# Adapter DB_* dans .env selon vos identifiants Postgres locaux
 
 php artisan migrate:fresh --seed
 php artisan storage:link
 php artisan serve
 ```
 
-### 2. Application Flutter (public — acheteurs/vendeurs)
+**Deux processus supplémentaires sont indispensables en local**, sans quoi les tâches planifiées ne tournent jamais :
 
 ```bash
-cd flutter_app
-flutter pub get
-
-# Configurer l'URL de l'API dans lib/config/api_config.dart
-
-flutter run
+php artisan schedule:work    # terminal dédié n°1
+php artisan queue:work --tries=3   # terminal dédié n°2
 ```
 
-### 3. Panneau d'administration (Angular — équipe interne uniquement)
+En Docker/production, les services `scheduler` et `queue` de `docker-compose.yml` couvrent déjà ça.
+
+### 3. Frontend (Angular)
 
 ```bash
 cd frontend
@@ -65,292 +82,151 @@ npm install
 ng serve
 ```
 
-Puis ouvrir `http://localhost:4200/auth/login` et se connecter avec un compte
-`admin` ou `super_admin`. **Toute autre route de cette app redirige vers cet
-écran de connexion** (`app.routes.ts`) : les pages grand public (feed,
-marketplace, panier, messages, profil...) existent encore dans
-`frontend/src/app/pages/` mais ne sont **plus routées ni maintenues** —
-elles dupliquaient l'app Flutter. Le grand public n'utilise que Flutter.
+Ouvrir `http://localhost:4200`.
 
 ---
 
-## Docker — développement local vs déploiement complet
+## Variables d'environnement
 
-Ce projet supporte deux façons d'utiliser Docker :
+Les plus importantes (voir `backend/.env.example` pour la liste complète) :
 
-### A. Juste la base de données (dev quotidien)
-```bash
-cp .env.example .env   # à la racine, une seule fois — renseigner un vrai mot de passe
-docker compose up -d postgres
-```
-Puis lancer Laravel normalement en dehors de Docker (`php artisan serve`), avec
-dans `backend/.env` : `DB_HOST=127.0.0.1` (le port Postgres est exposé en local,
-uniquement sur `127.0.0.1`).
-
-### B. Stack complète (staging / production)
-```bash
-cp backend/.env.docker.example backend/.env.docker
-# Éditer backend/.env.docker :
-#  - DB_PASSWORD = la même valeur que POSTGRES_PASSWORD dans le .env racine
-#  - APP_KEY = générer une clé avec `php artisan key:generate --show` (en local,
-#    sans rien écrire) puis la coller ici
-
-docker compose up -d --build
-```
-Démarre Postgres + le backend Laravel (PHP-FPM, build multi-stage sans
-dépendances dev, config `backend/.env.docker`) + un worker de queue + Nginx
-(exposé sur le port 8080, fichiers cachés `.env`/`.git` bloqués). Ce fichier
-utilise déjà `DB_HOST=postgres` (nom du service sur le réseau Docker interne)
-et `APP_DEBUG=false` — ne pas les repasser à `127.0.0.1`/`true`.
-
-### Outil d'administration Postgres (optionnel)
-```bash
-docker compose --profile tools up -d pgadmin
-```
-Accessible uniquement depuis la machine hôte (`127.0.0.1:5050`), jamais exposé
-publiquement.
-
-⚠️ Les identifiants Postgres/pgAdmin viennent exclusivement du `.env` racine
-(non commité). Ne jamais les remettre en dur dans `docker-compose.yml`.
-
----
-
-## Tests automatisés (backend)
-
-Les tests tournent sur une **vraie base PostgreSQL de test**, séparée de la
-base de développement (SQLite ne supporte pas `fullText()`, utilisé dans les
-migrations `products`).
-
-```bash
-# 1. Créer la base de test dédiée (une seule fois)
-docker compose exec -u postgres postgres psql -c "CREATE DATABASE quinch_testing OWNER quinch_user;"
-
-# 2. Config de test
-cd backend
-cp .env.testing.example .env.testing
-# Éditer .env.testing : renseigner DB_PASSWORD (même valeur que Postgres)
-
-# 3. Lancer les tests
-composer test
-# ou directement :
-php artisan test
-```
-
-Chaque test utilise `RefreshDatabase` : la base `quinch_testing` est
-réinitialisée automatiquement entre les tests.
-
-### Couverture actuelle (52 tests / 120 assertions au dernier passage)
-- Inscription / connexion (téléphone + OTP, y compris comptes suspendus)
-- Mot de passe oublié (OTP, révocation des sessions existantes au reset)
-- Achat en paiement à la livraison (seul moyen de paiement actif en V1) et
-  rejet des autres moyens de paiement (Wave/Orange Money/Free Money)
-- Modération : une vidéo `pending` n'apparaît jamais dans le feed public,
-  ni un produit inactif
-- Signalements produits + tickets support (création, doublons bloqués,
-  résolution admin)
-- Favoris unifiés (sauvegarde depuis le feed = favoris)
-- Permissions admin (accès refusé aux non-admins, endpoints destructeurs
-  retirés de l'API HTTP)
-- Feature flags V1 (routes désactivées renvoient 404, réactivables via config)
-
----
-
-## Périmètre V1 (fonctionnalités activées/désactivées)
-
-Pour la première version publique, le périmètre est volontairement réduit.
-Le code des fonctionnalités désactivées reste dans le repo (pour la V2/V3),
-mais est bloqué côté API via des feature flags (voir `backend/config/quinch.php`,
-activables via `backend/.env` — `QUINCH_FEATURE_*` et `QUINCH_PAYMENT_METHODS`) :
-
-| Fonctionnalité | V1 |
+| Variable | Rôle |
 |---|---|
-| Inscription/connexion téléphone + OTP, login Google | ✅ |
-| Mot de passe oublié (OTP) | ✅ |
-| Feed vidéo, recherche, catégories, suggestions | ✅ |
-| Upload produit/service + vidéo, favoris, likes | ✅ |
-| Distinction Produit / Service (avec champs dédiés : type de service, zone, tarif...) | ✅ |
-| Paiement à la livraison (`cash_delivery`) | ✅ |
-| Paiement Wave / Orange Money / Free Money | ⏸️ V2 — webhooks codés et signature HMAC vérifiée, mais pas encore validés en sandbox réel |
-| Chat texte acheteur/vendeur | ✅ (envoi uniquement — pas d'édition ni de suppression d'un message précis, voir Limitations connues) |
-| Chat audio / envoi de fichier | ⏸️ V2 (`QUINCH_FEATURE_CHAT_AUDIO` / `QUINCH_FEATURE_CHAT_FILE`) |
-| Négociation de prix | ⏸️ V2 (`QUINCH_FEATURE_NEGOTIATION`) |
-| Follow / amis / feed "amis" | ⏸️ V2 (`QUINCH_FEATURE_FOLLOW`) |
-| Reviews vendeur | ⏸️ V2 (`QUINCH_FEATURE_REVIEWS`) |
-| Badges | ⏸️ V2 (`QUINCH_FEATURE_BADGES`) |
-| Partage social | ⏸️ V2 (`QUINCH_FEATURE_SHARING`) |
-| Collections de favoris | ⏸️ V2 (`QUINCH_FEATURE_FAVORITES_COLLECTIONS`) |
-| Panneau admin (users, modération, métriques, signalements) | ✅ (Angular, voir section installation) |
-| Panier → passage de commande | ❌ **cassé, voir Limitations connues** |
-| Brouillon produit (non publié) | ❌ colonne en base prête, non exposée par l'API |
+| `FRONTEND_URL` | Doit pointer vers `http://localhost:4200` en dev, jamais vers le domaine de prod tant qu'on teste en local — sinon les redirections de paiement échouent (`ERR_NAME_NOT_RESOLVED`). |
+| `WAVE_API_KEY`, `WAVE_WEBHOOK_SECRET` | Absents → mode simulation automatique (voir plus bas). |
+| `QUINCH_PAYMENT_METHODS` | Liste des passerelles activées, séparées par virgules (`wave` seul actuellement — Orange Money pas encore prêt). |
+| `QUINCH_FEATURE_*` | Un booléen par fonctionnalité optionnelle (voir section Feature flags). |
+| `QUINCH_PREMIUM_PRICE_MONTHLY` / `_ANNUAL` | Prix Premium en XOF (2000 / 20000 par défaut). |
+| `QUINCH_LISTING_FEE_WITH_VIDEO` / `_WITHOUT_VIDEO` | Frais de publication pour un compte non-Premium (500 / 300 XOF). |
 
 ---
 
-## ⚠️ Limitations et bugs connus (à date de ce README)
+## Paiement — mode simulation (développement)
 
-Cette section est volontairement honnête : elle liste ce qui **ne marche
-pas encore**, pour éviter de perdre du temps à le redécouvrir.
+Tant que `WAVE_API_KEY` est absent du `.env` (et que `APP_ENV` n'est pas `production`), toute tentative de paiement (achat produit, abonnement Premium, frais de publication) redirige automatiquement vers une page de simulation locale (`/dev/simulate-payment`) au lieu d'appeler la vraie API Wave. Cette page permet de simuler un paiement réussi ou échoué, en rejouant **en interne** le même webhook signé que Wave enverrait réellement (`app()->handle()`, sans appel réseau) — donc sans jamais désynchroniser la logique testée en dev de celle utilisée en prod.
 
-- **Panier → commande cassé.** Le bouton "Passer la commande" de
-  `flutter_app/lib/screens/cart/cart_screen.dart` appelle
-  `context.push('/messages')` au lieu de déclencher un achat. Comme
-  `/messages` est une route imbriquée dans le `ShellRoute` alors que `/cart`
-  est poussée sur le navigateur racine, ça provoque un crash Flutter
-  (`Failed assertion: '!keyReservation.contains(key)'`). Aujourd'hui, le
-  seul chemin d'achat fonctionnel passe par la fiche produit
-  (`product_detail_screen.dart`), qui appelle correctement
-  `POST /transactions/initiate`. **Aucun écran de checkout n'existe dans le
-  panier** — à construire.
-- **Brouillons produits non exposés.** La colonne `status` de `products`
-  supporte `draft`, mais `ProductController::store()` force
-  `status = 'active'` en dur : impossible de publier un produit en brouillon
-  via l'API pour l'instant.
-- **Édition/suppression de message individuel absentes.**
-  `ConversationController` ne permet que d'envoyer un message ou de
-  supprimer toute une conversation (`destroy`) — pas d'édition (fenêtre de
-  5 min souhaitée) ni de suppression "pour moi / pour tout le monde" d'un
-  message précis.
-- **Paiements mobiles non activés.** Wave / Orange Money / Free Money sont
-  codés côté webhook (signature HMAC vérifiée) mais désactivés par défaut
-  (`QUINCH_PAYMENT_METHODS=cash_delivery`) tant qu'ils n'ont pas été testés
-  en sandbox réel avec chaque provider.
+**Ce mode ne s'active jamais en production**, même si la clé est oubliée par erreur (double vérification dans `WaveGateway::initiatePayment()` et `SimulatePaymentController`).
+
+Pour du vrai Wave en local : renseignez `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET` dans `.env`.
 
 ---
 
-## Comptes de démonstration
-
-| Rôle | Téléphone |
-|------|-----------|
-| Admin | +221 77 000 00 01 |
-| Client 1 | +221 77 000 00 10 |
-| Client 2 | +221 77 000 00 11 |
-
-> Mot de passe de démo pour tous les comptes ci-dessus (seeder) : `password`
-> — **à changer ou supprimer avant toute mise en ligne publique.**
-
----
-
-## Endpoints API principaux
-
-Toutes les routes sont préfixées par `api/v1` (voir `backend/bootstrap/app.php`).
-
-### Auth (`/auth/*`)
-- `POST /auth/register` · `POST /auth/login` · `POST /auth/verify-otp`
-- `POST /auth/forgot-password` · `POST /auth/reset-password`
-- `POST /auth/logout` · `POST /auth/logout-all` · `POST /auth/refresh` · `GET /auth/me`
-- `POST /auth/google` — login Google
-
-### Produits & Feed
-- `GET /products` — liste / recherche marketplace
-- `GET /products/feed` — fil vidéo style TikTok
-- `GET /search`, `GET /search/suggestions`, `GET /search/trending`
-- `GET /products/{slug}` — détail (par slug)
-- `POST /products` — créer (auth requis)
-- `PUT /products/{product}` / `DELETE /products/{product}` — par id, propriétaire uniquement
-- `GET /my-products`
-
-### Vidéos & Interactions
-- `POST /products/upload-video`
-- `GET /videos/{id}/stream`, `GET /videos/{id}/thumbnail`
-- `POST /products/{id}/like` · `/save` · `/share` · `/view` · `/report`
-
-### Panier
-- `GET /cart` · `POST /cart/add` · `PUT /cart/{item}` · `DELETE /cart/{item}` · `DELETE /cart`
-
-### Transactions
-- `POST /transactions/initiate`
-- `POST /transactions/{id}/confirm`
-- `PUT /transactions/{id}/status` — accepter/expédier/livrer/annuler (vendeur), confirmer réception/annuler (acheteur)
-- `GET /transactions/history` · `GET /transactions/{id}`
-- `POST /transactions/{id}/dispute`
-- Webhooks (publics, signature HMAC obligatoire) : `POST /webhooks/orange-money`, `/wave`, `/free-money`
-
-### Messagerie
-- `GET /conversations` · `POST /conversations/start` · `GET /conversations/{id}`
-- `POST /conversations/{id}/messages` · `DELETE /conversations/{id}`
-
-### Admin (rôle `admin`/`super_admin` requis)
-- `GET /admin/dashboard/metrics`, `/dashboard/real-time`
-- `GET /admin/users`, gestion : `/suspend`, `/activate`, `/verify-kyc`, `/adjust-trust`, `/ban`, `/send-notification`, `DELETE`
-- `GET /admin/moderation/pending`, `POST /admin/moderation/bulk-action`
-- `GET /admin/reports/{products|reported-users|support-tickets|transactions|fraud|users|overview}`
-- `GET /admin/security/alerts`, `/security/logs`, `POST /admin/security/ip-ban`
-- Reset/suppression de masse : volontairement **non exposés en HTTP**, uniquement en commande Artisan (`quinch:reset-data`, `quinch:delete-all-videos`)
-
----
-
-## Structure réelle du projet
+## Feature flags
 
 ```
-QUINCH/
-├── backend/                  # Laravel 12 — API REST (api/v1)
-│   ├── app/
-│   │   ├── Http/Controllers/Api/V1/   # 25 contrôleurs (Auth, Product, Transaction, Admin...)
-│   │   ├── Models/                    # User, Product, Transaction, Conversation, Message...
-│   │   ├── Policies/                  # ProductPolicy, VideoPolicy
-│   │   ├── Services/                  # PaymentGateway/, TrustScoring/
-│   │   ├── Jobs/                      # ProcessVideoJob (compression asynchrone)
-│   │   └── Console/Commands/          # quinch:reset-data, quinch:delete-all-videos
-│   ├── database/{migrations,seeders}/
-│   ├── config/quinch.php              # feature flags + moyens de paiement actifs
-│   └── routes/api.php
-├── flutter_app/               # Application mobile (public)
-│   └── lib/
-│       ├── config/            # routes (go_router), api_config
-│       ├── models/, providers/, services/
-│       ├── screens/           # auth, feed, marketplace, cart, product, sell,
-│       │                      # messages, favorites, notifications, transactions,
-│       │                      # profile, settings
-│       └── widgets/
-├── frontend/                  # Angular — panneau admin uniquement (voir plus haut)
-│   └── src/app/
-│       ├── core/{guards,interceptors,models,services}/
-│       ├── pages/admin/       # seule section réellement routée
-│       └── pages/*            # autres pages présentes mais non routées (legacy)
-├── docker/{nginx,php}/
-├── docker-compose.yml
-└── README.md
+QUINCH_PAYMENT_METHODS=wave          # orange_money à ajouter une fois les identifiants Sonatel obtenus
+QUINCH_FEATURE_NEGOTIATION=true      # négociation de prix acheteur/vendeur
+QUINCH_FEATURE_FOLLOW=true           # abonnements/abonnés entre utilisateurs
+QUINCH_FEATURE_REVIEWS=true          # avis vendeur
+QUINCH_FEATURE_BADGES=true           # badges de profil
+QUINCH_FEATURE_SHARING=true          # partage de produit (tracking + données de partage)
+QUINCH_FEATURE_CHAT_AUDIO=true       # messages vocaux
+QUINCH_FEATURE_CHAT_FILE=true        # pièces jointes dans la messagerie
+QUINCH_FEATURE_FAVORITES_COLLECTIONS=true   # collections de favoris personnalisées
+```
+
+Une route désactivée répond `404` (`EnsureFeatureEnabled` middleware) plutôt que de planter — comportement volontaire et testé (`DisabledFeatureTest`).
+
+---
+
+## Fonctionnalités par domaine
+
+**Authentification**
+- Inscription avec OTP obligatoire avant tout accès à l'app (vérifié à la fois côté route Angular et côté middleware Laravel — `phone_verified`)
+- Connexion simple : téléphone + mot de passe, aucun OTP requis
+- Récupération de mot de passe par deux chemins au choix : OTP par SMS, ou téléphone + email combinés (double facteur, sans envoi d'email réel — l'email doit être configuré au préalable dans `edit-profile`)
+
+**Achat / vente**
+- Achat produit : paiement Wave réel ou simulé, réservation de stock avec libération automatique après 20 min si le paiement n'aboutit pas
+- Panier repensé en liste d'envies : pas de checkout multi-vendeurs, chaque achat se fait individuellement (achat direct ou depuis le panier, dans une modale sans quitter la page)
+- Publication d'annonce en 3 étapes (médias → détails → paiement/récapitulatif), avec deux issues possibles : **Brouillon** (sauvegarde privée, aucun paiement tenté, permanent) ou **Payer et publier** (frais selon présence de vidéo, gratuit pour Premium)
+- Limite de photos : 3 pour un compte gratuit, 10 pour un compte Premium
+- Nettoyage automatique des brouillons abandonnés après 24h (fichiers + enregistrement supprimés)
+
+**Abonnement Premium**
+- Mensuel (2000 XOF) ou annuel (20000 XOF), paiement Wave
+- Avantages réels : publication gratuite, 10 photos au lieu de 3, mise en avant dans le feed et le marketplace (pondération de classement), badge visible sur le profil (propre profil et profil public)
+
+**Découverte**
+- Feed marketplace en grille (2 colonnes mobile, 4-5 desktop avec filtres fixes)
+- Feed vidéo dédié (accessible via bannière depuis le feed principal)
+- Recherche (produits + vendeurs), marketplace avec tri (récent/populaire/prix — le tri prix ignore toujours le boost Premium, volontairement)
+
+**Social**
+- Suivi (follow/followers), avec détection d'amitié mutuelle et création automatique de conversation
+- Avis vendeur, négociation de prix, badges, collections de favoris
+
+**Messagerie**
+- Conversations texte, audio, fichiers (selon feature flags) — pas de temps réel (pas de websocket/polling actuellement)
+
+**Administration**
+- Gestion utilisateurs, modération de contenu, rapports, tableaux de bord
+
+---
+
+## Décisions d'architecture à connaître
+
+- **`payment_status` ≠ `order_status`** sur une transaction : le premier ne représente que l'état du paiement côté gateway (`pending/completed/failed/refunded`), le second l'avancement de la commande (`pending_payment/processing/shipped/delivered/completed/cancelled/disputed`). Ne jamais les confondre dans un nouvel écran.
+- **UUID comme clé primaire partout**, ce qui rend `latestOfMany()`/`ofMany()` de Laravel **incompatibles** sous PostgreSQL (`MAX(uuid)` n'existe pas — erreur `SQLSTATE[42883]`). Utiliser une sous-requête corrélée manuelle à la place (voir `Conversation::lastMessage()` comme référence).
+- **Statut `draft` à double usage** sur `Product` : un brouillon volontaire (`listing_fee_status = none`, permanent) et un brouillon en attente de paiement (`listing_fee_status = pending/failed`, supprimé après 24h) — distingués uniquement par `listing_fee_status`, jamais par un champ dédié.
+- **Trait `VerifiesWaveWebhook`** partagé entre `TransactionController`, `PremiumController` et `ProductController` — toute nouvelle intégration Wave doit le réutiliser plutôt que dupliquer la vérification de signature.
+- **`auth.user()` (signal frontend) ne se rafraîchit jamais tout seul** après une action qui change le profil côté serveur (abonnement Premium, changement de ville, edit-profile) — il faut explicitement appeler `auth.updateUser(res.user)` ou `auth.getMe()` après ces actions, sinon le reste de l'app affiche des données périmées jusqu'à la reconnexion.
+- **OPcache PHP (XAMPP/Apache)** : un fichier backend modifié n'est pas toujours pris en compte immédiatement en local — `php artisan optimize:clear` ne vide que le cache Laravel, jamais l'OPcache. Redémarrer Apache si un correctif semble "ne pas s'appliquer".
+
+---
+
+## Tâches planifiées (jobs)
+
+| Job | Fréquence | Rôle |
+|---|---|---|
+| `ReleaseExpiredReservations` | Chaque minute | Libère le stock réservé si le paiement n'a pas abouti sous 20 min |
+| `ExpirePremiumSubscriptions` | Quotidien | Désactive les abonnements Premium expirés |
+| `CleanupAbandonedDraftListings` | Toutes les heures | Supprime les brouillons en attente de paiement abandonnés depuis 24h (+ fichiers) |
+
+Nécessitent `php artisan schedule:work` **et** `php artisan queue:work` actifs en permanence (ou les services Docker `scheduler`/`queue` en prod).
+
+---
+
+## Tests
+
+```bash
+cd backend
+php artisan test          # ~92 tests
+```
+
+```bash
+cd frontend
+ng test --watch=false --browsers=ChromeHeadless
 ```
 
 ---
 
-## Paiements
+## Chantiers ouverts (connus, non résolus)
 
-| Méthode | Statut |
-|---------|--------|
-| Paiement à la livraison (`cash_delivery`) | ✅ Actif, seul moyen en V1 |
-| Wave | Webhook + vérification de signature codés, désactivé (V2) |
-| Orange Money | Webhook + vérification de signature codés, désactivé (V2) |
-| Free Money | Webhook + vérification de signature codés, désactivé (V2) |
-
-Aucune intégration de paiement en ligne réelle (PayTech ou autre) n'est
-branchée à ce jour : les webhooks attendent d'être testés avec chaque
-provider en sandbox avant activation via `QUINCH_PAYMENT_METHODS`.
+- **Orange Money** : code présent (`OrangeMoneyGateway`) mais jamais branché en réel — en attente de la documentation et des identifiants Sonatel.
+- **Messagerie sans temps réel** : fonctionnelle mais sans websocket ni polling.
+- **Design du feed vidéo** : jugé trop proche visuellement de TikTok, refonte demandée mais pas encore livrée.
+- **`products/active-sellers`** : route backend fonctionnelle et testée, mais aucun composant frontend ne l'utilise actuellement.
 
 ---
 
-## Sécurité
+## Déploiement production — checklist
 
-- Authentification par tokens Sanctum, tokens JWT invalides/expirés ignorés proprement (pas de 500)
-- RBAC : rôles `user`, `admin`, `super_admin` — routes `/admin/*` protégées par middleware `role:`
-- Rate limiting (`throttle`) sur les routes sensibles : login, register, OTP, signalement, upload vidéo, transaction
-- Path traversal corrigé sur le streaming vidéo par chemin (`videos/stream-path`) : double vérification (chemin en base + `realpath()` dans la racine du disque)
-- Signature HMAC obligatoire sur les 3 webhooks de paiement (`hash_equals`, un secret absent bloque la requête au lieu de désactiver la vérification)
-- Actions admin destructrices (reset, suppression de masse) retirées de l'API HTTP, disponibles uniquement en commande Artisan
-- `.env` jamais commité (uniquement des `.env.*.example`), aucun secret réel dans le repo
-- Docker : port Postgres exposé uniquement sur `127.0.0.1`, build sans dépendances dev, fichiers cachés bloqués par Nginx
+- [ ] `APP_ENV=production` et `APP_DEBUG=false`
+- [ ] `FRONTEND_URL` pointant vers le vrai domaine (jamais `localhost`)
+- [ ] `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET` réels renseignés (sinon le mode simulation... ne s'activera pas non plus en prod, et les paiements échoueront proprement avec un message d'erreur, par sécurité)
+- [ ] Services `scheduler` et `queue` de `docker-compose.yml` bien démarrés
+- [ ] Sauvegardes PostgreSQL configurées
+- [ ] `php artisan config:cache` + `route:cache` après tout déploiement
 
 ---
 
-## Roadmap
+## Structure du dépôt
 
-- [ ] Réparer le tunnel d'achat depuis le panier (bloquant)
-- [ ] Édition (fenêtre 5 min) et suppression (pour moi / pour tous) d'un message
-- [ ] Exposer le statut brouillon pour les produits (création + publication différée)
-- [ ] Validation des webhooks Wave/Orange Money/Free Money en sandbox puis activation
-- [ ] Notifications push (Firebase FCM)
-- [ ] Compression vidéo côté serveur (FFmpeg, `ProcessVideoJob` déjà en place)
-- [ ] Déploiement backend (Railway / Render)
+```
+backend/    Laravel 12 — API (routes/api.php), migrations, jobs planifiés, tests
+frontend/   Angular — application web publique complète
+docker-compose.yml   postgres, app (PHP-FPM), queue, scheduler, nginx, pgadmin
+```
+```
 
----
-
-Projet QUINCH

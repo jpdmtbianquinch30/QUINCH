@@ -8,6 +8,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 28px;
   h1 { font-size: 1.75rem; font-weight: 700; }
   .page-subtitle { color: var(--q-text-muted); margin-top: 4px; }
@@ -19,42 +20,47 @@
   background: var(--q-bg-card);
   padding: 6px 14px;
   border-radius: var(--q-radius-full);
+  white-space: nowrap;
 }
 
-// ─── Type Filter Tabs ──────────────────────────────
+// ─── Type Filter — contrôle segmenté pleine largeur ───────────────────────
 .type-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 20px;
+  padding: 4px;
+  background: var(--q-bg-card);
+  border: 1px solid var(--q-border);
+  border-radius: 14px;
 }
 
 .type-tab {
+  flex: 1;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 9px 18px;
-  background: var(--q-bg-card);
-  border: 1px solid var(--q-border);
-  border-radius: 24px;
+  padding: 9px 14px;
+  background: none;
+  border: none;
+  border-radius: 10px;
   color: var(--q-text-secondary);
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 
-  .material-icons { font-size: 18px; }
+  .material-icons { font-size: 17px; }
 
-  &:hover {
-    border-color: rgba(99,102,241,0.3);
+  &:hover:not(.active) {
     color: var(--q-text-primary);
   }
 
   &.active {
-    background: rgba(99,102,241,0.1);
-    border-color: var(--q-accent);
-    color: var(--q-accent-light);
-    font-weight: 600;
-    .material-icons { color: var(--q-accent); }
+    background: var(--q-accent);
+    color: white;
+    box-shadow: 0 2px 10px var(--q-accent-glow);
+    .material-icons { color: white; }
   }
 }
 
@@ -228,10 +234,14 @@
 .filter-chips {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  &::-webkit-scrollbar { display: none; }
 }
 
 .chip {
+  flex-shrink: 0;
   padding: 8px 16px;
   border-radius: var(--q-radius-full);
   background: var(--q-bg-card);
@@ -240,6 +250,7 @@
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
   transition: all var(--q-transition-fast);
   &:hover { border-color: var(--q-accent); color: var(--q-text-primary); }
   &.active { background: var(--q-accent); color: white; border-color: var(--q-accent); }
@@ -616,6 +627,32 @@
 
 @media (max-width: 640px) {
   .marketplace-page { padding: 16px 12px; }
+
+  .page-header {
+    align-items: center;
+    margin-bottom: 18px;
+    h1 { font-size: 1.25rem; }
+    .page-subtitle { display: none; } // superflu sur petit écran, l'espace compte plus
+  }
+
+  .results-count { font-size: 0.72rem; padding: 5px 10px; }
+
+  .type-tabs { margin-bottom: 16px; }
+  .type-tab { font-size: 0.78rem; padding: 8px 6px; .material-icons { font-size: 15px; } }
+
+  .search-bar { margin-bottom: 18px; }
+
+  .search-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-input-wrap { flex: 1 1 100%; order: 1; }
+  .search-input { padding: 11px 10px; font-size: 0.88rem; }
+
+  .filter-toggle { flex: 1; order: 2; justify-content: center; }
+  .sort-select { flex: 1; order: 3; width: auto; font-size: 0.8rem; padding: 10px 12px; }
+
   .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .product-card { border-radius: 12px; }
   .card-visual { aspect-ratio: 3/4; }
@@ -626,8 +663,6 @@
   .card-seller-name { font-size: 0.72rem; }
   .card-meta-row { gap: 8px; }
   .card-stat { font-size: 0.68rem; }
-  .search-row { flex-wrap: wrap; }
-  .sort-select { width: 100%; }
   .filters-grid { grid-template-columns: 1fr; }
 }
 
@@ -635,12 +670,14 @@
 // LIGHT MODE
 // ═══════════════════════════════════════════════════════════════════════════
 :host-context(body.quinch-light) {
-  .type-tab {
-    background: #ffffff;
+  .type-tabs {
+    background: #f3f4f6;
     border-color: #e5e7eb;
+  }
+  .type-tab {
     color: #6b7280;
-    &:hover { border-color: rgba(0,0,0,0.18); color: #374151; }
-    &.active { background: rgba(99,102,241,0.08); border-color: var(--q-accent); color: #6366f1; }
+    &:hover:not(.active) { color: #374151; }
+    &.active { background: var(--q-accent); color: white; }
   }
 
   .product-card {
