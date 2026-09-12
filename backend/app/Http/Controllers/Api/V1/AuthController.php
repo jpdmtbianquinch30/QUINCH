@@ -399,10 +399,6 @@ class AuthController extends Controller
             'onboarding_completed' => $user->onboarding_completed,
             'preferences' => $user->preferences,
             'created_at' => $user->created_at,
-            'phone_verified' => $user->phone_verified,
-            'onboarding_completed' => $user->onboarding_completed,
-            'preferences' => $user->preferences,
-            'created_at' => $user->created_at,
             // Sans ces 3 champs, AuthService.user() (le signal partagé par
             // tout le front - sidebar, profil, badge Premium) ne connaissait
             // jamais le statut premium : le badge doré ajouté dans
