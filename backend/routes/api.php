@@ -42,7 +42,7 @@ Route::prefix('auth')->group(function () {
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
     Route::post('reset-password-email', [AuthController::class, 'resetPasswordByEmail']);
-    
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
@@ -68,6 +68,17 @@ Route::get('products/active-sellers', [ProductFeedController::class, 'activeSell
 Route::get('search', [ProductFeedController::class, 'search']);
 Route::get('search/suggestions', [ProductFeedController::class, 'suggestions']);
 Route::get('search/trending', [ProductFeedController::class, 'trending']);
+Route::get('search/trending', [ProductFeedController::class, 'trending']);
+// Compteur de vues : purement analytique (n'utilise même pas $request->user()
+// dans ProductInteractionController::view), n'a donc aucune raison d'exiger
+// une connexion. Cette route traînait par erreur dans le groupe
+// auth:sanctum plus bas : n'importe quelle visite de page produit sans
+// token valide (session pas encore chargée, token expiré, visiteur anonyme)
+// recevait un 401 sur cet appel silencieux, ce que l'intercepteur front
+// interprétait comme "session invalide" et déconnectait tout le monde -
+// y compris en plein milieu d'un parcours d'achat ou d'abonnement Premium
+// n'ayant pourtant aucun rapport avec cette route.
+Route::post('products/{product}/view', [ProductInteractionController::class, 'view']);
 Route::get('products/{product:slug}', [ProductController::class, 'show']);
 Route::middleware('feature:sharing')->group(function () {
     Route::post('shares/track', [ShareController::class, 'track'])->middleware('throttle:100,1');
@@ -122,7 +133,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [ProductController::class, 'store']);
         Route::put('{product}', [ProductController::class, 'update']);
         Route::delete('{product}', [ProductController::class, 'destroy']);
-        Route::post('{product}/view', [ProductInteractionController::class, 'view']);
         Route::post('{product}/like', [ProductInteractionController::class, 'toggleLike']);
         Route::post('{product}/share', [ProductInteractionController::class, 'share']);
         Route::post('{product}/save', [ProductInteractionController::class, 'toggleSave']);
