@@ -68,7 +68,6 @@ Route::get('products/active-sellers', [ProductFeedController::class, 'activeSell
 Route::get('search', [ProductFeedController::class, 'search']);
 Route::get('search/suggestions', [ProductFeedController::class, 'suggestions']);
 Route::get('search/trending', [ProductFeedController::class, 'trending']);
-Route::get('search/trending', [ProductFeedController::class, 'trending']);
 // Compteur de vues : purement analytique (n'utilise même pas $request->user()
 // dans ProductInteractionController::view), n'a donc aucune raison d'exiger
 // une connexion. Cette route traînait par erreur dans le groupe
