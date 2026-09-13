@@ -13,9 +13,12 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Support\VerifiesWaveWebhook;
 use App\Models\UserReport;
+use App\Support\ResolvesFrontendUrl;
+
 
 class TransactionController extends Controller
 {
+    use ResolvesFrontendUrl;
     use VerifiesWaveWebhook;
         public function initiate(Request $request): JsonResponse
     {
@@ -85,7 +88,7 @@ class TransactionController extends Controller
             'transaction_fee' => $fee,
         ]);
 
-        $frontendUrl = rtrim(config('quinch.frontend_url'), '/');
+                $frontendUrl = $this->resolveFrontendUrl($request);
 
         $result = $gateway->initiatePayment([
             'amount' => $product->price * $qty + $fee,
@@ -296,7 +299,7 @@ class TransactionController extends Controller
 
         return response()->json(['message' => 'Signalement envoyé. Notre équipe va examiner votre cas.']);
     }
-    
+
     public function webhookWave(Request $request): JsonResponse
     {
         $secret = $this->waveWebhookSecret();

@@ -10,10 +10,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use App\Support\VerifiesWaveWebhook;
+use App\Support\ResolvesFrontendUrl;
 
 class PremiumController extends Controller
 {
     use VerifiesWaveWebhook;
+    use ResolvesFrontendUrl;
+
     public function plans(): JsonResponse
     {
         return response()->json([
@@ -59,7 +62,7 @@ class PremiumController extends Controller
         ]);
 
         $gateway = PaymentGatewayFactory::create($validated['payment_method']);
-        $frontendUrl = rtrim(config('quinch.frontend_url'), '/');
+        $frontendUrl = $this->resolveFrontendUrl($request);
 
         $result = $gateway->initiatePayment([
             'amount' => $price,
