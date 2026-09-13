@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use App\Support\VerifiesWaveWebhook;
+use App\Models\UserReport;
 
 class TransactionController extends Controller
 {
@@ -262,19 +263,40 @@ class TransactionController extends Controller
         return response()->json(['message' => 'Cette action n\'est pas possible pour le statut actuel.'], 422);
     }
 
-    public function dispute(Request $request, Transaction $transaction): JsonResponse
+        public function dispute(Request $request, Transaction $transaction): JsonResponse
     {
-        $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
 
-        if ($transaction->buyer_id !== $request->user()->id) {
+        $user = $request->user();
+        // Acheteur ET vendeur peuvent signaler un problème sur leur propre
+        // transaction (avant ce fix, seul l'acheteur le pouvait alors que
+        // le vendeur peut tout autant vouloir signaler un acheteur
+        // problématique - fraude, harcèlement, faux prétextes, etc.).
+        $isBuyer = $transaction->buyer_id === $user->id;
+        $isSeller = $transaction->seller_id === $user->id;
+        if (!$isBuyer && !$isSeller) {
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
         $transaction->update(['security_check' => 'manual_review', 'order_status' => 'disputed']);
 
-        return response()->json(['message' => 'Litige ouvert. Notre équipe va examiner votre cas.']);
-    }
+        // Signale l'AUTRE partie à la transaction (UserReport, même
+        // mécanisme que le signalement de profil ailleurs dans l'app), en
+        // gardant le contexte de la transaction dans la description pour
+        // que la modération sache de quelle commande il s'agit.
+        UserReport::create([
+            'reporter_id' => $user->id,
+            'reported_user_id' => $isBuyer ? $transaction->seller_id : $transaction->buyer_id,
+            'reason' => 'other',
+            'description' => "[Transaction {$transaction->id}] " . $validated['reason'],
+            'status' => 'pending',
+        ]);
 
+        return response()->json(['message' => 'Signalement envoyé. Notre équipe va examiner votre cas.']);
+    }
+    
     public function webhookWave(Request $request): JsonResponse
     {
         $secret = $this->waveWebhookSecret();

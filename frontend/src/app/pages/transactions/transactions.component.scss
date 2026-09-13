@@ -334,6 +334,38 @@
   &:hover { background: rgba(99,102,241,0.15); }
 }
 
+.action-report {
+  background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.12); color: #f59e0b;
+  &:hover:not(:disabled) { background: #f59e0b; color: white; }
+}
+
+// ─── Modale de signalement ───────────────────────────────────
+.report-backdrop {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.report-modal {
+  background: var(--q-bg-elevated, #14162a); border-radius: 16px;
+  padding: 24px; width: 100%; max-width: 420px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.report-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+  h3 { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0; .material-icons { color: #f59e0b; } }
+}
+.report-close {
+  background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer;
+  display: flex; padding: 4px; border-radius: 8px;
+  &:hover { background: rgba(255,255,255,0.08); color: white; }
+}
+.report-sub { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin: 4px 0 14px; }
+.report-textarea { width: 100%; resize: vertical; min-height: 90px; margin-bottom: 16px; }
+.report-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+
 .action-done {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 10px;

@@ -254,6 +254,14 @@
                     }
                   }
 
+                                    <!-- Signaler : disponible pour acheteur et vendeur, tant
+                       que ce n'est pas déjà annulé ou en litige. -->
+                  @if (tx.order_status !== 'cancelled' && tx.order_status !== 'disputed') {
+                    <button type="button" class="action-btn action-report" (click)="openReport(tx); $event.stopPropagation()">
+                      <span class="material-icons">flag</span> Signaler
+                    </button>
+                  }
+
                   <!-- Product link -->
                   @if (tx.product?.slug) {
                     <a [routerLink]="['/product', tx.product.slug]" class="action-btn action-view" (click)="$event.stopPropagation()">
@@ -273,5 +281,31 @@
         <p>{{ activeTab() === 'purchases' ? 'Vos achats apparaitront ici' : 'Vos ventes apparaitront ici quand un client commandera' }}</p>
       </div>
     }
+  }
+
+  <!-- ═══ Modale de signalement ═══ -->
+  @if (reportingTx(); as tx) {
+    <div class="report-backdrop" (click)="closeReport()">
+      <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-header">
+          <h3><span class="material-icons">flag</span> Signaler un problème</h3>
+          <button type="button" class="report-close" (click)="closeReport()"><span class="material-icons">close</span></button>
+        </div>
+        <p class="report-sub">À propos de : {{ tx.product?.title || 'cette transaction' }}</p>
+        <textarea
+          class="q-input report-textarea"
+          rows="4"
+          placeholder="Décrivez le problème rencontré (produit non conforme, absence de livraison, comportement suspect...)"
+          [(ngModel)]="reportReason"
+        ></textarea>
+        <div class="report-actions">
+          <button type="button" class="q-btn q-btn-ghost" (click)="closeReport()">Annuler</button>
+          <button type="button" class="q-btn q-btn-danger" [disabled]="actionLoading() === tx.id" (click)="submitReport()">
+            @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+            @else { <span class="material-icons">send</span> Envoyer le signalement }
+          </button>
+        </div>
+      </div>
+    </div>
   }
 </div>

@@ -31,6 +31,9 @@ export class TransactionsComponent implements OnInit {
   // Detail
   expandedTxId = signal<string | null>(null);
   actionLoading = signal<string | null>(null);
+    // Signalement (modale simple : choix du motif + envoi)
+  reportingTx = signal<any>(null);
+  reportReason = '';
 
   // Stats from backend
   stats = signal<any>({});
@@ -173,6 +176,39 @@ export class TransactionsComponent implements OnInit {
     this.purchases.update(updateFn);
     this.sales.update(updateFn);
   }
+
+    // ─── Signalement ─────────────────────────────────────────
+  openReport(tx: any) {
+    this.reportingTx.set(tx);
+    this.reportReason = '';
+  }
+
+  closeReport() {
+    this.reportingTx.set(null);
+    this.reportReason = '';
+  }
+
+  submitReport() {
+    const tx = this.reportingTx();
+    if (!tx || !this.reportReason.trim()) {
+      this.notify.error('Merci de décrire le problème.');
+      return;
+    }
+    this.actionLoading.set(tx.id);
+    this.productService.disputeTransaction(tx.id, this.reportReason.trim()).subscribe({
+      next: (res: any) => {
+        this.notify.success(res.message || 'Signalement envoyé.');
+        this.updateTxInList({ id: tx.id, order_status: 'disputed' });
+        this.actionLoading.set(null);
+        this.closeReport();
+      },
+      error: (err) => {
+        this.notify.error(err.error?.message || "Impossible d'envoyer le signalement.");
+        this.actionLoading.set(null);
+      },
+    });
+  }
+  
 
   // ─── Helpers ──────────────
   formatPrice(amount: number): string {
