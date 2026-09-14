@@ -224,6 +224,15 @@
                         <span class="material-icons">close</span> Annuler
                       </button>
                     }
+                    @if (tx.order_status === 'shipped') {
+                      <!-- Sans ce bouton, une commande passée à "expédié" restait bloquée
+                           pour toujours : ni le vendeur ni l'acheteur n'avait alors le
+                           moindre moyen de la faire avancer vers "livré". -->
+                      <button class="action-btn action-deliver" (click)="markDelivered(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                        @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+                        @else { <span class="material-icons">done_all</span> Marquer livré }
+                      </button>
+                    }
                     @if (tx.order_status === 'completed') {
                       <div class="action-done"><span class="material-icons">verified</span> Vente terminée</div>
                     }
@@ -240,7 +249,7 @@
                         @else { <span class="material-icons">close</span> Annuler la commande }
                       </button>
                     }
-                    @if (tx.order_status === 'processing') {
+                    @if (tx.order_status === 'delivered') {
                       <button class="action-btn action-confirm" (click)="confirmReceipt(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">done_all</span> Confirmer la réception }

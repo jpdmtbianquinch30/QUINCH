@@ -110,7 +110,13 @@ export class CartComponent implements OnInit {
       return;
     }
     this.buyingItem.set(item);
-    this.buyQuantity.set(1);
+    // Repart de la quantité déjà choisie dans le panier plutôt que de
+    // toujours réinitialiser à 1 — avant ce fix, un client qui mettait 3
+    // dans le panier puis cliquait "Acheter" se retrouvait avec une modale
+    // repartant à 1, sans lien avec son choix précédent (incohérence entre
+    // ce qui est affiché dans le panier et ce qui est réellement acheté).
+    const max = item.product.stock_quantity ?? 1;
+    this.buyQuantity.set(Math.min(Math.max(item.quantity, 1), max));
     this.selectedPayment.set('');
     this.deliveryAddressText.set('');
     this.pendingTransactionId.set(null);

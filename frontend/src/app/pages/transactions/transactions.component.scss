@@ -374,6 +374,19 @@
   .material-icons { font-size: 18px; }
 }
 
+.action-waiting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  color: rgba(255,255,255,0.6);
+  font-size: 0.82rem;
+
+  .material-icons { font-size: 16px; }
+}
+
 .action-cancelled {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 10px;
