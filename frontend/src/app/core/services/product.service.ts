@@ -22,6 +22,7 @@ export class ProductService {
   // cette liste ailleurs dans l'app : importer ProductService.ALL_PAYMENT_METHODS.
   static readonly ALL_PAYMENT_METHODS: PaymentMethodOption[] = [
     { id: 'wave', name: 'Wave', desc: 'Paiement mobile Wave', icon: 'account_balance_wallet', color: '#1dc3e4', available: true },
+    { id: 'cash', name: 'Espèces', desc: 'Paiement à la livraison ou au retrait', icon: 'payments', color: '#22c55e', available: true },
     { id: 'orange_money', name: 'Orange Money', desc: 'Bientôt disponible', icon: 'smartphone', color: '#ff6600', available: false },
   ];
 
