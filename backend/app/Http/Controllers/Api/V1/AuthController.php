@@ -387,6 +387,7 @@ class AuthController extends Controller
             'cover_url' => $user->cover_url,
             'bio' => $user->bio,
             'website' => $user->website,
+            'seller_policies' => $user->seller_policies,
             'trust_score' => $user->trust_score,
             'trust_level' => $user->trust_level,
             'trust_badge' => $user->trust_badge,

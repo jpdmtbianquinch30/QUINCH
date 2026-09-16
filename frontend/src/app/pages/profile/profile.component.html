@@ -58,11 +58,20 @@
             }
           </h2>
           <p class="hero-handle">&#64;{{ user()!.username || user()!.phone_number }}</p>
+          @if (user()!.bio) {
+            <p class="profile-bio">{{ user()!.bio }}</p>
+          }
+          @if (user()!.website) {
+            <a [href]="user()!.website" target="_blank" rel="noopener" class="profile-website">
+              <span class="material-icons">link</span>
+              {{ user()!.website }}
+            </a>
+          }
           <div class="hero-meta">
             @if (user()!.city) {
               <span class="meta-pill"><span class="material-icons">location_on</span> {{ user()!.city }}, {{ user()!.region }}</span>
             }
-                       @if (auth.isAdmin()) {
+           @if (auth.isAdmin()) {
               <span class="q-badge q-badge-warning">ADMIN</span>
             } @else if (user()!.is_premium) {
               <span class="q-badge q-badge-premium"><span class="material-icons">workspace_premium</span> Premium</span>
@@ -72,6 +81,7 @@
           </div>
         </div>
       </div>
+
 
       <!-- Stats -->
       <div class="hero-stats">
@@ -131,6 +141,45 @@
       }
     </div>
 
+
+        @if (user()!.seller_policies) {
+      <div class="policies-card q-card">
+        <h3><span class="material-icons">policy</span> Politiques du vendeur</h3>
+        <div class="policies-grid">
+          @if (user()!.seller_policies?.returns_accepted) {
+            <div class="policy-row">
+              <span class="material-icons">assignment_return</span>
+              <span>Retours acceptés sous {{ user()!.seller_policies?.return_window_days }} jours</span>
+            </div>
+          }
+          @if (user()!.seller_policies?.warranty_offered) {
+            <div class="policy-row">
+              <span class="material-icons">verified_user</span>
+              <span>Garantie {{ user()!.seller_policies?.warranty_duration_months }} mois</span>
+            </div>
+          }
+          @if (user()!.seller_policies?.delivery_available) {
+            <div class="policy-row">
+              <span class="material-icons">local_shipping</span>
+              <span>Livraison disponible</span>
+            </div>
+          }
+          @if (user()!.seller_policies?.pickup_available) {
+            <div class="policy-row">
+              <span class="material-icons">storefront</span>
+              <span>Retrait sur place possible</span>
+            </div>
+          }
+          @if (user()!.seller_policies?.negotiable_by_default) {
+            <div class="policy-row">
+              <span class="material-icons">local_offer</span>
+              <span>Prix négociables par défaut</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    
     <!-- ═══════ PROFILE TABS ═══════ -->
     <div class="profile-tabs">
       <button class="profile-tab" [class.active]="profileTab() === 'products'" (click)="profileTab.set('products')">

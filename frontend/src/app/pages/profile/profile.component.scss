@@ -9,6 +9,53 @@
   padding: 0 var(--q-space-2xl) 80px;
 }
 
+.profile-bio {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.4;
+  margin: 6px 0 4px;
+}
+
+.profile-website {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #6366f1;
+  text-decoration: none;
+  margin-bottom: 4px;
+
+  .material-icons { font-size: 16px; }
+}
+
+.policies-card {
+  margin-bottom: 16px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+}
+
+.policies-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.policy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.75);
+
+  .material-icons { font-size: 18px; color: #6366f1; }
+}
+
 /* ─── TOP BAR ─── */
 .profile-top-bar {
   display: flex;
