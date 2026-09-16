@@ -58,6 +58,7 @@ class PublicProfileController extends Controller
                 'avatar_url' => $user->avatar_url,
                 'cover_url' => $user->cover_url,
                 'bio' => $user->bio ?? null,
+                'website' => $user->website ?? null,
                 'city' => $user->city,
                 'region' => $user->region,
                 'trust_score' => $user->trust_score,

@@ -35,6 +35,15 @@ export class EditProfileComponent implements OnInit {
   canChangeName = signal(true);
   nameChangeCountdown = signal('');
 
+  // ─── Changement de numéro de téléphone (mot de passe -> OTP) ───────────
+  showPhoneChangeModal = signal(false);
+  phoneChangeStep = signal<'password' | 'otp'>('password');
+  newPhoneNumber = '';
+  currentPasswordForPhone = '';
+  phoneChangeOtp = '';
+  phoneChangeLoading = signal(false);
+  phoneChangeDemoOtp = signal<string | null>(null);
+
   // ─── Régions -> villes du Sénégal ────────────────────────────────────────
   // Même mapping que onboarding.component.ts : avant ce fix, "cities" et
   // "regions" étaient deux listes plates indépendantes qui se chevauchaient
@@ -83,6 +92,7 @@ export class EditProfileComponent implements OnInit {
       city: [u?.city || ''],
       region: [u?.region || ''],
       bio: [u?.bio || ''],
+      website: [u?.website || '', [Validators.pattern(/^https?:\/\/.+/)]],
     });
     this.avatarPreview.set(u?.avatar_url || null);
     this.coverPreview.set(u?.cover_url || null);
@@ -206,5 +216,64 @@ export class EditProfileComponent implements OnInit {
 
   cancel(): void {
     this.location.back();
+  }
+
+    openPhoneChange(): void {
+    this.showPhoneChangeModal.set(true);
+    this.phoneChangeStep.set('password');
+    this.newPhoneNumber = '';
+    this.currentPasswordForPhone = '';
+    this.phoneChangeOtp = '';
+    this.phoneChangeDemoOtp.set(null);
+  }
+
+  closePhoneChange(): void {
+    this.showPhoneChangeModal.set(false);
+  }
+
+  submitPhoneChangeRequest(): void {
+    const phone = this.newPhoneNumber.startsWith('+221')
+      ? this.newPhoneNumber
+      : '+221' + this.newPhoneNumber.replace(/\s/g, '');
+
+    if (!this.currentPasswordForPhone) {
+      this.notify.error('Merci de saisir votre mot de passe.');
+      return;
+    }
+
+    this.phoneChangeLoading.set(true);
+    this.userService.requestPhoneChange(phone, this.currentPasswordForPhone).subscribe({
+      next: (res: any) => {
+        this.phoneChangeLoading.set(false);
+        this.phoneChangeStep.set('otp');
+        this.phoneChangeDemoOtp.set(res.demo_otp ?? null);
+        this.notify.success(res.message || 'Code envoyé au nouveau numéro.');
+      },
+      error: (err: any) => {
+        this.phoneChangeLoading.set(false);
+        this.notify.error(err.error?.message || 'Impossible de démarrer le changement.');
+      },
+    });
+  }
+
+  submitPhoneChangeOtp(): void {
+    if (this.phoneChangeOtp.length !== 6) {
+      this.notify.error('Le code doit contenir 6 chiffres.');
+      return;
+    }
+
+    this.phoneChangeLoading.set(true);
+    this.userService.confirmPhoneChange(this.phoneChangeOtp).subscribe({
+      next: (res: any) => {
+        this.phoneChangeLoading.set(false);
+        if (res.user) this.auth.updateUser(res.user);
+        this.notify.success('Numéro de téléphone mis à jour !');
+        this.closePhoneChange();
+      },
+      error: (err: any) => {
+        this.phoneChangeLoading.set(false);
+        this.notify.error(err.error?.message || 'Code invalide ou expiré.');
+      },
+    });
   }
 }

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use App\Models\User;
+use App\Services\TrustScoring\TrustScoreCalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -35,6 +37,7 @@ class UserController extends Controller
             'full_name' => ['sometimes', 'string', 'max:100'],
             'email' => ['sometimes', 'email', 'unique:users,email,' . $request->user()->id],
             'bio' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'website' => ['sometimes', 'nullable', 'url', 'max:255'],
             'city' => ['sometimes', 'string', 'max:100'],
             'region' => ['sometimes', 'string', 'max:100'],
             'is_seller' => ['sometimes', 'boolean'],
@@ -44,6 +47,9 @@ class UserController extends Controller
         ]);
 
         $request->user()->update($validated);
+
+        $newScore = (new TrustScoreCalculator())->calculate($request->user());
+        $request->user()->forceFill(['trust_score' => $newScore])->save();
 
         return response()->json([
             'message' => 'Profil mis à jour.',
@@ -199,6 +205,30 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Préférences sauvegardées.',
+            'user' => $user->fresh(),
+        ]);
+    }
+
+        public function savePolicies(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'returns_accepted' => ['required', 'boolean'],
+            'return_window_days' => ['required_if:returns_accepted,true', 'nullable', 'integer', Rule::in([3, 7, 14, 30])],
+            'warranty_offered' => ['required', 'boolean'],
+            'warranty_duration_months' => ['required_if:warranty_offered,true', 'nullable', 'integer', Rule::in([1, 3, 6, 12])],
+            'delivery_available' => ['required', 'boolean'],
+            'pickup_available' => ['required', 'boolean'],
+            'negotiable_by_default' => ['required', 'boolean'],
+        ]);
+
+        $user = $request->user();
+        $user->update(['seller_policies' => $validated]);
+
+        $newScore = (new TrustScoreCalculator())->calculate($user);
+        $user->forceFill(['trust_score' => $newScore])->save();
+
+        return response()->json([
+            'message' => 'Politiques vendeur mises à jour.',
             'user' => $user->fresh(),
         ]);
     }

@@ -15,6 +15,18 @@ export interface User {
   bio?: string;
   city?: string;
   region?: string;
+  is_seller?: boolean;
+  is_buyer?: boolean;
+  website?: string;
+  seller_policies?: {
+    returns_accepted: boolean;
+    return_window_days: number;
+    warranty_offered: boolean;
+    warranty_duration_months: number;
+    delivery_available: boolean;
+    pickup_available: boolean;
+    negotiable_by_default: boolean;
+  } | null;
   role: 'user' | 'admin' | 'super_admin'; // 'user' = client, 'admin'/'super_admin' = admin
   phone_verified: boolean;
   onboarding_completed: boolean;

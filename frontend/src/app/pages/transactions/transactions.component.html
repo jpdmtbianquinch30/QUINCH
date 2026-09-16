@@ -200,7 +200,7 @@
 
                   <!-- SELLER actions -->
                   @if (activeTab() === 'sales') {
-                    @if (tx.order_status === 'pending') {
+                   @if (tx.order_status === 'pending_payment') {
                       <button class="action-btn action-accept" (click)="acceptOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">check</span> Accepter }
@@ -243,7 +243,7 @@
 
                   <!-- BUYER actions -->
                   @if (activeTab() === 'purchases') {
-                    @if (tx.order_status === 'pending') {
+                    @if (tx.order_status === 'pending_payment') {
                       <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">close</span> Annuler la commande }

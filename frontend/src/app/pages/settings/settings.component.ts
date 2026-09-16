@@ -59,6 +59,18 @@ export class SettingsComponent implements OnInit {
   selectedLanguage = signal('fr');
   selectedCurrency = signal('XOF');
 
+    // ─── Politiques vendeur (configurable soi-même, voir profil public) ────
+  savingPolicies = signal(false);
+  policies = signal({
+    returns_accepted: false,
+    return_window_days: 7,
+    warranty_offered: false,
+    warranty_duration_months: 3,
+    delivery_available: true,
+    pickup_available: true,
+    negotiable_by_default: false,
+  });
+
   ngOnInit() {
     // Restore saved preferences from localStorage
     const prefs = localStorage.getItem('quinch_settings');
@@ -70,8 +82,32 @@ export class SettingsComponent implements OnInit {
         if (p.smsNotifications !== undefined) this.smsNotifications.set(p.smsNotifications);
         if (p.language) this.selectedLanguage.set(p.language);
         if (p.currency) this.selectedCurrency.set(p.currency);
-      } catch { /* ignore parse errors */ }
+        } catch { /* ignore parse errors */ }
     }
+
+    const existing = this.user()?.seller_policies as any;
+    if (existing) {
+      this.policies.set({ ...this.policies(), ...existing });
+    }
+  }
+
+  updatePolicy(key: string, value: boolean | number) {
+    this.policies.set({ ...this.policies(), [key]: value });
+  }
+
+  savePolicies() {
+    this.savingPolicies.set(true);
+    this.api.post<{ message: string; user: any }>('user/policies', this.policies()).subscribe({
+      next: (res) => {
+        this.savingPolicies.set(false);
+        if (res.user) this.auth.updateUser(res.user);
+        this.notify.success(res.message || 'Politiques enregistrées.');
+      },
+      error: (err) => {
+        this.savingPolicies.set(false);
+        this.notify.error(err.error?.message || "Erreur lors de l'enregistrement.");
+      },
+    });
   }
 
   private savePreferences() {

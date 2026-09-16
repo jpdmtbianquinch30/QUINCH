@@ -154,6 +154,107 @@
       </div>
     </div>
 
+        @if (user()?.is_seller) {
+      <div class="settings-section">
+        <h2><span class="material-icons">storefront</span> Politiques vendeur</h2>
+        <p class="section-hint">Affichées sur votre profil public. Les configurer améliore aussi votre score de confiance.</p>
+        <div class="settings-items">
+
+          <label class="setting-item toggle-item">
+            <div class="setting-info">
+              <span class="setting-title">Retours acceptés</span>
+              <span class="setting-subtitle">Les acheteurs peuvent retourner un article</span>
+            </div>
+            <div class="toggle-wrapper">
+              <input type="checkbox" class="toggle-input"
+                     [checked]="policies().returns_accepted"
+                     (change)="updatePolicy('returns_accepted', !policies().returns_accepted)" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+
+          @if (policies().returns_accepted) {
+            <div class="setting-item">
+              <div class="setting-info"><span class="setting-title">Délai de retour</span></div>
+              <select class="q-input policy-select" [ngModel]="policies().return_window_days" (ngModelChange)="updatePolicy('return_window_days', $event)">
+                <option [ngValue]="3">3 jours</option>
+                <option [ngValue]="7">7 jours</option>
+                <option [ngValue]="14">14 jours</option>
+                <option [ngValue]="30">30 jours</option>
+              </select>
+            </div>
+          }
+
+          <label class="setting-item toggle-item">
+            <div class="setting-info">
+              <span class="setting-title">Garantie offerte</span>
+              <span class="setting-subtitle">Sur les produits vendus</span>
+            </div>
+            <div class="toggle-wrapper">
+              <input type="checkbox" class="toggle-input"
+                     [checked]="policies().warranty_offered"
+                     (change)="updatePolicy('warranty_offered', !policies().warranty_offered)" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+
+          @if (policies().warranty_offered) {
+            <div class="setting-item">
+              <div class="setting-info"><span class="setting-title">Durée de garantie</span></div>
+              <select class="q-input policy-select" [ngModel]="policies().warranty_duration_months" (ngModelChange)="updatePolicy('warranty_duration_months', $event)">
+                <option [ngValue]="1">1 mois</option>
+                <option [ngValue]="3">3 mois</option>
+                <option [ngValue]="6">6 mois</option>
+                <option [ngValue]="12">12 mois</option>
+              </select>
+            </div>
+          }
+
+          <label class="setting-item toggle-item">
+            <div class="setting-info">
+              <span class="setting-title">Livraison disponible</span>
+            </div>
+            <div class="toggle-wrapper">
+              <input type="checkbox" class="toggle-input"
+                     [checked]="policies().delivery_available"
+                     (change)="updatePolicy('delivery_available', !policies().delivery_available)" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+
+          <label class="setting-item toggle-item">
+            <div class="setting-info">
+              <span class="setting-title">Retrait sur place disponible</span>
+            </div>
+            <div class="toggle-wrapper">
+              <input type="checkbox" class="toggle-input"
+                     [checked]="policies().pickup_available"
+                     (change)="updatePolicy('pickup_available', !policies().pickup_available)" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+
+          <label class="setting-item toggle-item">
+            <div class="setting-info">
+              <span class="setting-title">Prix négociables par défaut</span>
+              <span class="setting-subtitle">Pour vos nouvelles annonces</span>
+            </div>
+            <div class="toggle-wrapper">
+              <input type="checkbox" class="toggle-input"
+                     [checked]="policies().negotiable_by_default"
+                     (change)="updatePolicy('negotiable_by_default', !policies().negotiable_by_default)" />
+              <span class="toggle-slider"></span>
+            </div>
+          </label>
+
+          <button type="button" class="q-btn q-btn-primary" [disabled]="savingPolicies()" (click)="savePolicies()">
+            @if (savingPolicies()) { <div class="btn-loader"></div> }
+            @else { <span class="material-icons">save</span> Enregistrer mes politiques }
+          </button>
+        </div>
+      </div>
+    }
+    
     <!-- ═══════ CONFIDENTIALITE ═══════ -->
     <div class="settings-section">
       <h2><span class="material-icons">lock</span> Confidentialite</h2>

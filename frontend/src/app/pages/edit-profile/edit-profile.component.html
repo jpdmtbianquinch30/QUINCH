@@ -107,17 +107,87 @@
           </select>
         </div>
       </div>
+
+      <div class="form-group">
+        <label>Bio</label>
+        <textarea class="q-input" formControlName="bio" rows="3" maxlength="500" placeholder="Parlez un peu de vous ou de votre boutique..."></textarea>
+        <span class="field-hint">{{ profileForm.get('bio')?.value?.length || 0 }}/500</span>
+      </div>
+
+      <div class="form-group">
+        <label>Site web</label>
+        <input type="url" class="q-input" formControlName="website" placeholder="https://votre-site.sn" />
+        @if (profileForm.get('website')?.hasError('pattern') && profileForm.get('website')?.touched) {
+          <span class="field-error">Doit commencer par http:// ou https://</span>
+        }
+      </div>
     </div>
 
-    <!-- ═══════ PHONE (READ ONLY) ═══════ -->
+    <!-- ═══════ PHONE ═══════ -->
     <div class="edit-section">
       <h2><span class="material-icons">phone</span> Telephone</h2>
       <div class="form-group">
         <label>Numero de telephone</label>
-        <input type="text" class="q-input readonly-input" [value]="user()?.phone_number" readonly />
-        <span class="field-hint">Pour changer votre numero, contactez le support.</span>
+        <div class="phone-row">
+          <input type="text" class="q-input readonly-input" [value]="user()?.phone_number" readonly />
+          <button type="button" class="q-btn q-btn-secondary" (click)="openPhoneChange()">Modifier</button>
+        </div>
+        <span class="field-hint">Votre mot de passe sera demandé, puis un code de vérification sera envoyé au nouveau numéro.</span>
       </div>
     </div>
 
   </form>
+
+    <!-- ═══ Modale de changement de téléphone ═══ -->
+  @if (showPhoneChangeModal()) {
+    <div class="report-backdrop" (click)="closePhoneChange()">
+      <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-header">
+          <h3><span class="material-icons">phone</span> Changer de numéro</h3>
+          <button type="button" class="report-close" (click)="closePhoneChange()"><span class="material-icons">close</span></button>
+        </div>
+
+        @if (phoneChangeStep() === 'password') {
+          <p class="report-sub">Saisissez votre mot de passe pour continuer, puis le nouveau numéro.</p>
+          <div class="form-group">
+            <label>Mot de passe actuel</label>
+            <input type="password" class="q-input" [(ngModel)]="currentPasswordForPhone" [ngModelOptions]="{standalone: true}" placeholder="••••••••" />
+          </div>
+          <div class="form-group">
+            <label>Nouveau numéro</label>
+            <div class="input-prefix-wrap">
+              <span class="prefix-label">+221</span>
+              <input type="tel" class="q-input prefix-input" [(ngModel)]="newPhoneNumber" [ngModelOptions]="{standalone: true}" placeholder="770000000" />
+            </div>
+          </div>
+          <div class="report-actions">
+            <button type="button" class="q-btn q-btn-ghost" (click)="closePhoneChange()">Annuler</button>
+            <button type="button" class="q-btn q-btn-primary" [disabled]="phoneChangeLoading()" (click)="submitPhoneChangeRequest()">
+              @if (phoneChangeLoading()) { <div class="btn-loader"></div> }
+              @else { Continuer }
+            </button>
+          </div>
+        } @else {
+          <p class="report-sub">Code envoyé au {{ newPhoneNumber.startsWith('+221') ? newPhoneNumber : '+221' + newPhoneNumber }}</p>
+          @if (phoneChangeDemoOtp()) {
+            <div class="demo-otp-banner" (click)="phoneChangeOtp = phoneChangeDemoOtp() || ''">
+              <span class="material-icons">bug_report</span>
+              <span>Mode démo — code : <strong>{{ phoneChangeDemoOtp() }}</strong> (cliquer pour remplir)</span>
+            </div>
+          }
+          <div class="form-group">
+            <label>Code de vérification</label>
+            <input type="text" inputmode="numeric" maxlength="6" class="q-input otp-input" [(ngModel)]="phoneChangeOtp" [ngModelOptions]="{standalone: true}" placeholder="123456" />
+          </div>
+          <div class="report-actions">
+            <button type="button" class="q-btn q-btn-ghost" (click)="phoneChangeStep.set('password')">Retour</button>
+            <button type="button" class="q-btn q-btn-primary" [disabled]="phoneChangeLoading()" (click)="submitPhoneChangeOtp()">
+              @if (phoneChangeLoading()) { <div class="btn-loader"></div> }
+              @else { Confirmer }
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>

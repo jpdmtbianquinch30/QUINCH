@@ -108,6 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('profile', [UserController::class, 'profile']);
         Route::put('profile', [UserController::class, 'updateProfile']);
         Route::post('preferences', [UserController::class, 'savePreferences']);
+        Route::post('policies', [UserController::class, 'savePolicies']);
         Route::post('upload-avatar', [UserController::class, 'uploadAvatar']);
         Route::post('upload-cover', [UserController::class, 'uploadCover']);
         Route::post('phone/request-change', [UserController::class, 'requestPhoneChange'])->middleware('throttle:5,1');

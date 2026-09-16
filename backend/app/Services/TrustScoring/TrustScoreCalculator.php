@@ -8,18 +8,21 @@ class TrustScoreCalculator
 {
     public function calculate(User $user): float
     {
-        $baseScore = 0.5;
+        $baseScore = 0.3;
 
-        // Positive factors
         $positiveFactors = [
             'kyc_verified' => $user->kyc_status === 'verified' ? 0.2 : 0,
             'phone_verified' => $user->phone_verified ? 0.1 : 0,
             'successful_transactions' => $this->transactionScore($user),
             'account_age' => min($user->account_age_days / 365, 0.15),
+            // Poids largement augmenté (0.05 -> 0.4) : un profil entièrement
+            // rempli (bio, site, localisation, avatar, couverture) ET des
+            // politiques vendeur configurées doit à lui seul amener un
+            // compte tout neuf mais soigné à ~80% de confiance, sans
+            // attendre un historique de transactions.
             'completed_profile' => $this->profileCompleteness($user),
         ];
 
-        // Negative factors
         $negativeFactors = [
             'failed_transactions' => -0.05 * $user->purchasedTransactions()
                 ->where('payment_status', 'failed')
@@ -42,10 +45,13 @@ class TrustScoreCalculator
 
     private function profileCompleteness(User $user): float
     {
-        $fields = ['full_name', 'email', 'username', 'avatar_url', 'city', 'region'];
+        $fields = ['full_name', 'email', 'username', 'avatar_url', 'cover_url', 'city', 'region', 'bio', 'website'];
         $filled = collect($fields)->filter(fn($f) => !empty($user->$f))->count();
+        $fieldsScore = ($filled / count($fields)) * 0.3;
 
-        return ($filled / count($fields)) * 0.05;
+        $policiesScore = !empty($user->seller_policies) ? 0.1 : 0;
+
+        return $fieldsScore + $policiesScore;
     }
 
     public function recalculateAll(): int
@@ -54,8 +60,6 @@ class TrustScoreCalculator
         User::chunk(100, function ($users) use (&$count) {
             foreach ($users as $user) {
                 $newScore = $this->calculate($user);
-                // trust_score n'est plus dans $fillable (champ sensible) :
-                // forceFill nécessaire pour ce recalcul batch interne.
                 $user->forceFill(['trust_score' => $newScore])->save();
                 $count++;
             }

@@ -6,6 +6,7 @@ use App\Jobs\ReleaseExpiredReservations;
 use Illuminate\Support\Facades\Schedule;
 use App\Jobs\ExpirePremiumSubscriptions;
 use App\Jobs\CleanupAbandonedDraftListings;
+use App\Jobs\RecalculateTrustScores;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -13,3 +14,4 @@ Artisan::command('inspire', function () {
 Schedule::job(new ReleaseExpiredReservations)->everyMinute();
 Schedule::job(new ExpirePremiumSubscriptions)->daily();
 Schedule::job(new CleanupAbandonedDraftListings)->hourly();
+Schedule::job(new RecalculateTrustScores)->daily();
