@@ -1,8 +1,12 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import { Router } from '@angular/router';
+import { Location } from '@angular/common';
+
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { CoverCropperComponent } from '../../shared/cover-cropper/cover-cropper.component';
-
 @Component({
   selector: 'app-edit-profile',
   standalone: true,
