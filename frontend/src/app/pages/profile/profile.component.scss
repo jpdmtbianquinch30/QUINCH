@@ -1242,7 +1242,37 @@
   .products-grid { grid-template-columns: repeat(2, 1fr); gap: var(--q-space-sm); }
   .profile-actions { flex-wrap: wrap; }
   .profile-actions .q-btn { flex: 1; min-width: 140px; }
-  .section-header h2 { font-size: 1rem; }
+
+  // Sur petit écran, "+ Nouveau" + le sélecteur grille/liste ne tenaient
+  // plus à côté du titre et débordaient hors du viewport (confirmé par
+  // mesure réelle à 320-360px de large) : on passe le bloc d'actions sur
+  // sa propre ligne, pleine largeur.
+  .section-header {
+    flex-wrap: wrap;
+    gap: var(--q-space-sm);
+
+    h2 { font-size: 1rem; }
+  }
+  .section-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  // Les onglets "Mes produits" / "Likes" étaient trop serrés pour tenir
+  // sur deux colonnes en dessous de ~360px (texte + pastille de compte
+  // poussés hors du cadre) : on resserre padding/gap/police du strict
+  // nécessaire pour que tout reste visible sans passer à la ligne.
+  .profile-tab {
+    padding: 14px 8px;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+  .tab-count {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 0.7rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════════

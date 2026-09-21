@@ -35,7 +35,15 @@
           }
         </div>
       </div>
-      <input #coverInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onCoverFileSelected($event)" />
+            <input #coverInput type="file" accept="image/jpeg,image/png,image/webp" hidden (change)="onCoverFileSelected($event)" />
+
+      @if (coverFileToCrop(); as fileToCrop) {
+        <app-cover-cropper
+          [file]="fileToCrop"
+          (cropped)="onCoverCropped($event)"
+          (cancelled)="onCoverCropCancelled()"
+        />
+      }
 
       <!-- Avatar -->
       <div class="avatar-upload-section">

@@ -1,0 +1,43 @@
+<div class="cropper-backdrop" (click)="cancel()">
+  <div class="cropper-modal" (click)="$event.stopPropagation()">
+    <div class="cropper-header">
+      <h3><span class="material-icons">crop</span> Ajuster la couverture</h3>
+      <button type="button" class="cropper-close" (click)="cancel()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <p class="cropper-sub">Glissez l'image pour la repositionner, utilisez le curseur pour zoomer.</p>
+
+    <div #frame class="cropper-frame" (mousedown)="onDragStart($event)" (touchstart)="onDragStart($event)">
+      @if (imageUrl()) {
+        <img #img [src]="imageUrl()!" (load)="onImageLoad()" alt="Aperçu de la couverture" draggable="false" />
+      }
+    </div>
+
+    <div class="cropper-zoom-row">
+      <span class="material-icons">image</span>
+      <input
+        #zoomSlider
+        type="range"
+        min="1"
+        [max]="maxZoom"
+        step="0.01"
+        [value]="zoom()"
+        (input)="onZoomChange(zoomSlider.valueAsNumber)"
+      />
+      <span class="material-icons cropper-zoom-icon-big">image</span>
+    </div>
+
+    <div class="cropper-actions">
+      <button type="button" class="q-btn q-btn-ghost" (click)="cancel()">Annuler</button>
+      <button type="button" class="q-btn q-btn-primary" [disabled]="saving()" (click)="confirm()">
+        @if (saving()) {
+          <div class="btn-loader"></div>
+        } @else {
+          Valider
+        }
+      </button>
+    </div>
+  </div>
+</div>

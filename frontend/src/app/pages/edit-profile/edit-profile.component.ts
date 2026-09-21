@@ -1,15 +1,12 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { Location } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { CoverCropperComponent } from '../../shared/cover-cropper/cover-cropper.component';
 
 @Component({
   selector: 'app-edit-profile',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule, CoverCropperComponent],
   templateUrl: './edit-profile.component.html',
   styleUrl: './edit-profile.component.scss',
 })
@@ -30,6 +27,9 @@ export class EditProfileComponent implements OnInit {
 
   avatarPreview = signal<string | null>(null);
   coverPreview = signal<string | null>(null);
+
+  // Fichier en attente de réglage (glisser/zoomer) dans la modale de recadrage
+  coverFileToCrop = signal<File | null>(null);
 
   // Name change restriction (7 days minimum)
   canChangeName = signal(true);
@@ -152,6 +152,7 @@ export class EditProfileComponent implements OnInit {
   onCoverFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
+    input.value = '';
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
@@ -159,24 +160,35 @@ export class EditProfileComponent implements OnInit {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => this.coverPreview.set(reader.result as string);
-    reader.readAsDataURL(file);
+    this.coverFileToCrop.set(file);
+  }
+
+  onCoverCropped(blob: Blob): void {
+    this.coverFileToCrop.set(null);
+
+    const croppedFile = new File([blob], 'cover.jpg', { type: 'image/jpeg' });
+    const previewUrl = URL.createObjectURL(blob);
+    this.coverPreview.set(previewUrl);
 
     this.uploadingCover.set(true);
-    this.userService.uploadCover(file).subscribe({
+    this.userService.uploadCover(croppedFile).subscribe({
       next: (res: any) => {
         this.uploadingCover.set(false);
         if (res.user) this.auth.updateUser(res.user);
         this.coverPreview.set(res.cover_url || res.user?.cover_url);
         this.notify.success('Photo de couverture mise a jour!');
+        URL.revokeObjectURL(previewUrl);
       },
       error: () => {
         this.uploadingCover.set(false);
         this.notify.error('Erreur lors de l\'upload.');
+        URL.revokeObjectURL(previewUrl);
       },
     });
-    input.value = '';
+  }
+
+  onCoverCropCancelled(): void {
+    this.coverFileToCrop.set(null);
   }
 
   // ─── Save Profile ──────────────────────────────

@@ -1,0 +1,143 @@
+.cropper-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cropper-modal {
+  background: var(--q-bg-elevated, #14162a);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cropper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.05rem;
+    margin: 0;
+  }
+}
+
+.cropper-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+  border-radius: 8px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+  }
+}
+
+.cropper-sub {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 16px;
+}
+
+.cropper-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: none;
+    max-height: none;
+    transform-origin: top left;
+    pointer-events: none;
+  }
+}
+
+.cropper-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+
+  .material-icons {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 18px;
+  }
+
+  .cropper-zoom-icon-big {
+    font-size: 24px;
+  }
+
+  input[type='range'] {
+    flex: 1;
+    accent-color: var(--q-accent, #6b8aff);
+  }
+}
+
+.cropper-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+:host-context(body.quinch-light) {
+  .cropper-modal {
+    background: #ffffff;
+    border-color: #e5e7eb;
+  }
+
+  .cropper-close {
+    color: rgba(0, 0, 0, 0.45);
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.06);
+      color: #111;
+    }
+  }
+
+  .cropper-sub {
+    color: #4b5563;
+  }
+
+  .cropper-zoom-row .material-icons {
+    color: #6b7280;
+  }
+}
