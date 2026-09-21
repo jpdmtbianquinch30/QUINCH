@@ -61,9 +61,15 @@ return [
 
 
 'google' => [
-    'client_id'     => env('GOOGLE_CLIENT_ID'),
-    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-    'redirect'      => 'postmessage',
+    'client_id'            => env('GOOGLE_CLIENT_ID'),
+    'client_secret'        => env('GOOGLE_CLIENT_SECRET'),
+    // Déclarés ici (et non lus via env() dans le contrôleur) : après un
+    // `php artisan config:cache`, tout appel à env() hors config renvoie
+    // null en production — la vérification d'audience échouerait alors
+    // silencieusement pour les clients mobiles.
+    'android_client_id'    => env('GOOGLE_ANDROID_CLIENT_ID'),
+    'ios_client_id'        => env('GOOGLE_IOS_CLIENT_ID'),
+    'redirect'             => 'postmessage',
 ],
 
 ];

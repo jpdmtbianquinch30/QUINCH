@@ -3,6 +3,14 @@ import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { User, AuthResponse, LoginRequest, RegisterRequest, ResendOtpResponse, VerifyOtpRequest } from '../models/user.model';
 import { Observable, tap, catchError, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
+
+const TOKEN_KEY = 'quinch_token';
+const USER_KEY = 'quinch_user';
+// SEC-05 : horodatage de l'émission du jeton actuel, utilisé uniquement pour
+// décider quand le rafraîchir proactivement — jamais envoyé au backend, qui
+// est seul juge de l'expiration réelle (config('sanctum.expiration')).
+const TOKEN_ISSUED_AT_KEY = 'quinch_token_issued_at';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -21,6 +29,17 @@ export class AuthService {
 
   constructor(private api: ApiService, private router: Router) {
     this.loadFromStorage();
+
+    // SEC-05 — Les jetons expirent désormais côté serveur (14 jours par
+    // défaut, voir config/sanctum.php). Plutôt que d'attendre un 401 en
+    // pleine utilisation (mauvaise expérience : une action perdue, un
+    // formulaire à retaper), on prolonge la session en tâche de fond tant
+    // que l'utilisateur reste actif — bien avant l'échéance réelle.
+    //
+    // Vérifié au démarrage (ci-dessus, via loadFromStorage) ET à intervalle
+    // régulier tant que l'onglet reste ouvert : une session ouverte plusieurs
+    // jours dans le même onglet, sans rechargement, doit aussi être couverte.
+    setInterval(() => this.maybeRefreshToken(), 60 * 60 * 1000); // toutes les heures
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
@@ -70,7 +89,7 @@ export class AuthService {
     return this.api.post<{ message: string; user: User }>('auth/verify-otp', data).pipe(
       tap(res => {
         this.currentUser.set(res.user);
-        localStorage.setItem('quinch_user', JSON.stringify(res.user));
+        localStorage.setItem(USER_KEY, JSON.stringify(res.user));
         this.lastDemoOtp.set(null);
       })
     );
@@ -128,26 +147,86 @@ export class AuthService {
   /** Update the current user in memory + localStorage (after avatar/cover upload, etc.) */
   updateUser(user: User): void {
     this.currentUser.set(user);
-    localStorage.setItem('quinch_user', JSON.stringify(user));
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
+  /**
+   * Installe la session issue d'une connexion Google.
+   *
+   * La réponse de `auth/google` n'a pas la même forme que `AuthResponse`
+   * (elle porte en plus `needs_phone` / `needs_username`), d'où ce point
+   * d'entrée dédié plutôt qu'un cast forcé vers `handleAuth`.
+   */
+  applyGoogleSession(token: string, user: User): void {
+    this.currentUser.set(user);
+    this.token.set(token);
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    localStorage.setItem(TOKEN_ISSUED_AT_KEY, String(Date.now()));
+    this.showWelcomeNotification(user);
+  }
+
+  /**
+   * SEC-05 — Prolonge la session en tâche de fond si le jeton actuel
+   * approche de son échéance côté serveur, sans attendre un 401.
+   *
+   * Ne connaît PAS la durée d'expiration exacte configurée côté backend
+   * (`SANCTUM_TOKEN_EXPIRATION_MINUTES`) : les deux valeurs sont
+   * volontairement indépendantes (voir config/sanctum.php). Ce seuil est
+   * choisi confortablement plus court, pour qu'un utilisateur qui revient
+   * au moins une fois par semaine ne voie jamais son jeton expirer. Un
+   * jeton abandonné plus longtemps que ça expirera normalement côté
+   * serveur — c'est précisément l'effet recherché par SEC-05.
+   */
+  private maybeRefreshToken(): void {
+    const token = this.token();
+    if (!token) return;
+
+    const issuedAtRaw = localStorage.getItem(TOKEN_ISSUED_AT_KEY);
+
+    // Session existante d'avant ce correctif, sans horodatage connu : on en
+    // pose un maintenant plutôt que de rafraîchir immédiatement au hasard.
+    if (!issuedAtRaw) {
+      localStorage.setItem(TOKEN_ISSUED_AT_KEY, String(Date.now()));
+      return;
+    }
+
+    const ageMinutes = (Date.now() - Number(issuedAtRaw)) / 60000;
+    if (ageMinutes < environment.tokenRefreshThresholdMinutes) return;
+
+    this.api.post<{ token: string; user: User }>('auth/refresh').subscribe({
+      next: (res) => {
+        this.token.set(res.token);
+        localStorage.setItem(TOKEN_KEY, res.token);
+        localStorage.setItem(TOKEN_ISSUED_AT_KEY, String(Date.now()));
+        if (res.user) this.updateUser(res.user);
+      },
+      // Échec silencieux : si le jeton est déjà expiré, cet appel renverra
+      // 401 et l'intercepteur d'erreurs se charge déjà de la déconnexion
+      // propre. Pas besoin de dupliquer cette logique ici.
+      error: () => {},
+    });
   }
 
   private handleAuth(res: AuthResponse): void {
     this.currentUser.set(res.user);
     this.token.set(res.token);
-    localStorage.setItem('quinch_token', res.token);
-    localStorage.setItem('quinch_user', JSON.stringify(res.user));
+    localStorage.setItem(TOKEN_KEY, res.token);
+    localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+    localStorage.setItem(TOKEN_ISSUED_AT_KEY, String(Date.now()));
   }
 
   private clearAuth(): void {
     this.currentUser.set(null);
     this.token.set(null);
-    localStorage.removeItem('quinch_token');
-    localStorage.removeItem('quinch_user');
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_ISSUED_AT_KEY);
   }
 
   private loadFromStorage(): void {
-    const token = localStorage.getItem('quinch_token');
-    const userStr = localStorage.getItem('quinch_user');
+    const token = localStorage.getItem(TOKEN_KEY);
+    const userStr = localStorage.getItem(USER_KEY);
     if (token && userStr) {
       try {
         this.token.set(token);
@@ -159,10 +238,14 @@ export class AuthService {
           next: (res) => {
             if (res.user) {
               this.currentUser.set(res.user);
-              localStorage.setItem('quinch_user', JSON.stringify(res.user));
+              localStorage.setItem(USER_KEY, JSON.stringify(res.user));
             }
           },
         });
+
+        // SEC-05 : prolonge la session dès le démarrage si nécessaire,
+        // plutôt que d'attendre la prochaine heure pleine.
+        this.maybeRefreshToken();
       } catch {
         this.clearAuth();
       }

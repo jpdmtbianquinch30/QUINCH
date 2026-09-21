@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'fraud.check' => \App\Http\Middleware\FraudDetection::class,
             'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
+            'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
         ]);
 
         // API pure : il n'existe aucune route web nommée "login". Sans ceci,

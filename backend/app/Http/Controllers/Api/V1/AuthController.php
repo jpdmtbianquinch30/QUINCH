@@ -261,18 +261,35 @@ class AuthController extends Controller
         $validated = $request->validate([
             'phone_number' => ['required', 'string'],
             'email' => ['required', 'email'],
+            'otp' => ['required', 'string'],
             'password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
         ], [
             'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
+            'otp.required'   => 'Le code reçu par SMS est obligatoire.',
         ]);
 
         $user = User::where('phone_number', $validated['phone_number'])->first();
 
+        // ATTENTION — correctif de sécurité critique.
+        //
+        // Cette route acceptait auparavant `téléphone + e-mail` comme seule
+        // preuve d'identité. Or ces deux éléments sont des IDENTIFIANTS, pas
+        // des SECRETS : le numéro est communiqué à l'autre partie de chaque
+        // transaction, et l'e-mail est devinable. N'importe qui connaissant
+        // ces deux informations pouvait réinitialiser le mot de passe d'un
+        // vendeur et prendre le contrôle de son compte.
+        //
+        // On exige désormais en plus un OTP envoyé par SMS (preuve de
+        // possession du téléphone), exactement comme le parcours
+        // `forgot-password` → `reset-password`. L'e-mail reste vérifié :
+        // il constitue alors un second facteur réel, et non le seul.
         $emailMatches = $user
             && $user->email
             && strcasecmp($user->email, $validated['email']) === 0;
 
-        if (!$emailMatches) {
+        $otpValid = $user && $user->verifyOtp($validated['otp']);
+
+        if (!$emailMatches || !$otpValid) {
             return response()->json([
                 'message' => 'Les informations fournies ne correspondent à aucun compte.',
                 'error' => 'invalid_credentials',

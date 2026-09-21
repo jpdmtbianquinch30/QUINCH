@@ -10,6 +10,8 @@
 - [Stack technique](#stack-technique)
 - [Installation](#installation)
 - [Variables d'environnement](#variables-denvironnement)
+- [Connexion Google](#connexion-google)
+- [Sécurité — correctifs de septembre 2026](#sécurité--correctifs-de-septembre-2026)
 - [Paiement — mode simulation](#paiement--mode-simulation-développement)
 - [Feature flags](#feature-flags)
 - [Fonctionnalités par domaine](#fonctionnalités-par-domaine)
@@ -98,6 +100,8 @@ Les plus importantes (voir `backend/.env.example` pour la liste complète) :
 | `QUINCH_FEATURE_*` | Un booléen par fonctionnalité optionnelle (voir section Feature flags). |
 | `QUINCH_PREMIUM_PRICE_MONTHLY` / `_ANNUAL` | Prix Premium en XOF (2000 / 20000 par défaut). |
 | `QUINCH_LISTING_FEE_WITH_VIDEO` / `_WITHOUT_VIDEO` | Frais de publication pour un compte non-Premium (500 / 300 XOF). |
+| `CORS_ALLOWED_ORIGINS` | **Obligatoire en production.** Domaines autorisés à appeler l'API depuis un navigateur, séparés par des virgules. Sans cette variable, le frontend de production est bloqué par le navigateur (erreur CORS). Ne jamais mettre `*` : `supports_credentials` est activé. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Connexion Google (voir section dédiée). Vides → le bouton est masqué, le reste de l'app fonctionne. |
 
 ---
 
@@ -108,6 +112,91 @@ Tant que `WAVE_API_KEY` est absent du `.env` (et que `APP_ENV` n'est pas `produc
 **Ce mode ne s'active jamais en production**, même si la clé est oubliée par erreur (double vérification dans `WaveGateway::initiatePayment()` et `SimulatePaymentController`).
 
 Pour du vrai Wave en local : renseignez `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET` dans `.env`.
+
+---
+
+## Connexion Google
+
+### Mise en service
+
+1. Console Google Cloud → **API et services → Identifiants** → créer un *ID client OAuth* de type **Application Web**.
+2. Déclarer les **origines JavaScript autorisées** : `http://localhost:4200` en dev, l'URL du site en production.
+3. Reporter l'identifiant obtenu **à deux endroits** :
+   - `GOOGLE_CLIENT_ID` dans `backend/.env` ;
+   - `googleClientId` dans `frontend/src/environments/environment.ts` **et** `environment.prod.ts`.
+
+Tant que ces valeurs sont vides, le bouton « Continuer avec Google » est masqué proprement et le reste de
+l'application fonctionne normalement.
+
+### Parcours
+
+| Étape | Route | Remarque |
+|---|---|---|
+| Connexion / inscription | `POST auth/google` | **Publique.** Le frontend envoie l'`id_token` renvoyé par le SDK Google Identity Services. |
+| Ajout du numéro | `POST auth/google/add-phone` | Authentifiée. Un compte Google n'a pas de numéro sénégalais : demandé juste après la première connexion, génère l'OTP dans la foulée. |
+| Choix du pseudo | `POST auth/google/update-username` | Authentifiée. |
+
+Le backend ne fait jamais confiance au profil renvoyé par le SDK : `GoogleAuthController::verifyGoogleToken()`
+revérifie l'audience (`aud`), l'émetteur (`iss`), l'expiration (`exp`) et la présence de `sub` auprès de Google.
+
+> **Le rattachement à un compte existant par adresse e-mail n'a lieu que si Google confirme
+> `email_verified`.** Sans ce contrôle, créer un compte Google portant l'e-mail d'une victime suffirait à
+> récupérer son compte QUINCH. Ne pas assouplir ce point.
+
+---
+
+## Sécurité — correctifs de septembre 2026
+
+Six constats issus d'un audit, dont deux critiques. Détail complet dans
+**`QUINCH-audit-et-changements.pdf`** (à la racine du dépôt).
+
+| Réf. | Constat | Gravité | État |
+|---|---|---|---|
+| SEC-01 | Réinitialisation de mot de passe sans preuve de possession | Critique | Corrigé |
+| SEC-02 | Connexion Google inopérante + vérification de jeton incomplète | Critique | Corrigé |
+| SEC-03 | CORS figé sur localhost — API inaccessible en production | Bloquant | Corrigé |
+| SEC-04 | Micro interdit par en-tête alors que la messagerie vocale existe | Moyen | Corrigé |
+| SEC-05 | Jetons Sanctum sans expiration | Moyen | Corrigé |
+| SEC-06 | Middleware `phone_verified` annoncé mais inexistant | Moyen | Corrigé |
+
+### Points à ne pas défaire
+
+- **`POST auth/google` doit rester hors de tout groupe `auth:sanctum`.** Elle y était déclarée par erreur :
+  il fallait être connecté pour pouvoir se connecter, la route répondait 401 en permanence.
+- **`reset-password-email` exige un OTP.** Le couple téléphone + e-mail ne prouve rien : le numéro est
+  transmis à l'acheteur dans chaque transaction, l'e-mail se devine. L'e-mail reste vérifié comme *second*
+  facteur, jamais comme unique rempart.
+- **Les identifiants clients Google se lisent via `config('services.google.*')`, jamais via `env()`.**
+  Après `php artisan config:cache` — obligatoire en production — `env()` renvoie `null` hors des fichiers
+  de configuration.
+- **`Permissions-Policy` doit garder `microphone=(self)`.** Avec `microphone=()`, le navigateur refuse
+  `getUserMedia()` et les messages vocaux échouent sans erreur exploitable.
+- **`auth/google/add-phone` et `auth/google/update-username` doivent rester hors du middleware
+  `phone.verified`.** Ce sont les routes qui *servent* à sortir de l'état non vérifié — les y soumettre
+  rendrait la vérification impossible à terminer pour un compte Google.
+- **`config('sanctum.expiration')` ne doit pas repasser à `null`.** `SANCTUM_TOKEN_EXPIRATION_MINUTES`
+  pilote cette valeur (14 jours par défaut) ; `AuthService` (Angular) prolonge une session active bien
+  avant l'échéance via `auth/refresh`, donc un utilisateur qui revient régulièrement ne la voit jamais.
+
+### Middleware `phone.verified`
+
+`app/Http/Middleware/EnsurePhoneVerified.php`, alias `phone.verified` (voir `bootstrap/app.php`). Appliqué
+sur le grand groupe de routes métier de `routes/api.php` (produits, panier, messagerie, favoris,
+notifications, transactions, premium, follow, badges, reviews) — exactement les routes que `authGuard`
+protège déjà côté Angular. Renvoie `403 {"error": "phone_not_verified"}`, relayé côté frontend par
+`error.interceptor.ts` vers `/auth/verify-otp`.
+
+**Volontairement absent** de `auth/*` (logout, me, refresh...), de `auth/google/add-phone` /
+`update-username`, et du groupe `admin/*` — voir le commentaire en tête du fichier pour le détail.
+
+### Tests de non-régression
+
+`backend/tests/Feature/Auth/SecurityHardeningTest.php` — 13 tests, couvrant les six constats. S'ils
+repassent au rouge, une faille a été réintroduite. `Http::fake()` y est utilisé pour Google : aucun appel
+réseau réel.
+
+> Ces tests ont été **écrits sans être exécutés** (environnement d'audit sans PHP ni réseau).
+> `php artisan test` est le premier geste à faire à la réception de ce dépôt.
 
 ---
 
@@ -203,6 +292,20 @@ ng test --watch=false --browsers=ChromeHeadless
 
 ## Chantiers ouverts (connus, non résolus)
 
+### Bloquants avant toute mise en production
+
+- **Aucun envoi de SMS réel.** `AuthController::forgotPassword()` contient un `// TODO`. L'OTP est généré et
+  stocké haché, mais transmis nulle part : il n'apparaît dans la réponse HTTP qu'en `local`/`testing`
+  (`demo_otp`). **En production, personne ne peut récupérer son mot de passe.** Prévoir Orange SMS API
+  (Sonatel) ou Twilio.
+- **Identifiants marchand Wave.** Sans `WAVE_API_KEY` valide, le mode simulation ne s'active pas en
+  production (garde-fou volontaire) : tous les paiements échouent, proprement mais intégralement.
+- **Stockage des médias sur disque local.** `storage/app/public` ne survit pas à un redéploiement
+  conteneurisé. Migration vers un stockage objet nécessaire.
+(SEC-05 et SEC-06, listés dans la section Sécurité ci-dessus, sont désormais corrigés.)
+
+### Autres
+
 - **Orange Money** : code présent (`OrangeMoneyGateway`) mais jamais branché en réel — en attente de la documentation et des identifiants Sonatel.
 - **Messagerie sans temps réel** : fonctionnelle mais sans websocket ni polling.
 - **Design du feed vidéo** : jugé trop proche visuellement de TikTok, refonte demandée mais pas encore livrée.
@@ -218,6 +321,12 @@ ng test --watch=false --browsers=ChromeHeadless
 - [ ] Services `scheduler` et `queue` de `docker-compose.yml` bien démarrés
 - [ ] Sauvegardes PostgreSQL configurées
 - [ ] `php artisan config:cache` + `route:cache` après tout déploiement
+- [ ] `CORS_ALLOWED_ORIGINS` renseigné avec le vrai domaine (sinon le frontend est bloqué par le navigateur)
+- [ ] Passerelle SMS branchée dans `forgotPassword()` — sans quoi la récupération de mot de passe est impossible
+- [ ] `GOOGLE_CLIENT_ID` renseigné côté backend **et** frontend, origines déclarées dans la console Google
+- [ ] Médias migrés vers un stockage objet (le disque local ne survit pas au redéploiement)
+- [ ] `composer audit` et `npm audit` passés
+- [ ] `php artisan test` au vert, y compris `SecurityHardeningTest`
 
 ---
 
@@ -227,6 +336,7 @@ ng test --watch=false --browsers=ChromeHeadless
 backend/    Laravel 12 — API (routes/api.php), migrations, jobs planifiés, tests
 frontend/   Angular — application web publique complète
 docker-compose.yml   postgres, app (PHP-FPM), queue, scheduler, nginx, pgadmin
+QUINCH-audit-et-changements.pdf   Audit de sécurité + journal des changements
 ```
 ```
 

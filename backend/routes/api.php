@@ -41,7 +41,13 @@ Route::prefix('auth')->group(function () {
     Route::post('resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
-    Route::post('reset-password-email', [AuthController::class, 'resetPasswordByEmail']);
+    Route::post('reset-password-email', [AuthController::class, 'resetPasswordByEmail'])->middleware('throttle:5,1');
+
+    // Connexion / inscription via Google : route PUBLIQUE par définition.
+    // (Avant ce correctif elle était déclarée à l'intérieur du groupe
+    // `auth:sanctum` — il fallait donc déjà être connecté pour pouvoir se
+    // connecter, ce qui renvoyait systématiquement 401.)
+    Route::post('google', [GoogleAuthController::class, 'handleToken'])->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
@@ -100,8 +106,19 @@ Route::middleware('feature:follow')->group(function () {
     Route::get('users/{user}/follow-counts', [FollowController::class, 'counts']);
 });
 
-// ─── Authenticated ───────────────────────────────────────────────────────────
+// Google auth — étapes post-connexion. Volontairement hors du groupe
+// "phone.verified" ci-dessous : ce sont justement les routes qui SERVENT à
+// sortir de l'état "non vérifié" (voir EnsurePhoneVerified pour le détail).
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('auth/google/add-phone', [GoogleAuthController::class, 'addPhone'])->middleware('throttle:5,1');
+    Route::post('auth/google/update-username', [GoogleAuthController::class, 'updateUsername'])->middleware('throttle:10,1');
+});
+
+// ─── Authenticated + téléphone vérifié ────────────────────────────────────────
+// SEC-06 : avant ce correctif, seul le routeur Angular (authGuard) empêchait
+// un compte non vérifié d'atteindre ces routes — contournable par tout appel
+// direct à l'API. Voir EnsurePhoneVerified pour le détail et les exceptions.
+Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
 
     // User profile
     Route::prefix('user')->group(function () {
@@ -140,13 +157,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::get('my-products', [ProductController::class, 'myProducts']);
     Route::get('my-likes', [ProductInteractionController::class, 'myLikes']);
-
-    //google auth
-    Route::post('auth/google', [GoogleAuthController::class, 'handleToken']);
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('auth/google/add-phone', [GoogleAuthController::class, 'addPhone']);
-    Route::post('auth/google/update-username', [GoogleAuthController::class, 'updateUsername']);
-});
 
     // Cart
     Route::prefix('cart')->group(function () {

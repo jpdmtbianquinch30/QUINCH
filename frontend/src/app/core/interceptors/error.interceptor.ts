@@ -28,6 +28,20 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           router.navigate(['/auth/login']);
         }
       }
+
+      // SEC-06 — Défense en profondeur : le garde Angular (authGuard)
+      // redirige déjà vers /auth/verify-otp avant même que ces appels ne
+      // partent, mais un onglet resté ouvert avec un profil chargé en
+      // mémoire pourrait tenter un appel direct entre-temps (ex. compte
+      // suspendu puis réactivé sans téléphone reconfirmé, changement d'état
+      // dans un autre onglet). Le backend refuse désormais ces routes avec
+      // `error: 'phone_not_verified'` (voir EnsurePhoneVerified côté API) :
+      // on relaie la même redirection ici plutôt que de laisser un message
+      // d'erreur générique s'afficher.
+      if (error.status === 403 && error.error?.error === 'phone_not_verified') {
+        router.navigate(['/auth/verify-otp']);
+      }
+
       return throwError(() => error);
     })
   );

@@ -8,6 +8,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class GoogleAuthController extends Controller
@@ -37,9 +38,26 @@ class GoogleAuthController extends Controller
         $fullName    = $googleUser['name'] ?? 'Utilisateur QUINCH';
         $avatar      = $googleUser['picture'] ?? null;
 
-        // Check if user already exists with this Google ID or email
-        $user = User::where('google_id', $googleId)->first()
-            ?? ($email ? User::where('email', $email)->first() : null);
+        // Rattachement du compte :
+        //  - par `google_id` : toujours sûr, c'est notre propre lien.
+        //  - par e-mail : UNIQUEMENT si Google confirme que l'e-mail est
+        //    vérifié. Sans ce contrôle, il suffisait de créer un compte
+        //    Google Workspace portant l'e-mail d'une victime pour récupérer
+        //    son compte QUINCH (et donc ses transactions et son solde).
+        $emailVerified = filter_var($googleUser['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        $user = User::where('google_id', $googleId)->first();
+
+        if (!$user && $email && $emailVerified) {
+            $user = User::where('email', $email)->first();
+        }
+
+        if (!$user && $email && !$emailVerified) {
+            return response()->json([
+                'message' => "L'adresse e-mail de ce compte Google n'est pas vérifiée.",
+                'error'   => 'email_not_verified',
+            ], 422);
+        }
 
         $isNewUser = false;
 
@@ -143,29 +161,69 @@ class GoogleAuthController extends Controller
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
+    /**
+     * Vérifie un ID token Google.
+     *
+     * Contrôles appliqués (tous obligatoires — l'absence de l'un d'eux rend
+     * la vérification inutile) :
+     *  - `aud`  : le token a bien été émis POUR notre application ;
+     *  - `iss`  : il a bien été émis PAR Google ;
+     *  - `exp`  : il n'est pas expiré ;
+     *  - `sub`  : l'identifiant stable de l'utilisateur est présent.
+     *
+     * `email_verified` n'est volontairement PAS filtré ici : il est remonté
+     * tel quel et exploité par l'appelant, qui refuse le rattachement à un
+     * compte existant si l'e-mail n'est pas vérifié par Google (voir
+     * handleToken) — sans quoi un compte Google créé avec l'e-mail d'une
+     * victime permettrait la prise de contrôle de son compte QUINCH.
+     */
     private function verifyGoogleToken(string $idToken): ?array
     {
         try {
-            $response = Http::get('https://oauth2.googleapis.com/tokeninfo', [
+            $response = Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', [
                 'id_token' => $idToken,
             ]);
 
-            if (!$response->successful()) return null;
+            if (!$response->successful()) {
+                return null;
+            }
 
             $payload = $response->json();
 
-            // Verify audience matches our client ID
-            $validAudiences = [
+            // 1. Audience : le token doit avoir été émis pour l'un de nos clients.
+            $validAudiences = array_filter([
                 config('services.google.client_id'),
-                env('GOOGLE_ANDROID_CLIENT_ID'),
-            ];
+                config('services.google.android_client_id'),
+                config('services.google.ios_client_id'),
+            ]);
 
-            if (!in_array($payload['aud'] ?? '', array_filter($validAudiences))) {
+            if (empty($validAudiences)) {
+                Log::error('Google auth: aucun client_id configuré, vérification impossible.');
+                return null;
+            }
+
+            if (!in_array($payload['aud'] ?? '', $validAudiences, true)) {
+                return null;
+            }
+
+            // 2. Émetteur : Google, et personne d'autre.
+            if (!in_array($payload['iss'] ?? '', ['accounts.google.com', 'https://accounts.google.com'], true)) {
+                return null;
+            }
+
+            // 3. Expiration.
+            if (!isset($payload['exp']) || (int) $payload['exp'] < time()) {
+                return null;
+            }
+
+            // 4. Identifiant stable obligatoire.
+            if (empty($payload['sub'])) {
                 return null;
             }
 
             return $payload;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::warning('Google auth: échec de vérification du token.', ['exception' => $e->getMessage()]);
             return null;
         }
     }
