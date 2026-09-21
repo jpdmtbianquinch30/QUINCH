@@ -45,9 +45,25 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | SEC-05 — Cette valeur était auparavant `null` (aucune expiration) : un
+    | jeton dérobé (poste partagé, extension malveillante, faille XSS)
+    | restait valide indéfiniment. Par défaut, 20160 minutes = 14 jours —
+    | un compromis pour une marketplace où l'on ne veut pas déconnecter un
+    | vendeur actif trop souvent.
+    |
+    | Le frontend (voir `AuthService` et `environment.tokenRefreshThresholdMinutes`
+    | côté Angular) prolonge une session active en appelant `auth/refresh`
+    | bien avant cette échéance — un utilisateur qui revient régulièrement ne
+    | verra donc jamais cette expiration. Elle ne joue vraiment que pour un
+    | jeton abandonné ou volé, jamais rafraîchi.
+    |
+    | Les deux valeurs sont indépendantes : le frontend n'a pas besoin de
+    | connaître ce nombre exact, seulement de rafraîchir à une cadence
+    | confortablement plus courte que lui.
+    |
     */
 
-    'expiration' => null,
+    'expiration' => (int) env('SANCTUM_TOKEN_EXPIRATION_MINUTES', 20160),
 
     /*
     |--------------------------------------------------------------------------
