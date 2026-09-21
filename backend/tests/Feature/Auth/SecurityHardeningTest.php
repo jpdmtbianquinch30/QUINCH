@@ -197,24 +197,25 @@ class SecurityHardeningTest extends TestCase
             ->postJson('/api/v1/auth/google/update-username', ['username' => 'nouveau_pseudo'])
             ->assertOk();
     }
-
+    
     /**
-     * Les routes du groupe `auth` (déconnexion, statut) doivent rester
-     * utilisables même sans téléphone vérifié.
-     *
-     * `actingAs()` seul ne convient pas ici : `AuthController::logout()`
-     * appelle `currentAccessToken()`, qui n'est renseigné que si la requête
-     * passe par une vraie authentification par jeton porteur (comme le
-     * fait un vrai client HTTP) — d'où l'en-tête `Authorization` explicite
-     * plutôt que `actingAs`, à la manière de `ForgotPasswordTest`.
+     * Les deux appels utilisent un vrai jeton porteur (`Authorization: Bearer`),
+     * jamais `actingAs()` : ce dernier fixe l'utilisateur directement sur le
+     * garde d'authentification sans passer par la résolution normale d'un
+     * jeton, et cet état reste actif pour le reste du test — la requête
+     * suivante hérite alors d'un utilisateur "connecté" qui n'a jamais eu de
+     * vrai jeton associé, donc `currentAccessToken()` (utilisé par
+     * `logout()`) reste `null` même avec un en-tête Bearer explicite ensuite.
      */
     public function test_routes_auth_de_base_accessibles_sans_verification(): void
     {
         $user = User::factory()->unverified()->create();
-
-        $this->actingAs($user, 'sanctum')->getJson('/api/v1/auth/me')->assertOk();
-
         $token = $user->createToken('session-test')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->getJson('/api/v1/auth/me')
+            ->assertOk();
+
         $this->withHeader('Authorization', "Bearer $token")
             ->postJson('/api/v1/auth/logout')
             ->assertOk();
