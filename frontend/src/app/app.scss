@@ -160,6 +160,32 @@
       &::before { display: none; }
     }
   }
+
+  // Premium link — doré quand l'utilisateur est premium actif
+  &.premium-gold {
+    color: #fbbf24;
+
+    .sidebar-link-icon .material-icons { color: #fbbf24; }
+
+    &:hover {
+      background: rgba(251, 191, 36, 0.08);
+      color: #fbbf24;
+      .sidebar-link-icon {
+        background: rgba(251, 191, 36, 0.12);
+        .material-icons { color: #fbbf24; }
+      }
+    }
+
+    &.active {
+      background: rgba(251, 191, 36, 0.1);
+      color: #fbbf24;
+      &::before { background: linear-gradient(180deg, #fbbf24, #f59e0b); box-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
+      .sidebar-link-icon {
+        background: rgba(251, 191, 36, 0.15);
+        .material-icons { color: #fbbf24; }
+      }
+    }
+  }
 }
 
 // Icon wrapper inside sidebar links

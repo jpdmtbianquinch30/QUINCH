@@ -78,7 +78,7 @@
             }
           </a>
 
-          <a routerLink="/premium" routerLinkActive="active" class="sidebar-link">
+          <a routerLink="/premium" routerLinkActive="active" class="sidebar-link" [class.premium-gold]="isPremiumActive()">
             <span class="sidebar-link-icon"><span class="material-icons">workspace_premium</span></span>
             <span class="sidebar-link-label">Premium</span>
           </a>

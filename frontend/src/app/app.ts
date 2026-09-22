@@ -57,6 +57,13 @@ export class App implements OnInit {
     return url.startsWith('/videos') || url.startsWith('/messages');
   });
 
+  isPremiumActive = computed(() => {
+    const user = this.auth.user();
+    if (!user?.is_premium) return false;
+    if (!user.premium_expires_at) return false;
+    return new Date(user.premium_expires_at) > new Date();
+  });
+
   /** Check if the sidebar "Produits" or "Services" link is active based on current URL query params */
   isActiveType(type: string): boolean {
     const url = this.currentUrl();
