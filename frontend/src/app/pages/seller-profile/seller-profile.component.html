@@ -284,6 +284,22 @@
                       <div class="sp-reply-label"><span class="material-icons">subdirectory_arrow_right</span> Reponse du vendeur</div>
                       <p>{{ review.seller_response }}</p>
                     </div>
+                  } @else if (isOwnProfile()) {
+                    @if (replyingToReviewId() === review.id) {
+                      <div class="sp-reply-form">
+                        <textarea [(ngModel)]="replyText" rows="2" placeholder="Repondre a cet avis..."></textarea>
+                        <div class="sp-reply-form-actions">
+                          <button class="sp-reply-cancel" (click)="cancelReply()">Annuler</button>
+                          <button class="sp-reply-submit" [disabled]="!replyText.trim() || submittingReply()" (click)="submitReply(review.id)">
+                            {{ submittingReply() ? 'Envoi...' : 'Publier' }}
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <button class="sp-reply-trigger" (click)="startReply(review.id)">
+                        <span class="material-icons">reply</span> Repondre a cet avis
+                      </button>
+                    }
                   }
                 </div>
               }
@@ -343,44 +359,67 @@
         <!-- ═══════ POLICIES TAB ═══════ -->
         @if (activeTab() === 'policies') {
           <div class="sp-tab-panel">
-            <div class="sp-policies">
-              <div class="sp-policy">
-                <div class="sp-policy-icon"><span class="material-icons">local_shipping</span></div>
-                <div class="sp-policy-content">
-                  <h4>Livraison</h4>
-                  <div class="sp-policy-detail"><span>Delais</span><strong>1-3 jours ouvrables</strong></div>
-                  <div class="sp-policy-detail"><span>Frais</span><strong>Selon la distance</strong></div>
-                  <div class="sp-policy-detail"><span>Zones</span><strong>{{ profile().user.city || 'Dakar' }} et environs</strong></div>
+            @if (profile().user.seller_policies) {
+              <div class="sp-policies">
+                <div class="sp-policy">
+                  <div class="sp-policy-icon"><span class="material-icons">local_shipping</span></div>
+                  <div class="sp-policy-content">
+                    <h4>Livraison & Retrait</h4>
+                    <div class="sp-policy-detail"><span>Livraison a domicile</span><strong>{{ profile().user.seller_policies.delivery_available ? 'Proposee' : 'Non proposee' }}</strong></div>
+                    <div class="sp-policy-detail"><span>Retrait sur place</span><strong>{{ profile().user.seller_policies.pickup_available ? 'Possible' : 'Non possible' }}</strong></div>
+                  </div>
                 </div>
-              </div>
-              <div class="sp-policy">
-                <div class="sp-policy-icon"><span class="material-icons">swap_horiz</span></div>
-                <div class="sp-policy-content">
-                  <h4>Retours & Echanges</h4>
-                  <div class="sp-policy-detail"><span>Delai retour</span><strong>7 jours apres reception</strong></div>
-                  <div class="sp-policy-detail"><span>Conditions</span><strong>Produit non utilise, emballage intact</strong></div>
+                <div class="sp-policy">
+                  <div class="sp-policy-icon"><span class="material-icons">swap_horiz</span></div>
+                  <div class="sp-policy-content">
+                    <h4>Retours</h4>
+                    @if (profile().user.seller_policies.returns_accepted) {
+                      <div class="sp-policy-detail"><span>Delai de retour</span><strong>{{ profile().user.seller_policies.return_window_days }} jours</strong></div>
+                    } @else {
+                      <div class="sp-policy-detail"><span>Retours</span><strong>Non acceptes</strong></div>
+                    }
+                  </div>
                 </div>
-              </div>
-              <div class="sp-policy">
-                <div class="sp-policy-icon"><span class="material-icons">credit_card</span></div>
-                <div class="sp-policy-content">
-                  <h4>Paiements acceptes</h4>
-                  <div class="sp-pay-methods">
-                    @for (m of paymentMethodsList; track m.name) {
-                      <div class="sp-pay-item"><span class="material-icons">{{ m.icon }}</span> {{ m.name }}</div>
+                <div class="sp-policy">
+                  <div class="sp-policy-icon"><span class="material-icons">shield</span></div>
+                  <div class="sp-policy-content">
+                    <h4>Garantie</h4>
+                    @if (profile().user.seller_policies.warranty_offered) {
+                      <div class="sp-policy-detail"><span>Duree</span><strong>{{ profile().user.seller_policies.warranty_duration_months }} mois</strong></div>
+                    } @else {
+                      <div class="sp-policy-detail"><span>Garantie</span><strong>Non proposee</strong></div>
+                    }
+                  </div>
+                </div>
+                <div class="sp-policy">
+                  <div class="sp-policy-icon"><span class="material-icons">handshake</span></div>
+                  <div class="sp-policy-content">
+                    <h4>Negociation</h4>
+                    <div class="sp-policy-detail"><span>Prix negociables</span><strong>{{ profile().user.seller_policies.negotiable_by_default ? 'Oui, par defaut' : 'Selon le produit' }}</strong></div>
+                  </div>
+                </div>
+                <div class="sp-policy">
+                  <div class="sp-policy-icon"><span class="material-icons">credit_card</span></div>
+                  <div class="sp-policy-content">
+                    <h4>Paiements acceptes</h4>
+                    @if (acceptedPaymentMethods().length > 0) {
+                      <div class="sp-pay-methods">
+                        @for (m of acceptedPaymentMethods(); track m.id) {
+                          <div class="sp-pay-item"><span class="material-icons">{{ m.icon }}</span> {{ m.name }}</div>
+                        }
+                      </div>
+                    } @else {
+                      <p class="sp-policy-empty-text">A convenir directement avec le vendeur.</p>
                     }
                   </div>
                 </div>
               </div>
-              <div class="sp-policy">
-                <div class="sp-policy-icon"><span class="material-icons">support_agent</span></div>
-                <div class="sp-policy-content">
-                  <h4>Contact & Support</h4>
-                  <div class="sp-policy-detail"><span>Temps de reponse</span><strong>Moins de 1 heure</strong></div>
-                  <div class="sp-policy-detail"><span>Disponibilite</span><strong>Lun-Sam, 8h-20h</strong></div>
-                </div>
+            } @else {
+              <div class="sp-empty small">
+                <span class="material-icons">policy</span>
+                <p>Ce vendeur n'a pas encore configure ses politiques de vente.</p>
               </div>
-            </div>
+            }
           </div>
         }
       </main>

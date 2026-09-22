@@ -8,6 +8,7 @@ import { FollowService } from '../../core/services/follow.service';
 import { ReviewService, ReviewStats } from '../../core/services/review.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { CartService } from '../../core/services/cart.service';
+import { ProductService } from '../../core/services/product.service';
 
 type SellerTab = 'products' | 'reviews' | 'about' | 'policies';
 
@@ -51,6 +52,12 @@ export class SellerProfileComponent implements OnInit {
 
   // Review filter
   reviewFilter = signal('all');
+
+  // Reponse du vendeur a un avis (uniquement visible sur son propre profil)
+  isOwnProfile = computed(() => !!this.auth.user() && this.auth.user()!.id === this.profile()?.user?.id);
+  replyingToReviewId = signal<string | null>(null);
+  replyText = '';
+  submittingReply = signal(false);
 
   // Modals
   showShareModal = signal(false);
@@ -218,7 +225,7 @@ export class SellerProfileComponent implements OnInit {
     if (!sellerId) return;
 
     this.api.post('conversations/start', {
-      recipient_id: sellerId,
+      seller_id: sellerId,
       message: this.contactMessage.trim(),
     }).subscribe({
       next: () => {
@@ -273,6 +280,35 @@ export class SellerProfileComponent implements OnInit {
     this.showReportModal.set(true);
   }
 
+  // ─── Seller Review Reply ─────────────────────────────
+  startReply(reviewId: string) {
+    this.replyingToReviewId.set(reviewId);
+    this.replyText = '';
+  }
+
+  cancelReply() {
+    this.replyingToReviewId.set(null);
+    this.replyText = '';
+  }
+
+  submitReply(reviewId: string) {
+    if (!this.replyText.trim()) return;
+    this.submittingReply.set(true);
+    this.reviewService.respondToReview(reviewId, this.replyText.trim()).subscribe({
+      next: (res: any) => {
+        this.reviews.update(list => list.map(r => r.id === reviewId ? { ...r, ...res.review } : r));
+        this.replyingToReviewId.set(null);
+        this.replyText = '';
+        this.submittingReply.set(false);
+        this.notif.success('Reponse publiee!');
+      },
+      error: () => {
+        this.submittingReply.set(false);
+        this.notif.error('Erreur lors de la publication de la reponse.');
+      },
+    });
+  }
+
   // ─── Review Helpers ──────────────────────────────────
   getStarArray(rating: number): number[] {
     return Array.from({ length: 5 }, (_, i) => i < Math.round(rating) ? 1 : 0);
@@ -292,8 +328,17 @@ export class SellerProfileComponent implements OnInit {
   ];
 
   // ─── Policies Data ──────────────────────────────────
-  paymentMethodsList = [
-    { name: 'Orange Money', icon: 'phone_android' },
-    { name: 'Wave', icon: 'waves' },
-  ];
+  // Deduit des vrais produits publies par ce vendeur (payment_methods par
+  // produit), au lieu d'une liste codee en dur identique pour tout le
+  // monde. Mappe vers ProductService.ALL_PAYMENT_METHODS pour rester
+  // coherent avec ce qui est reellement selectionnable a la publication
+  // (et donc avec ce que PaymentGatewayFactory sait traiter cote backend).
+  acceptedPaymentMethods = computed(() => {
+    const ids = new Set<string>();
+    for (const p of this.allProducts()) {
+      const methods: string[] = Array.isArray(p.payment_methods) ? p.payment_methods : [];
+      methods.forEach(m => ids.add(m));
+    }
+    return ProductService.ALL_PAYMENT_METHODS.filter(m => ids.has(m.id));
+  });
 }
