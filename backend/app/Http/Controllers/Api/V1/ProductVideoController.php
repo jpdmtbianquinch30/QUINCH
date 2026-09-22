@@ -11,8 +11,15 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductVideoController extends Controller
 {
-    public function upload(Request $request): JsonResponse
+        public function upload(Request $request): JsonResponse
     {
+        if (!$request->user()->isPremiumActive()) {
+            return response()->json([
+                'message' => 'Passez en mode Premium pour pouvoir charger une video de votre produit, pour plus de visibilite.',
+                'code'    => 'premium_required',
+            ], 403);
+        }
+
         $request->validate([
             'video' => [
                 'required',

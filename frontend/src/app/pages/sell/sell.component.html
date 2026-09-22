@@ -105,7 +105,16 @@
                 <button type="button" class="video-action-btn danger" (click)="removeVideo()"><span class="material-icons">delete</span> Supprimer</button>
               </div>
             </div>
-                    } @else {
+                    } @else if (!isPremiumActive()) {
+            <div class="video-locked">
+              <div class="video-locked-icon"><span class="material-icons">lock</span></div>
+              <strong>Video reservee au mode Premium</strong>
+              <span>Passez en mode Premium pour pouvoir charger une video de votre produit, pour plus de visibilite !</span>
+              <button type="button" class="expect-premium-btn" (click)="goToPremium()">
+                <span class="material-icons">workspace_premium</span> Passer Premium
+              </button>
+            </div>
+          } @else {
             <div class="media-hint">
               <span class="material-icons">tips_and_updates</span>
               <span>L'image d'affiche suffit pour publier. Ajouter une video est facultatif, mais booste votre visibilite dans le feed.</span>

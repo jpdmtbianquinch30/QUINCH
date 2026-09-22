@@ -1471,6 +1471,31 @@
   }
 }
 
+.video-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 32px 20px;
+  border-radius: 16px;
+  border: 1.5px dashed rgba(251, 191, 36, 0.4);
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.03));
+
+  .video-locked-icon {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    margin-bottom: 6px;
+    .material-icons { color: #1a1a1a; font-size: 26px; }
+  }
+
+  strong { font-size: 0.95rem; color: var(--q-text-primary); }
+  span { font-size: 0.82rem; color: var(--q-text-muted); max-width: 320px; line-height: 1.4; }
+
+  .expect-premium-btn { margin-top: 8px; }
+}
+
 .expect-premium-btn {
   display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
   padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer;

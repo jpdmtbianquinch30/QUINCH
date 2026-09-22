@@ -314,6 +314,10 @@ export class SellComponent implements OnInit, OnDestroy {
 
   // ═══════ VIDEO UPLOAD ═══════
   onVideoSelected(event: Event) {
+    if (!this.isPremiumActive()) {
+      this.notify.error('Passez en mode Premium pour pouvoir charger une video de votre produit.');
+      return;
+    }
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       this.videoFile = input.files[0];
@@ -582,6 +586,10 @@ export class SellComponent implements OnInit, OnDestroy {
 
   // ═══════ CAMERA ═══════
   async openCamera() {
+    if (!this.isPremiumActive()) {
+      this.notify.error('Passez en mode Premium pour pouvoir filmer une video de votre produit.');
+      return;
+    }
     try {
       const q = this.qualityOptions.find(o => o.value === this.videoQuality())!;
       this.cameraStream = await navigator.mediaDevices.getUserMedia({
