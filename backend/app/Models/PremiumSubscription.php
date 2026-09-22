@@ -50,17 +50,23 @@ class PremiumSubscription extends Model
     /**
      * Active l'abonnement après confirmation du paiement (webhook) : calcule
      * la date d'expiration selon le plan et met à jour l'utilisateur.
+     *
+     * Renouvellement anticipé : si l'utilisateur a déjà un Premium actif non
+     * expiré, la nouvelle période s'ajoute à la date d'expiration existante
+     * (pas de jours perdus) plutôt que de repartir de zéro à partir de
+     * maintenant.
      */
     public function activate(): void
     {
-        $startsAt = now();
+        $currentExpiry = $this->user->premium_expires_at;
+        $startsAt = ($currentExpiry && $currentExpiry->isFuture()) ? $currentExpiry->copy() : now();
         $expiresAt = $this->plan === 'annual'
             ? $startsAt->copy()->addYear()
             : $startsAt->copy()->addMonth();
 
         $this->update([
             'status' => 'active',
-            'starts_at' => $startsAt,
+            'starts_at' => now(),
             'expires_at' => $expiresAt,
         ]);
 

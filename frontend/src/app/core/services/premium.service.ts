@@ -13,6 +13,7 @@ export interface PremiumStatus {
   is_premium: boolean;
   plan: 'monthly' | 'annual' | null;
   expires_at: string | null;
+  days_remaining: number | null;
   pending_subscription: { id: string; plan: string; status: string } | null;
 }
 

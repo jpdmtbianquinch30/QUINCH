@@ -46,6 +46,15 @@
             @if (status()?.expires_at) {
               <p class="expiry">Renouvellement le {{ status()?.expires_at | date:'d MMMM yyyy' }}</p>
             }
+            @if (isExpiringSoon()) {
+              <div class="renew-alert">
+                <span class="material-icons">notifications_active</span>
+                <div>
+                  <strong>Votre Premium expire dans {{ status()?.days_remaining }} jour{{ status()?.days_remaining === 1 ? '' : 's' }}</strong>
+                  <span>Renouvelez des maintenant, vos jours restants seront ajoutes a la nouvelle periode.</span>
+                </div>
+              </div>
+            }
             <div class="status-benefits">
               <p class="status-benefits-title">Vous profitez maintenant de :</p>
               <ul class="benefits-list gold">
@@ -58,6 +67,29 @@
               </ul>
             </div>
           </div>
+
+          @if (isExpiringSoon()) {
+            <p class="premium-tagline">Renouveler mon abonnement :</p>
+            <div class="plans-grid">
+              @for (plan of plans(); track plan.id) {
+                <div class="plan-card gold" [class.highlighted]="plan.id === 'annual'">
+                  @if (plan.id === 'annual') {
+                    <span class="plan-tag">2 mois offerts</span>
+                  }
+                  <span class="plan-label">{{ plan.label }}</span>
+                  <span class="plan-price">{{ plan.price | number:'1.0-0' }} <small>F CFA</small></span>
+                  <span class="plan-period">{{ plan.id === 'annual' ? 'par an' : 'par mois' }}</span>
+                  <button class="subscribe-btn gold" [disabled]="subscribing() !== null" (click)="subscribe(plan.id)">
+                    @if (subscribing() === plan.id) {
+                      <span class="mini-spinner"></span>
+                    } @else {
+                      Renouveler
+                    }
+                  </button>
+                </div>
+              }
+            </div>
+          }
         } @else {
           @if (status()?.pending_subscription) {
             <div class="pending-banner">
@@ -67,7 +99,7 @@
           }
 
           <p class="premium-tagline">Boostez votre boutique et vendez plus vite avec <strong>QUINCH Premium</strong> ⭐</p>
-          
+
           <!-- Avantages -->
           <ul class="benefits-list">
             @for (b of benefits; track b.icon) {

@@ -30,11 +30,13 @@ class PremiumController extends Controller
     public function status(Request $request): JsonResponse
     {
         $user = $request->user();
+        $isActive = $user->isPremiumActive();
 
         return response()->json([
-            'is_premium' => $user->isPremiumActive(),
+            'is_premium' => $isActive,
             'plan' => $user->premium_plan,
             'expires_at' => $user->premium_expires_at,
+            'days_remaining' => $isActive ? now()->diffInDays($user->premium_expires_at) : null,
             'pending_subscription' => $user->premiumSubscriptions()
                 ->where('status', 'pending')
                 ->latest()

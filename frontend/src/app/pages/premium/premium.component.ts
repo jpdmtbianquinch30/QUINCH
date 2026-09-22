@@ -95,4 +95,10 @@ export class PremiumComponent implements OnInit {
   planLabel(plan: string | null): string {
     return plan === 'annual' ? 'Annuel' : plan === 'monthly' ? 'Mensuel' : '';
   }
+
+  /** Alerte + possibilité de renouveler par anticipation dans les derniers jours avant expiration. */
+  isExpiringSoon(): boolean {
+    const d = this.status()?.days_remaining;
+    return d !== null && d !== undefined && d <= 5;
+  }
 }

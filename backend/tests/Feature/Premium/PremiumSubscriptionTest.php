@@ -235,4 +235,68 @@ class PremiumSubscriptionTest extends TestCase
         $this->assertTrue($user->is_premium);
         $this->assertEquals('active', $subscription->fresh()->status);
     }
+
+    public function test_early_renewal_stacks_on_top_of_remaining_days_instead_of_resetting(): void
+    {
+        // L'utilisateur a déjà un Premium mensuel actif avec 4 jours restants.
+        $user = User::factory()->create();
+        $existingExpiry = now()->addDays(4);
+        $user->forceFill([
+            'is_premium' => true,
+            'premium_plan' => 'monthly',
+            'premium_expires_at' => $existingExpiry,
+        ])->save();
+
+        // Il renouvelle par anticipation (même plan) avant expiration totale.
+        $renewal = PremiumSubscription::create([
+            'user_id' => $user->id,
+            'plan' => 'monthly',
+            'amount' => 2000,
+            'currency' => 'XOF',
+            'status' => 'pending',
+            'payment_method' => 'wave',
+        ]);
+
+        $renewal->activate();
+
+        $user->refresh();
+        // La nouvelle expiration doit partir de l'ancienne date d'expiration
+        // (+1 mois), pas de "maintenant" (+1 mois) — sinon les 4 jours
+        // restants seraient perdus.
+        $this->assertTrue(
+            $user->premium_expires_at->betweenIncluded(
+                $existingExpiry->copy()->addMonth()->subMinute(),
+                $existingExpiry->copy()->addMonth()->addMinute()
+            )
+        );
+        $this->assertTrue($user->premium_expires_at->isAfter(now()->addMonth()->subHours(1)));
+    }
+
+    public function test_renewal_after_full_expiration_starts_fresh_from_now(): void
+    {
+        // Premium déjà expiré (pas juste sur le point de l'être) : le
+        // renouvellement doit repartir de maintenant, pas de l'ancienne
+        // date passée.
+        $user = User::factory()->create();
+        $user->forceFill([
+            'is_premium' => false,
+            'premium_plan' => null,
+            'premium_expires_at' => now()->subDays(10),
+        ])->save();
+
+        $renewal = PremiumSubscription::create([
+            'user_id' => $user->id,
+            'plan' => 'monthly',
+            'amount' => 2000,
+            'currency' => 'XOF',
+            'status' => 'pending',
+            'payment_method' => 'wave',
+        ]);
+
+        $renewal->activate();
+
+        $user->refresh();
+        $this->assertTrue($user->premium_expires_at->isAfter(now()->addDays(29)));
+        $this->assertTrue($user->premium_expires_at->isBefore(now()->addDays(31)));
+    }
 }
