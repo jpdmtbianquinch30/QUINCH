@@ -60,7 +60,30 @@
   h2 { font-size: 1.3rem; font-weight: 800; color: var(--q-text-primary); margin: 0 0 8px; }
   p { color: var(--q-text-secondary); margin: 4px 0; }
   .expiry { color: var(--q-text-muted); font-size: 0.85rem; }
+
+  &.premium-active {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), transparent);
+    border-color: rgba(251, 191, 36, 0.35);
+    .status-icon { color: #fbbf24; }
+  }
 }
+
+.status-benefits {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(251, 191, 36, 0.2);
+  text-align: left;
+}
+
+.status-benefits-title {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--q-text-secondary);
+  margin: 0 0 14px;
+}
+
+.benefits-list.gold .material-icons { color: #fbbf24; }
 
 .pending-banner {
   display: flex;

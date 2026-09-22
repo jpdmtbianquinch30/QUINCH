@@ -39,13 +39,24 @@
 
         @if (status()?.is_premium) {
           <!-- Déjà abonné -->
-          <div class="current-status-card">
+          <div class="current-status-card premium-active">
             <span class="material-icons status-icon">verified</span>
             <h2>Vous êtes Premium</h2>
             <p>Forfait <strong>{{ planLabel(status()?.plan ?? null) }}</strong></p>
             @if (status()?.expires_at) {
               <p class="expiry">Renouvellement le {{ status()?.expires_at | date:'d MMMM yyyy' }}</p>
             }
+            <div class="status-benefits">
+              <p class="status-benefits-title">Vous profitez maintenant de :</p>
+              <ul class="benefits-list gold">
+                @for (b of benefits; track b.icon) {
+                  <li>
+                    <span class="material-icons">{{ b.icon }}</span>
+                    {{ b.label }}
+                  </li>
+                }
+              </ul>
+            </div>
           </div>
         } @else {
           @if (status()?.pending_subscription) {
@@ -55,8 +66,8 @@
             </div>
           }
 
-          <p class="premium-tagline">Boostez votre boutique et vendez plus vite avec QUINCH Premium.</p>
-
+          <p class="premium-tagline">Boostez votre boutique et vendez plus vite avec <strong>QUINCH Premium</strong> ⭐</p>
+          
           <!-- Avantages -->
           <ul class="benefits-list">
             @for (b of benefits; track b.icon) {

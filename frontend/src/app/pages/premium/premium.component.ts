@@ -36,11 +36,11 @@ export class PremiumComponent implements OnInit {
   status = signal<PremiumStatus | null>(null);
 
   benefits = [
-    { icon: 'workspace_premium', label: 'Badge Premium doré sur votre profil et vos annonces' },
+    { icon: 'workspace_premium', label: 'Badge Premium dore sur votre profil et vos annonces' },
     { icon: 'trending_up', label: 'Boutique mise en avant dans le feed et le marketplace' },
-    { icon: 'photo_library', label: "Jusqu'à 10 photos par annonce (au lieu de 3)" },
-    { icon: 'campaign', label: 'Publication gratuite (vidéo ou photos), sans frais par annonce' },
-    { icon: 'bolt', label: 'Accès aux fonctionnalités avancées (négociation, badges, collections)' },
+    { icon: 'photo_library', label: "11 photos par annonce (1 couverture + 10 supplementaires)" },
+    { icon: 'videocam', label: 'Video de presentation gratuite, sans frais, pour plus de visibilite' },
+    { icon: 'bolt', label: 'Acces aux fonctionnalites avancees (negociation, badges, collections)' },
   ];
 
   ngOnInit() {
