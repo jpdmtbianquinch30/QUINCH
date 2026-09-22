@@ -287,6 +287,10 @@ export class SellComponent implements OnInit, OnDestroy {
   }
   prevStep() { if (this.currentStep() > 1) this.currentStep.update(s => s - 1); }
 
+  goToPremium(): void {
+  this.router.navigate(['/premium']);
+}
+
   // ═══════ POSTER IMAGE (required) ═══════
   onPosterSelected(event: Event) {
     const input = event.target as HTMLInputElement;

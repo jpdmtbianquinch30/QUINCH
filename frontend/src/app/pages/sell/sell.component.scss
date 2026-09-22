@@ -53,6 +53,12 @@
   &:hover { border-color: var(--q-accent); background: rgba(99,102,241,0.04); }
 }
 .upload-hint { font-size: 0.78rem; opacity: 0.6; }
+.media-hint {
+  display: flex; align-items: flex-start; gap: 8px; margin-bottom: 14px;
+  padding: 10px 14px; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.12);
+  border-radius: 10px; font-size: 0.8rem; color: var(--q-text-secondary); line-height: 1.4;
+  .material-icons { font-size: 18px; color: var(--q-accent); flex-shrink: 0; margin-top: 1px; }
+}
 .upload-main-text { font-weight: 600; font-size: 0.95rem; }
 
 // ─── Poster Section ──────────────
@@ -313,8 +319,17 @@
   &.selected { background: var(--q-accent); color: white; border-color: var(--q-accent); }
 }
 
-.checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--q-text-secondary);
-  input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--q-accent); }
+.checkbox-label {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 12px 16px; border-radius: 12px; font-size: 0.9rem; font-weight: 500;
+  background: var(--q-bg-card, rgba(255,255,255,0.04)); border: 1.5px solid var(--q-border, rgba(255,255,255,0.06));
+  color: var(--q-text-secondary); transition: all 0.15s;
+  input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--q-accent); flex-shrink: 0; }
+  &:hover { border-color: rgba(255,255,255,0.14); }
+  &:has(input:checked) {
+    border-color: var(--q-accent); background: rgba(99,102,241,0.08);
+    color: var(--q-text-primary); font-weight: 600;
+  }
 }
 
 .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
@@ -573,8 +588,8 @@
     background: rgba(255,255,255,0.05); transition: background 0.2s;
     .material-icons { font-size: 22px; color: var(--q-text-secondary); transition: color 0.2s; }
   }
-  .do-text {
-    flex: 1; display: flex; flex-direction: column; gap: 2px;
+.do-text {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
     strong { font-size: 0.85rem; font-weight: 600; color: var(--q-text-secondary); }
     span { font-size: 0.75rem; color: var(--q-text-muted); }
   }
@@ -1057,8 +1072,9 @@
   .sell-page { padding: 20px 16px; }
   .images-grid { grid-template-columns: repeat(2, 1fr); }
   .category-grid { grid-template-columns: repeat(2, 1fr); }
-  .service-category-grid { grid-template-columns: 1fr !important; }
   .service-type-grid { grid-template-columns: 1fr; }
+  .price-type-grid { grid-template-columns: 1fr; }
+  .delivery-options { grid-template-columns: 1fr; }
   .price-type-grid { grid-template-columns: 1fr; }
   .avail-grid { gap: 6px; .avail-chip { font-size: 0.78rem; padding: 8px 12px; } }
   .duration-grid { gap: 6px; .duration-chip { font-size: 0.78rem; padding: 6px 12px; } }
@@ -1219,6 +1235,14 @@
     background: rgba(99,102,241,0.04); border-color: rgba(99,102,241,0.1);
     color: #6b7280;
   }
+  .media-hint {
+  background: rgba(99,102,241,0.04); border-color: rgba(99,102,241,0.1); color: #4b5563;
+}
+.checkbox-label {
+  background: #ffffff; border-color: #e5e7eb;
+  &:hover { border-color: rgba(0,0,0,0.18); }
+  &:has(input:checked) { background: rgba(99,102,241,0.06); border-color: var(--q-accent); color: #374151; }
+}
 
   // Payment methods section light overrides
   .payment-methods-section {
@@ -1445,6 +1469,16 @@
     border-color: rgba(251, 191, 36, 0.25);
     .material-icons { color: #fbbf24; }
   }
+}
+
+.expect-premium-btn {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+  padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer;
+  font-size: 0.82rem; font-weight: 700; color: #1a1a1a;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  transition: transform 0.15s;
+  .material-icons { font-size: 16px; }
+  &:hover { transform: translateY(-1px); }
 }
 .step-nav-three {
   display: flex;

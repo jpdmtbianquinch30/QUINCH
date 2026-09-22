@@ -482,22 +482,27 @@
           </div>
         </div>
 
-        <!-- ═══════ À QUOI S'ATTENDRE ═══════ -->
-        <div class="expect-notice" [class.premium]="isPremiumActive()">
-          <span class="material-icons">{{ isPremiumActive() ? 'workspace_premium' : 'rocket_launch' }}</span>
-          <div>
-            <strong>{{ isPremiumActive() ? 'Compte Premium actif' : 'Publication immédiate et gratuite' }}</strong>
-            <span>
-              @if (isPremiumActive()) {
-                Votre annonce sera visible tout de suite, mise en avant dans le feed et le marketplace.
-              } @else {
-                Votre annonce sera visible tout de suite, sans frais. Passez Premium pour la mettre en avant et débloquer jusqu'à 10 photos.
-              }
-            </span>
-          </div>
-        </div>
+<!-- ═══════ À QUOI S'ATTENDRE ═══════ -->
+<div class="expect-notice" [class.premium]="isPremiumActive()">
+  <span class="material-icons">{{ isPremiumActive() ? 'workspace_premium' : 'rocket_launch' }}</span>
+  <div>
+    <strong>{{ isPremiumActive() ? 'Compte Premium actif' : 'Publication immédiate et gratuite' }}</strong>
+    <span>
+      @if (isPremiumActive()) {
+        Votre annonce sera visible tout de suite, mise en avant dans le feed et le marketplace.
+      } @else {
+        Votre annonce sera visible tout de suite, sans frais. Passez Premium pour la mettre en avant et débloquer jusqu'à 10 photos.
+      }
+    </span>
+    @if (!isPremiumActive()) {
+      <button type="button" class="expect-premium-btn" (click)="goToPremium()">
+        <span class="material-icons">workspace_premium</span> Passer Premium
+      </button>
+    }
+  </div>
+</div>
 
-        <div class="step-nav step-nav-three">
+<div class="step-nav step-nav-three">
           <button type="button" class="q-btn q-btn-ghost" (click)="prevStep()"><span class="material-icons">arrow_back</span> Retour</button>
           <button type="button" class="q-btn q-btn-secondary" [disabled]="loading()" (click)="saveDraft()">
             <span class="material-icons">save</span>
