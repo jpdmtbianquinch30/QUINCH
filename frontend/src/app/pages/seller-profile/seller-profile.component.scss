@@ -1094,14 +1094,32 @@ $card-border: 1px solid var(--q-border);
     gap: 0;
     min-height: auto;
   }
-    .sp-sidebar {
-    position: static;
-    height: auto;
-    align-self: stretch;
-    width: 100%;
+.sp-sidebar {
+  position: static;
+  height: auto;
+  align-self: stretch;
+  width: 100%;
+  padding-top: 0;   // ← ajouté
+  overflow: visible;
+  order: 2;
+}
+
+.sp-avatar-area {
+  margin-top: -24px;   // ← annule exactement le padding-top (24px) de .sp-profile-card
+}
+  // .sp-cover était piégée dans .sp-main-area, donc affichée sous toute
+  // la sidebar en mobile. display: contents hisse .sp-cover et .sp-main
+  // comme enfants directs de .sp-layout pour pouvoir les réordonner avec
+  // order, sans toucher au HTML ni à la grille desktop.
+  .sp-main-area {
+    display: contents;        // ← ajouté
   }
-  .sp-cover { height: 150px; }
-  .sp-main { padding: 16px; }
+  .sp-cover { height: 150px; order: 1; }   // ← order ajouté
+
+  .sp-profile-card {
+   position: relative;
+}
+  .sp-main { padding: 16px; order: 3; }    // ← order ajouté
   .sp-tabs {
     border-radius: 12px;
     button { font-size: 0.78rem; padding: 9px 10px; }

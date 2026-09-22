@@ -110,10 +110,12 @@ export class GoogleAuthService {
     );
   }
 
-  /** Numéro de téléphone obligatoire après une première connexion Google. */
-  addPhone(phoneNumber: string): Observable<any> {
-    return this.api.post('auth/google/add-phone', { phone_number: phoneNumber });
-  }
+/** Numéro de téléphone obligatoire après une première connexion Google. */
+addPhone(phoneNumber: string): Observable<any> {
+  return this.api.post('auth/google/add-phone', { phone_number: phoneNumber }).pipe(
+    tap((res: any) => this.auth.lastDemoOtp.set(res.demo_otp ?? null))
+  );
+}
 
   updateUsername(username: string): Observable<any> {
     return this.api.post('auth/google/update-username', { username });
