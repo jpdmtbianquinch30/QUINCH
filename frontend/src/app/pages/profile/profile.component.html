@@ -141,45 +141,6 @@
       }
     </div>
 
-
-        @if (user()!.seller_policies) {
-      <div class="policies-card q-card">
-        <h3><span class="material-icons">policy</span> Politiques du vendeur</h3>
-        <div class="policies-grid">
-          @if (user()!.seller_policies?.returns_accepted) {
-            <div class="policy-row">
-              <span class="material-icons">assignment_return</span>
-              <span>Retours acceptés sous {{ user()!.seller_policies?.return_window_days }} jours</span>
-            </div>
-          }
-          @if (user()!.seller_policies?.warranty_offered) {
-            <div class="policy-row">
-              <span class="material-icons">verified_user</span>
-              <span>Garantie {{ user()!.seller_policies?.warranty_duration_months }} mois</span>
-            </div>
-          }
-          @if (user()!.seller_policies?.delivery_available) {
-            <div class="policy-row">
-              <span class="material-icons">local_shipping</span>
-              <span>Livraison disponible</span>
-            </div>
-          }
-          @if (user()!.seller_policies?.pickup_available) {
-            <div class="policy-row">
-              <span class="material-icons">storefront</span>
-              <span>Retrait sur place possible</span>
-            </div>
-          }
-          @if (user()!.seller_policies?.negotiable_by_default) {
-            <div class="policy-row">
-              <span class="material-icons">local_offer</span>
-              <span>Prix négociables par défaut</span>
-            </div>
-          }
-        </div>
-      </div>
-    }
-    
     <!-- ═══════ PROFILE TABS ═══════ -->
     <div class="profile-tabs">
       <button class="profile-tab" [class.active]="profileTab() === 'products'" (click)="profileTab.set('products')">
@@ -191,6 +152,10 @@
         <span class="material-icons">favorite</span>
         <span>Likes</span>
         <span class="tab-count">{{ likesCount() }}</span>
+      </button>
+      <button class="profile-tab" [class.active]="profileTab() === 'policies'" (click)="profileTab.set('policies')">
+        <span class="material-icons">policy</span>
+        <span>Politiques</span>
       </button>
     </div>
 
@@ -401,6 +366,65 @@
     }
   }
 </div>
+
+    <!-- ═══════ POLICIES TAB ═══════ -->
+    @if (profileTab() === 'policies') {
+      <div class="policies-section">
+        <div class="section-header">
+          <h2><span class="material-icons">policy</span> Politiques du vendeur</h2>
+        </div>
+
+        @if (user()!.seller_policies) {
+          <div class="policies-grid">
+            <div class="policy-item">
+              <div class="policy-icon"><span class="material-icons">local_shipping</span></div>
+              <div class="policy-content">
+                <h4>Livraison & Retrait</h4>
+                <div class="policy-detail"><span>Livraison à domicile</span><strong>{{ user()!.seller_policies?.delivery_available ? 'Proposée' : 'Non proposée' }}</strong></div>
+                <div class="policy-detail"><span>Retrait sur place</span><strong>{{ user()!.seller_policies?.pickup_available ? 'Possible' : 'Non possible' }}</strong></div>
+              </div>
+            </div>
+            <div class="policy-item">
+              <div class="policy-icon"><span class="material-icons">swap_horiz</span></div>
+              <div class="policy-content">
+                <h4>Retours</h4>
+                @if (user()!.seller_policies?.returns_accepted) {
+                  <div class="policy-detail"><span>Délai de retour</span><strong>{{ user()!.seller_policies?.return_window_days }} jours</strong></div>
+                } @else {
+                  <div class="policy-detail"><span>Retours</span><strong>Non acceptés</strong></div>
+                }
+              </div>
+            </div>
+            <div class="policy-item">
+              <div class="policy-icon"><span class="material-icons">shield</span></div>
+              <div class="policy-content">
+                <h4>Garantie</h4>
+                @if (user()!.seller_policies?.warranty_offered) {
+                  <div class="policy-detail"><span>Durée</span><strong>{{ user()!.seller_policies?.warranty_duration_months }} mois</strong></div>
+                } @else {
+                  <div class="policy-detail"><span>Garantie</span><strong>Non proposée</strong></div>
+                }
+              </div>
+            </div>
+            <div class="policy-item">
+              <div class="policy-icon"><span class="material-icons">handshake</span></div>
+              <div class="policy-content">
+                <h4>Négociation</h4>
+                <div class="policy-detail"><span>Prix négociables</span><strong>{{ user()!.seller_policies?.negotiable_by_default ? 'Oui, par défaut' : 'Selon le produit' }}</strong></div>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-products">
+            <span class="material-icons">policy</span>
+            <p>Vous n'avez pas encore configuré vos politiques de vente</p>
+            <button class="q-btn q-btn-primary" routerLink="/settings">
+              <span class="material-icons">settings</span> Configurer mes politiques
+            </button>
+          </div>
+        }
+      </div>
+    }
 
 <!-- ═══════════════════════════════════════════════════════
      PRODUCT MANAGEMENT MODAL

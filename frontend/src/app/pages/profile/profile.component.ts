@@ -35,7 +35,7 @@ export class ProfileComponent implements OnInit {
 
   likedProducts = signal<any[]>([]);
   likesCount = signal(0);
-  profileTab = signal<'products' | 'likes'>('products');
+  profileTab = signal<'products' | 'likes' | 'policies'>('products');
   viewMode = signal<'grid' | 'list'>('grid');
   trustPercent = signal(0);
 
