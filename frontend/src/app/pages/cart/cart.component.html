@@ -97,10 +97,10 @@
                   Retirer
                 </button>
                 <div class="item-cta-row">
-                  <button class="buy-btn" (click)="openBuyModal(item)">
-                    <span class="material-icons">shopping_bag</span>
-                    Acheter
-                  </button>
+                <button class="buy-btn" (click)="openBuyModal(item)" [disabled]="checkingSessionFor() === item.id">
+                  <span class="material-icons">{{ checkingSessionFor() === item.id ? 'hourglass_top' : 'shopping_bag' }}</span>
+                  {{ checkingSessionFor() === item.id ? 'Verification...' : 'Acheter' }}
+                </button>
                   <button class="contact-btn" (click)="openContactModal(item)">
                     <span class="material-icons">chat</span>
                     Contacter

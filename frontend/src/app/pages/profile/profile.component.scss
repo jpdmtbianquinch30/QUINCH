@@ -1247,7 +1247,19 @@
   .profile-page { padding: 0 var(--q-space-md) 80px; }
   .profile-cover { height: 180px; border-radius: var(--q-radius-lg); }
   .profile-hero { flex-direction: column; gap: var(--q-space-md); margin-top: -40px; }
-  .hero-left { align-items: center; gap: var(--q-space-md); }
+.hero-left {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--q-space-md);
+  text-align: center;
+  width: 100%;
+}
+.hero-info { width: 100%; }
+.hero-name { justify-content: center; margin-bottom: 6px; }
+.hero-handle { margin-bottom: 10px; }
+.profile-bio { text-align: center; margin: 8px 0 10px; }
+.profile-website { justify-content: center; margin-bottom: 10px; }
+.hero-meta { justify-content: center; gap: 10px; margin-top: 4px; }
   .avatar-ring { width: 90px; height: 90px; border-width: 4px; }
   .hero-name { font-size: 1.3rem; }
   .hero-stats { padding-top: 0; justify-content: space-around; width: 100%; gap: var(--q-space-lg); }
@@ -1255,6 +1267,9 @@
   .products-grid { grid-template-columns: repeat(2, 1fr); gap: var(--q-space-sm); }
   .profile-actions { flex-wrap: wrap; }
   .profile-actions .q-btn { flex: 1; min-width: 140px; }
+  .trust-badges-row {
+  grid-template-columns: 1fr;
+}
 
   // Sur petit écran, "+ Nouveau" + le sélecteur grille/liste ne tenaient
   // plus à côté du titre et débordaient hors du viewport (confirmé par

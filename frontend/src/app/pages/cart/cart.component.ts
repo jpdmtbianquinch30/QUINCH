@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../core/services/auth.service';
 import { CartService, CartItem } from '../../core/services/cart.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ProductService } from '../../core/services/product.service';
@@ -17,6 +18,7 @@ import { Router } from '@angular/router';
 })
 export class CartComponent implements OnInit {
   cart = inject(CartService);
+  private auth = inject(AuthService);
   private notify = inject(NotificationService);
   private productService = inject(ProductService);
   private chatService = inject(ChatService);
@@ -47,6 +49,7 @@ export class CartComponent implements OnInit {
   deliveryAddressText = signal('');
   pendingTransactionId = signal<string | null>(null);
   submittingPurchase = signal(false);
+  checkingSessionFor = signal<string | null>(null);
 
   itemPaymentMethods = computed(() => {
     const item = this.buyingItem();
@@ -103,24 +106,34 @@ export class CartComponent implements OnInit {
   }
 
   // ─── Achat direct depuis le panier ─────────────────────────────────────
-  openBuyModal(item: CartItem) {
-    if (!item.product.payment_methods?.length) {
-      this.notify.info('Le vendeur n\'a pas configure de methode de paiement. Contactez-le directement.');
-      this.openContactModal(item);
+openBuyModal(item: CartItem) {
+  if (!item.product.payment_methods?.length) {
+    this.notify.info('Le vendeur n\'a pas configure de methode de paiement. Contactez-le directement.');
+    this.openContactModal(item);
+    return;
+  }
+  // Meme verification qu'sur la fiche produit (buyNow()) : on confirme que
+  // la session est encore valide cote serveur AVANT d'ouvrir la modale
+  // d'achat, plutot que de laisser le client remplir quantite/paiement/
+  // adresse pour se faire ejecter vers /auth/login seulement au clic final
+  // sur "Confirmer" — meme bug que sur product-detail, pas encore corrige
+  // ici jusqu'a present.
+  this.checkingSessionFor.set(item.id);
+  this.auth.getMe().subscribe(res => {
+    this.checkingSessionFor.set(null);
+    if (!res.user) {
+      this.notify.error('Votre session a expire. Reconnectez-vous pour continuer.');
+      this.router.navigate(['/auth/login']);
       return;
     }
     this.buyingItem.set(item);
-    // Repart de la quantité déjà choisie dans le panier plutôt que de
-    // toujours réinitialiser à 1 — avant ce fix, un client qui mettait 3
-    // dans le panier puis cliquait "Acheter" se retrouvait avec une modale
-    // repartant à 1, sans lien avec son choix précédent (incohérence entre
-    // ce qui est affiché dans le panier et ce qui est réellement acheté).
     const max = item.product.stock_quantity ?? 1;
     this.buyQuantity.set(Math.min(Math.max(item.quantity, 1), max));
     this.selectedPayment.set('');
     this.deliveryAddressText.set('');
     this.pendingTransactionId.set(null);
-  }
+  });
+}
 
     incrementBuyQty() {
     const max = this.buyingItem()?.product.stock_quantity ?? 1;
