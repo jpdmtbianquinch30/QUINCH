@@ -155,7 +155,9 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
             setTimeout(() => {
               document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
             }, 500);
-          }
+            } else if (fragment === 'buy') {
+              setTimeout(() => this.buyNow(), 300);
+            }
         },
         error: () => this.loading.set(false),
       });

@@ -89,12 +89,10 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   dpSubmitting = signal(false);
   dpSubmitted = signal(false);
   dpAddingCart = signal(false);
-  dpShowPayment = signal(false);
   dpShowContact = signal(false);
   dpShowNego = signal(false);
   dpShowQuote = signal(false);
   dpSending = signal(false);
-  dpSelectedPay = signal('');
   dpProposedPrice = 0;
   dpNegoMsg = '';
   dpContactMsg = '';
@@ -766,7 +764,7 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     this.dp.set(null);
     this.dpReviews.set([]);
     this.dpStats.set(null);
-    this.dpShowPayment.set(false); this.dpShowContact.set(false);
+    this.dpShowContact.set(false);
     this.dpShowNego.set(false); this.dpShowQuote.set(false);
     // Reset any inline flex style from drag-resize
     document.querySelectorAll('.slide-inner .video-card').forEach((el: any) => {
@@ -961,7 +959,12 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   dpPrevImg() { const l = this.dpImages().length; if (l > 1) this.dpImgIdx.update(i => i === 0 ? l - 1 : i - 1); }
 
   // CTAs
-  dpBuyNow() { this.dpShowPayment.set(true); }
+  dpBuyNow() {
+  const p = this.dp();
+  if (!p?.slug) return;
+  this.closeDetail();
+  this.router.navigate(['/product', p.slug], { fragment: 'buy' });
+}
   dpAddToCart() {
     const p = this.dp(); if (!p) return;
     this.dpAddingCart.set(true);
@@ -1045,7 +1048,6 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
       },
     });
   }
-  dpConfirmPay() { this.notify.success('Paiement confirme!'); this.dpShowPayment.set(false); }
   dpToggleLike() {
     const p = this.dp(); if (!p || !this.auth.isAuthenticated()) return;
     p.is_liked = !p.is_liked; p.like_count = (p.like_count || 0) + (p.is_liked ? 1 : -1);
@@ -1058,13 +1060,6 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   dpShare() { const p = this.dp(); if (p) { this.shareService.shareProduct(p); this.productService.shareProduct(p.id).subscribe(); } }
   dpReport() { this.notify.success('Signalement envoye. Merci!'); }
   dpGoFull() { const s = this.dp()?.slug; if (s) { this.closeDetail(); this.router.navigate(['/product', s]); } }
-
-  payMethods = [
-    { id: 'om', name: 'Orange Money', icon: 'phone_android', desc: 'Paiement via Orange Money' },
-    { id: 'wave', name: 'Wave', icon: 'waves', desc: 'Paiement via Wave' },
-    { id: 'free', name: 'Free Money', icon: 'smartphone', desc: 'Paiement via Free Money' },
-    { id: 'card', name: 'Carte bancaire', icon: 'credit_card', desc: 'Visa, Mastercard' },
-  ];
 
   onImgError(event: Event): void {
     const img = event.target as HTMLImageElement;

@@ -214,7 +214,7 @@
           <div class="card-info">
             <h3 class="card-title">{{ product.title }}</h3>
 
-            <div class="card-seller-row">
+            <div class="card-seller-row" (click)="goToSellerProfile(product, $event)">
               <div class="card-seller-avatar">
                 @if (product.seller?.avatar_url || product.seller?.avatar) {
                   <img [src]="product.seller?.avatar_url || product.seller?.avatar" alt="" />

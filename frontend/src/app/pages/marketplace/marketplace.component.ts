@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
@@ -25,6 +25,7 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
   private notify = inject(NotificationService);
   private analytics = inject(AnalyticsService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   auth = inject(AuthService);
 
   products = signal<Product[]>([]);
@@ -71,6 +72,13 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
     this.searchSub?.unsubscribe();
     this.routeSub?.unsubscribe();
   }
+
+  goToSellerProfile(product: any, event: Event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const username = product.seller?.username || product.user?.username;
+  if (username) this.router.navigate(['/seller', username]);
+}
 
   private setupInstantSearch() {
     this.searchSub = this.searchSubject.pipe(

@@ -409,6 +409,30 @@
                       </div>
                     }
                   </div>
+
+                  @if (dpImages().length > 0) {
+  <div class="info-section dp-gallery-section">
+    <h3 class="section-title">Photos ({{ dpImages().length }})</h3>
+    <div class="dp-gallery-main">
+      <img [src]="dpImages()[dpImgIdx()]" alt="" (error)="onImgError($event)" />
+      @if (dpImages().length > 1) {
+        <button class="dp-gallery-nav prev" (click)="dpPrevImg()"><span class="material-icons">chevron_left</span></button>
+        <button class="dp-gallery-nav next" (click)="dpNextImg()"><span class="material-icons">chevron_right</span></button>
+        <span class="dp-gallery-count">{{ dpImgIdx() + 1 }}/{{ dpImages().length }}</span>
+      }
+    </div>
+    @if (dpImages().length > 1) {
+      <div class="dp-gallery-strip">
+        @for (img of dpImages(); track img; let idx = $index) {
+          <button class="dp-gallery-thumb" [class.active]="idx === dpImgIdx()" (click)="dpImgIdx.set(idx)">
+            <img [src]="img" alt="" (error)="onImgError($event)" />
+          </button>
+        }
+      </div>
+    }
+  </div>
+}
+
                   <div class="info-stats">
                     <div class="stat"><span class="material-icons">visibility</span> {{ p.view_count || 0 }} vues</div>
                     <div class="stat"><span class="material-icons">favorite</span> {{ p.like_count || 0 }} likes</div>
@@ -437,6 +461,10 @@
                       </div>
                     }
                   </div>
+                  <div class="dp-contact-advice">
+  <span class="material-icons">info</span>
+  <span>Conseil : contactez {{ dpIsService() ? 'le prestataire' : 'le vendeur' }} pour confirmer les détails avant tout achat direct.</span>
+</div>
                   <div class="info-section"><h3 class="section-title">Description</h3><p class="section-text">{{ p.description || 'Aucune description disponible.' }}</p></div>
                   <div class="seller-card" [class.service]="dpIsService()" (click)="viewSellerProfile(p, $event)">
                     <div class="seller-avatar">
