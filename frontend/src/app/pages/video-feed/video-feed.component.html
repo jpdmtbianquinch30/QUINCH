@@ -147,6 +147,11 @@
        leur place au-dessus d'une fiche produit consultée en détail. -->
   @if (!detailMode()) {
     <div class="feed-header">
+      <div class="header-left">
+        <button class="header-btn back-btn" (click)="goBack()" title="Retour">
+          <span class="material-icons">arrow_back</span>
+        </button>
+      </div>
       <div class="feed-tabs">
         @if (auth.isAuthenticated()) {
           <button class="tab" [class.active]="activeTab() === 'following'" (click)="switchTab('following')">
@@ -203,12 +208,6 @@
             <!-- ══ VIDEO CARD ══ -->
             <div class="video-card" (click)="toggleVideoPlayPause($event)" (dblclick)="onVideoDoubleClick(product, $event)">
 
-              <!-- Type badge (top-left) -->
-              <div class="type-indicator" [class.service]="isService(product)">
-                <span class="material-icons">{{ isService(product) ? 'handyman' : 'shopping_bag' }}</span>
-                <span>{{ getTypeLabel(product) }}</span>
-              </div>
-
               <!-- Quality badge (top-right) -->
               @if (product.video?.quality_label) {
                 <div class="quality-badge" [class.hd]="product.video?.resolution === '1080p' || product.video?.resolution === '4k'">
@@ -216,7 +215,16 @@
                 </div>
               }
 
-              <!-- Video / Media -->
+              <!-- ══ Fond flouté : comble les bandes vides quand le format de la
+                   video/média ne remplit pas toute la carte, avec les couleurs
+                   du média lui-même plutot qu'un fond neutre ══ -->
+              @if (hasVideo(product) && currentIndex() === i) {
+                <video class="media-backdrop" [src]="getVideoUrl(product)!" muted autoplay loop playsinline aria-hidden="true" tabindex="-1"></video>
+              } @else if (getMediaUrl(product)) {
+                <img [src]="getMediaUrl(product)" alt="" class="media-backdrop" aria-hidden="true" />
+              }
+
+              <!-- Video / Media : format d'origine toujours respecté (jamais recadré) -->
               @if (hasVideo(product) && currentIndex() === i) {
                 <video #videoPlayer
                        class="card-media card-video"
@@ -289,6 +297,11 @@
                     @if (product.seller?.trust_score >= 0.7) {
                       <span class="material-icons verified-icon">verified</span>
                     }
+                    <!-- Tag Produit/Service : déplacé depuis le haut de la vidéo vers la zone du profil -->
+                    <span class="type-chip-inline" [class.service]="isService(product)">
+                      <span class="material-icons">{{ isService(product) ? 'handyman' : 'shopping_bag' }}</span>
+                      {{ getTypeLabel(product) }}
+                    </span>
                   @if (!isFollowing(product.seller?.id)) {
                     <button class="follow-inline-btn" (click)="toggleFollow(product, $event)">Suivre</button>
                   }

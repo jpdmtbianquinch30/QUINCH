@@ -55,6 +55,15 @@ $service-glow: rgba(16, 185, 129, 0.3);
   align-items: center;
 }
 
+.header-left {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
 .header-btn {
   color: rgba(255,255,255,0.45);
   background: rgba(255,255,255,0.04);
@@ -229,37 +238,32 @@ $service-glow: rgba(16, 185, 129, 0.3);
 }
 
 // ─── Type Indicator (top-left badge) ─────────────────────────────
-.type-indicator {
-  position: absolute;
-  top: 18px;
-  left: 18px;
-  z-index: 6;
-  display: flex;
+.type-chip-inline {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 4px;
+  padding: 3px 9px;
   border-radius: 50px;
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  background: rgba(99, 102, 241, 0.8);
+  background: rgba(99, 102, 241, 0.75);
   color: white;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+  white-space: nowrap;
 
-  .material-icons { font-size: 13px; }
+  .material-icons { font-size: 11px; }
 
   &.service {
-    background: rgba(16, 185, 129, 0.8);
+    background: rgba(16, 185, 129, 0.75);
   }
 }
 
-// ─── Quality Badge (top-right, à gauche du bouton muet — jamais superposés) ─
 .quality-badge {
   position: absolute;
   top: 18px;
-  right: 66px;
+  right: 18px;
   z-index: 6;
   padding: 4px 10px;
   border-radius: 6px;
@@ -279,11 +283,29 @@ $service-glow: rgba(16, 185, 129, 0.3);
   }
 }
 
-// Media elements
-.card-media {
+// ─── Fond flouté (letterbox/pillarbox) ────────────────────────────
+.media-backdrop {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: blur(45px) saturate(1.4) brightness(0.75);
+  transform: scale(1.2);
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+// Media elements — format d'origine toujours respecté (jamais recadré)
+.card-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  z-index: 1;
   display: block;
 }
 
@@ -292,8 +314,9 @@ $service-glow: rgba(16, 185, 129, 0.3);
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  background: #000;
+  object-fit: contain;
+  background: transparent;
+  z-index: 1;
 }
 
 video.card-video { display: block; }
@@ -348,7 +371,7 @@ video.card-video { display: block; }
 // Mute button — glassmorphism, repositioned
 .mute-btn {
   position: absolute;
-  top: 18px;
+  top: 64px;
   right: 18px;
   width: 38px;
   height: 38px;
@@ -1105,7 +1128,7 @@ $r-sm: 8px;
     cursor: default;
     margin-left: 24px;
   }
-  .card-info, .card-gradient, .type-indicator { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .card-info, .card-gradient { opacity: 0; pointer-events: none; transition: opacity 0.3s; }
   .mute-btn { z-index: 12; }
 }
 
@@ -1484,6 +1507,11 @@ $r-sm: 8px;
     transform: none;
   }
 
+  .header-left {
+    position: static;
+    transform: none;
+  }
+
   .video-card {
     width: 100vw;
     height: 100vh;
@@ -1603,9 +1631,6 @@ $r-sm: 8px;
     }
   }
 
-  .type-indicator {
-    border-color: rgba(0,0,0,0.1);
-  }
 
   .quality-badge {
     background: rgba(255,255,255,0.85);

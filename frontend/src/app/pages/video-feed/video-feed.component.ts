@@ -3,7 +3,7 @@ import {
   HostListener, ViewChildren, ViewChild, QueryList, ElementRef, AfterViewInit
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product.service';
 import { ApiService } from '../../core/services/api.service';
@@ -40,6 +40,7 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   auth = inject(AuthService);
   private reviewService = inject(ReviewService);
   private router = inject(Router);
+  private location = inject(Location);
 
   products = signal<any[]>([]);
   loading = signal(false);
@@ -163,6 +164,15 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy() {
     this.searchSubject.complete();
     if (this.progressInterval) clearInterval(this.progressInterval);
+  }
+
+    // ─── Retour vers le feed marketplace ──────────────────
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/feed']);
+    }
   }
 
   // ─── Tab switch ──────────────────────────────────────
