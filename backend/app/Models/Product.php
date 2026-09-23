@@ -137,6 +137,26 @@ class Product extends Model
         return $query;
     }
 
+    /**
+ * Tri equitable "paliers de 5 jours" : les annonces sont groupees par
+ * anciennete en tranches de 5 jours (palier 0 = 0-5j, palier 1 = 5-10j,
+ * ...) - le palier le plus recent passe toujours devant, premium ou pas.
+ * A l'interieur d'un meme palier, le vendeur premium actif passe devant.
+ * Empeche un abonnement premium vieux de plusieurs semaines d'ecraser en
+ * permanence du contenu non-premium tout frais.
+ */
+public function scopeTieredRank($query)
+{
+    return $query
+        ->leftJoin('users', 'products.user_id', '=', 'users.id')
+        ->select('products.*')
+        ->selectRaw('FLOOR(EXTRACT(EPOCH FROM (NOW() - products.created_at)) / 86400 / 5) AS age_tier')
+        ->selectRaw("(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) AS is_premium_active")
+        ->orderBy('age_tier', 'asc')
+        ->orderBy('is_premium_active', 'desc')
+        ->orderBy('products.created_at', 'desc');
+}
+
     // ─── Helpers ────────────────────────────────────────────────────────
     public function getFormattedPriceAttribute(): string
     {

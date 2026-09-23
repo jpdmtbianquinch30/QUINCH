@@ -1332,6 +1332,15 @@ $r-sm: 8px;
     .material-icons { font-size: 20px; flex-shrink: 0; }
   }
 
+  .premium-icon-sm { font-size: 16px; color: #f59e0b; }
+.premium-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 7px; border-radius: 10px;
+  background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3);
+  color: #f59e0b; font-size: 0.68rem; font-weight: 700;
+  .material-icons { font-size: 13px; }
+}
+
   .dp-gallery-main {
   position: relative; width: 100%; aspect-ratio: 4/3; border-radius: $r-lg; overflow: hidden;
   background: rgba(255,255,255,0.03);

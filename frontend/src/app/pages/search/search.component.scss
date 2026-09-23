@@ -153,3 +153,20 @@
   .result-title { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .result-price { font-size: 0.85rem; font-weight: 700; color: #6366f1; }
 }
+
+.user-name-row { display: flex; align-items: center; gap: 4px; }
+.premium-icon-sm, .verified-icon-sm { font-size: 15px; }
+.premium-icon-sm { color: #f59e0b; }
+.verified-icon-sm { color: #6366f1; }
+
+.result-type-tag {
+  display: inline-block; align-self: flex-start;
+  font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 6px;
+  background: rgba(99,102,241,0.15); color: #6366f1; margin-bottom: 2px;
+  &.service { background: rgba(16,185,129,0.15); color: #10b981; }
+}
+.result-premium {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 2px;
+  font-size: 0.68rem; font-weight: 600; color: #f59e0b;
+  .material-icons { font-size: 13px; }
+}

@@ -34,10 +34,14 @@
               } @else {
                 <div class="user-avatar-placeholder"><span class="material-icons">person</span></div>
               }
-              <div class="user-info">
-                <strong>{{ u.full_name }}</strong>
-                <span>&#64;{{ u.username }}</span>
-              </div>
+             <div class="user-info">
+            <span class="user-name-row">
+              <strong>{{ u.full_name }}</strong>
+              @if (u.is_premium) { <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span> }
+              @if (u.trust_score >= 0.7) { <span class="material-icons verified-icon-sm" title="Vendeur verifie">verified</span> }
+            </span>
+            <span>&#64;{{ u.username }}</span>
+          </div>
             </button>
           }
         </div>
@@ -55,9 +59,13 @@
                   <div class="result-placeholder"><span class="material-icons">image</span></div>
                 }
                 <div class="result-info">
-                  <span class="result-title">{{ p.title }}</span>
-                  <span class="result-price">{{ p.price | number:'1.0-0' }} F</span>
-                </div>
+                <span class="result-type-tag" [class.service]="p.type === 'service'">{{ p.type === 'service' ? 'Service' : 'Produit' }}</span>
+                <span class="result-title">{{ p.title }}</span>
+                <span class="result-price">{{ p.price | number:'1.0-0' }} F</span>
+                @if (p.seller_is_premium) {
+                  <span class="result-premium"><span class="material-icons">workspace_premium</span> Premium</span>
+                }
+              </div>
               </button>
             }
           </div>

@@ -16,8 +16,6 @@ class MarketplaceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::with(['user:id,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
-            ->leftJoin('users', 'products.user_id', '=', 'users.id')
-            ->select('products.*')
             ->where('products.status', 'active')
             ->where(function ($q) {
                 $q->whereNotNull('products.poster_url')
@@ -59,18 +57,20 @@ class MarketplaceController extends Controller
             $query->where('products.price', '<=', (int) $request->price_max);
         }
 
-        // Tri — le boost premium ne s'applique jamais sur un tri prix
-        // explicite (l'acheteur a demandé ce tri précis, on ne le trahit
-        // pas), seulement sur "recent" et "popular".
-        $premiumFirst = "(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC";
-
-        $sortBy = $request->get('sort_by', 'recent');
-        match ($sortBy) {
-            'price_asc'  => $query->orderBy('products.price', 'asc'),
-            'price_desc' => $query->orderBy('products.price', 'desc'),
-            'popular'    => $query->orderByRaw($premiumFirst)->orderByDesc('products.like_count'),
-            default      => $query->orderByRaw($premiumFirst)->orderByDesc('products.created_at'),
-        };
+       // Tri - paliers de 5 jours (voir Product::scopeTieredRank) : le contenu le
+// plus recent passe toujours devant, premium ou non ; a l'interieur d'un
+// meme palier, le vendeur premium actif est mis en avant. Ne s'applique
+// jamais sur un tri prix explicite (l'acheteur a demande ce tri precis).
+$sortBy = $request->get('sort_by', 'recent');
+match ($sortBy) {
+    'price_asc'  => $query->orderBy('products.price', 'asc'),
+    'price_desc' => $query->orderBy('products.price', 'desc'),
+    'popular'    => $query->leftJoin('users', 'products.user_id', '=', 'users.id')
+                           ->select('products.*')
+                           ->orderByRaw("(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")
+                           ->orderByDesc('products.like_count'),
+    default      => $query->tieredRank(),
+};
 
         $perPage = min((int) $request->get('per_page', 20), 50);
         $products = $query->paginate($perPage);

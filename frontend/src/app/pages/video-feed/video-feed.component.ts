@@ -816,6 +816,7 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   dpSellerAvatar(): string | null { const p = this.dp(); return p?.seller?.avatar_url || p?.seller?.avatar || null; }
   dpSellerName(): string { const p = this.dp(); return p?.seller?.full_name || p?.seller?.username || 'Vendeur'; }
   dpSellerUsername(): string { return this.dp()?.seller?.username || ''; }
+  dpSellerIsPremium(): boolean { return !!this.dp()?.seller?.is_premium; }
   dpTrustScore(): number { return this.dp()?.seller?.trust_score || 0; }
   dpSellerCity(): string { return this.dp()?.seller?.city || ''; }
   dpCondition(): string {

@@ -26,7 +26,7 @@ class ProductFeedController extends Controller
 
         $query = Product::query()
             ->active()
-            ->with(['user:id,full_name,username,avatar_url,trust_score', 'category:id,name,icon', 'video']);
+            ->with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,icon', 'video']);
 
         // For "following" tab, filter by followed users
         if ($tab === 'following' && $authUser) {
@@ -46,14 +46,8 @@ class ProductFeedController extends Controller
 
 
         if (!$request->has('q') || empty($request->q)) {
-            $query->where(function ($q) {
-                $q->whereNotNull('poster_url')
-                  ->orWhereHas('video', function ($sub) {
-                      $sub->where('moderation_status', 'approved');
-                  })
-                  ->orWhere(function ($sub) {
-                      $sub->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");
-                  });
+            $query->whereHas('video', function ($sub) {
+                $sub->where('moderation_status', 'approved');
             });
         }
 
@@ -95,50 +89,12 @@ class ProductFeedController extends Controller
         } elseif ($tab === 'following') {
             // Following: newest first with slight randomness
             $query->inRandomOrder()->latest();
-        } else {
-            // "Pour toi" — DYNAMIC RANKING
-            // Composite score = engagement + freshness + video quality + randomness
-            // The random factor ensures different ordering on every refresh
-            $seed = (int) $request->get('seed', time());
-
-                        $premiumBoost = config('quinch.premium.feed_boost', 30);
-
-            $query->leftJoin('product_videos', 'products.video_id', '=', 'product_videos.id')
-                  ->leftJoin('users', 'products.user_id', '=', 'users.id')
-                  ->select('products.*')
-                  ->selectRaw("(
-                      -- Engagement score (weighted interactions)
-                      (COALESCE(products.like_count, 0) * 3
-                       + COALESCE(products.view_count, 0) * 0.5
-                       + COALESCE(products.share_count, 0) * 5)
-
-                      -- Freshness boost: newer posts get higher score (decays over hours)
-                      -- PostgreSQL: EXTRACT(EPOCH FROM ...) gives seconds, divide by 3600 for hours
-                      + (200.0 / (EXTRACT(EPOCH FROM (NOW() - products.created_at)) / 3600 + 1))
-
-                      -- Video quality bonus
-                      + CASE
-                          WHEN product_videos.resolution = '4k' THEN 15
-                          WHEN product_videos.resolution = '1080p' THEN 10
-                          WHEN product_videos.resolution = '720p' THEN 6
-                          WHEN product_videos.resolution = '480p' THEN 3
-                          ELSE 0
-                        END
-
-                      -- Has video boost (video content preferred in Pour toi)
-                      + CASE WHEN products.video_id IS NOT NULL THEN 20 ELSE 0 END
-
-                    -- Boost vendeur premium (actif uniquement, pas juste le flag)
-                      + CASE
-                          WHEN users.is_premium = true AND users.premium_expires_at > NOW()
-                          THEN {$premiumBoost}
-                          ELSE 0
-                        END
-                      -- Random factor using PostgreSQL random() — varies per query execution
-                      + random() * 40
-                  ) as feed_score")
-                  ->orderByDesc('feed_score');
-        }
+                } else {
+                    // "Pour toi" - meme algorithme de paliers que l'Explorer et la
+                    // recherche (voir Product::scopeTieredRank), pour une coherence de
+                    // classement sur toute la plateforme.
+                    $query->tieredRank();
+                }
 
         $products = $query->paginate($request->get('per_page', 10));
 
@@ -199,6 +155,7 @@ class ProductFeedController extends Controller
                     'city' => $product->user->city,
                     'member_since' => $product->user->created_at?->format('M Y'),
                     'is_following' => in_array($product->user->id, $followingIds),
+'is_premium' => $product->user->isPremiumActive(),
                 ],
                 'created_at' => $product->created_at,
             ];
@@ -313,37 +270,49 @@ class ProductFeedController extends Controller
 
         // Search products
         $products = Product::query()
-            ->active()
-            ->with(['user:id,full_name,username,avatar_url', 'video'])
-            ->where(function ($query) use ($q) {
-                $query->where('title', 'LIKE', "%{$q}%")
-                      ->orWhere('description', 'LIKE', "%{$q}%");
-            })
-            ->limit(10)
-            ->get()
-            ->map(function ($product) {
-                return [
-                    'id' => $product->id,
-                    'type' => $product->type ?? 'product',
-                    'title' => $product->title,
-                    'slug' => $product->slug,
-                    'price' => $product->price,
-                    'poster' => $product->poster_full_url,
-                    'image' => $product->poster_full_url ?? $product->video?->thumbnail_url ?? ($product->images[0] ?? null),
-                    'seller' => $product->user?->username,
-                ];
-            });
+    ->active()
+    ->with(['user:id,full_name,username,avatar_url,is_premium,premium_expires_at', 'video'])
+    ->where(function ($query) use ($q) {
+        $query->where('title', 'LIKE', "%{$q}%")
+              ->orWhere('description', 'LIKE', "%{$q}%");
+    })
+    ->tieredRank()
+    ->limit(10)
+    ->get()
+    ->map(function ($product) {
+        return [
+            'id' => $product->id,
+            'type' => $product->type ?? 'product',
+            'title' => $product->title,
+            'slug' => $product->slug,
+            'price' => $product->price,
+            'poster' => $product->poster_full_url,
+            'image' => $product->poster_full_url ?? $product->video?->thumbnail_url ?? ($product->images[0] ?? null),
+            'seller' => $product->user?->username,
+            'seller_is_premium' => $product->user?->isPremiumActive() ?? false,
+        ];
+    });
 
         // Search users (sellers)
-        $users = User::query()
-            ->where('account_status', 'active')
-            ->where(function ($query) use ($q) {
-                $query->where('full_name', 'LIKE', "%{$q}%")
-                      ->orWhere('username', 'LIKE', "%{$q}%");
-            })
-            ->select('id', 'full_name', 'username', 'avatar_url', 'trust_score', 'city')
-            ->limit(10)
-            ->get();
+ $users = User::query()
+    ->where('account_status', 'active')
+    ->where(function ($query) use ($q) {
+        $query->where('full_name', 'LIKE', "%{$q}%")
+              ->orWhere('username', 'LIKE', "%{$q}%");
+    })
+    ->select('id', 'full_name', 'username', 'avatar_url', 'trust_score', 'city', 'is_premium', 'premium_expires_at')
+    ->orderByRaw("(CASE WHEN is_premium = true AND premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")
+    ->limit(10)
+    ->get()
+    ->map(fn ($u) => [
+        'id' => $u->id,
+        'full_name' => $u->full_name,
+        'username' => $u->username,
+        'avatar_url' => $u->avatar_url,
+        'trust_score' => $u->trust_score,
+        'city' => $u->city,
+        'is_premium' => $u->isPremiumActive(),
+    ]);
 
         return response()->json([
             'products' => $products,

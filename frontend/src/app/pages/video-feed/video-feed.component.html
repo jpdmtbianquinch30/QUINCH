@@ -282,10 +282,13 @@
                       <span class="material-icons">person</span>
                     }
                   </div>
-                  <span class="seller-username" (click)="viewSellerProfile(product, $event)">&#64;{{ product.seller?.username || 'vendeur' }}</span>
-                  @if (product.seller?.trust_score >= 0.7) {
-                    <span class="material-icons verified-icon">verified</span>
-                  }
+                 <span class="seller-username" (click)="viewSellerProfile(product, $event)">&#64;{{ product.seller?.username || 'vendeur' }}</span>
+                    @if (product.seller?.is_premium) {
+                      <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span>
+                    }
+                    @if (product.seller?.trust_score >= 0.7) {
+                      <span class="material-icons verified-icon">verified</span>
+                    }
                   @if (!isFollowing(product.seller?.id)) {
                     <button class="follow-inline-btn" (click)="toggleFollow(product, $event)">Suivre</button>
                   }
@@ -300,7 +303,7 @@
                     <span class="material-icons" [class.liked]="product.is_liked">
                       {{ product.is_liked ? 'favorite' : 'favorite_border' }}
                     </span>
-                    <span>{{ formatCount(product.like_count) }}</span>
+                    <span>{{ product.like_count || 0 | number:'1.0-0':'fr-FR' }}</span>
                   </button>
 
                   <button class="h-action" (click)="openCommentPanel(product, $event)">
@@ -310,7 +313,7 @@
 
                   <button class="h-action" (click)="shareProduct(product, $event)">
                     <span class="material-icons">reply</span>
-                    <span>{{ formatCount(product.share_count) }}</span>
+                    <span>{{ product.share_count || 0 | number:'1.0-0':'fr-FR' }}</span>
                   </button>
 
                   <button class="h-action" (click)="toggleSave(product, $event)">
