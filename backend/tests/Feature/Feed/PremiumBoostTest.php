@@ -33,7 +33,6 @@ class PremiumBoostTest extends TestCase
             'like_count' => 10,
             'view_count' => 100,
             'share_count' => 2,
-            'video_id' => null,
         ]);
 
         $freeProduct = Product::factory()->create([
@@ -43,7 +42,6 @@ class PremiumBoostTest extends TestCase
             'like_count' => 10,
             'view_count' => 100,
             'share_count' => 2,
-            'video_id' => null,
         ]);
 
         $response = $this->getJson('/api/v1/products/feed?tab=foryou&per_page=10');
@@ -78,7 +76,6 @@ class PremiumBoostTest extends TestCase
             'like_count' => 10,
             'view_count' => 100,
             'share_count' => 500, // net avantage d'engagement pour compenser tout bruit aléatoire
-            'video_id' => null,
         ]);
 
         $freeProduct = Product::factory()->create([
@@ -88,7 +85,6 @@ class PremiumBoostTest extends TestCase
             'like_count' => 10,
             'view_count' => 100,
             'share_count' => 2,
-            'video_id' => null,
         ]);
 
         $response = $this->getJson('/api/v1/products/feed?tab=foryou&per_page=10');
