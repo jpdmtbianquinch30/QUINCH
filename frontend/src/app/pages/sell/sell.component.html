@@ -8,7 +8,7 @@
     <button class="type-btn" [class.active]="publishType() === 'product'" (click)="setType('product')">
       <span class="material-icons">inventory_2</span><span>Produit</span>
     </button>
-    <button class="type-btn" [class.active]="publishType() === 'service'" (click)="setType('service')">
+    <button class="type-btn type-service" [class.active]="publishType() === 'service'" (click)="setType('service')">
       <span class="material-icons">handyman</span><span>Service</span>
     </button>
   </div>

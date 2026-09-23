@@ -24,10 +24,16 @@
   --q-accent-glow: rgba(79, 110, 247, 0.3);
   --q-accent-subtle: rgba(79, 110, 247, 0.1);
 
-  // Secondary accent — Teal
-  --q-secondary: #14b8a6;
-  --q-secondary-light: #2dd4bf;
-  --q-secondary-subtle: rgba(20, 184, 166, 0.1);
+  // Service accent — Emeraude. Couleur d'identite pour tout ce qui est
+  // "Service" (par opposition a "Produit", qui reste sur --q-accent) :
+  // feed, publier, fiche produit/service, profils. A garder identique
+  // partout pour que la distinction Produit/Service soit reconnaissable
+  // en un coup d'oeil dans toute l'app.
+  --q-secondary: #10b981;
+  --q-secondary-light: #34d399;
+  --q-secondary-dark: #0d9668;
+  --q-secondary-glow: rgba(16, 185, 129, 0.3);
+  --q-secondary-subtle: rgba(16, 185, 129, 0.1);
 
   // Text
   --q-text-primary: #f0f2f7;

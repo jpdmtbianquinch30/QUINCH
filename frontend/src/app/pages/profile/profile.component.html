@@ -200,6 +200,8 @@
                       <span class="card-status" [class]="getProductStatusClass(p.status)">{{ getProductStatusLabel(p.status) }}</span>
                       @if (p.type === 'product') {
                         <span class="card-stock" [class]="getStockClass(p)">{{ getStockLabel(p) }}</span>
+                      } @else {
+                        <span class="card-service-tag">Service</span>
                       }
                     </div>
                     <div class="card-body">
@@ -238,8 +240,10 @@
                       <div class="row-meta">
                         <span class="row-price">{{ p.price | number:'1.0-0' }} F CFA</span>
                         <span class="row-status" [class]="getProductStatusClass(p.status)">{{ getProductStatusLabel(p.status) }}</span>
-                        @if (p.type === 'product') {
+                         @if (p.type === 'product') {
                           <span class="row-stock" [class]="getStockClass(p)">{{ getStockLabel(p) }}</span>
+                        } @else {
+                          <span class="row-service-tag">Service</span>
                         }
                       </div>
                       <div class="row-stats">

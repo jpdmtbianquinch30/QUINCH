@@ -4,13 +4,17 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 // ─── Design tokens ───────────────────────────────────────────────
-$product-accent: #6366f1;
-$product-accent-light: #818cf8;
-$product-glow: rgba(99, 102, 241, 0.25);
+// Produit = --q-accent (bleu Quinch, identique a Explorer/marketplace).
+// Service = --q-secondary (emeraude, identite Service commune a toute
+// l'app : feed, publier, profils...). Ne plus coder de couleurs en dur
+// ici — tout passe par les variables globales de styles.scss.
+$product-accent: var(--q-accent);
+$product-accent-light: var(--q-accent-light);
+$product-glow: var(--q-accent-glow);
 
-$service-accent: #10b981;
-$service-accent-light: #34d399;
-$service-glow: rgba(16, 185, 129, 0.25);
+$service-accent: var(--q-secondary);
+$service-accent-light: var(--q-secondary-light);
+$service-glow: var(--q-secondary-glow);
 
 $radius-lg: 16px;
 $radius-md: 12px;

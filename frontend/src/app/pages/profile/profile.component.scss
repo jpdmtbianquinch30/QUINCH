@@ -769,6 +769,28 @@
   &.status-disabled { background: rgba(107,114,128,0.85); }
 }
 
+// Identite Service = emeraude (coherent avec Explorer/publier/profil vendeur)
+.card-service-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--q-radius-sm);
+  z-index: 2;
+  background: var(--q-secondary);
+  color: #fff;
+}
+.row-service-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--q-radius-sm);
+  background: var(--q-secondary);
+  color: #fff;
+}
+
 /* ─── LIST VIEW MANAGEMENT ─── */
 .product-row {
   position: relative;

@@ -180,16 +180,19 @@
                       } @else {
                         <div class="sp-product-placeholder"><span class="material-icons">image</span></div>
                       }
-                      @if (p.condition === 'new') {
+                                            @if (p.type === 'service') {
+                        <span class="sp-product-tag emerald">Service</span>
+                      }
+                      @if (p.condition === 'new' && p.type !== 'service') {
                         <span class="sp-product-tag green">Neuf</span>
                       }
                       @if (p.is_negotiable) {
-                        <span class="sp-product-tag orange" [class.offset]="p.condition === 'new'">Nego</span>
+                        <span class="sp-product-tag orange" [class.offset]="p.type === 'service' || p.condition === 'new'">Nego</span>
                       }
                     </div>
                     <div class="sp-product-info">
                       @if (p.category) {
-                        <span class="sp-product-cat">{{ p.category.name }}</span>
+                        <span class="sp-product-cat" [class.service]="p.type === 'service'">{{ p.category.name }}</span>
                       }
                       <h3 class="sp-product-title">{{ p.title }}</h3>
                       <span class="sp-product-price">{{ p.price | number:'1.0-0' }} F CFA</span>

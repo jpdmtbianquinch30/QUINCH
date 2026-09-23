@@ -17,9 +17,10 @@
   color: var(--q-text-muted); font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
   .material-icons { font-size: 24px; }
   &:hover { border-color: rgba(255,255,255,0.12); }
-  &.active { border-color: var(--q-accent); background: rgba(99,102,241,0.08); color: var(--q-accent-light); }
+  &.active { border-color: var(--q-accent); background: var(--q-accent-subtle); color: var(--q-accent-light); }
+  // Identite Service = emeraude, coherent avec Explorer/feed/fiche produit
+  &.type-service.active { border-color: var(--q-secondary); background: var(--q-secondary-subtle); color: var(--q-secondary-light); }
 }
-
 // ─── Step Indicator ──────────────
 .step-indicator { display: flex; align-items: center; justify-content: center; margin-bottom: 32px; }
 .step { display: flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0.4; transition: all 0.2s;
@@ -1093,7 +1094,8 @@
     background: #f5f7fa;
     border-color: #e5e7eb;
     &:hover { border-color: rgba(0,0,0,0.2); }
-    &.active { background: rgba(99,102,241,0.08); }
+    &.active { background: var(--q-accent-subtle); }
+    &.type-service.active { background: var(--q-secondary-subtle); }
   }
 
   .step-num {

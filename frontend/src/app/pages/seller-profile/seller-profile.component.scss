@@ -515,6 +515,7 @@ $card-border: 1px solid var(--q-border);
   letter-spacing: 0.3px;
   &.green { background: rgba(34, 197, 94, 0.9); color: white; }
   &.orange { background: rgba(245, 158, 11, 0.9); color: white; }
+  &.emerald { background: var(--q-secondary); color: white; }
   &.offset { top: 34px; }
 }
 
@@ -529,6 +530,7 @@ $card-border: 1px solid var(--q-border);
   font-weight: 700;
   letter-spacing: 0.4px;
   margin-bottom: 4px;
+  &.service { color: var(--q-secondary); }
 }
 .sp-product-title {
   font-size: 0.88rem;
