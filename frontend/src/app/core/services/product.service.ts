@@ -150,4 +150,13 @@ export class ProductService {
   disputeTransaction(transactionId: string, reason: string): Observable<any> {
     return this.api.post(`transactions/${transactionId}/dispute`, { reason });
   }
+
+  awardLoyaltyBadge(buyerId: string, reason?: string): Observable<any> {
+    return this.api.post(`users/${buyerId}/loyalty-badge`, { reason });
+  }
+
+  revokeLoyaltyBadge(buyerId: string): Observable<any> {
+    return this.api.delete(`users/${buyerId}/loyalty-badge`);
+  }
 }
+

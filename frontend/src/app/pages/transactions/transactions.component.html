@@ -235,6 +235,14 @@
                     }
                     @if (tx.order_status === 'completed') {
                       <div class="action-done"><span class="material-icons">verified</span> Vente terminée</div>
+                      @if (!tx.loyalty_badge_awarded) {
+                        <button type="button" class="action-btn action-badge" (click)="awardLoyaltyBadge(tx); $event.stopPropagation()" [disabled]="awardingBadge() === tx.id">
+                          @if (awardingBadge() === tx.id) { <div class="btn-loader"></div> }
+                          @else { <span class="material-icons">loyalty</span> Client fidèle }
+                        </button>
+                      } @else {
+                        <div class="action-done badge-awarded"><span class="material-icons">loyalty</span> Badge attribué</div>
+                      }
                     }
                     @if (tx.order_status === 'cancelled') {
                       <div class="action-cancelled"><span class="material-icons">block</span> Annulée</div>

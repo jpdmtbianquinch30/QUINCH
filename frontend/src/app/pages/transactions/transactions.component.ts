@@ -107,6 +107,9 @@ export class TransactionsComponent implements OnInit {
   }
 
   // ─── Seller Actions ──────────────
+  // ─── Seller Actions ──────────────
+  awardingBadge = signal<string | null>(null);
+
   acceptOrder(tx: any) {
     this.actionLoading.set(tx.id);
     this.productService.updateTransactionStatus(tx.id, 'processing').subscribe({
@@ -170,6 +173,23 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
+  awardLoyaltyBadge(tx: any) {
+    const buyer = tx.buyer;
+    if (!buyer?.id) return;
+    this.awardingBadge.set(tx.id);
+    this.productService.awardLoyaltyBadge(buyer.id).subscribe({
+      next: () => {
+        this.notify.success(`Badge "Client Fidele" attribue a ${buyer.full_name || 'ce client'} !`);
+        this.updateTxInList({ id: tx.id, loyalty_badge_awarded: true });
+        this.awardingBadge.set(null);
+      },
+      error: (err) => {
+        this.notify.error(err.error?.message || "Impossible d'attribuer le badge pour le moment.");
+        this.awardingBadge.set(null);
+      },
+    });
+  }
+
   private updateTxInList(updatedTx: any) {
     if (!updatedTx) return;
     const updateFn = (list: any[]) => list.map(t => t.id === updatedTx.id ? { ...t, ...updatedTx } : t);
@@ -208,7 +228,7 @@ export class TransactionsComponent implements OnInit {
       },
     });
   }
-  
+
 
   // ─── Helpers ──────────────
   formatPrice(amount: number): string {

@@ -339,6 +339,16 @@
   &:hover:not(:disabled) { background: #f59e0b; color: white; }
 }
 
+.action-badge {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(245, 158, 11, 0.06));
+  border-color: rgba(251, 191, 36, 0.3); color: #fbbf24;
+  &:hover:not(:disabled) { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #1a1a1a; }
+}
+
+.action-done.badge-awarded {
+  background: rgba(251, 191, 36, 0.1); color: #fbbf24;
+}
+
 // ─── Modale de signalement ───────────────────────────────────
 .report-backdrop {
   position: fixed; inset: 0; z-index: 300;
