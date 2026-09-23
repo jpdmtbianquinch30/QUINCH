@@ -263,13 +263,11 @@
                     }
                   }
 
-                                    <!-- Signaler : disponible pour acheteur et vendeur, tant
-                       que ce n'est pas déjà annulé ou en litige. -->
-                  @if (tx.order_status !== 'cancelled' && tx.order_status !== 'disputed') {
-                    <button type="button" class="action-btn action-report" (click)="openReport(tx); $event.stopPropagation()">
-                      <span class="material-icons">flag</span> Signaler
-                    </button>
-                  }
+                  <!-- Signaler : toujours disponible pour l'acheteur comme pour
+                       le vendeur, quel que soit le statut — on ne sait jamais. -->
+                  <button type="button" class="action-btn action-report" (click)="openReport(tx); $event.stopPropagation()">
+                    <span class="material-icons">flag</span> Signaler
+                  </button>
 
                   <!-- Product link -->
                   @if (tx.product?.slug) {

@@ -239,6 +239,9 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
     // Badges (V2 — désactivé en V1)
     Route::middleware('feature:badges')->group(function () {
         Route::get('my-badges', [BadgeController::class, 'myBadges']);
+        Route::get('my-customers', [BadgeController::class, 'myCustomers']);
+        Route::post('users/{user}/loyalty-badge', [BadgeController::class, 'sellerAward']);
+        Route::delete('users/{user}/loyalty-badge', [BadgeController::class, 'sellerRevoke']);
     });
 
     // Reviews (V2 — désactivé en V1)

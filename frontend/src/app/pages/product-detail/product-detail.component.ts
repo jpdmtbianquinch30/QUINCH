@@ -42,7 +42,8 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   loading = signal(true);
 
   // UI State
-  showPayment = signal(false);
+   showPayment = signal(false);
+  checkingSession = signal(false);
   showShareModal = signal(false);
   showNegotiateModal = signal(false);
   showContactModal = signal(false);
@@ -333,13 +334,27 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   // ─── Buy now (products only) ───────────────────────────
   buyNow() {
     if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    if (this.hasSellerPaymentMethods) {
-      this.showPayment.set(true);
-    } else {
-      // No payment methods set by seller — redirect to contact
-      this.openContact();
-      this.notify.info('Le vendeur n\'a pas configure de methode de paiement. Contactez-le directement.');
-    }
+    // Verifie que la session est encore valide cote serveur AVANT d'ouvrir
+    // le tunnel d'achat (choix methode, adresse...). Sans ca, un token
+    // perime en local (isAuthenticated() ne regarde que sa presence, pas sa
+    // validite) laissait l'utilisateur parcourir tout le tunnel pour se
+    // faire ejecter vers /auth/login seulement a la confirmation finale.
+    this.checkingSession.set(true);
+    this.auth.getMe().subscribe(res => {
+      this.checkingSession.set(false);
+      if (!res.user) {
+        this.notify.error('Votre session a expire. Reconnectez-vous pour continuer.');
+        this.router.navigate(['/auth/login']);
+        return;
+      }
+      if (this.hasSellerPaymentMethods) {
+        this.showPayment.set(true);
+      } else {
+        // No payment methods set by seller — redirect to contact
+        this.openContact();
+        this.notify.info('Le vendeur n\'a pas configure de methode de paiement. Contactez-le directement.');
+      }
+    });
   }
 
   incrementQty() {

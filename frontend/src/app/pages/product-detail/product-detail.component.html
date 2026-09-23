@@ -260,9 +260,9 @@
             <!-- ══ PRODUCT CTAs ══ -->
             @if (hasSellerPaymentMethods) {
               <div class="cta-row">
-                <button class="cta-primary buy-cta" (click)="buyNow()">
-                  <span class="material-icons">flash_on</span>
-                  Acheter maintenant
+                <button class="cta-primary buy-cta" (click)="buyNow()" [disabled]="checkingSession()">
+                  <span class="material-icons">{{ checkingSession() ? 'hourglass_top' : 'flash_on' }}</span>
+                  {{ checkingSession() ? 'Verification...' : 'Acheter maintenant' }}
                 </button>
                 <button class="cta-secondary cart-cta" (click)="addToCart()" [disabled]="addingToCart()">
                   <span class="material-icons">{{ addingToCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span>

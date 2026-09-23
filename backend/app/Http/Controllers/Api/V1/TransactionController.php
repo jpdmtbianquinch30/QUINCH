@@ -200,7 +200,14 @@ class TransactionController extends Controller
         ]);
         $newStatus = $validated['status'];
 
-        if ($transaction->payment_status !== 'completed' && $newStatus !== 'cancelled') {
+        // Paiement cash : payment_status reste volontairement 'pending' (voir
+        // CashGateway) puisqu'aucune passerelle externe ne le confirme jamais
+        // — l'échange se fait physiquement. Sans cette exception, ce garde
+        // bloquait à tort TOUTE progression (expédié, livré, réception
+        // confirmée) des commandes payées en espèces.
+        $isCashAwaitingHandoff = $transaction->payment_method === 'cash' && $transaction->payment_status === 'pending';
+
+        if (!$isCashAwaitingHandoff && $transaction->payment_status !== 'completed' && $newStatus !== 'cancelled') {
             return response()->json(['message' => "Le paiement n'a pas encore été confirmé par la passerelle."], 422);
         }
 
@@ -245,7 +252,13 @@ class TransactionController extends Controller
 
         if ($transaction->buyer_id === $user->id) {
             if ($newStatus === 'completed' && $transaction->order_status === 'delivered') {
-                $transaction->update(['order_status' => 'completed', 'completed_at' => now()]);
+                $transaction->update([
+                    'order_status' => 'completed',
+                    'completed_at' => now(),
+                    // La réception confirmée d'une commande cash vaut aussi
+                    // encaissement confirmé (remise en main propre).
+                    'payment_status' => $transaction->payment_method === 'cash' ? 'completed' : $transaction->payment_status,
+                ]);
                 $transaction->seller->incrementTrustScore(0.02);
                 return response()->json([
                     'message' => 'Réception confirmée. Merci !',
