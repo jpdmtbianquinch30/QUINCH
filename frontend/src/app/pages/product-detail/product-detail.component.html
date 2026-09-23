@@ -444,68 +444,36 @@
         @if (isService()) {
           <div class="info-section">
             <h3 class="section-title">A propos du service</h3>
-            <div class="service-features">
-              <div class="service-feature">
-                <span class="material-icons">location_on</span>
-                <div>
-                  <strong>Modalite</strong>
-                  <span>{{ getServiceTypeLabel() }}</span>
-                </div>
+            <div class="specs-grid">
+              <div class="spec-item service-spec">
+                <span class="spec-icon material-icons">location_on</span>
+                <div class="spec-content"><span class="spec-label">Modalite</span><span class="spec-value">{{ getServiceTypeLabel() }}</span></div>
               </div>
-              <div class="service-feature">
-                <span class="material-icons">schedule</span>
-                <div>
-                  <strong>Disponibilite</strong>
-                  <span>{{ getServiceAvailability() }}</span>
-                </div>
+              <div class="spec-item service-spec">
+                <span class="spec-icon material-icons">schedule</span>
+                <div class="spec-content"><span class="spec-label">Disponibilite</span><span class="spec-value">{{ getServiceAvailability() }}</span></div>
               </div>
               @if (getServiceDuration()) {
-                <div class="service-feature">
-                  <span class="material-icons">timer</span>
-                  <div>
-                    <strong>Duree</strong>
-                    <span>{{ getServiceDuration() }}</span>
-                  </div>
+                <div class="spec-item service-spec">
+                  <span class="spec-icon material-icons">timer</span>
+                  <div class="spec-content"><span class="spec-label">Duree</span><span class="spec-value">{{ getServiceDuration() }}</span></div>
                 </div>
               }
               @if (getServiceArea()) {
-                <div class="service-feature">
-                  <span class="material-icons">map</span>
-                  <div>
-                    <strong>Zone d'intervention</strong>
-                    <span>{{ getServiceArea() }}</span>
-                  </div>
+                <div class="spec-item service-spec">
+                  <span class="spec-icon material-icons">map</span>
+                  <div class="spec-content"><span class="spec-label">Zone d'intervention</span><span class="spec-value">{{ getServiceArea() }}</span></div>
                 </div>
               }
               @if (getServiceExperience()) {
-                <div class="service-feature">
-                  <span class="material-icons">workspace_premium</span>
-                  <div>
-                    <strong>Experience</strong>
-                    <span>{{ getServiceExperience() }}</span>
-                  </div>
+                <div class="spec-item service-spec">
+                  <span class="spec-icon material-icons">workspace_premium</span>
+                  <div class="spec-content"><span class="spec-label">Experience</span><span class="spec-value">{{ getServiceExperience() }}</span></div>
                 </div>
               }
-              <div class="service-feature">
-                <span class="material-icons">payments</span>
-                <div>
-                  <strong>Tarification</strong>
-                  <span>{{ getServicePriceTypeLabel() }}</span>
-                </div>
-              </div>
-              <div class="service-feature">
-                <span class="material-icons">support_agent</span>
-                <div>
-                  <strong>Communication directe</strong>
-                  <span>Messagerie integree Quinch</span>
-                </div>
-              </div>
-              <div class="service-feature">
-                <span class="material-icons">verified_user</span>
-                <div>
-                  <strong>Paiement securise</strong>
-                  <span>Paiement apres satisfaction</span>
-                </div>
+              <div class="spec-item service-spec">
+                <span class="spec-icon material-icons">payments</span>
+                <div class="spec-content"><span class="spec-label">Tarification</span><span class="spec-value">{{ getServicePriceTypeLabel() }}</span></div>
               </div>
             </div>
           </div>

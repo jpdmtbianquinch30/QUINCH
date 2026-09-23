@@ -632,6 +632,12 @@ $radius-sm: 8px;
   border-radius: $radius-md;
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.04);
+
+  &.service-spec {
+    background: rgba(16, 185, 129, 0.04);
+    border-color: rgba(16, 185, 129, 0.1);
+    .spec-icon { color: $service-accent-light; }
+  }
 }
 
 .spec-icon {
@@ -1616,7 +1622,7 @@ $radius-sm: 8px;
   }
 
   .media-panel { position: static; }
-  .media-main { aspect-ratio: 5/6; max-height: 65vh; }
+  .media-main { aspect-ratio: 4/5; max-height: 58vh; }
 
   .info-title { font-size: 1.3rem; }
   .price-value { font-size: 1.6rem; }
@@ -1639,7 +1645,7 @@ $radius-sm: 8px;
   .stat { font-size: 0.76rem; }
 
   .thumb-item { width: 60px; height: 60px; }
-  .media-main { aspect-ratio: 4/5; max-height: 56vh; }
+  .media-main { aspect-ratio: 1/1; max-height: 48vh; }
 
   // ─── Carte vendeur — plus compacte, ne déborde jamais ─────────────
   .seller-card { padding: 14px 16px; gap: 10px; }
