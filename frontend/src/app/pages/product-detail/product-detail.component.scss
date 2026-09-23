@@ -798,36 +798,69 @@ $radius-sm: 8px;
   }
 }
 
-.seller-username {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.35);
+.verified-tick {
+  font-size: 15px !important;
+  color: #4f6ef7;
+  vertical-align: middle;
+  margin-left: 3px;
 }
 
-.seller-trust {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.trust-score {
+// ─── Seller meta: username, trust score, city — tout sur une ligne ────────
+.seller-meta-line {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.82rem;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  .dot { opacity: 0.5; }
+}
+
+// Meme code couleur que les cartes Explorer/marketplace (.card-trust) pour
+// uniformiser la perception du score de confiance dans toute l'app.
+.trust-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-weight: 700;
   color: $product-accent-light;
-  .material-icons { font-size: 16px; }
+  .material-icons { font-size: 14px; }
   .is-service & { color: $service-accent-light; }
+
+  &.high { color: #22c55e; }
+  &.mid { color: #f59e0b; }
+  &.low { color: #ef4444; }
 }
 
 .seller-location {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.35);
-  .material-icons { font-size: 14px; }
+  gap: 2px;
+  .material-icons { font-size: 13px; }
+}
+
+// ─── Seller badges (identite verifiee, top vendeur, etc.) ─────────────────
+.seller-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.seller-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  .material-icons { font-size: 13px; }
 }
 
 // ─── Report Button ───────────────────────────────────────────────
@@ -1612,7 +1645,8 @@ $radius-sm: 8px;
   .seller-card { padding: 14px 16px; gap: 10px; }
   .seller-avatar { width: 40px; height: 40px; }
   .seller-name { font-size: 0.88rem; }
-  .seller-trust { align-items: flex-end; }
+  .seller-meta-line { font-size: 0.72rem; }
+  .seller-badge-chip { font-size: 0.65rem; padding: 2px 7px; }
 
   // ─── Caractéristiques / paiement / livraison — resserrés ──────────
   .spec-item { padding: 12px 14px; gap: 10px; }
@@ -1798,8 +1832,7 @@ $radius-sm: 8px;
   }
 
   .seller-name { color: var(--q-text-primary, #1a1d26); }
-  .seller-username { color: #6b7280; }
-  .seller-location { color: #6b7280; }
+  .seller-meta-line { color: #6b7280; }
 
   .report-btn {
     border-color: rgba(0,0,0,0.06);

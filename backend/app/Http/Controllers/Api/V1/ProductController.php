@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\UserBadge;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\PaymentGateway\PaymentGatewayFactory;
@@ -194,6 +195,14 @@ class ProductController extends Controller
             $isSaved = \App\Models\FavoriteItem::where('user_id', auth()->id())->where('product_id', $product->id)->exists();
         }
 
+        $badges = UserBadge::where('user_id', $product->user->id)->get()->map(fn ($b) => [
+            'type' => $b->badge_type,
+            'name' => UserBadge::badgeDefinitions()[$b->badge_type]['name'] ?? $b->badge_type,
+            'icon' => UserBadge::badgeDefinitions()[$b->badge_type]['icon'] ?? 'stars',
+            'color' => UserBadge::badgeDefinitions()[$b->badge_type]['color'] ?? '#666',
+            'description' => UserBadge::badgeDefinitions()[$b->badge_type]['description'] ?? '',
+        ]);
+
         return response()->json([
             'product' => $product,
             'seller' => [
@@ -201,11 +210,15 @@ class ProductController extends Controller
                 'full_name' => $product->user->full_name,
                 'username' => $product->user->username,
                 'avatar_url' => $product->user->avatar_url,
+                'city' => $product->user->city,
+                'kyc_status' => $product->user->kyc_status,
+                'account_age_days' => $product->user->account_age_days,
                 'trust_score' => $product->user->trust_score,
                 'trust_badge' => $product->user->trust_badge,
                 'products_count' => $product->user->products()->active()->count(),
                 'member_since' => $product->user->created_at->format('M Y'),
                 'is_premium' => $product->user->isPremiumActive(),
+                'badges' => $badges,
             ],
             'is_liked' => $isLiked,
             'is_saved' => $isSaved,

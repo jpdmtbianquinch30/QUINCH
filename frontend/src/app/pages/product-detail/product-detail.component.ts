@@ -115,16 +115,14 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
           if (res.is_liked !== undefined) p.is_liked = res.is_liked;
           if (res.is_saved !== undefined) p.is_saved = res.is_saved;
           if (res.seller && !p.seller) p.seller = res.seller;
-          // Ensure images is always an array
+          // Ensure images is always an array. Le backend garde volontairement
+          // le poster (couverture) a part des "images" (photos supplementaires
+          // du produit) — on ne les fusionne plus ici. Melanger les deux
+          // faussait le compteur "Photos (N)" et forcait l'onglet Photos par
+          // defaut meme sur un produit uniquement video (le poster suffisait
+          // a rendre p.images non-vide), ce qui masquait systematiquement la
+          // video a l'ouverture de la fiche produit.
           if (!p.images) p.images = [];
-
-          // Prepend poster image to images array so it's always first
-          const posterUrl = p.poster_full_url || p.poster;
-          if (posterUrl) {
-            // Remove duplicate if poster already in images
-            p.images = p.images.filter((img: string) => img !== posterUrl);
-            p.images.unshift(posterUrl);
-          }
 
           if (res.is_saved !== undefined) this.isFavorited.set(res.is_saved);
           this.product.set(p);
@@ -132,12 +130,12 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
           this.analytics.trackProductView(p.id);
           this.productService.viewProduct(p.id).subscribe();
 
-          // Set correct default media tab:
-          // Poster/images first, then video
-          if (p.images?.length) {
-            this.activeMediaTab.set('photos');
-          } else if (this.hasVideo()) {
+          // Onglet par defaut : la video prime quand elle existe (coeur de
+          // l'experience QUINCH), sinon les vraies photos supplementaires.
+          if (this.hasVideo()) {
             this.activeMediaTab.set('video');
+          } else if (p.images?.length) {
+            this.activeMediaTab.set('photos');
           }
 
           // Auto-play video after Angular renders the template
@@ -676,6 +674,19 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   getSellerUsername(): string {
     const p = this.product();
     return p?.seller?.username || p?.user?.username || '';
+  }
+
+  getSellerKycVerified(): boolean {
+    const p = this.product();
+    return (p?.seller?.kyc_status || p?.user?.kyc_status) === 'verified';
+  }
+
+  /** Badges reels du vendeur (verifie, top vendeur, etc.) — visibles pour tout
+   * le monde, y compris le vendeur lui-meme en train de consulter sa propre
+   * fiche produit. */
+  getSellerBadges(): any[] {
+    const p = this.product();
+    return p?.seller?.badges || p?.user?.badges || [];
   }
 
   // ─── Fullscreen lightbox ─────────────────────────────────

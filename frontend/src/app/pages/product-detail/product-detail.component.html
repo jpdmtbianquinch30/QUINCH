@@ -321,24 +321,33 @@
           <div class="seller-info">
             <span class="seller-name">
               {{ getSellerName() }}
+              @if (getSellerKycVerified()) {
+                <span class="material-icons verified-tick" title="Identite verifiee">verified</span>
+              }
               @if (p.seller?.is_premium) {
                 <span class="premium-badge" title="Vendeur Premium">
                   <span class="material-icons">workspace_premium</span>
                 </span>
               }
             </span>
-            <span class="seller-username">&#64;{{ getSellerUsername() }}</span>
-          </div>
-          <div class="seller-trust">
-            <div class="trust-score">
-              <span class="material-icons">verified</span>
-              {{ (getSellerTrustScore() * 100) | number:'1.0-0' }}%
-            </div>
-            @if (getSellerCity()) {
-              <span class="seller-location">
-                <span class="material-icons">location_on</span>
-                {{ getSellerCity() }}
-              </span>
+            <!-- Tout sur une seule ligne : @username, score, ville -->
+            <span class="seller-meta-line">
+              &#64;{{ getSellerUsername() }}
+              <span class="dot">&middot;</span>
+              <span class="trust-score" [class.high]="getSellerTrustScore() >= 0.8" [class.mid]="getSellerTrustScore() >= 0.5 && getSellerTrustScore() < 0.8" [class.low]="getSellerTrustScore() < 0.5"><span class="material-icons">verified_user</span>{{ (getSellerTrustScore() * 100) | number:'1.0-0' }}%</span>
+              @if (getSellerCity()) {
+                <span class="dot">&middot;</span>
+                <span class="seller-location"><span class="material-icons">location_on</span>{{ getSellerCity() }}</span>
+              }
+            </span>
+            @if (getSellerBadges().length > 0) {
+              <div class="seller-badges-row">
+                @for (badge of getSellerBadges(); track badge.type) {
+                  <span class="seller-badge-chip" [style.color]="badge.color" [style.border-color]="badge.color + '55'" [style.background]="badge.color + '14'" [title]="badge.description">
+                    <span class="material-icons">{{ badge.icon }}</span>{{ badge.name }}
+                  </span>
+                }
+              </div>
             }
           </div>
         </div>
