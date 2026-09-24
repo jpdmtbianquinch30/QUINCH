@@ -14,11 +14,51 @@
     @if (loading()) {
       <div class="search-loading"><div class="loader"></div></div>
     } @else if (!searched()) {
-      <div class="search-hint">
-        <span class="material-icons">search</span>
-        <p>Tapez pour rechercher un produit, un service ou un vendeur</p>
+  <div class="result-section">
+    <h3>Suggestions</h3>
+    @if (defaultSellers().length > 0) {
+      <h4 class="result-subheading">Vendeurs</h4>
+      @for (u of defaultSellers(); track u.id) {
+        <button class="user-row" (click)="goToSeller(u.username)">
+          @if (u.avatar_url) {
+            <img [src]="u.avatar_url" class="user-avatar" />
+          } @else {
+            <div class="user-avatar-placeholder"><span class="material-icons">person</span></div>
+          }
+          <div class="user-info">
+            <span class="user-name-row">
+              <strong>{{ u.full_name }}</strong>
+              @if (u.is_premium) { <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span> }
+            </span>
+            <span>&#64;{{ u.username }}</span>
+          </div>
+        </button>
+      }
+    }
+    @if (defaultProducts().length > 0) {
+      <h4 class="result-subheading">Produits &amp; services</h4>
+      <div class="result-grid">
+        @for (p of defaultProducts(); track p.id) {
+          <button class="result-card" (click)="goToProduct(p.slug)">
+            @if (p.image) {
+              <img [src]="p.image" [alt]="p.title" />
+            } @else {
+              <div class="result-placeholder"><span class="material-icons">image</span></div>
+            }
+            <div class="result-info">
+              <span class="result-type-tag" [class.service]="p.type === 'service'">{{ p.type === 'service' ? 'Service' : 'Produit' }}</span>
+              <span class="result-title">{{ p.title }}</span>
+              <span class="result-price">{{ p.price | number:'1.0-0' }} F</span>
+              @if (p.seller_is_premium) {
+                <span class="result-premium"><span class="material-icons">workspace_premium</span> Premium</span>
+              }
+            </div>
+          </button>
+        }
       </div>
-    } @else if (products().length === 0 && users().length === 0) {
+    }
+  </div>
+} @else if (products().length === 0 && users().length === 0) {
       <div class="search-hint">
         <span class="material-icons">search_off</span>
         <p>Aucun résultat pour "{{ query() }}"</p>

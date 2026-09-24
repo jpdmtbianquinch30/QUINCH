@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Services\ConversationTaggingService;
+use Illuminate\Database\QueryException;
 use App\Services\PaymentGateway\PaymentGatewayFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -399,7 +401,7 @@ class TransactionController extends Controller
  */
 private function tagProductInConversation(Transaction $transaction, Product $product): void
 {
-    $conversation = Conversation::where(function ($q) use ($transaction) {
+    $find = fn () => Conversation::where(function ($q) use ($transaction) {
             $q->where('buyer_id', $transaction->buyer_id)->where('seller_id', $transaction->seller_id);
         })
         ->orWhere(function ($q) use ($transaction) {
@@ -407,31 +409,25 @@ private function tagProductInConversation(Transaction $transaction, Product $pro
         })
         ->first();
 
+    $conversation = $find();
+
     if (!$conversation) {
-        $conversation = Conversation::create([
-            'buyer_id' => $transaction->buyer_id,
-            'seller_id' => $transaction->seller_id,
-            'product_id' => $product->id,
-            'status' => 'active',
-            'last_message_at' => now(),
-        ]);
+        try {
+            $conversation = Conversation::create([
+                'buyer_id' => $transaction->buyer_id,
+                'seller_id' => $transaction->seller_id,
+                'product_id' => $product->id,
+                'status' => 'active',
+                'last_message_at' => now(),
+            ]);
+        } catch (QueryException $e) {
+            if (($e->errorInfo[0] ?? null) !== '23505') {
+                throw $e;
+            }
+            $conversation = $find();
+        }
     }
 
-    Message::create([
-        'conversation_id' => $conversation->id,
-        'sender_id' => $transaction->buyer_id,
-        'body' => 'Commande passee : ' . $product->title,
-        'type' => 'product_tag',
-        'metadata' => [
-            'product_id' => $product->id,
-            'product_slug' => $product->slug,
-            'product_title' => $product->title,
-            'product_price' => $product->price,
-            'product_image' => $product->poster_full_url,
-            'transaction_id' => $transaction->id,
-        ],
-    ]);
-
-    $conversation->update(['last_message_at' => now()]);
+    app(ConversationTaggingService::class)->tagProduct($conversation, $product, $transaction->buyer_id, $transaction);
 }
 }

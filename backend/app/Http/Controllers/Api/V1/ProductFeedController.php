@@ -167,6 +167,29 @@ class ProductFeedController extends Controller
     /**
      * Friends feed: products from mutual followers only.
      */
+
+    private function suggestedSellers(int $limit = 6)
+{
+    return \App\Models\User::query()
+        ->where('is_seller', true)
+        ->where('account_status', 'active')
+        ->whereHas('products', fn ($q) => $q->where('status', 'active'))
+        ->select('id', 'full_name', 'username', 'avatar_url', 'trust_score', 'city', 'is_premium', 'premium_expires_at')
+        ->orderByRaw("(CASE WHEN is_premium = true AND premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")
+        ->orderByDesc('trust_score')
+        ->limit($limit)
+        ->get()
+        ->map(fn ($u) => [
+            'id' => $u->id,
+            'full_name' => $u->full_name,
+            'username' => $u->username,
+            'avatar_url' => $u->avatar_url,
+            'trust_score' => $u->trust_score,
+            'city' => $u->city,
+            'is_premium' => $u->isPremiumActive(),
+        ]);
+}
+
     public function friendsFeed(Request $request): JsonResponse
     {
         $authUser = $request->user();
@@ -377,9 +400,10 @@ class ProductFeedController extends Controller
                 'category' => $p->category?->name,
                 'seller' => $p->user?->username,
                 'like_count' => $p->like_count,
+                'seller_is_premium' => $p->user?->isPremiumActive() ?? false,
             ]);
 
-        return response()->json(['suggestions' => $suggestions]);
+        return response()->json(['suggestions' => $suggestions, 'sellers' => $this->suggestedSellers()]);
     }
 
     /**
@@ -407,9 +431,10 @@ class ProductFeedController extends Controller
                 'category' => $p->category?->name,
                 'seller' => $p->user?->username,
                 'like_count' => $p->like_count,
+                'seller_is_premium' => $p->user?->isPremiumActive() ?? false,
             ]);
 
-        return response()->json(['suggestions' => $trending]);
+        return response()->json(['suggestions' => $trending, 'sellers' => $this->suggestedSellers()]);
     }
     /**
      * Vendeurs les plus actifs — triés par engagement (likes + vues + produits actifs)

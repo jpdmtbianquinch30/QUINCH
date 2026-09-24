@@ -82,25 +82,6 @@ class ConversationController extends Controller
         }
     }
 }
-if (!empty($validated['product_id'])) {
-    $product = Product::find($validated['product_id']);
-    if ($product) {
-        Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $userId,
-            'body' => 'Produit : ' . $product->title,
-            'type' => 'product_tag',
-            'metadata' => [
-                'product_id' => $product->id,
-                'product_slug' => $product->slug,
-                'product_title' => $product->title,
-                'product_price' => $product->price,
-                'product_image' => $product->poster_full_url,
-            ],
-        ]);
-        $conversation->update(['last_message_at' => now()]);
-    }
-}
 
         $message = null;
         if (!empty($validated['message'])) {

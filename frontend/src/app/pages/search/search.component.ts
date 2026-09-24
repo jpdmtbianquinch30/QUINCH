@@ -3,6 +3,9 @@ import { Router } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product.service';
+import { OnInit } from '@angular/core';
+import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-search',
@@ -21,6 +24,29 @@ export class SearchComponent {
   loading = signal(false);
   searched = signal(false);
   private debounceHandle: any;
+  private api = inject(ApiService);
+private auth = inject(AuthService);
+
+defaultProducts = signal<any[]>([]);
+defaultSellers = signal<any[]>([]);
+loadingDefaults = signal(false);
+
+ngOnInit() {
+  this.loadDefaultSuggestions();
+}
+
+private loadDefaultSuggestions() {
+  this.loadingDefaults.set(true);
+  const endpoint = this.auth.isAuthenticated() ? 'search/suggestions' : 'search/trending';
+  this.api.get<any>(endpoint).subscribe({
+    next: (res: any) => {
+      this.defaultProducts.set(res.suggestions || []);
+      this.defaultSellers.set(res.sellers || []);
+      this.loadingDefaults.set(false);
+    },
+    error: () => this.loadingDefaults.set(false),
+  });
+}
 
   onInput(value: string) {
     this.query.set(value);

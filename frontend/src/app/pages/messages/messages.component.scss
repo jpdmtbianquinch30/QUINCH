@@ -222,9 +222,10 @@ button {
   background:
     linear-gradient(
       180deg,
-      rgba(12, 18, 32, .97),
-      rgba(9, 14, 26, .97)
-    );
+      rgba(12, 18, 32, .90),
+      rgba(9, 14, 26, .94)
+    ),
+    url('/assets/backchat.png') center / cover no-repeat;
 
   border-right: 1px solid var(--q-border);
 
@@ -2367,22 +2368,18 @@ button {
    * Le chat mobile peut recouvrir l'écran car le nav
    * desktop n'est plus réservé sur mobile.
    */
-  .chat-area {
-    position: fixed;
-
-    inset: 0;
-
-    width: 100vw;
-
-    height: 100dvh;
-
-    z-index: 200;
-
-    transform: translateX(100%);
-
-    transition:
-      transform .25s ease;
-  }
+.chat-area {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 60px;                    // reserve le rail de nav (voir app.scss)
+  width: calc(100vw - 60px);
+  height: 100dvh;
+  z-index: 200;
+  transform: translateX(100%);
+  transition: transform .25s ease;
+}
 
   .messages-layout.mobile-chat-open .chat-area {
     transform: translateX(0);
