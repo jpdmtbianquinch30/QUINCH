@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 
 class ConversationController extends Controller
@@ -20,7 +21,7 @@ class ConversationController extends Controller
 
         $conversations = Conversation::where('buyer_id', $userId)
             ->orWhere('seller_id', $userId)
-            ->with(['buyer:id,full_name,avatar_url,username', 'seller:id,full_name,avatar_url,username', 'product:id,title,slug,price', 'lastMessage'])
+            ->with(['buyer:id,full_name,avatar_url,username,last_seen_at', 'seller:id,full_name,avatar_url,username,last_seen_at', 'product:id,title,slug,price', 'lastMessage'])
             ->orderBy('last_message_at', 'desc')
             ->paginate(20);
 
@@ -58,14 +59,28 @@ class ConversationController extends Controller
             ->first();
 
         if (!$conversation) {
-            $conversation = Conversation::create([
-                'buyer_id' => $userId,
-                'seller_id' => $validated['seller_id'],
-                'product_id' => $validated['product_id'] ?? null,
-                'status' => 'active',
-                'last_message_at' => now(),
-            ]);
+    try {
+        $conversation = Conversation::create([
+            'buyer_id' => $userId,
+            'seller_id' => $validated['seller_id'],
+            'product_id' => $validated['product_id'] ?? null,
+            'status' => 'active',
+            'last_message_at' => now(),
+        ]);
+    } catch (QueryException $e) {
+        if (($e->errorInfo[0] ?? null) === '23505') {
+            $conversation = Conversation::where(function ($q) use ($userId, $validated) {
+                    $q->where('buyer_id', $userId)->where('seller_id', $validated['seller_id']);
+                })
+                ->orWhere(function ($q) use ($userId, $validated) {
+                    $q->where('buyer_id', $validated['seller_id'])->where('seller_id', $userId);
+                })
+                ->firstOrFail();
+        } else {
+            throw $e;
         }
+    }
+}
 
         $message = null;
         if (!empty($validated['message'])) {
@@ -135,54 +150,79 @@ class ConversationController extends Controller
         return response()->json(['message' => $message->load('sender')]);
     }
 
-    public function sendFile(Request $request, Conversation $conversation): JsonResponse
-    {
-        $userId = $request->user()->id;
-        if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
+public function sendFile(Request $request, Conversation $conversation): JsonResponse
+{
+    $userId = $request->user()->id;
+    if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
 
-        $request->validate([
-            // Whitelist stricte : on n'accepte que des images et documents
-            // usuels, jamais de fichiers exécutables/scripts (.php, .html,
-            // .svg avec JS, etc.) qui pourraient finir servis statiquement
-            // depuis le disque "public".
-            'file' => 'required|file|max:20480|mimes:jpg,jpeg,png,webp,pdf,doc,docx', // 20 MB max
-        ]);
+    $request->validate([
+        // Whitelist stricte : images, documents, audios/musiques et vidéos
+        // usuels seulement — jamais d'exécutables/scripts. "Autres fichiers"
+        // (mimes:*) volontairement retiré.
+        'file' => [
+            'required',
+            'file',
+            'max:20480', // 20 MB max
+            'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,mp3,wav,ogg,m4a,aac,mp4,webm,mov,mkv',
+        ],
+    ]);
 
-        $file = $request->file('file');
-        $originalName = $file->getClientOriginalName();
-        $extension = $file->getClientOriginalExtension();
-        $mimeType = $file->getMimeType();
-        $fileSize = $file->getSize();
+    $file = $request->file('file');
+    $originalName = $file->getClientOriginalName();
+    $extension = $file->getClientOriginalExtension();
+    $mimeType = $file->getMimeType();
+    $fileSize = $file->getSize();
 
-        // Determine if it's an image
-        $isImage = str_starts_with($mimeType, 'image/');
-        $folder = $isImage ? 'messages/images' : 'messages/files';
-        $type = $isImage ? 'image' : 'file';
+    $isImage = str_starts_with($mimeType, 'image/');
+    $isVideo = str_starts_with($mimeType, 'video/');
+    $isAudio = str_starts_with($mimeType, 'audio/');
 
-        $path = $file->store($folder, 'public');
-        $fileUrl = url('/storage/' . $path);
+    $folder = match (true) {
+        $isImage => 'messages/images',
+        $isVideo => 'messages/videos',
+        $isAudio => 'messages/audio-files',
+        default => 'messages/files',
+    };
+    $type = match (true) {
+        $isImage => 'image',
+        $isVideo => 'video',
+        // Un audio envoyé via "Joindre" reste un fichier téléchargeable
+        // classique (pas le lecteur à forme d'onde du vocal enregistré,
+        // qui passe par sendAudio(), un flux distinct).
+        default => 'file',
+    };
 
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $userId,
-            'body' => $isImage ? '📷 Image' : '📎 ' . $originalName,
-            'type' => $type,
-            'metadata' => [
-                'file_url' => $fileUrl,
-                'file_name' => $originalName,
-                'file_size' => $fileSize,
-                'mime_type' => $mimeType,
-                'extension' => $extension,
-            ],
-        ]);
+    $path = $file->store($folder, 'public');
+    $fileUrl = url('/storage/' . $path);
 
-        $conversation->update(['last_message_at' => now()]);
+    $preview = match (true) {
+        $isImage => '📷 Image',
+        $isVideo => '🎬 Vidéo',
+        $isAudio => '🎵 ' . $originalName,
+        default => '📎 ' . $originalName,
+    };
 
-        $recipientId = $conversation->buyer_id === $userId ? $conversation->seller_id : $conversation->buyer_id;
-        $this->notif->notifyMessage($recipientId, $request->user(), $conversation->id, $isImage ? '📷 Image' : '📎 ' . $originalName);
+    $message = Message::create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $userId,
+        'body' => $preview,
+        'type' => $type,
+        'metadata' => [
+            'file_url' => $fileUrl,
+            'file_name' => $originalName,
+            'file_size' => $fileSize,
+            'mime_type' => $mimeType,
+            'extension' => $extension,
+        ],
+    ]);
 
-        return response()->json(['message' => $message->load('sender')]);
-    }
+    $conversation->update(['last_message_at' => now()]);
+
+    $recipientId = $conversation->buyer_id === $userId ? $conversation->seller_id : $conversation->buyer_id;
+    $this->notif->notifyMessage($recipientId, $request->user(), $conversation->id, $preview);
+
+    return response()->json(['message' => $message->load('sender')]);
+}
 
     public function sendAudio(Request $request, Conversation $conversation): JsonResponse
     {

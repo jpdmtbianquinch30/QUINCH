@@ -39,21 +39,37 @@ class FollowController extends Controller
             $this->notif->notifyFriendship($user->id, $me);
             $this->notif->notifyFriendship($me->id, $user);
 
-            // Auto-create a conversation with a system message
-            $conversation = Conversation::where(function ($q) use ($me, $user) {
-                $q->where('buyer_id', $me->id)->where('seller_id', $user->id);
-            })->orWhere(function ($q) use ($me, $user) {
-                $q->where('buyer_id', $user->id)->where('seller_id', $me->id);
-            })->whereNull('product_id')->first();
+            // Réutilise la conversation existante quel que soit son product_id —
+// avant, whereNull('product_id') ignorait une conversation déjà liée à
+// un produit et en recréait une deuxième pour le même couple.
+$conversation = Conversation::where(function ($q) use ($me, $user) {
+    $q->where('buyer_id', $me->id)->where('seller_id', $user->id);
+})->orWhere(function ($q) use ($me, $user) {
+    $q->where('buyer_id', $user->id)->where('seller_id', $me->id);
+})->first();
 
-            if (!$conversation) {
-                $conversation = Conversation::create([
-                    'buyer_id' => $me->id,
-                    'seller_id' => $user->id,
-                    'status' => 'active',
-                    'last_message_at' => now(),
-                ]);
-            }
+if (!$conversation) {
+    try {
+        $conversation = Conversation::create([
+            'buyer_id' => $me->id,
+            'seller_id' => $user->id,
+            'status' => 'active',
+            'last_message_at' => now(),
+        ]);
+    } catch (\Illuminate\Database\QueryException $e) {
+        if (($e->errorInfo[0] ?? null) === '23505') {
+            $conversation = Conversation::where(function ($q) use ($me, $user) {
+                    $q->where('buyer_id', $me->id)->where('seller_id', $user->id);
+                })
+                ->orWhere(function ($q) use ($me, $user) {
+                    $q->where('buyer_id', $user->id)->where('seller_id', $me->id);
+                })
+                ->firstOrFail();
+        } else {
+            throw $e;
+        }
+    }
+}
 
             // Send system message
             Message::create([

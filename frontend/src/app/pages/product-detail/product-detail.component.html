@@ -786,9 +786,10 @@
     <!-- ═══════ FULLSCREEN LIGHTBOX ═══════ -->
     @if (showFullscreen()) {
       <div class="lightbox-overlay" (click)="closeFullscreen()">
-        <button class="lightbox-close" (click)="closeFullscreen()">
-          <span class="material-icons">close</span>
-        </button>
+<button class="lightbox-close" (click)="closeFullscreen()">
+  <span class="material-icons">close</span>
+  <span class="lightbox-close-label">Quitter</span>
+</button>
 
         <div class="lightbox-content" (click)="$event.stopPropagation()">
           @if (activeMediaTab() === 'video' && hasVideo()) {

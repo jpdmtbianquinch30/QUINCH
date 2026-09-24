@@ -245,7 +245,22 @@
                   </div>
                 </div>
               </div>
-            } @else if (isFileMessage(msg)) {
+            } @else if (isVideoMessage(msg)) {
+  <!-- Video Message -->
+  <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+    <div class="message-bubble video-bubble">
+      <video class="msg-video" [src]="getFileUrl(msg)" controls preload="metadata"></video>
+      <div class="message-footer">
+        <span class="message-time">{{ formatTime(msg.created_at) }}</span>
+        @if (isMe(msg)) {
+          <span class="read-indicator" [class.read]="msg.is_read">
+            <span class="material-icons">done_all</span>
+          </span>
+        }
+      </div>
+    </div>
+  </div>
+} @else if (isFileMessage(msg)) {
               <!-- File Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
                 <div class="message-bubble file-bubble">

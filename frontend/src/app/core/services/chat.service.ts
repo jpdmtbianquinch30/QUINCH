@@ -26,7 +26,7 @@ export interface Message {
   conversation_id: string;
   sender_id: string;
   body: string;
-  type: 'text' | 'image' | 'offer' | 'system' | 'audio' | 'file';
+  type: 'text' | 'image' | 'video' | 'offer' | 'system' | 'audio' | 'file' | 'product_tag';
   metadata?: {
     audio_url?: string;
     file_url?: string;

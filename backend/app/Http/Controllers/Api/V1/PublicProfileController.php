@@ -69,6 +69,8 @@ class PublicProfileController extends Controller
                 'member_since' => $user->created_at->format('M Y'),
                 'created_at' => $user->created_at->toISOString(),
                 'account_age_days' => $user->account_age_days,
+                'is_online' => $user->is_online,
+                'last_seen_at' => $user->last_seen_at?->toISOString(),
             ],
             'stats' => [
                 'products_count' => $productsCount,

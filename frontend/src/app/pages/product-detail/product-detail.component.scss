@@ -1540,19 +1540,31 @@ $radius-sm: 8px;
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 44px;
   height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  min-width: 44px;
+  padding: 0 16px 0 12px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.12);
   border: none;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
   cursor: pointer;
   z-index: 10;
   transition: background 0.2s;
-  .material-icons { font-size: 26px; color: white; }
-  &:hover { background: rgba(255, 255, 255, 0.2); }
+  .material-icons { font-size: 24px; color: white; }
+  &:hover { background: rgba(255, 255, 255, 0.22); }
+}
+
+.lightbox-close-label {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .lightbox-close-label { display: none; }
+  .lightbox-close { padding: 0; width: 44px; border-radius: 50%; }
 }
 
 .lightbox-content {

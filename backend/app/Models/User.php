@@ -60,9 +60,13 @@ class User extends Authenticatable
         'device_fingerprint',
     ];
 
-    protected function casts(): array
-    {
-        return [
+    protected $appends = ['is_online'];
+
+        public const ONLINE_THRESHOLD_MINUTES = 5;
+
+        protected function casts(): array
+        {
+            return [
             'password' => 'hashed',
             'kyc_data' => 'array',
             'preferences' => 'array',
@@ -78,8 +82,21 @@ class User extends Authenticatable
             'last_suspicious_activity' => 'datetime',
             'latitude' => 'float',
             'longitude' => 'float',
-        ];
-    }
+            'last_seen_at' => 'datetime',
+    ];
+}
+
+protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
+{
+    return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+        get: function () {
+            if (!$this->last_seen_at) {
+                return false;
+            }
+            return $this->last_seen_at->diffInMinutes(now()) < self::ONLINE_THRESHOLD_MINUTES;
+        },
+    );
+}
 
     // ─── Relationships ──────────────────────────────────────────────────
     public function products(): HasMany

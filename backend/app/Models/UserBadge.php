@@ -36,4 +36,15 @@ class UserBadge extends Model
             'one_year' => ['name' => '1 an sur QUINCH', 'icon' => 'cake', 'color' => '#ec4899'],
         ];
     }
+
+        /**
+     * Un badge avec expires_at dans le passé ne doit plus jamais s'afficher
+     * ni compter.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        });
+    }
 }

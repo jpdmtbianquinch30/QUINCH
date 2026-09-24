@@ -12,16 +12,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         apiPrefix: 'api/v1',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+->withMiddleware(function (Middleware $middleware): void {
+    $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
-        $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
-            'fraud.check' => \App\Http\Middleware\FraudDetection::class,
-            'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
-            'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
-        ]);
+    // Ping de présence : alimente last_seen_at (-> is_online) pour tout
+    // appel API authentifié.
+    $middleware->appendToGroup('api', \App\Http\Middleware\TouchLastSeen::class);
 
+    $middleware->alias([
+        'role' => \App\Http\Middleware\CheckRole::class,
+        'fraud.check' => \App\Http\Middleware\FraudDetection::class,
+        'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
+        'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
+    ]);
         // API pure : il n'existe aucune route web nommée "login". Sans ceci,
         // une requête non authentifiée qui n'envoie pas Accept:application/json
         // (ex. Postman par défaut) fait planter Laravel en 500 (au lieu d'un

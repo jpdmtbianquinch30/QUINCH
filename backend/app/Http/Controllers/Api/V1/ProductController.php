@@ -219,6 +219,8 @@ class ProductController extends Controller
                 'member_since' => $product->user->created_at->format('M Y'),
                 'is_premium' => $product->user->isPremiumActive(),
                 'badges' => $badges,
+                'is_online' => $product->user->is_online,
+                'last_seen_at' => $product->user->last_seen_at?->toISOString(),
             ],
             'is_liked' => $isLiked,
             'is_saved' => $isSaved,

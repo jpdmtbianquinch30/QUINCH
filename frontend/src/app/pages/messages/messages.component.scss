@@ -366,6 +366,25 @@
   }
 }
 
+// ─── Video Messages ──────────────────────────────
+.video-bubble {
+  padding: 4px !important;
+  max-width: 320px;
+  overflow: hidden;
+
+  .msg-video {
+    width: 100%;
+    max-height: 320px;
+    border-radius: 12px;
+    display: block;
+    background: #000;
+  }
+
+  .message-footer {
+    padding: 4px 10px 2px;
+  }
+}
+
 // ─── File Messages ──────────────────────────────
 .file-bubble {
   padding: 6px !important;

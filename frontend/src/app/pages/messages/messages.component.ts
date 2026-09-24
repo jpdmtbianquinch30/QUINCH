@@ -429,13 +429,16 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   fileSending = signal(false);
   showAttachMenu = signal(false);
 
-  attachOptions = [
-    { id: 'image', label: 'Photos & Images', icon: 'image', accept: 'image/jpeg,image/png,image/gif,image/webp', color: '#6366f1' },
-    { id: 'document', label: 'Documents', icon: 'description', accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv', color: '#f59e0b' },
-    { id: 'video', label: 'Videos', icon: 'videocam', accept: 'video/mp4,video/webm,video/quicktime', color: '#ef4444' },
-    { id: 'audio', label: 'Audio', icon: 'headphones', accept: 'audio/mpeg,audio/wav,audio/ogg,audio/webm,.mp3', color: '#22c55e' },
-    { id: 'other', label: 'Autres fichiers', icon: 'folder', accept: '*/*', color: '#8b5cf6' },
-  ];
+// "Autres fichiers" retiré : seuls documents, audios/musiques et vidéos
+// sont acceptés (+ images), tous jusqu'à 20 Mo — aligné sur la whitelist
+// backend de ConversationController::sendFile().
+attachOptions = [
+  { id: 'image', label: 'Photos & Images', icon: 'image', accept: 'image/jpeg,image/png,image/gif,image/webp', color: '#6366f1' },
+  { id: 'document', label: 'Documents', icon: 'description', accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv', color: '#f59e0b' },
+  { id: 'video', label: 'Vidéos', icon: 'videocam', accept: 'video/mp4,video/webm,video/quicktime,.mov,.mkv', color: '#ef4444' },
+  { id: 'audio', label: 'Audios & Musiques', icon: 'headphones', accept: 'audio/mpeg,audio/wav,audio/ogg,.mp3,.m4a,.aac', color: '#22c55e' },
+];
+
 
   toggleAttachMenu() {
     this.showAttachMenu.update(v => !v);
@@ -547,6 +550,10 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   isLastMessageRead(conv: Conversation): boolean {
     return conv.last_message?.is_read ?? false;
   }
+
+  isVideoMessage(msg: Message): boolean {
+  return msg.type === 'video' || (msg.metadata?.mime_type?.startsWith('video/') ?? false);
+}
 
   formatTime(dateStr: string): string {
     if (!dateStr) return '';
