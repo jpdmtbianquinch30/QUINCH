@@ -150,7 +150,7 @@ public function scopeTieredRank($query)
     return $query
         ->leftJoin('users', 'products.user_id', '=', 'users.id')
         ->select('products.*')
-        ->selectRaw('FLOOR(EXTRACT(EPOCH FROM (NOW() - products.created_at)) / 86400 / 5) AS age_tier')
+        ->selectRaw('FLOOR(GREATEST(EXTRACT(EPOCH FROM (NOW() - products.created_at)), 0) / 86400 / 5) AS age_tier')
         ->selectRaw("(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) AS is_premium_active")
         ->orderBy('age_tier', 'asc')
         ->orderBy('is_premium_active', 'desc')
