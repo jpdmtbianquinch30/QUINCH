@@ -13,12 +13,7 @@ class PremiumBoostTest extends TestCase
 
     public function test_premium_seller_product_ranks_above_identical_non_premium_product(): void
     {
-        // On neutralise le facteur aléatoire du feed_score pour un test
-        // déterministe — sinon un même test pourrait échouer une fois sur N
-        // juste à cause du bruit volontaire dans le classement.
-        config(['quinch.premium.feed_boost' => 1000]);
-
-        $premiumSeller = User::factory()->create([
+             $premiumSeller = User::factory()->create([
             'is_premium' => true,
             'premium_expires_at' => now()->addMonth(),
         ]);
@@ -58,43 +53,39 @@ class PremiumBoostTest extends TestCase
     }
 
     public function test_expired_premium_does_not_get_the_boost(): void
-    {
-        config(['quinch.premium.feed_boost' => 1000]);
+{
+    // Flag encore a true mais date depassee - simule le court laps de
+    // temps avant le passage du job d'expiration quotidien.
+    $expiredPremiumSeller = User::factory()->create([
+        'is_premium' => true,
+        'premium_expires_at' => now()->subDay(),
+    ]);
+    $freeSeller = User::factory()->create(['is_premium' => false]);
 
-        // Flag encore à true mais date dépassée — simule le court laps de
-        // temps avant le passage du job d'expiration quotidien.
-        $expiredPremiumSeller = User::factory()->create([
-            'is_premium' => true,
-            'premium_expires_at' => now()->subDay(),
-        ]);
-        $freeSeller = User::factory()->create(['is_premium' => false]);
+    $expiredProduct = Product::factory()->create([
+        'user_id' => $expiredPremiumSeller->id,
+        'status' => 'active',
+        'poster_url' => 'products/posters/a.jpg',
+        'created_at' => now()->subHour(),
+    ]);
 
-        $expiredProduct = Product::factory()->create([
-            'user_id' => $expiredPremiumSeller->id,
-            'status' => 'active',
-            'poster_url' => 'products/posters/a.jpg',
-            'like_count' => 10,
-            'view_count' => 100,
-            'share_count' => 500, // net avantage d'engagement pour compenser tout bruit aléatoire
-        ]);
+    $freeProduct = Product::factory()->create([
+        'user_id' => $freeSeller->id,
+        'status' => 'active',
+        'poster_url' => 'products/posters/b.jpg',
+        'created_at' => now(),
+    ]);
 
-        $freeProduct = Product::factory()->create([
-            'user_id' => $freeSeller->id,
-            'status' => 'active',
-            'poster_url' => 'products/posters/b.jpg',
-            'like_count' => 10,
-            'view_count' => 100,
-            'share_count' => 2,
-        ]);
+    $response = $this->getJson('/api/v1/products/feed?tab=foryou&per_page=10');
 
-        $response = $this->getJson('/api/v1/products/feed?tab=foryou&per_page=10');
+    $ids = collect($response->json('data'))->pluck('id')->values();
+    $expiredIndex = $ids->search($expiredProduct->id);
+    $freeIndex = $ids->search($freeProduct->id);
 
-        $ids = collect($response->json('data'))->pluck('id')->values();
-        $expiredIndex = $ids->search($expiredProduct->id);
-        $freeIndex = $ids->search($freeProduct->id);
-
-        // Sans le boost (premium expiré), c'est l'engagement réel qui
-        // décide — le produit avec 500 partages doit rester devant.
-        $this->assertLessThan($freeIndex, $expiredIndex);
-    }
+    // Meme palier de 5 jours pour les deux (creees a 1h d'ecart), et aucun
+    // des deux n'est premium actif (l'abonnement du premier a expire) :
+    // seule la fraicheur tranche. Le plus recent (freeProduct) doit passer
+    // devant, sans egard pour le premium expire.
+    $this->assertLessThan($expiredIndex, $freeIndex);
+}
 }

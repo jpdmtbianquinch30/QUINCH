@@ -12,7 +12,7 @@ class BadgeController extends Controller
 {
     public function myBadges(Request $request): JsonResponse
     {
-        $badges = UserBadge::where('user_id', $request->user()->id)
+        $badges = UserBadge::where('user_id', $request->user()->id)->active()
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn ($b) => $this->enrichBadge($b));
@@ -22,7 +22,7 @@ class BadgeController extends Controller
 
     public function userBadges(User $user): JsonResponse
     {
-        $badges = UserBadge::where('user_id', $user->id)
+        $badges = UserBadge::where('user_id', $user->id)->active()
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn ($b) => $this->enrichBadge($b));

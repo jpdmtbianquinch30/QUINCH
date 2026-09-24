@@ -29,44 +29,56 @@
 }
 
 .policies-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 .policy-item {
   display: flex;
-  gap: 18px;
-  padding: 20px;
+  gap: 14px;
+  padding: 16px;
   background: var(--q-bg-elevated);
   border: 1px solid var(--q-border);
   border-radius: 12px;
-  transition: border-color 0.15s;
-  &:hover { border-color: rgba(99,102,241,0.2); }
+  transition: border-color 0.15s, transform 0.15s;
+  &:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
 }
 .policy-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
   background: rgba(99,102,241,0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  .material-icons { font-size: 24px; color: var(--q-accent); }
+  .material-icons { font-size: 22px; color: var(--q-accent); }
 }
 .policy-content {
   flex: 1;
-  h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 10px; color: var(--q-text-primary); }
+  min-width: 0;
+  h4 { font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; color: var(--q-text-primary); }
 }
 .policy-detail {
   display: flex;
   justify-content: space-between;
-  padding: 6px 0;
+  gap: 8px;
+  padding: 5px 0;
   border-bottom: 1px solid var(--q-border-light);
-  font-size: 0.82rem;
-  &:last-child { border-bottom: none; }
+  font-size: 0.8rem;
+  &:last-child { border-bottom: none; padding-bottom: 0; }
   span { color: var(--q-text-muted); }
-  strong { color: var(--q-text-primary); font-weight: 600; }
+  strong { color: var(--q-text-primary); font-weight: 600; text-align: right; }
+}
+
+// La section politiques partage le meme conteneur-carte que "Mes produits"
+// (.products-section) : on resserre juste son en-tete, trop espace par
+// defaut pour un contenu aussi court.
+.policies-section { padding-top: var(--q-space-lg); }
+.policies-section .section-header { margin-bottom: var(--q-space-sm); }
+
+@media (max-width: 640px) {
+  .policies-grid { grid-template-columns: 1fr; }
 }
 
 /* ─── TOP BAR ─── */
@@ -92,6 +104,7 @@
   background: linear-gradient(135deg, #1a1f35 0%, #2a2f55 50%, #1a1f35 100%);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04);
 }
 
 .cover-img {
@@ -195,7 +208,33 @@
   cursor: pointer;
   position: relative;
   box-shadow: 0 0 0 3px var(--q-accent), var(--q-shadow-lg);
-  transition: all var(--q-transition-fast);
+  transition: all var(--q-transition-fast);.avatar-ring {
+  width: 130px;
+  height: 130px;
+  border-radius: var(--q-radius-full);
+  border: 5px solid var(--q-bg-primary);
+  overflow: hidden;
+  background: var(--q-bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 0 0 3px var(--q-accent), 0 10px 32px rgba(99,102,241,0.35), var(--q-shadow-lg);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+
+  &:hover { box-shadow: 0 0 0 3px var(--q-accent-light), 0 0 28px var(--q-accent-glow), 0 10px 32px rgba(99,102,241,0.4); transform: scale(1.02); }
+  .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    .material-icons { font-size: 60px; color: var(--q-text-muted); }
+  }
+}
   flex-shrink: 0;
 
   &:hover { box-shadow: 0 0 0 3px var(--q-accent-light), 0 0 24px var(--q-accent-glow); }
@@ -294,8 +333,12 @@
   margin-bottom: var(--q-space-xl);
 
   .q-btn {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     .material-icons { font-size: 20px; }
+    &:hover { transform: translateY(-2px); }
   }
+  .q-btn-primary:hover { box-shadow: 0 10px 28px rgba(99,102,241,0.35); }
+  .q-btn-secondary:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
 }
 
 /* ─── TRUST & BADGES ROW ─── */
@@ -305,6 +348,21 @@
   gap: var(--q-space-lg);
   margin-bottom: var(--q-space-xl);
 }
+
+.trust-card, .badges-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  &:hover { transform: translateY(-2px); box-shadow: var(--q-shadow-md); }
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--q-accent), var(--q-accent-light));
+  }
+}
+.badges-card::before { background: linear-gradient(90deg, var(--q-warning), #fbbf24); }
 
 .trust-card {
   padding: var(--q-space-xl);
@@ -548,14 +606,14 @@
   color: inherit;
   background: var(--q-bg-secondary);
   border: 1px solid var(--q-border);
-  border-radius: var(--q-radius-md);
+  border-radius: var(--q-radius-lg);
   overflow: hidden;
   transition: all var(--q-transition-fast);
 
   &:hover {
     transform: translateY(-4px);
     border-color: var(--q-accent);
-    box-shadow: var(--q-shadow-md);
+    box-shadow: 0 16px 36px rgba(0,0,0,0.35), 0 0 0 1px rgba(99,102,241,0.15);
   }
 
   .card-media {
@@ -564,7 +622,8 @@
     overflow: hidden;
     background: var(--q-bg-elevated);
 
-    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    &:hover img { transform: scale(1.06); }
 
     .card-video-thumb {
       width: 100%;
@@ -681,7 +740,7 @@
     flex: 1;
     min-width: 0;
     .row-title { display: block; font-weight: 600; font-size: 1rem; color: var(--q-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .row-meta { display: flex; align-items: center; gap: var(--q-space-md); margin-top: 6px; }
+        .row-meta { display: flex; align-items: center; gap: var(--q-space-sm) var(--q-space-md); margin-top: 6px; flex-wrap: wrap; row-gap: 6px; }
     .row-price { font-size: 1rem; font-weight: 700; color: var(--q-accent-light); }
     .row-status {
       font-size: 0.75rem; font-weight: 600; padding: 3px 12px; border-radius: var(--q-radius-sm);
@@ -749,6 +808,13 @@
   &:hover { background: rgba(0,0,0,0.8); }
 }
 .product-card:hover .card-manage-btn { opacity: 1; }
+
+// Sur tout appareil tactile (pas seulement les petits ecrans), il n'y a pas
+// de survol : le bouton doit donc etre visible sans attendre un hover qui
+// n'arrivera jamais.
+@media (hover: none) {
+  .card-manage-btn { opacity: 1; }
+}
 
 .card-stock {
   position: absolute;
@@ -826,6 +892,7 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
   .material-icons { font-size: 18px; }
   &:hover { background: rgba(99,102,241,0.2); }
 }
@@ -1250,7 +1317,7 @@
   font-size: 0.95rem;
   transition: all var(--q-transition-fast);
   .material-icons { font-size: 22px; }
-  &:hover { background: rgba(245,158,11,.2); }
+  &:hover { background: rgba(152, 136, 110, 0.2); }
 }
 
 /* ─── RESPONSIVE ─── */
@@ -1263,6 +1330,11 @@
   .trust-badges-row { grid-template-columns: 1fr; }
   .hero-stats { gap: var(--q-space-xl); }
   .profile-cover { height: 220px; }
+
+  // Sur mobile/tablette il n'y a pas de survol : le bouton "gerer" (stock,
+  // pause, desactivation...) doit rester visible en permanence, sinon il est
+  // tout simplement inaccessible au toucher.
+  .card-manage-btn { opacity: 1; }
 }
 
 @media (max-width: 640px) {

@@ -27,6 +27,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectedConv = signal<Conversation | null>(null);
   newMessage = '';
   isTyping = signal(false);
+  lightboxImage = signal<string | null>(null);
 
   // Search
   searchQuery = signal('');
@@ -141,6 +142,14 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   isMe(msg: Message): boolean {
     return msg.sender_id === this.auth.user()?.id;
   }
+
+  openLightbox(url: string, event: Event) {
+  event.preventDefault();
+  this.lightboxImage.set(url);
+}
+closeLightbox() {
+  this.lightboxImage.set(null);
+}
 
   // ─── Voice Recording ──────────────────────────────────
 

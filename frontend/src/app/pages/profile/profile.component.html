@@ -197,7 +197,7 @@
                       } @else {
                         <span class="material-icons placeholder-icon">image</span>
                       }
-                      <span class="card-status" [class]="getProductStatusClass(p.status)">{{ getProductStatusLabel(p.status) }}</span>
+                                            <span class="card-status" [class]="getProductStatusClass(p)">{{ getProductStatusLabel(p) }}</span>
                       @if (p.type === 'product') {
                         <span class="card-stock" [class]="getStockClass(p)">{{ getStockLabel(p) }}</span>
                       } @else {
@@ -239,7 +239,7 @@
                       <span class="row-title">{{ p.title }}</span>
                       <div class="row-meta">
                         <span class="row-price">{{ p.price | number:'1.0-0' }} F CFA</span>
-                        <span class="row-status" [class]="getProductStatusClass(p.status)">{{ getProductStatusLabel(p.status) }}</span>
+                                                <span class="row-status" [class]="getProductStatusClass(p)">{{ getProductStatusLabel(p) }}</span>
                          @if (p.type === 'product') {
                           <span class="row-stock" [class]="getStockClass(p)">{{ getStockLabel(p) }}</span>
                         } @else {
@@ -373,7 +373,7 @@
 
     <!-- ═══════ POLICIES TAB ═══════ -->
     @if (profileTab() === 'policies') {
-      <div class="policies-section">
+      <div class="products-section policies-section">
         <div class="section-header">
           <h2><span class="material-icons">policy</span> Politiques du vendeur</h2>
         </div>
@@ -457,7 +457,7 @@
         <div class="pm-product-info">
           <span class="pm-product-title">{{ managingProduct().title }}</span>
           <span class="pm-product-price">{{ managingProduct().price | number:'1.0-0' }} F CFA</span>
-          <span class="pm-product-status" [class]="getProductStatusClass(managingProduct().status)">{{ getProductStatusLabel(managingProduct().status) }}</span>
+                    <span class="pm-product-status" [class]="getProductStatusClass(managingProduct())">{{ getProductStatusLabel(managingProduct()) }}</span>
         </div>
       </div>
 

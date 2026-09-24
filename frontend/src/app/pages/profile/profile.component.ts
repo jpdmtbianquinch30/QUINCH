@@ -107,7 +107,8 @@ export class ProfileComponent implements OnInit {
     return 'var(--q-danger)';
   }
 
-  getProductStatusLabel(status: string): string {
+  getProductStatusLabel(p: any): string {
+    const status = this.effectiveStatus(p);
     switch (status) {
       case 'active': return 'En vente';
       case 'sold': return 'Vendu';
@@ -119,7 +120,8 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  getProductStatusClass(status: string): string {
+  getProductStatusClass(p: any): string {
+    const status = this.effectiveStatus(p);
     switch (status) {
       case 'active': return 'status-active';
       case 'sold': return 'status-sold';
@@ -128,6 +130,19 @@ export class ProfileComponent implements OnInit {
       case 'disabled': return 'status-disabled';
       default: return '';
     }
+  }
+
+  /**
+   * Le badge "Vendu" ne doit s'afficher que si le stock est reellement a 0.
+   * Certains produits gardent un statut "sold" en base alors que le vendeur
+   * a depuis reapprovisionne le stock (voir updateStock) : on corrige donc
+   * l'affichage ici en plus d'empecher la recurrence a la source.
+   */
+  private effectiveStatus(p: any): string {
+    if (p?.status === 'sold' && p.type !== 'service' && (p.stock_quantity ?? 0) > 0) {
+      return 'active';
+    }
+    return p?.status;
   }
 
   /** Get the best available thumbnail for a product (poster first) */
@@ -242,10 +257,12 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    this.manageUpdating.set(true);
+        this.manageUpdating.set(true);
     const updateData: any = { stock_quantity: qty };
-    // If product was paused and now has stock, reactivate it
-    if (p.status === 'paused' && qty > 0) {
+    // Si le produit etait en pause OU marque "vendu" (stock epuise a l'epoque)
+    // et qu'il a de nouveau du stock, on le repasse actif automatiquement —
+    // sinon il restait affiche "Vendu" malgre un stock reapprovisionne.
+    if ((p.status === 'paused' || p.status === 'sold') && qty > 0) {
       updateData.status = 'active';
     }
     this.productService.updateProduct(p.id, updateData).subscribe({

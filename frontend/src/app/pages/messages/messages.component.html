@@ -232,9 +232,9 @@
               <!-- Image Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
                 <div class="message-bubble image-bubble">
-                  <a [href]="getFileUrl(msg)" target="_blank" class="msg-image-wrap">
-                    <img [src]="getFileUrl(msg)" alt="Image" class="msg-image" loading="lazy" />
-                  </a>
+                  <button class="msg-image-wrap" (click)="openLightbox(getFileUrl(msg)!, $event)">
+  <img [src]="getFileUrl(msg)" alt="Image" class="msg-image" loading="lazy" />
+</button>
                   <div class="message-footer">
                     <span class="message-time">{{ formatTime(msg.created_at) }}</span>
                     @if (isMe(msg)) {
@@ -244,6 +244,14 @@
                     }
                   </div>
                 </div>
+                @if (lightboxImage()) {
+  <div class="img-lightbox-overlay" (click)="closeLightbox()">
+    <button class="lightbox-close-btn" (click)="closeLightbox()">
+      <span class="material-icons">close</span> Quitter
+    </button>
+    <img [src]="lightboxImage()" alt="" class="lightbox-img" (click)="$event.stopPropagation()" />
+  </div>
+}
               </div>
             } @else if (isVideoMessage(msg)) {
   <!-- Video Message -->
