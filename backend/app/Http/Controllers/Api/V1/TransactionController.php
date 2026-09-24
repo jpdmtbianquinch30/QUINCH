@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use App\Support\VerifiesWaveWebhook;
 use App\Models\UserReport;
 use App\Support\ResolvesFrontendUrl;
+use App\Models\Conversation;
+use App\Models\Message;
 
 
 class TransactionController extends Controller
@@ -88,7 +90,8 @@ class TransactionController extends Controller
             'transaction_fee' => $fee,
         ]);
 
-                $frontendUrl = $this->resolveFrontendUrl($request);
+        $this->tagProductInConversation($transaction, $product);
+        $frontendUrl = $this->resolveFrontendUrl($request);
 
         $result = $gateway->initiatePayment([
             'amount' => $product->price * $qty + $fee,
@@ -388,4 +391,47 @@ class TransactionController extends Controller
             default => $method,
         };
     }
+
+    /**
+ * Si une conversation existe deja entre l'acheteur et le vendeur (sinon
+ * en cree une), tague automatiquement le produit commande dans la
+ * discussion via un message de type product_tag.
+ */
+private function tagProductInConversation(Transaction $transaction, Product $product): void
+{
+    $conversation = Conversation::where(function ($q) use ($transaction) {
+            $q->where('buyer_id', $transaction->buyer_id)->where('seller_id', $transaction->seller_id);
+        })
+        ->orWhere(function ($q) use ($transaction) {
+            $q->where('buyer_id', $transaction->seller_id)->where('seller_id', $transaction->buyer_id);
+        })
+        ->first();
+
+    if (!$conversation) {
+        $conversation = Conversation::create([
+            'buyer_id' => $transaction->buyer_id,
+            'seller_id' => $transaction->seller_id,
+            'product_id' => $product->id,
+            'status' => 'active',
+            'last_message_at' => now(),
+        ]);
+    }
+
+    Message::create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $transaction->buyer_id,
+        'body' => 'Commande passee : ' . $product->title,
+        'type' => 'product_tag',
+        'metadata' => [
+            'product_id' => $product->id,
+            'product_slug' => $product->slug,
+            'product_title' => $product->title,
+            'product_price' => $product->price,
+            'product_image' => $product->poster_full_url,
+            'transaction_id' => $transaction->id,
+        ],
+    ]);
+
+    $conversation->update(['last_message_at' => now()]);
+}
 }

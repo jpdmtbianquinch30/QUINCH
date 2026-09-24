@@ -295,6 +295,32 @@
                   </div>
                 </div>
               </div>
+              } @else if (msg.type === 'product_tag') {
+  <!-- Tagged Product -->
+  <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+    <div class="message-bubble product-tag-bubble">
+      <div class="tag-product-card">
+        <div class="tag-product-blur-bg" [style.background-image]="'url(' + msg.metadata?.product_image + ')'"></div>
+        <img [src]="msg.metadata?.product_image" alt="" class="tag-product-img" />
+        <div class="tag-product-info">
+          <span class="tag-product-label">Produit commande</span>
+          <span class="tag-product-title">{{ msg.metadata?.product_title }}</span>
+          <span class="tag-product-price">{{ msg.metadata?.product_price | number:'1.0-0':'fr-FR' }} F CFA</span>
+        </div>
+      </div>
+      <a class="tag-product-btn" [routerLink]="['/product', msg.metadata?.product_slug]">
+        <span class="material-icons">visibility</span> Voir les details du produit
+      </a>
+      <div class="message-footer">
+        <span class="message-time">{{ formatTime(msg.created_at) }}</span>
+        @if (isMe(msg)) {
+          <span class="read-indicator" [class.read]="msg.is_read">
+            <span class="material-icons">done_all</span>
+          </span>
+        }
+      </div>
+    </div>
+  </div>
             } @else {
               <!-- Text Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">

@@ -28,6 +28,8 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   newMessage = '';
   isTyping = signal(false);
   lightboxImage = signal<string | null>(null);
+  private pollInterval: any = null;
+  private listPollInterval: any = null;
 
   // Search
   searchQuery = signal('');
@@ -71,6 +73,8 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   });
 
     ngOnInit() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    if (this.listPollInterval) clearInterval(this.listPollInterval);
     this.loading.set(true);
     this.chat.getConversations().subscribe({
       next: () => {
@@ -88,6 +92,21 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       complete: () => this.loading.set(false),
     });
+
+    // Rafraichissement leger : pas d'infra websocket en place. Repolle la
+// conversation active toutes les 8s (nouveaux messages, lu/non-lu,
+// statut en ligne) et la liste toutes les 20s (nouvelles conversations).
+// Suspendu pendant un enregistrement vocal pour ne pas interrompre.
+this.pollInterval = setInterval(() => {
+  const conv = this.selectedConv();
+  if (conv && !this.isRecording()) {
+    this.chat.getConversation(conv.id).subscribe();
+  }
+}, 8000);
+
+this.listPollInterval = setInterval(() => {
+  this.chat.getConversations().subscribe();
+}, 20000);
   }
 
   ngOnDestroy() {
