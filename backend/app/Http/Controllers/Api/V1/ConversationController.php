@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
+use App\Models\ConversationProductTag;
 use App\Models\Message;
+use App\Services\ConversationTaggingService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -120,7 +122,7 @@ class ConversationController extends Controller
             ->update(['is_read' => true, 'read_at' => now()]);
 
         return response()->json([
-            'conversation' => $conversation->load(['buyer', 'seller', 'product', 'messages.sender']),
+            'conversation' => $conversation->load(['buyer', 'seller', 'product', 'messages.sender', 'productTags.product', 'productTags.taggedBy']),
         ]);
     }
 
@@ -269,6 +271,38 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
         $this->notif->notifyMessage($recipientId, $request->user(), $conversation->id, '🎤 Message vocal');
 
         return response()->json(['message' => $message->load('sender')]);
+    }
+
+        public function tagProduct(Request $request, Conversation $conversation): JsonResponse
+    {
+        $userId = $request->user()->id;
+        if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
+
+        $validated = $request->validate([
+            'product_id' => ['required', 'uuid', 'exists:products,id'],
+        ]);
+
+        $product = Product::findOrFail($validated['product_id']);
+
+        $tag = app(ConversationTaggingService::class)->tagProduct($conversation, $product, $userId);
+
+        return response()->json(['tag' => $tag->load('product', 'taggedBy')], 201);
+    }
+
+    public function updateTag(Request $request, Conversation $conversation, ConversationProductTag $tag): JsonResponse
+    {
+        $userId = $request->user()->id;
+        if ($conversation->seller_id !== $userId) abort(403);
+        if ($tag->conversation_id !== $conversation->id) abort(404);
+
+        $validated = $request->validate([
+            'is_blurred' => ['sometimes', 'boolean'],
+            'published_to_directory' => ['sometimes', 'boolean'],
+        ]);
+
+        $tag = app(ConversationTaggingService::class)->updateTag($tag, $validated);
+
+        return response()->json(['tag' => $tag->load('product', 'taggedBy')]);
     }
 
     public function destroy(Request $request, Conversation $conversation): JsonResponse

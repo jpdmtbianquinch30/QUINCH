@@ -21,6 +21,7 @@ class Conversation extends Model
     public function buyer() { return $this->belongsTo(User::class, 'buyer_id'); }
     public function seller() { return $this->belongsTo(User::class, 'seller_id'); }
     public function product() { return $this->belongsTo(Product::class); }
+    public function productTags() { return $this->hasMany(ConversationProductTag::class)->latest(); }
     public function messages() { return $this->hasMany(Message::class)->orderBy('created_at'); }
         // latestOfMany()/ofMany() ajoutent TOUJOURS une deuxième agrégation
     // interne sur la clé primaire (MAX(id)) pour garantir une seule ligne,

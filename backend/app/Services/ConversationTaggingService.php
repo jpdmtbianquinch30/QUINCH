@@ -57,6 +57,14 @@ class ConversationTaggingService
         return $tag;
     }
 
+        public function updateTag(ConversationProductTag $tag, array $attributes): ConversationProductTag
+    {
+        $tag->fill(array_intersect_key($attributes, array_flip(['is_blurred', 'published_to_directory'])));
+        $tag->save();
+
+        return $tag;
+    }
+
     private function postTagMessage(Conversation $conversation, Product $product, ?Transaction $transaction): void
     {
         $senderId = $transaction?->buyer_id ?? $conversation->buyer_id;

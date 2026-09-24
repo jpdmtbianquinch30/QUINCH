@@ -176,6 +176,8 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::post('{conversation}/messages', [ConversationController::class, 'sendMessage']);
         Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio'])->middleware('feature:chat_audio');
         Route::post('{conversation}/file', [ConversationController::class, 'sendFile']);
+        Route::post('{conversation}/tags', [ConversationController::class, 'tagProduct']);
+        Route::patch('{conversation}/tags/{tag}', [ConversationController::class, 'updateTag']);
         Route::delete('{conversation}', [ConversationController::class, 'destroy']);
     });
 
