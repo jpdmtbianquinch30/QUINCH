@@ -197,6 +197,16 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
     $isVideo = str_starts_with($mimeType, 'video/');
     $isAudio = str_starts_with($mimeType, 'audio/');
 
+        // V1 : seules les images sont envoyables. Documents et vidéos restent
+    // derrière chat_file, l'audio derrière chat_audio — la version suivante
+    // les activera (mêmes flags déjà utilisés ailleurs dans l'app).
+    if ($isAudio && !config('quinch.features.chat_audio')) {
+        return response()->json(['message' => "L'envoi de fichiers audio sera bientôt disponible."], 403);
+    }
+    if (!$isImage && !$isAudio && !config('quinch.features.chat_file')) {
+        return response()->json(['message' => "L'envoi de ce type de fichier sera bientôt disponible."], 403);
+    }
+
     $folder = match (true) {
         $isImage => 'messages/images',
         $isVideo => 'messages/videos',

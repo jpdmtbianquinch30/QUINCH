@@ -175,7 +175,7 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::get('{conversation}', [ConversationController::class, 'show']);
         Route::post('{conversation}/messages', [ConversationController::class, 'sendMessage']);
         Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio'])->middleware('feature:chat_audio');
-        Route::post('{conversation}/file', [ConversationController::class, 'sendFile'])->middleware('feature:chat_file');
+        Route::post('{conversation}/file', [ConversationController::class, 'sendFile']);
         Route::delete('{conversation}', [ConversationController::class, 'destroy']);
     });
 
