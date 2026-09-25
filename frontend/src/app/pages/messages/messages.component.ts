@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
-import { ChatService, Conversation, Message } from '../../core/services/chat.service';
+import { ChatService, Conversation, Message, ConversationProductTag } from '../../core/services/chat.service';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { FormsModule } from '@angular/forms';
@@ -40,8 +40,13 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Dropdown menu (more_vert)
   showDropdown = signal(false);
 
-  // Auto-scroll flag
+    // Auto-scroll flag
   private shouldScroll = false;
+  // true = saut instantane (ouverture de conversation) ; false = anime (nouveau message)
+  private instantScrollNext = false;
+
+  // Etat de chargement par tag (evite le double-clic pendant l'appel API)
+  tagUpdating = signal<Record<string, boolean>>({});
 
   // ─── Voice Recording ──────────────────────────────────
   isRecording = signal(false);
@@ -119,10 +124,11 @@ this.listPollInterval = setInterval(() => {
     this.audioElements.clear();
   }
 
-  ngAfterViewChecked() {
+    ngAfterViewChecked() {
     if (this.shouldScroll) {
-      this.scrollToBottom();
+      this.scrollToBottom(this.instantScrollNext);
       this.shouldScroll = false;
+      this.instantScrollNext = false;
     }
   }
 
@@ -131,13 +137,16 @@ this.listPollInterval = setInterval(() => {
     this.mobileShowChat.set(true);
     this.showDropdown.set(false);
     this.shouldScroll = true;
+    this.instantScrollNext = true; // ouverture : direct en bas, pas d'animation
     // Stop any recording when switching conversations
     if (this.isRecording()) this.stopRecording(true);
     // Stop any playing audio
     this.stopAllAudio();
     this.chat.getConversation(conv.id).subscribe({
       next: () => {
+        this.selectedConv.set(this.chat.currentConversation());
         this.shouldScroll = true;
+        this.instantScrollNext = true;
       },
       error: () => {
         this.notify.error('Impossible de charger cette conversation.');
@@ -598,12 +607,79 @@ attachOptions = [
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   }
 
-  private scrollToBottom() {
+  private scrollToBottom(instant = false) {
     try {
       const el = this.messagesContainer?.nativeElement;
       if (el) {
-        el.scrollTop = el.scrollHeight;
+        if (instant) {
+          // Empeche l'animation de scroll-behavior:smooth (CSS) : l'ouverture
+          // d'une conversation doit afficher directement le bas, pas dérouler
+          // visuellement du haut vers le bas devant l'utilisateur.
+          const prev = el.style.scrollBehavior;
+          el.style.scrollBehavior = 'auto';
+          el.scrollTop = el.scrollHeight;
+          el.style.scrollBehavior = prev;
+        } else {
+          el.scrollTop = el.scrollHeight;
+        }
       }
     } catch (_) {}
+  }
+
+  // ─── Actions vendeur sur un produit tague (flouter / publier au repertoire) ─
+
+  isSeller(): boolean {
+    const conv = this.selectedConv();
+    return !!conv && conv.seller_id === this.auth.user()?.id;
+  }
+
+  findTag(msg: Message): ConversationProductTag | undefined {
+    const productId = msg.metadata?.product_id;
+    if (!productId) return undefined;
+    return this.selectedConv()?.product_tags?.find(t => t.product_id === productId);
+  }
+
+  isTagUpdating(tagId: string): boolean {
+    return !!this.tagUpdating()[tagId];
+  }
+
+  toggleBlur(msg: Message) {
+    const tag = this.findTag(msg);
+    const conv = this.selectedConv();
+    if (!tag || !conv || this.isTagUpdating(tag.id)) return;
+    this.setTagUpdating(tag.id, true);
+    this.chat.updateTag(conv.id, tag.id, { is_blurred: !tag.is_blurred }).subscribe({
+      next: () => {
+        this.selectedConv.set(this.chat.currentConversation());
+        this.setTagUpdating(tag.id, false);
+      },
+      error: () => {
+        this.notify.error("Action reservee au vendeur de la conversation.");
+        this.setTagUpdating(tag.id, false);
+      },
+    });
+  }
+
+  togglePublish(msg: Message) {
+    const tag = this.findTag(msg);
+    const conv = this.selectedConv();
+    if (!tag || !conv || this.isTagUpdating(tag.id)) return;
+    const wasPublished = tag.published_to_directory;
+    this.setTagUpdating(tag.id, true);
+    this.chat.updateTag(conv.id, tag.id, { published_to_directory: !wasPublished }).subscribe({
+      next: () => {
+        this.selectedConv.set(this.chat.currentConversation());
+        this.notify.success(wasPublished ? 'Retire du repertoire.' : 'Publie au repertoire.');
+        this.setTagUpdating(tag.id, false);
+      },
+      error: () => {
+        this.notify.error("Action reservee au vendeur de la conversation.");
+        this.setTagUpdating(tag.id, false);
+      },
+    });
+  }
+
+  private setTagUpdating(tagId: string, val: boolean) {
+    this.tagUpdating.update(m => ({ ...m, [tagId]: val }));
   }
 }

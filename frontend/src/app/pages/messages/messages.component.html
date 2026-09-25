@@ -295,22 +295,53 @@
                   </div>
                 </div>
               </div>
-              } @else if (msg.type === 'product_tag') {
+            } @else if (msg.type === 'product_tag') {
   <!-- Tagged Product -->
   <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
     <div class="message-bubble product-tag-bubble">
       <div class="tag-product-card">
         <div class="tag-product-blur-bg" [style.background-image]="'url(' + msg.metadata?.product_image + ')'"></div>
-        <img [src]="msg.metadata?.product_image" alt="" class="tag-product-img" />
+        <img [src]="msg.metadata?.product_image" alt="" class="tag-product-img" [class.is-blurred]="findTag(msg)?.is_blurred" />
+        @if (findTag(msg)?.is_blurred) {
+          <span class="tag-blurred-badge"><span class="material-icons">visibility_off</span> Flouté</span>
+        }
         <div class="tag-product-info">
-          <span class="tag-product-label">Produit commande</span>
+          <span class="tag-product-label">Produit commandé</span>
           <span class="tag-product-title">{{ msg.metadata?.product_title }}</span>
-          <span class="tag-product-price">{{ msg.metadata?.product_price | number:'1.0-0':'fr-FR' }} F CFA</span>
+          @if (msg.metadata?.product_price) {
+            <span class="tag-product-price">{{ msg.metadata?.product_price | number:'1.0-0':'fr-FR' }} F CFA</span>
+          } @else {
+            <span class="tag-product-price quote">Sur devis</span>
+          }
         </div>
       </div>
       <a class="tag-product-btn" [routerLink]="['/product', msg.metadata?.product_slug]">
-        <span class="material-icons">visibility</span> Voir les details du produit
+        <span class="material-icons">visibility</span> Voir les détails du produit
       </a>
+
+      @if (isSeller() && findTag(msg); as tag) {
+        <div class="tag-seller-actions">
+          <button
+            class="tag-action-btn"
+            [class.active]="tag.is_blurred"
+            [disabled]="isTagUpdating(tag.id)"
+            (click)="toggleBlur(msg)"
+          >
+            <span class="material-icons">{{ tag.is_blurred ? 'visibility_off' : 'visibility' }}</span>
+            {{ tag.is_blurred ? 'Ne plus flouter' : 'Flouter' }}
+          </button>
+          <button
+            class="tag-action-btn"
+            [class.active]="tag.published_to_directory"
+            [disabled]="isTagUpdating(tag.id)"
+            (click)="togglePublish(msg)"
+          >
+            <span class="material-icons">{{ tag.published_to_directory ? 'unpublished' : 'storefront' }}</span>
+            {{ tag.published_to_directory ? 'Retirer du répertoire' : 'Publier au répertoire' }}
+          </button>
+        </div>
+      }
+
       <div class="message-footer">
         <span class="message-time">{{ formatTime(msg.created_at) }}</span>
         @if (isMe(msg)) {

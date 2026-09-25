@@ -2,6 +2,17 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 
+export interface ConversationProductTag {
+  id: string;
+  conversation_id: string;
+  product_id: string;
+  tagged_by?: string;
+  transaction_id?: string;
+  is_blurred: boolean;
+  published_to_directory: boolean;
+  product?: { id: string; title: string; slug: string; price: number; poster_full_url?: string };
+}
+
 export interface Conversation {
   id: string;
   buyer_id: string;
@@ -17,7 +28,8 @@ export interface Conversation {
     is_online?: boolean;
   };
   product?: { id: string; title: string; slug: string; price: number };
-  last_message?: Message; // Laravel serializes lastMessage as last_message
+  product_tags?: ConversationProductTag[];
+  last_message?: Message;
   unread_count: number;
 }
 
@@ -173,6 +185,20 @@ export class ChatService {
   markConversationRead(conversationId: string): void {
     this.conversations.update(list =>
       list.map(c => c.id === conversationId ? { ...c, unread_count: 0 } : c)
+    );
+  }
+
+    /** Bascule flouter / publier au répertoire — reservé au vendeur (403 sinon, verifié côté back). */
+  updateTag(conversationId: string, tagId: string, attrs: { is_blurred?: boolean; published_to_directory?: boolean }): Observable<any> {
+    return this.api.patch<any>(`conversations/${conversationId}/tags/${tagId}`, attrs).pipe(
+      tap(res => {
+        if (!res.tag) return;
+        this.currentConversation.update(conv => {
+          if (!conv) return conv;
+          const tags = (conv.product_tags || []).map(t => t.id === res.tag.id ? res.tag : t);
+          return { ...conv, product_tags: tags };
+        });
+      })
     );
   }
 

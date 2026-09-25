@@ -1745,6 +1745,77 @@ button {
   font-size: 16px;
 }
 
+.tag-product-price.quote {
+  color: #7884a0;
+  font-style: italic;
+}
+
+// Miniature floutée côté acheteur (produit publié au répertoire sans révéler le visuel) ;
+// le badge le rappelle explicitement pour ne pas laisser croire à un bug d'image.
+.tag-product-img.is-blurred {
+  filter: blur(9px);
+}
+
+.tag-blurred-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 50px;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  .material-icons { font-size: 12px; }
+}
+
+// Actions vendeur : visibles uniquement pour le vendeur de la conversation
+// (verifie côté back par updateTag — abort(403) sinon), sur chaque carte
+// produit taguée.
+.tag-seller-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tag-action-btn {
+  flex: 1;
+  min-width: 0;
+  height: 33px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  color: #9aa5c4;
+  background: rgba(255,255,255,.04);
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all .15s;
+
+  .material-icons { font-size: 15px; flex-shrink: 0; }
+
+  &:hover:not(:disabled) { background: rgba(255,255,255,.08); color: #c5cde3; }
+  &:disabled { opacity: .5; cursor: default; }
+
+  &.active {
+    border-color: rgba(97, 120, 255, .35);
+    color: #a2adff;
+    background: rgba(97, 120, 255, .12);
+  }
+}
+
 
 /* =========================================================
    DEVIS

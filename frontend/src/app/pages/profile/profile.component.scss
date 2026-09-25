@@ -207,37 +207,11 @@
   justify-content: center;
   cursor: pointer;
   position: relative;
-  box-shadow: 0 0 0 3px var(--q-accent), var(--q-shadow-lg);
-  transition: all var(--q-transition-fast);.avatar-ring {
-  width: 130px;
-  height: 130px;
-  border-radius: var(--q-radius-full);
-  border: 5px solid var(--q-bg-primary);
-  overflow: hidden;
-  background: var(--q-bg-card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
   box-shadow: 0 0 0 3px var(--q-accent), 0 10px 32px rgba(99,102,241,0.35), var(--q-shadow-lg);
   transition: all 0.3s ease;
   flex-shrink: 0;
 
   &:hover { box-shadow: 0 0 0 3px var(--q-accent-light), 0 0 28px var(--q-accent-glow), 0 10px 32px rgba(99,102,241,0.4); transform: scale(1.02); }
-  .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-  .avatar-fallback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    .material-icons { font-size: 60px; color: var(--q-text-muted); }
-  }
-}
-  flex-shrink: 0;
-
-  &:hover { box-shadow: 0 0 0 3px var(--q-accent-light), 0 0 24px var(--q-accent-glow); }
   .avatar-img { width: 100%; height: 100%; object-fit: cover; }
   .avatar-fallback {
     display: flex;
