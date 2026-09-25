@@ -50,6 +50,8 @@ class User extends Authenticatable
         'preferences',
         'onboarding_completed',
         'device_fingerprint',
+        'ranking_opt_in',
+        'ranking_anonymous',
     ];
 
     protected $hidden = [
@@ -78,6 +80,9 @@ class User extends Authenticatable
             'trust_score' => 'float',
             'is_premium' => 'boolean',
             'premium_expires_at' => 'datetime',
+            'ranking_opt_in' => 'boolean',
+            'ranking_anonymous' => 'boolean',
+            'profile_views_count' => 'integer',
             'otp_expires_at' => 'datetime',
             'last_suspicious_activity' => 'datetime',
             'latitude' => 'float',

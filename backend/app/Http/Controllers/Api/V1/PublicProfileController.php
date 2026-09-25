@@ -18,6 +18,11 @@ class PublicProfileController extends Controller
     {
         $user = User::where('username', $username)->firstOrFail();
 
+        $authUser = auth('sanctum')->user();
+        if (!$authUser || $authUser->id !== $user->id) {
+            $user->increment('profile_views_count');
+        }
+
         $productsCount = Product::where('user_id', $user->id)->where('status', 'active')->count();
         $soldCount = Transaction::where('seller_id', $user->id)->where('payment_status', 'completed')->count();
         $followerCount = UserFollow::where('following_id', $user->id)->count();
@@ -40,7 +45,6 @@ class PublicProfileController extends Controller
             'awarded_at' => $b->created_at?->toISOString(),
         ]);
 
-        $authUser = auth('sanctum')->user();
         $isFollowing = $authUser
             ? UserFollow::where('follower_id', $authUser->id)->where('following_id', $user->id)->exists()
             : false;

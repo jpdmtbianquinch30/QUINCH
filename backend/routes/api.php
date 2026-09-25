@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\NegotiationController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\FollowController;
 use App\Http\Controllers\Api\V1\BadgeController;
+use App\Http\Controllers\Api\V1\RankingController;
 use App\Http\Controllers\Api\V1\ReviewController;
 use App\Http\Controllers\Api\V1\PublicProfileController;
 use App\Http\Controllers\Api\V1\AdminController;
@@ -227,6 +228,16 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::get('plans', [PremiumController::class, 'plans']);
         Route::post('subscribe', [PremiumController::class, 'subscribe'])->middleware('throttle:3,1');
         Route::get('status', [PremiumController::class, 'status']);
+    });
+
+    // Classements — reserves aux comptes Premium (voir RankingController).
+    Route::prefix('rankings')->group(function () {
+        Route::get('sellers', [RankingController::class, 'sellers']);
+        Route::get('buyers', [RankingController::class, 'buyers']);
+        Route::get('products', [RankingController::class, 'products']);
+        Route::get('profiles', [RankingController::class, 'profiles']);
+        Route::get('preferences', [RankingController::class, 'myPreferences']);
+        Route::patch('preferences', [RankingController::class, 'updatePreferences']);
     });
 
     // Follows & Friends (V2 — désactivé en V1)
