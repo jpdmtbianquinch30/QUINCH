@@ -60,7 +60,7 @@ export class AuthService {
       })
     );
   }
-  
+
 
 
   private showWelcomeNotification(user: User): void {
@@ -228,28 +228,36 @@ export class AuthService {
   private loadFromStorage(): void {
     const token = localStorage.getItem(TOKEN_KEY);
     const userStr = localStorage.getItem(USER_KEY);
-    if (token && userStr) {
-      try {
-        this.token.set(token);
-        const user = JSON.parse(userStr);
-        this.currentUser.set(user);
+    // Le token seul suffit à restaurer la session — avant, la condition
+    // exigeait token ET userStr, donc si l'un des deux manquait (cache
+    // navigateur partiellement vidé, ancienne session) le token pourtant
+    // valide n'était jamais relu : isAuthenticated() restait faux et le
+    // garde renvoyait vers /auth/login au premier rafraîchissement.
+    if (!token) return;
 
-        // Refresh user data from backend to get updated full URLs
-        this.getMe().subscribe({
-          next: (res) => {
-            if (res.user) {
-              this.currentUser.set(res.user);
-              localStorage.setItem(USER_KEY, JSON.stringify(res.user));
-            }
-          },
-        });
-
-        // SEC-05 : prolonge la session dès le démarrage si nécessaire,
-        // plutôt que d'attendre la prochaine heure pleine.
-        this.maybeRefreshToken();
-      } catch {
-        this.clearAuth();
+    try {
+      this.token.set(token);
+      if (userStr) {
+        this.currentUser.set(JSON.parse(userStr));
       }
+
+      // Dans tous les cas, la source de vérité reste le backend : ça
+      // rafraîchit currentUser (urls à jour) et couvre le cas où userStr
+      // manquait ci-dessus.
+      this.getMe().subscribe({
+        next: (res) => {
+          if (res.user) {
+            this.currentUser.set(res.user);
+            localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+          }
+        },
+      });
+
+      // SEC-05 : prolonge la session dès le démarrage si nécessaire,
+      // plutôt que d'attendre la prochaine heure pleine.
+      this.maybeRefreshToken();
+    } catch {
+      this.clearAuth();
     }
   }
 }
