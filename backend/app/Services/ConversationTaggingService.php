@@ -22,11 +22,12 @@ use Illuminate\Database\QueryException;
 class ConversationTaggingService
 {
     public function tagProduct(
-        Conversation $conversation,
-        Product $product,
-        ?string $taggedBy = null,
-        ?Transaction $transaction = null,
-    ): ConversationProductTag {
+    Conversation $conversation,
+    Product $product,
+    ?string $taggedBy = null,
+    ?Transaction $transaction = null,
+    bool $postMessage = true,
+): ConversationProductTag {
         try {
             $tag = ConversationProductTag::create([
                 'conversation_id' => $conversation->id,
@@ -52,17 +53,11 @@ class ConversationTaggingService
             return $tag;
         }
 
-        $this->postTagMessage($conversation, $product, $transaction);
+        if ($postMessage) {
+    $this->postTagMessage($conversation, $product, $transaction);
+}
 
-        return $tag;
-    }
-
-        public function updateTag(ConversationProductTag $tag, array $attributes): ConversationProductTag
-    {
-        $tag->fill(array_intersect_key($attributes, array_flip(['is_blurred', 'published_to_directory'])));
-        $tag->save();
-
-        return $tag;
+return $tag;
     }
 
     private function postTagMessage(Conversation $conversation, Product $product, ?Transaction $transaction): void

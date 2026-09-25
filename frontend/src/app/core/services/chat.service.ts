@@ -8,8 +8,6 @@ export interface ConversationProductTag {
   product_id: string;
   tagged_by?: string;
   transaction_id?: string;
-  is_blurred: boolean;
-  published_to_directory: boolean;
   product?: { id: string; title: string; slug: string; price: number; poster_full_url?: string };
 }
 
@@ -52,6 +50,7 @@ export interface Message {
   product_title?: string;
   product_price?: number;
   product_image?: string;
+  product_type?: 'product' | 'service';
   transaction_id?: string;
   [key: string]: any;
 };
@@ -188,20 +187,6 @@ export class ChatService {
     );
   }
 
-    /** Bascule flouter / publier au répertoire — reservé au vendeur (403 sinon, verifié côté back). */
-  updateTag(conversationId: string, tagId: string, attrs: { is_blurred?: boolean; published_to_directory?: boolean }): Observable<any> {
-    return this.api.patch<any>(`conversations/${conversationId}/tags/${tagId}`, attrs).pipe(
-      tap(res => {
-        if (!res.tag) return;
-        this.currentConversation.update(conv => {
-          if (!conv) return conv;
-          const tags = (conv.product_tags || []).map(t => t.id === res.tag.id ? res.tag : t);
-          return { ...conv, product_tags: tags };
-        });
-      })
-    );
-  }
-
   deleteConversation(conversationId: string): Observable<any> {
     return this.api.delete<any>(`conversations/${conversationId}`).pipe(
       tap(() => {
@@ -213,4 +198,34 @@ export class ChatService {
       })
     );
   }
+
+  deleteMessage(conversationId: string, messageId: string): Observable<any> {
+  return this.api.delete<any>(`conversations/${conversationId}/messages/${messageId}`).pipe(
+    tap(() => {
+      this.messages.update(msgs => msgs.filter(m => m.id !== messageId));
+    })
+  );
+}
+
+bulkDeleteConversations(ids: string[]): Observable<any> {
+  return this.api.post<any>('conversations/bulk-delete', { conversation_ids: ids }).pipe(
+    tap(() => {
+      this.conversations.update(convs => convs.filter(c => !ids.includes(c.id)));
+    })
+  );
+}
+
+pollNewMessages(conversationId: string, after?: string): Observable<any> {
+  const query = after ? `?after=${encodeURIComponent(after)}` : '';
+  return this.api.get<any>(`conversations/${conversationId}/messages/since${query}`).pipe(
+    tap(res => {
+      if (res.messages?.length) {
+        this.messages.update(msgs => [...msgs, ...res.messages]);
+      }
+      if (res.other_user) {
+        this.currentConversation.update(conv => conv ? { ...conv, other_user: res.other_user } : conv);
+      }
+    })
+  );
+}
 }

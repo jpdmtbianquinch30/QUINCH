@@ -41,8 +41,8 @@
           <!-- Déjà abonné -->
           <div class="current-status-card premium-active">
             <span class="material-icons status-icon">verified</span>
-            <h2>Vous êtes Premium</h2>
-            <p>Forfait <strong>{{ planLabel(status()?.plan ?? null) }}</strong></p>
+            <h2>Vous êtes membre Premium ⭐</h2>
+            <p>Forfait <strong>{{ planLabel(status()?.plan ?? null) }}</strong> actif</p>
             @if (status()?.expires_at) {
               <p class="expiry">Renouvellement le {{ status()?.expires_at | date:'d MMMM yyyy' }}</p>
             }
@@ -56,9 +56,9 @@
               </div>
             }
             <div class="status-benefits">
-              <p class="status-benefits-title">Vous profitez maintenant de :</p>
+              <p class="status-benefits-title">Voici tout ce que votre abonnement vous apporte :</p>
               <ul class="benefits-list gold">
-                @for (b of benefits; track b.icon) {
+                @for (b of activeBenefits; track b.icon) {
                   <li>
                     <span class="material-icons">{{ b.icon }}</span>
                     {{ b.label }}
@@ -98,7 +98,7 @@
             </div>
           }
 
-          <p class="premium-tagline">Boostez votre boutique et vendez plus vite avec <strong>QUINCH Premium</strong> ⭐</p>
+          <p class="premium-tagline">Vendez plus vite et inspirez confiance aux acheteurs avec <strong>QUINCH Premium</strong> ⭐</p>
 
           <!-- Avantages -->
           <ul class="benefits-list">
@@ -131,9 +131,9 @@
             }
           </div>
 
-          <p class="payment-note">
+         <p class="payment-note">
             <span class="material-icons">lock</span>
-            Paiement sécurisé via Wave. Sans engagement, résiliable à tout moment.
+            Paiement 100&nbsp;% sécurisé via Wave — sans engagement, résiliable à tout moment.
           </p>
         }
       }

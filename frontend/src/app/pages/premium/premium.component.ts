@@ -35,14 +35,24 @@ export class PremiumComponent implements OnInit {
   plans = signal<PremiumPlan[]>([]);
   status = signal<PremiumStatus | null>(null);
 
-  benefits = [
-    { icon: 'workspace_premium', label: 'Badge Premium dore sur votre profil et vos annonces' },
-    { icon: 'trending_up', label: 'Boutique mise en avant dans le feed et le marketplace' },
-    { icon: 'photo_library', label: "11 photos par annonce (1 couverture + 10 supplementaires)" },
-    { icon: 'videocam', label: 'Video de presentation gratuite, sans frais, pour plus de visibilite' },
-    { icon: 'bolt', label: 'Acces aux fonctionnalites avancees (negociation, badges, collections)' },
+    benefits = [
+    { icon: 'workspace_premium', label: 'Un badge doré sur votre profil et toutes vos annonces' },
+    { icon: 'trending_up', label: 'Votre boutique mise en avant dans le feed et les résultats de recherche' },
+    { icon: 'photo_library', label: '11 photos par annonce au lieu de 6, pour tout montrer en détail' },
+    { icon: 'videocam', label: 'Une vidéo de présentation offerte, sans frais supplémentaires' },
+    { icon: 'receipt_long', label: 'Publication de vos annonces gratuite, sans frais à chaque mise en ligne' },
+    { icon: 'bolt', label: 'Négociation, collections et badges — les outils des vendeurs pros' },
   ];
 
+  activeBenefits = [
+    { icon: 'workspace_premium', label: 'Votre badge Premium doré est visible sur votre profil et toutes vos annonces' },
+    { icon: 'trending_up', label: 'Votre boutique est mise en avant dans le feed et le marketplace' },
+    { icon: 'photo_library', label: 'Vous pouvez publier jusqu\'à 11 photos par annonce' },
+    { icon: 'videocam', label: 'Vos vidéos de présentation sont offertes, sans limite' },
+    { icon: 'receipt_long', label: 'Vos publications d\'annonces sont sans frais' },
+    { icon: 'bolt', label: 'Négociation, collections et badges vendeur sont débloqués' },
+  ];
+  
   ngOnInit() {
     const path = this.route.snapshot.routeConfig?.path || '';
     if (path === 'premium/success') this.mode.set('success');

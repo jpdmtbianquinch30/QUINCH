@@ -36,6 +36,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   // Mobile: show chat area instead of list
   mobileShowChat = signal(false);
+  messagesReady = signal(false);
 
   // Dropdown menu (more_vert)
   showDropdown = signal(false);
@@ -105,7 +106,11 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
 this.pollInterval = setInterval(() => {
   const conv = this.selectedConv();
   if (conv && !this.isRecording()) {
-    this.chat.getConversation(conv.id).subscribe();
+    const msgs = this.chat.messages();
+    const lastCreatedAt = msgs.length > 0 ? msgs[msgs.length - 1].created_at : undefined;
+    this.chat.pollNewMessages(conv.id, lastCreatedAt).subscribe(() => {
+      this.onMediaLoaded(); // ne scroll que si on etait deja pres du bas
+    });
   }
 }, 8000);
 
@@ -129,15 +134,15 @@ this.listPollInterval = setInterval(() => {
       this.scrollToBottom(this.instantScrollNext);
       this.shouldScroll = false;
       this.instantScrollNext = false;
+      this.messagesReady.set(true);
     }
   }
 
-    selectConversation(conv: Conversation) {
+       selectConversation(conv: Conversation) {
     this.selectedConv.set(conv);
     this.mobileShowChat.set(true);
     this.showDropdown.set(false);
-    this.shouldScroll = true;
-    this.instantScrollNext = true; // ouverture : direct en bas, pas d'animation
+    this.messagesReady.set(false);
     // Stop any recording when switching conversations
     if (this.isRecording()) this.stopRecording(true);
     // Stop any playing audio
@@ -626,60 +631,53 @@ attachOptions = [
     } catch (_) {}
   }
 
-  // ─── Actions vendeur sur un produit tague (flouter / publier au repertoire) ─
-
-  isSeller(): boolean {
-    const conv = this.selectedConv();
-    return !!conv && conv.seller_id === this.auth.user()?.id;
+  onMediaLoaded() {
+  const el = this.messagesContainer?.nativeElement;
+  if (!el) return;
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+  if (distanceFromBottom < 300) {
+    this.scrollToBottom(true);
   }
+}
+deleteMessage(msg: Message) {
+  const conv = this.selectedConv();
+  if (!conv || !this.isMe(msg)) return;
+  if (!confirm('Supprimer ce message ?')) return;
 
-  findTag(msg: Message): ConversationProductTag | undefined {
-    const productId = msg.metadata?.product_id;
-    if (!productId) return undefined;
-    return this.selectedConv()?.product_tags?.find(t => t.product_id === productId);
-  }
+  this.chat.deleteMessage(conv.id, msg.id).subscribe({
+    error: () => this.notify.error('Impossible de supprimer ce message.'),
+  });
+}
 
-  isTagUpdating(tagId: string): boolean {
-    return !!this.tagUpdating()[tagId];
-  }
+selectionMode = signal(false);
+selectedConvIds = signal<Set<string>>(new Set());
 
-  toggleBlur(msg: Message) {
-    const tag = this.findTag(msg);
-    const conv = this.selectedConv();
-    if (!tag || !conv || this.isTagUpdating(tag.id)) return;
-    this.setTagUpdating(tag.id, true);
-    this.chat.updateTag(conv.id, tag.id, { is_blurred: !tag.is_blurred }).subscribe({
-      next: () => {
-        this.selectedConv.set(this.chat.currentConversation());
-        this.setTagUpdating(tag.id, false);
-      },
-      error: () => {
-        this.notify.error("Action reservee au vendeur de la conversation.");
-        this.setTagUpdating(tag.id, false);
-      },
-    });
-  }
+toggleSelectionMode() {
+  this.selectionMode.update(v => !v);
+  if (!this.selectionMode()) this.selectedConvIds.set(new Set());
+}
 
-  togglePublish(msg: Message) {
-    const tag = this.findTag(msg);
-    const conv = this.selectedConv();
-    if (!tag || !conv || this.isTagUpdating(tag.id)) return;
-    const wasPublished = tag.published_to_directory;
-    this.setTagUpdating(tag.id, true);
-    this.chat.updateTag(conv.id, tag.id, { published_to_directory: !wasPublished }).subscribe({
-      next: () => {
-        this.selectedConv.set(this.chat.currentConversation());
-        this.notify.success(wasPublished ? 'Retire du repertoire.' : 'Publie au repertoire.');
-        this.setTagUpdating(tag.id, false);
-      },
-      error: () => {
-        this.notify.error("Action reservee au vendeur de la conversation.");
-        this.setTagUpdating(tag.id, false);
-      },
-    });
-  }
+toggleConvSelection(convId: string, event: Event) {
+  event.stopPropagation();
+  this.selectedConvIds.update(set => {
+    const next = new Set(set);
+    if (next.has(convId)) next.delete(convId); else next.add(convId);
+    return next;
+  });
+}
 
-  private setTagUpdating(tagId: string, val: boolean) {
-    this.tagUpdating.update(m => ({ ...m, [tagId]: val }));
-  }
+deleteSelectedConversations() {
+  const ids = Array.from(this.selectedConvIds());
+  if (ids.length === 0) return;
+  if (!confirm(`Supprimer ${ids.length} conversation(s) ?`)) return;
+
+  this.chat.bulkDeleteConversations(ids).subscribe({
+    next: () => {
+      if (ids.includes(this.selectedConv()?.id || '')) this.selectedConv.set(null);
+      this.selectedConvIds.set(new Set());
+      this.selectionMode.set(false);
+    },
+    error: () => this.notify.error('Impossible de supprimer ces conversations.'),
+  });
+}
 }

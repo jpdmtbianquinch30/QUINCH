@@ -11,15 +11,7 @@ class ConversationProductTag extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-        protected $fillable = ['conversation_id', 'product_id', 'tagged_by', 'transaction_id', 'is_blurred', 'published_to_directory'];
-
-    protected function casts(): array
-    {
-        return [
-            'is_blurred' => 'boolean',
-            'published_to_directory' => 'boolean',
-        ];
-    }
+    protected $fillable = ['conversation_id', 'product_id', 'tagged_by', 'transaction_id'];
 
     public function conversation() { return $this->belongsTo(Conversation::class); }
     public function product() { return $this->belongsTo(Product::class); }

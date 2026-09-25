@@ -104,6 +104,76 @@ button {
     var(--q-bg);
 }
 
+.message {
+  position: relative;
+
+  &:hover .msg-delete-btn {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.msg-delete-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(20, 24, 34, .9);
+  border: 1px solid var(--q-border);
+  color: var(--q-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+  cursor: pointer;
+
+  .material-icons { font-size: 14px; }
+
+  &:hover { color: #ff5c5c; }
+}
+
+.conv-header-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.conv-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(99, 102, 241, .12);
+  border-bottom: 1px solid var(--q-border);
+  font-size: 13px;
+}
+
+.conv-selection-delete {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #ff5c5c;
+  font-size: 13px;
+  cursor: pointer;
+  .material-icons { font-size: 16px; }
+}
+
+.conv-select-checkbox {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.chat-messages.messages-hidden {
+  visibility: hidden;
+}
+
 
 /* =========================================================
    GRAND CERCLE LUMINEUX / BACKGROUND FLOU
@@ -233,15 +303,6 @@ button {
     ),
     url('/assets/backchat.png') center / cover no-repeat;
 
-  @media (min-width: 900px) {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(12, 18, 32, .93),
-        rgba(9, 14, 26, .96)
-      ),
-      url('/assets/backchat.png') center top / 420px auto repeat-y;
-  }
 
   border-right: 1px solid var(--q-border);
 
@@ -1644,6 +1705,14 @@ button {
   width: min(380px, 78vw);
 }
 
+  .tag-message-text {
+    margin: 0 0 10px;
+    padding: 0 2px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--q-text);
+  }
+
 .tag-product-card {
   position: relative;
 
@@ -1765,73 +1834,6 @@ button {
   color: #7884a0;
   font-style: italic;
 }
-
-// Miniature floutée côté acheteur (produit publié au répertoire sans révéler le visuel) ;
-// le badge le rappelle explicitement pour ne pas laisser croire à un bug d'image.
-.tag-product-img.is-blurred {
-  filter: blur(9px);
-}
-
-.tag-blurred-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 50px;
-  background: rgba(0,0,0,.6);
-  backdrop-filter: blur(4px);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  .material-icons { font-size: 12px; }
-}
-
-// Actions vendeur : visibles uniquement pour le vendeur de la conversation
-// (verifie côté back par updateTag — abort(403) sinon), sur chaque carte
-// produit taguée.
-.tag-seller-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.tag-action-btn {
-  flex: 1;
-  min-width: 0;
-  height: 33px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 6px;
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 10px;
-  color: #9aa5c4;
-  background: rgba(255,255,255,.04);
-  font-size: 9.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition: all .15s;
-
-  .material-icons { font-size: 15px; flex-shrink: 0; }
-
-  &:hover:not(:disabled) { background: rgba(255,255,255,.08); color: #c5cde3; }
-  &:disabled { opacity: .5; cursor: default; }
-
-  &.active {
-    border-color: rgba(97, 120, 255, .35);
-    color: #a2adff;
-    background: rgba(97, 120, 255, .12);
-  }
-}
-
 
 /* =========================================================
    DEVIS

@@ -4,10 +4,27 @@
     <div class="conv-list">
       <div class="conv-header">
         <h2>Messages</h2>
-        <button class="header-action" (click)="onNewConversation()" title="Nouvelle conversation">
-          <span class="material-icons">edit_note</span>
-        </button>
+        <div class="conv-header-actions">
+          @if (selectionMode()) {
+            <button class="header-action" (click)="toggleSelectionMode()" title="Annuler">
+              <span class="material-icons">close</span>
+            </button>
+          } @else {
+            <button class="header-action" (click)="toggleSelectionMode()" title="Sélectionner">
+              <span class="material-icons">checklist</span>
+            </button>
+          }
+        </div>
       </div>
+
+      @if (selectionMode() && selectedConvIds().size > 0) {
+        <div class="conv-selection-bar">
+          <span>{{ selectedConvIds().size }} sélectionnée(s)</span>
+          <button class="conv-selection-delete" (click)="deleteSelectedConversations()">
+            <span class="material-icons">delete</span> Supprimer
+          </button>
+        </div>
+      }
 
       <div class="conv-search">
         <span class="material-icons">search</span>
@@ -47,8 +64,11 @@
               class="conv-item"
               [class.active]="selectedConv()?.id === conv.id"
               [class.has-unread]="conv.unread_count > 0"
-              (click)="selectConversation(conv)"
+              (click)="selectionMode() ? toggleConvSelection(conv.id, $event) : selectConversation(conv)"
             >
+              @if (selectionMode()) {
+                <input type="checkbox" class="conv-select-checkbox" [checked]="selectedConvIds().has(conv.id)" (click)="toggleConvSelection(conv.id, $event)" />
+              }
               <div class="conv-avatar">
                 @if (conv.other_user.avatar_url) {
                   <img [src]="conv.other_user.avatar_url" alt="" class="conv-avatar-img" />
@@ -156,7 +176,7 @@
         </div>
 
         <!-- Messages -->
-        <div class="chat-messages" #messagesContainer>
+        <div class="chat-messages" #messagesContainer [class.messages-hidden]="!messagesReady()">
           <!-- Product/Service Context Card -->
           @if (selectedConv()?.product) {
             <div class="product-context-card">
@@ -189,6 +209,11 @@
             } @else if (msg.type === 'audio') {
               <!-- Audio / Voice Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                                @if (isMe(msg)) {
+                  <button class="msg-delete-btn" (click)="deleteMessage(msg)" title="Supprimer">
+                    <span class="material-icons">delete</span>
+                  </button>
+                }
                 <div class="message-bubble audio-bubble">
                   <div class="audio-player">
                     <button class="audio-play-btn" (click)="toggleAudioPlay(msg)">
@@ -231,9 +256,15 @@
             } @else if (isImageMessage(msg)) {
               <!-- Image Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                                @if (isMe(msg)) {
+                  <button class="msg-delete-btn" (click)="deleteMessage(msg)" title="Supprimer">
+                    <span class="material-icons">delete</span>
+                  </button>
+                }
+
                 <div class="message-bubble image-bubble">
                   <button class="msg-image-wrap" (click)="openLightbox(getFileUrl(msg)!, $event)">
-  <img [src]="getFileUrl(msg)" alt="Image" class="msg-image" loading="lazy" />
+  <img [src]="getFileUrl(msg)" alt="Image" class="msg-image" (load)="onMediaLoaded()" />
 </button>
                   <div class="message-footer">
                     <span class="message-time">{{ formatTime(msg.created_at) }}</span>
@@ -256,8 +287,13 @@
             } @else if (isVideoMessage(msg)) {
   <!-- Video Message -->
   <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                    @if (isMe(msg)) {
+                  <button class="msg-delete-btn" (click)="deleteMessage(msg)" title="Supprimer">
+                    <span class="material-icons">delete</span>
+                  </button>
+                }
     <div class="message-bubble video-bubble">
-      <video class="msg-video" [src]="getFileUrl(msg)" controls preload="metadata"></video>
+      <video class="msg-video" [src]="getFileUrl(msg)" controls preload="metadata" (loadedmetadata)="onMediaLoaded()"></video>
       <div class="message-footer">
         <span class="message-time">{{ formatTime(msg.created_at) }}</span>
         @if (isMe(msg)) {
@@ -271,6 +307,11 @@
 } @else if (isFileMessage(msg)) {
               <!-- File Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                                @if (isMe(msg)) {
+                  <button class="msg-delete-btn" (click)="deleteMessage(msg)" title="Supprimer">
+                    <span class="material-icons">delete</span>
+                  </button>
+                }
                 <div class="message-bubble file-bubble">
                   <a [href]="getFileUrl(msg)" target="_blank" class="msg-file-wrap" download>
                     <div class="msg-file-icon">
@@ -298,15 +339,22 @@
             } @else if (msg.type === 'product_tag') {
   <!-- Tagged Product -->
   <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                    @if (isMe(msg)) {
+                  <button class="msg-delete-btn" (click)="deleteMessage(msg)" title="Supprimer">
+                    <span class="material-icons">delete</span>
+                  </button>
+                }
     <div class="message-bubble product-tag-bubble">
-      <div class="tag-product-card">
-        <div class="tag-product-blur-bg" [style.background-image]="'url(' + msg.metadata?.product_image + ')'"></div>
-        <img [src]="msg.metadata?.product_image" alt="" class="tag-product-img" [class.is-blurred]="findTag(msg)?.is_blurred" />
-        @if (findTag(msg)?.is_blurred) {
-          <span class="tag-blurred-badge"><span class="material-icons">visibility_off</span> Flouté</span>
+              @if (msg.body) {
+          <p class="tag-message-text">{{ msg.body }}</p>
         }
+        <div class="tag-product-card">
+        <div class="tag-product-blur-bg" [style.background-image]="'url(' + msg.metadata?.product_image + ')'"></div>
+        <img [src]="msg.metadata?.product_image" alt="" class="tag-product-img" />
         <div class="tag-product-info">
-          <span class="tag-product-label">Produit commandé</span>
+          <span class="tag-product-label">
+            {{ msg.metadata?.transaction_id ? 'Produit commandé' : (msg.metadata?.product_type === 'service' ? 'Service' : 'Produit') }}
+          </span>
           <span class="tag-product-title">{{ msg.metadata?.product_title }}</span>
           @if (msg.metadata?.product_price) {
             <span class="tag-product-price">{{ msg.metadata?.product_price | number:'1.0-0':'fr-FR' }} F CFA</span>
@@ -316,31 +364,11 @@
         </div>
       </div>
       <a class="tag-product-btn" [routerLink]="['/product', msg.metadata?.product_slug]">
-        <span class="material-icons">visibility</span> Voir les détails du produit
-      </a>
+  <span class="material-icons">visibility</span>
+  {{ msg.metadata?.product_type === 'service' ? 'Voir le service' : 'Voir le produit' }}
+</a>
 
-      @if (isSeller() && findTag(msg); as tag) {
-        <div class="tag-seller-actions">
-          <button
-            class="tag-action-btn"
-            [class.active]="tag.is_blurred"
-            [disabled]="isTagUpdating(tag.id)"
-            (click)="toggleBlur(msg)"
-          >
-            <span class="material-icons">{{ tag.is_blurred ? 'visibility_off' : 'visibility' }}</span>
-            {{ tag.is_blurred ? 'Ne plus flouter' : 'Flouter' }}
-          </button>
-          <button
-            class="tag-action-btn"
-            [class.active]="tag.published_to_directory"
-            [disabled]="isTagUpdating(tag.id)"
-            (click)="togglePublish(msg)"
-          >
-            <span class="material-icons">{{ tag.published_to_directory ? 'unpublished' : 'storefront' }}</span>
-            {{ tag.published_to_directory ? 'Retirer du répertoire' : 'Publier au répertoire' }}
-          </button>
-        </div>
-      }
+
 
       <div class="message-footer">
         <span class="message-time">{{ formatTime(msg.created_at) }}</span>
@@ -355,6 +383,11 @@
             } @else {
               <!-- Text Message -->
               <div class="message" [class.mine]="isMe(msg)" [class.theirs]="!isMe(msg)">
+                                @if (isMe(msg)) {
+                  <button class="msg-delete-btn" (click)="deleteMessage(msg)" title="Supprimer">
+                    <span class="material-icons">delete</span>
+                  </button>
+                }
                 <div class="message-bubble" [class.quote-bubble]="isQuoteMessage(msg)">
                   @if (isQuoteMessage(msg)) {
                     <div class="quote-tag">

@@ -86,24 +86,47 @@ class ConversationController extends Controller
 }
 
         $message = null;
-        if (!empty($validated['message'])) {
-            $message = Message::create([
-                'conversation_id' => $conversation->id,
-                'sender_id' => $userId,
-                'body' => $validated['message'],
-                'type' => 'text',
-            ]);
+if (!empty($validated['message'])) {
+    $type = 'text';
+    $metadata = null;
 
-            $conversation->update(['last_message_at' => now()]);
+    if (!empty($validated['product_id'])) {
+        $product = Product::find($validated['product_id']);
+        if ($product) {
+            // Cree/retrouve le tag silencieux (unique par produit, voir
+            // ConversationProductTag), mais sans poster de message a part :
+            // le message de contact ci-dessous PORTE le tag directement.
+            app(ConversationTaggingService::class)->tagProduct($conversation, $product, $userId, null, postMessage: false);
 
-            // Notify seller via NotificationService
-            $this->notif->notifyMessage(
-                $validated['seller_id'],
-                $request->user(),
-                $conversation->id,
-                $validated['message']
-            );
+            $type = 'product_tag';
+            $metadata = [
+                'product_id' => $product->id,
+                'product_slug' => $product->slug,
+                'product_title' => $product->title,
+                'product_price' => $product->price,
+                'product_type' => $product->type ?? 'product',
+                'product_image' => $product->poster_full_url ?? ($product->images[0] ?? null),
+            ];
         }
+    }
+
+    $message = Message::create([
+        'conversation_id' => $conversation->id,
+        'sender_id' => $userId,
+        'body' => $validated['message'],
+        'type' => $type,
+        'metadata' => $metadata,
+    ]);
+
+    $conversation->update(['last_message_at' => now()]);
+
+    $this->notif->notifyMessage(
+        $validated['seller_id'],
+        $request->user(),
+        $conversation->id,
+        $validated['message']
+    );
+}
 
         return response()->json([
             'conversation' => $conversation->load('buyer', 'seller', 'product', 'messages'),
@@ -121,7 +144,14 @@ class ConversationController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true, 'read_at' => now()]);
 
-        $conversation->load(['buyer', 'seller', 'product', 'messages.sender', 'productTags.product', 'productTags.taggedBy']);
+        $conversation->load(['buyer', 'seller', 'product', 'productTags.product', 'productTags.taggedBy']);
+        $conversation->setRelation('messages', $conversation->messages()
+            ->with('sender')
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get()
+            ->sortBy('created_at')
+            ->values());
         // index() calcule deja other_user ; show() ne le faisait pas, ce qui
         // laissait le nom/avatar/statut du contact vide des qu'on ouvrait une
         // conversation precise (visible uniquement dans la liste avant).
@@ -132,6 +162,35 @@ class ConversationController extends Controller
         ]);
     }
 
+        public function newMessages(Request $request, Conversation $conversation): JsonResponse
+    {
+        $userId = $request->user()->id;
+        if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
+
+        $after = $request->query('after');
+
+        $query = $conversation->messages()->with('sender');
+        if ($after) {
+            $query->where('created_at', '>', $after);
+        } else {
+            $query->orderByDesc('created_at')->limit(50);
+        }
+        $messages = $query->orderBy('created_at')->get();
+
+        $conversation->messages()
+            ->where('sender_id', '!=', $userId)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+
+        $conversation->load(['buyer', 'seller']);
+        $otherUser = $conversation->buyer_id === $userId ? $conversation->seller : $conversation->buyer;
+
+        return response()->json([
+            'messages' => $messages,
+            'other_user' => $otherUser,
+        ]);
+    }
+    
     public function sendMessage(Request $request, Conversation $conversation): JsonResponse
     {
         $userId = $request->user()->id;
@@ -158,6 +217,43 @@ class ConversationController extends Controller
 
         return response()->json(['message' => $message->load('sender')]);
     }
+
+    public function deleteMessage(Request $request, Conversation $conversation, Message $message): JsonResponse
+{
+    $userId = $request->user()->id;
+    if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) abort(403);
+    if ($message->conversation_id !== $conversation->id) abort(404);
+    if ($message->sender_id !== $userId) {
+        return response()->json(['message' => 'Vous ne pouvez supprimer que vos propres messages.'], 403);
+    }
+
+    $message->delete();
+
+    return response()->json(['message' => 'Message supprime.']);
+}
+
+public function bulkDestroy(Request $request): JsonResponse
+{
+    $userId = $request->user()->id;
+
+    $validated = $request->validate([
+        'conversation_ids' => ['required', 'array', 'min:1'],
+        'conversation_ids.*' => ['uuid'],
+    ]);
+
+    $conversations = Conversation::whereIn('id', $validated['conversation_ids'])
+        ->where(function ($q) use ($userId) {
+            $q->where('buyer_id', $userId)->orWhere('seller_id', $userId);
+        })
+        ->get();
+
+    foreach ($conversations as $conversation) {
+        $conversation->messages()->delete();
+        $conversation->delete();
+    }
+
+    return response()->json(['deleted' => $conversations->pluck('id')]);
+}
 
 public function sendFile(Request $request, Conversation $conversation): JsonResponse
 {
@@ -295,21 +391,6 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
         return response()->json(['tag' => $tag->load('product', 'taggedBy')], 201);
     }
 
-    public function updateTag(Request $request, Conversation $conversation, ConversationProductTag $tag): JsonResponse
-    {
-        $userId = $request->user()->id;
-        if ($conversation->seller_id !== $userId) abort(403);
-        if ($tag->conversation_id !== $conversation->id) abort(404);
-
-        $validated = $request->validate([
-            'is_blurred' => ['sometimes', 'boolean'],
-            'published_to_directory' => ['sometimes', 'boolean'],
-        ]);
-
-        $tag = app(ConversationTaggingService::class)->updateTag($tag, $validated);
-
-        return response()->json(['tag' => $tag->load('product', 'taggedBy')]);
-    }
 
     public function destroy(Request $request, Conversation $conversation): JsonResponse
     {

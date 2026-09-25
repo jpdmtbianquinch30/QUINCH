@@ -172,13 +172,15 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
     Route::prefix('conversations')->group(function () {
         Route::get('/', [ConversationController::class, 'index']);
         Route::post('start', [ConversationController::class, 'start']);
+        Route::post('bulk-delete', [ConversationController::class, 'bulkDestroy']);
         Route::get('{conversation}', [ConversationController::class, 'show']);
+        Route::get('{conversation}/messages/since', [ConversationController::class, 'newMessages']);
         Route::post('{conversation}/messages', [ConversationController::class, 'sendMessage']);
         Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio'])->middleware('feature:chat_audio');
         Route::post('{conversation}/file', [ConversationController::class, 'sendFile']);
         Route::post('{conversation}/tags', [ConversationController::class, 'tagProduct']);
-        Route::patch('{conversation}/tags/{tag}', [ConversationController::class, 'updateTag']);
-        Route::delete('{conversation}', [ConversationController::class, 'destroy']);
+         Route::delete('{conversation}', [ConversationController::class, 'destroy']);
+         Route::delete('{conversation}/messages/{message}', [ConversationController::class, 'deleteMessage']);
     });
 
     // Favorites
