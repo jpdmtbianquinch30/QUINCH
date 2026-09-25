@@ -24,30 +24,13 @@
           <div class="error-message">{{ error() }}</div>
         }
 
-        <form (ngSubmit)="login()">
-          <div class="form-group">
-            <label>Numero de telephone</label>
-            <div class="input-with-prefix">
-              <span class="prefix">+221</span>
-              <input type="tel" class="q-input" [(ngModel)]="phoneNumber" name="phone" placeholder="77 123 45 67" maxlength="15" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Mot de passe</label>
-            <input type="password" class="q-input" [(ngModel)]="password" name="password" placeholder="Votre mot de passe" />
-          </div>
-
-          <button type="submit" class="q-btn q-btn-primary q-btn-full q-btn-lg" [disabled]="loading()">
-            @if (loading()) {
-              <span class="spinner"></span> Connexion...
-            } @else {
-              Se connecter
-            }
-          </button>
-        </form>
-
         @if (needsPhone()) {
+          <!-- 1ère connexion Google : on ne montre plus que ce qu'il faut
+               pour terminer CETTE étape (numéro de téléphone). Le
+               formulaire mot de passe, le séparateur "ou", le bouton
+               Google et les liens création de compte / mot de passe
+               oublié n'ont plus lieu d'être ici et rendaient l'écran
+               confus. -->
           <div class="google-phone-step">
             <p class="step-hint">
               Dernière étape : votre numéro de téléphone sénégalais, pour
@@ -70,20 +53,45 @@
               }
             </button>
           </div>
-        } @else if (googleAvailable()) {
-          <div class="auth-separator"><span>ou</span></div>
-          <div class="google-btn-wrapper" #googleBtn></div>
+        } @else {
+          <form (ngSubmit)="login()">
+            <div class="form-group">
+              <label>Numero de telephone</label>
+              <div class="input-with-prefix">
+                <span class="prefix">+221</span>
+                <input type="tel" class="q-input" [(ngModel)]="phoneNumber" name="phone" placeholder="77 123 45 67" maxlength="15" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Mot de passe</label>
+              <input type="password" class="q-input" [(ngModel)]="password" name="password" placeholder="Votre mot de passe" />
+            </div>
+
+            <button type="submit" class="q-btn q-btn-primary q-btn-full q-btn-lg" [disabled]="loading()">
+              @if (loading()) {
+                <span class="spinner"></span> Connexion...
+              } @else {
+                Se connecter
+              }
+            </button>
+          </form>
+
+          @if (googleAvailable()) {
+            <div class="auth-separator"><span>ou</span></div>
+            <div class="google-btn-wrapper" #googleBtn></div>
+          }
+
+          <div class="demo-box">
+            <span class="material-icons">info</span>
+          </div>
+
+          <div class="auth-footer">
+            <p>Pas encore de compte ?</p>
+            <a routerLink="/auth/register" class="q-btn q-btn-secondary q-btn-full">Creer un compte</a>
+            <a routerLink="/auth/forgot-password" class="forgot-link">Mot de passe oublié ?</a>
+          </div>
         }
-
-        <div class="demo-box">
-          <span class="material-icons">info</span>
-        </div>
-
-        <div class="auth-footer">
-          <p>Pas encore de compte ?</p>
-          <a routerLink="/auth/register" class="q-btn q-btn-secondary q-btn-full">Creer un compte</a>
-          <a routerLink="/auth/forgot-password" class="forgot-link">Mot de passe oublié ?</a>
-        </div>
       </div>
     </div>
   </div>

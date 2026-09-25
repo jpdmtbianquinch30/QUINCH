@@ -231,8 +231,12 @@ export class EditProfileComponent implements OnInit {
   }
 
   cancel(): void {
+    if (window.history.length > 1) {
     this.location.back();
+  } else {
+    this.router.navigate(['/profile']); 
   }
+}
 
     openPhoneChange(): void {
     this.showPhoneChangeModal.set(true);

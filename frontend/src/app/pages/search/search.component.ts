@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product.service';
 import { OnInit } from '@angular/core';
@@ -26,6 +26,7 @@ export class SearchComponent {
   private debounceHandle: any;
   private api = inject(ApiService);
 private auth = inject(AuthService);
+private location = inject(Location);
 
 defaultProducts = signal<any[]>([]);
 defaultSellers = signal<any[]>([]);
@@ -82,6 +83,10 @@ private loadDefaultSuggestions() {
   }
 
   goBack() {
-    this.router.navigate(['/feed']);
+  if (window.history.length > 1) {
+    this.location.back();
+  } else {
+    this.router.navigate(['/feed']); // '/profile' pour edit-profile
   }
+}
 }

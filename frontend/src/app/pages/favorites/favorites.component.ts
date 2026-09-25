@@ -18,12 +18,10 @@ export class FavoritesComponent implements OnInit {
   private notify = inject(NotificationService);
 
   loading = signal(false);
-  activeTab = signal<'all' | 'collections'>('all');
 
   ngOnInit() {
     this.loading.set(true);
     this.favService.getFavorites().subscribe({ complete: () => this.loading.set(false) });
-    this.favService.getCollections().subscribe();
   }
 
   removeFavorite(item: FavoriteItem) {
@@ -40,5 +38,25 @@ export class FavoritesComponent implements OnInit {
       next: () => this.notify.success('Ajouté au panier!'),
       error: () => this.notify.error('Erreur lors de l\'ajout au panier'),
     });
+  }
+
+  // ─── Media Helper ────────────────────────────────────────
+  // Avant : ne regardait que product.video.thumbnail, donc tout produit
+  // sans vidéo (l'immense majorité des annonces, en photos) retombait sur
+  // le placeholder "image" gris au lieu de sa vraie photo. Même ordre de
+  // priorité que marketplace.component.ts::getThumb() pour rester cohérent
+  // avec le reste de l'app.
+  getThumb(product: any): string | null {
+    if (!product) return null;
+    if (product.poster) return product.poster;
+    if (product.poster_full_url) return product.poster_full_url;
+    const v = product.video;
+    if (v) {
+      if (v.thumbnail) return v.thumbnail;
+      if (v.thumbnail_url) return v.thumbnail_url;
+    }
+    if (product.images?.length) return product.images[0];
+    if (product.image) return product.image;
+    return null;
   }
 }

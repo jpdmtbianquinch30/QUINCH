@@ -338,5 +338,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  goBack() { this.location.back(); }
+  goBack() {
+  if (window.history.length > 1) {
+    this.location.back();
+  } else {
+    this.router.navigate(['/feed']); // '/profile' pour edit-profile
+  }
+}
 }

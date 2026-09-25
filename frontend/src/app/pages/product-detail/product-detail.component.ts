@@ -200,8 +200,12 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
 
   // ─── Navigation ────────────────────────────────────────
   goBack() {
+  if (window.history.length > 1) {
     this.location.back();
+  } else {
+    this.router.navigate(['/feed']);
   }
+}
 
   // ─── Like ──────────────────────────────────────────────
   toggleLike() {

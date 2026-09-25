@@ -122,8 +122,12 @@ export class SettingsComponent implements OnInit {
   }
 
   goBack() {
+  if (window.history.length > 1) {
     this.location.back();
+  } else {
+    this.router.navigate(['/feed']); 
   }
+}
 
   // ─── Account ─────────────────────
   changePassword() {

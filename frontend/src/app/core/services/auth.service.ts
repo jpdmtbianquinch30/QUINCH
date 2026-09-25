@@ -1,6 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
+import { HttpErrorResponse } from '@angular/common/http';
 import { User, AuthResponse, LoginRequest, RegisterRequest, ResendOtpResponse, VerifyOtpRequest } from '../models/user.model';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -132,14 +133,16 @@ export class AuthService {
   }
 
   getMe(): Observable<{ user: User }> {
-    return this.api.get<{ user: User }>('auth/me').pipe(
-      tap(res => this.currentUser.set(res.user)),
-      catchError(() => {
+  return this.api.get<{ user: User }>('auth/me').pipe(
+    tap(res => this.currentUser.set(res.user)),
+    catchError((err: HttpErrorResponse) => {
+      if (err.status === 401 || err.status === 419) {
         this.clearAuth();
-        return of({ user: null as any });
-      })
-    );
-  }
+      }
+      return of({ user: null as any });
+    })
+  );
+}
 
   getToken(): string | null {
     return this.token();
