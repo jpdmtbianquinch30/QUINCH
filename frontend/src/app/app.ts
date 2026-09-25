@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, OnDestroy, signal, effect } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { CartService } from './core/services/cart.service';
@@ -16,7 +16,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnInit {
+export class App implements OnInit, OnDestroy {
   auth = inject(AuthService);
   cart = inject(CartService);
   notif = inject(NotificationService);
@@ -24,6 +24,22 @@ export class App implements OnInit {
   fav = inject(FavoriteService);
   theme = inject(ThemeService);
   private router = inject(Router);
+  private countsInterval: any = null;
+
+  constructor() {
+    // Reagit a la connexion/deconnexion — pas seulement au chargement initial.
+    // Avant ce fix, se connecter sans recharger la page (SPA, ce qui est le cas
+    // normal) laissait panier/notifs/messages a 0 jusqu'au prochain F5, et rien
+    // ne rafraichissait plus ces compteurs ensuite tant qu'on restait sur l'app.
+    effect(() => {
+      if (this.auth.isAuthenticated()) {
+        this.refreshCounts();
+        this.startCountsPolling();
+      } else {
+        this.stopCountsPolling();
+      }
+    });
+  }
 
   private currentUrl = toSignal(
     this.router.events.pipe(
@@ -71,14 +87,6 @@ export class App implements OnInit {
   }
 
     ngOnInit() {
-    // Load all counts immediately when authenticated
-    if (this.auth.isAuthenticated()) {
-      this.cart.getCount().subscribe();
-      this.notif.getUnreadCount().subscribe();
-      this.chat.getConversations().subscribe();
-      this.fav.getCount().subscribe();
-    }
-
     // Referme le tiroir mobile à chaque changement de route
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
       this.mobileMenuOpen.set(false);
@@ -88,5 +96,33 @@ export class App implements OnInit {
     window.addEventListener('quinch:welcome', ((event: CustomEvent) => {
       this.notif.info(event.detail);
     }) as EventListener);
+  }
+
+  ngOnDestroy() {
+    this.stopCountsPolling();
+  }
+
+  /** Panier, notifications non lues, conversations (→ chat.unreadTotal). Favoris inclus pour cohérence. */
+  private refreshCounts() {
+    this.cart.getCount().subscribe();
+    this.notif.getUnreadCount().subscribe();
+    this.chat.getConversations().subscribe();
+    this.fav.getCount().subscribe();
+  }
+
+  private startCountsPolling() {
+    if (this.countsInterval) return; // deja actif, evite le doublon
+    this.countsInterval = setInterval(() => {
+      // Inutile d'interroger le serveur si l'onglet est en arriere-plan.
+      if (document.visibilityState === 'hidden') return;
+      this.refreshCounts();
+    }, 25000);
+  }
+
+  private stopCountsPolling() {
+    if (this.countsInterval) {
+      clearInterval(this.countsInterval);
+      this.countsInterval = null;
+    }
   }
 }

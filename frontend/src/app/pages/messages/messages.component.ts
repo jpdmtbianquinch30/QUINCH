@@ -120,6 +120,11 @@ this.listPollInterval = setInterval(() => {
   }
 
   ngOnDestroy() {
+    // Sans ce clearInterval, les 2 timers de polling (8s / 20s) continuent de
+    // tourner indefiniment apres avoir quitte la page, et s'additionnent a
+    // chaque nouvelle visite de /messages (fuite + appels API en double).
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    if (this.listPollInterval) clearInterval(this.listPollInterval);
     this.stopRecording(true);
     // Clean up audio elements
     this.audioElements.forEach(audio => {
