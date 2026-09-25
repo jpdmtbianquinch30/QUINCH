@@ -121,8 +121,14 @@ class ConversationController extends Controller
             ->where('is_read', false)
             ->update(['is_read' => true, 'read_at' => now()]);
 
+        $conversation->load(['buyer', 'seller', 'product', 'messages.sender', 'productTags.product', 'productTags.taggedBy']);
+        // index() calcule deja other_user ; show() ne le faisait pas, ce qui
+        // laissait le nom/avatar/statut du contact vide des qu'on ouvrait une
+        // conversation precise (visible uniquement dans la liste avant).
+        $conversation->other_user = $conversation->buyer_id === $userId ? $conversation->seller : $conversation->buyer;
+
         return response()->json([
-            'conversation' => $conversation->load(['buyer', 'seller', 'product', 'messages.sender', 'productTags.product', 'productTags.taggedBy']),
+            'conversation' => $conversation,
         ]);
     }
 

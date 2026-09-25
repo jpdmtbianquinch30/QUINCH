@@ -219,6 +219,12 @@ button {
   display: flex;
   flex-direction: column;
 
+  // backchat.png est une image portrait (format mobile, 1024x1536). En
+  // "cover" sur une sidebar fixe (330px de large, souvent bien plus haute
+  // que large sur grand ecran), le motif se retrouve tres recadre sur les
+  // cotes. Sur desktop on passe donc en "contain" + repeat vertical : le
+  // motif du fond (anneau lumineux + icones) se repete proprement sans
+  // etre deforme ni coupe, au lieu d'etre agrandi/rogne comme sur mobile.
   background:
     linear-gradient(
       180deg,
@@ -226,6 +232,16 @@ button {
       rgba(9, 14, 26, .94)
     ),
     url('/assets/backchat.png') center / cover no-repeat;
+
+  @media (min-width: 900px) {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(12, 18, 32, .93),
+        rgba(9, 14, 26, .96)
+      ),
+      url('/assets/backchat.png') center top / 420px auto repeat-y;
+  }
 
   border-right: 1px solid var(--q-border);
 
