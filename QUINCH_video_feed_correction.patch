@@ -1,0 +1,231 @@
+--- a/frontend/src/app/pages/video-feed/video-feed.component.ts
++++ b/frontend/src/app/pages/video-feed/video-feed.component.ts
+@@ -27,7 +27,6 @@
+ })
+ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
+   @ViewChildren('videoPlayer') videoPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
+-  @ViewChildren('backdropPlayer') backdropPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
+   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
+   private productService = inject(ProductService);
+   private apiService = inject(ApiService);
+@@ -176,13 +175,11 @@
+   }
+ 
+   private stopAllVideos(): void {
+-    [this.videoPlayers, this.backdropPlayers].forEach(list => {
+-      list?.forEach(ref => {
+-        const el = ref.nativeElement;
+-        el.pause();
+-        el.removeAttribute('src');
+-        el.load();
+-      });
++    this.videoPlayers?.forEach(ref => {
++      const el = ref.nativeElement;
++      el.pause();
++      el.removeAttribute('src');
++      el.load();
+     });
+   }
+ 
+@@ -750,9 +747,7 @@
+     event.stopPropagation();
+     this.muted.update(m => !m);
+     const videoEl = this.videoPlayers?.first?.nativeElement;
+-    const backdropEl = this.backdropPlayers?.first?.nativeElement;
+     if (videoEl) videoEl.muted = this.muted();
+-    if (backdropEl) backdropEl.muted = this.muted();
+   }
+ 
+   toggleVideoPlayPause(event: Event): void {
+@@ -763,17 +758,10 @@
+       this.clickTimer = null;
+       const videoEl = this.videoPlayers?.first?.nativeElement;
+       if (!videoEl) return;
+-      // La vidéo de fond flouté (backdropPlayer) est une <video> distincte,
+-      // sans lien avec videoEl — avant, seule videoEl était mise en pause
+-      // ici, donc le fond continuait de jouer (et de faire du bruit s'il
+-      // n'était pas resté vraiment muet) même écran mis en pause.
+-      const backdropEl = this.backdropPlayers?.first?.nativeElement;
+       if (videoEl.paused) {
+         videoEl.play().then(() => this.videoPaused.set(false)).catch(() => {});
+-        backdropEl?.play().catch(() => {});
+       } else {
+         videoEl.pause();
+-        backdropEl?.pause();
+         this.videoPaused.set(true);
+       }
+     }, 250);
+--- a/frontend/src/app/pages/video-feed/video-feed.component.html
++++ b/frontend/src/app/pages/video-feed/video-feed.component.html
+@@ -216,15 +216,12 @@
+                 </div>
+               }
+ 
+-              <!-- ══ Fond flouté : comble les bandes vides quand le format de la
+-                   video/média ne remplit pas toute la carte, avec les couleurs
+-                   du média lui-même plutot qu'un fond neutre ══ -->
+-              @if (hasVideo(product) && currentIndex() === i) {
+-                <video class="media-backdrop" [src]="getVideoUrl(product)!" muted autoplay loop playsinline aria-hidden="true" tabindex="-1"></video>
+-              } @else if (getMediaUrl(product)) {
++              <!-- Fond visuel statique : aucune seconde vidéo n'est créée.
++                   Le poster/thumbnail sert uniquement à remplir les bandes
++                   éventuelles. Ainsi, une seule vidéo peut lire du son et la
++                   pause contrôle toujours exactement le lecteur principal. -->
++              @if (getMediaUrl(product) && currentIndex() === i) {
+                 <img [src]="getMediaUrl(product)" alt="" class="media-backdrop" aria-hidden="true" />
+-              }
+-              @if ((hasVideo(product) || getMediaUrl(product)) && currentIndex() === i) {
+                 <div class="media-backdrop-shade" aria-hidden="true"></div>
+               }
+ 
+--- a/frontend/src/app/pages/video-feed/video-feed.component.scss
++++ b/frontend/src/app/pages/video-feed/video-feed.component.scss
+@@ -286,12 +286,12 @@
+ // ─── Fond flouté (letterbox/pillarbox) ────────────────────────────
+ .media-backdrop {
+   position: absolute;
+-  inset: 0;
+-  width: 100%;
+-  height: 100%;
++  inset: -8%;
++  width: 116%;
++  height: 116%;
+   object-fit: cover;
+-  filter: blur(45px) saturate(1.3) brightness(0.55);
+-  transform: scale(1.2);
++  filter: blur(34px) saturate(1.15) brightness(0.42);
++  transform: scale(1.04);
+   z-index: 0;
+   pointer-events: none;
+   user-select: none;
+@@ -300,7 +300,7 @@
+ .media-backdrop-shade {
+   position: absolute;
+   inset: 0;
+-  background: rgba(0, 0, 0, 0.547);
++  background: linear-gradient(180deg, rgba(5, 6, 14, 0.12) 0%, rgba(5, 6, 14, 0.28) 52%, rgba(5, 6, 14, 0.58) 100%);
+   z-index: 0;
+   pointer-events: none;
+ }
+@@ -312,6 +312,7 @@
+   width: 100%;
+   height: 100%;
+   object-fit: contain;
++  object-position: center center;
+   background: transparent;
+   z-index: 1;
+   display: block;
+@@ -323,6 +324,7 @@
+   width: 100%;
+   height: 100%;
+   object-fit: contain;
++  object-position: center center;
+   background: transparent;
+   z-index: 1;
+ }
+@@ -467,20 +469,25 @@
+ // chevauchement, plutôt que de deviner un décalage en pixels.
+ .card-info {
+   position: absolute;
+-  bottom: 18px;
+-  left: 16px;
+-  right: 20px;
+-  z-index: 2;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  z-index: 3;
+   display: flex;
+   flex-direction: column;
+-  gap: 6px;
+-  padding: 10px 16px;
+-  border-radius: 20px;
+-  background: rgba(8, 8, 16, 0.4);
+-  backdrop-filter: blur(16px) saturate(1.4);
+-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+-  border: 1px solid rgba(255, 255, 255, 0.08);
+-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
++  gap: 7px;
++  padding: 58px 18px 18px;
++  border-radius: 0 0 $card-radius $card-radius;
++  background: linear-gradient(180deg,
++    rgba(6, 7, 14, 0) 0%,
++    rgba(6, 7, 14, 0.18) 14%,
++    rgba(6, 7, 14, 0.72) 42%,
++    rgba(6, 7, 14, 0.94) 100%
++  );
++  backdrop-filter: blur(10px);
++  -webkit-backdrop-filter: blur(10px);
++  border: 0;
++  box-shadow: none;
+ }
+ 
+ // Seller row
+@@ -559,7 +566,7 @@
+ // Title & description — tailles réduites, plus compact et lisible
+ .info-title {
+   color: white;
+-  font-size: 0.86rem;
++  font-size: 0.9rem;
+   font-weight: 600;
+   margin: 0;
+   display: -webkit-box;
+@@ -571,11 +578,11 @@
+ }
+ 
+ .info-desc {
+-  color: rgba(255,255,255,0.5);
+-  font-size: 0.74rem;
++  color: rgba(255,255,255,0.56);
++  font-size: 0.73rem;
+   margin: 0;
+   display: -webkit-box;
+-  -webkit-line-clamp: 2;
++  -webkit-line-clamp: 1;
+   -webkit-box-orient: vertical;
+   overflow: hidden;
+   line-height: 1.45;
+@@ -1534,9 +1541,11 @@
+   }
+ 
+   .card-info {
+-    left: 12px;
+-    right: 12px;
+-    bottom: 16px;
++    left: 0;
++    right: 0;
++    bottom: 0;
++    padding: 54px 14px 14px;
++    border-radius: 0;
+   }
+ 
+   .nav-arrow { display: none; }
+@@ -1687,9 +1696,14 @@
+   // ─── Card Info ──────────────────────────────────────────────────
+   // ─── Card Info / Side Actions — capsules en verre dépoli, version claire ──
+   .card-info {
+-    background: rgba(255, 255, 255, 0.65);
+-    border-color: rgba(0, 0, 0, 0.08);
+-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
++    background: linear-gradient(180deg,
++      rgba(245, 247, 250, 0) 0%,
++      rgba(245, 247, 250, 0.18) 14%,
++      rgba(245, 247, 250, 0.78) 42%,
++      rgba(245, 247, 250, 0.96) 100%
++    );
++    border-color: transparent;
++    box-shadow: none;
+   }
+ 
+   .seller-avatar-sm {
+@@ -2122,8 +2136,8 @@
+ // ─── Compression sur petits écrans / écrans courts ────────────────────────
+ @media (max-width: 768px) and (max-height: 700px) {
+   .card-info {
+-    padding: 8px 14px;
+-    gap: 6px;
++    padding: 46px 12px 12px;
++    gap: 5px;
+   }
+ 
+   .seller-avatar-sm { width: 26px; height: 26px; }

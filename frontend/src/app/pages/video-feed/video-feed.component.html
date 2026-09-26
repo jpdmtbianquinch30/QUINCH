@@ -216,17 +216,25 @@
                 </div>
               }
 
-              <!-- ══ Fond flouté : comble les bandes vides quand le format de la
-                   video/média ne remplit pas toute la carte, avec les couleurs
-                   du média lui-même plutot qu'un fond neutre ══ -->
-              @if (hasVideo(product) && currentIndex() === i) {
-                <video class="media-backdrop" [src]="getVideoUrl(product)!" muted autoplay loop playsinline aria-hidden="true" tabindex="-1"></video>
-              } @else if (getMediaUrl(product)) {
-                <img [src]="getMediaUrl(product)" alt="" class="media-backdrop" aria-hidden="true" />
-              }
-              @if ((hasVideo(product) || getMediaUrl(product)) && currentIndex() === i) {
-                <div class="media-backdrop-shade" aria-hidden="true"></div>
-              }
+              <!--Fond visuel statique :
+                            on n'utilise jamais une deuxième vidéo.
+                            L'image sert uniquement de fond flouté.
+                            Ainsi, une seule vidéo peut lire le son et gérer play/pause.
+                          -->
+                          @if (getMediaUrl(product) && currentIndex() === i) {
+                            <img
+                              [src]="getMediaUrl(product)"
+                              alt=""
+                              class="media-backdrop"
+                              aria-hidden="true"
+                            />
+
+                            <div
+                              class="media-backdrop-shade"
+                              aria-hidden="true">
+                            </div>
+                          }
+
 
               <!-- Video / Media : format d'origine toujours respecté (jamais recadré) -->
               @if (hasVideo(product) && currentIndex() === i) {

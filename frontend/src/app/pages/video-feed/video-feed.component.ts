@@ -27,7 +27,6 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 })
 export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChildren('videoPlayer') videoPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
-  @ViewChildren('backdropPlayer') backdropPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
   private productService = inject(ProductService);
   private apiService = inject(ApiService);
@@ -176,15 +175,13 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private stopAllVideos(): void {
-    [this.videoPlayers, this.backdropPlayers].forEach(list => {
-      list?.forEach(ref => {
-        const el = ref.nativeElement;
-        el.pause();
-        el.removeAttribute('src');
-        el.load();
-      });
-    });
-  }
+  this.videoPlayers?.forEach(ref => {
+    const el = ref.nativeElement;
+    el.pause();
+    el.removeAttribute('src');
+    el.load();
+  });
+}
 
     // ─── Retour vers le feed marketplace ──────────────────
   goBack(): void {
@@ -750,9 +747,7 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     event.stopPropagation();
     this.muted.update(m => !m);
     const videoEl = this.videoPlayers?.first?.nativeElement;
-    const backdropEl = this.backdropPlayers?.first?.nativeElement;
     if (videoEl) videoEl.muted = this.muted();
-    if (backdropEl) backdropEl.muted = this.muted();
   }
 
   toggleVideoPlayPause(event: Event): void {
@@ -762,20 +757,16 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     this.clickTimer = setTimeout(() => {
       this.clickTimer = null;
       const videoEl = this.videoPlayers?.first?.nativeElement;
-      if (!videoEl) return;
-      // La vidéo de fond flouté (backdropPlayer) est une <video> distincte,
-      // sans lien avec videoEl — avant, seule videoEl était mise en pause
-      // ici, donc le fond continuait de jouer (et de faire du bruit s'il
-      // n'était pas resté vraiment muet) même écran mis en pause.
-      const backdropEl = this.backdropPlayers?.first?.nativeElement;
-      if (videoEl.paused) {
-        videoEl.play().then(() => this.videoPaused.set(false)).catch(() => {});
-        backdropEl?.play().catch(() => {});
-      } else {
-        videoEl.pause();
-        backdropEl?.pause();
-        this.videoPaused.set(true);
-      }
+if (!videoEl) return;
+
+if (videoEl.paused) {
+  videoEl.play()
+    .then(() => this.videoPaused.set(false))
+    .catch(() => {});
+} else {
+  videoEl.pause();
+  this.videoPaused.set(true);
+}
     }, 250);
   }
 
