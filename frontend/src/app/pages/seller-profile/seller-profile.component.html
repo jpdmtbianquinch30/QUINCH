@@ -19,14 +19,7 @@
             @if (profile().user.kyc_status === 'verified') {
               <span class="sp-verified" title="Verifie"><span class="material-icons">verified</span></span>
             }
-            @if (profile().user.is_premium) {
-              <span class="material-icons premium-badge" title="Compte Premium">workspace_premium</span>
-            }
-            <span class="sp-online-dot" [class.online]="profile().user.is_online" [class.offline]="!profile().user.is_online" [title]="profile().user.is_online ? 'En ligne' : 'Hors ligne'"></span>
-            <span class="sp-status-line" [class.online]="profile().user.is_online">
-  <span class="sp-status-dot"></span>
-  {{ profile().user.is_online ? 'En ligne' : 'Hors ligne' }}
-</span>
+
 </div>
 
           <h1 class="sp-name">{{ profile().user.full_name }}</h1>
