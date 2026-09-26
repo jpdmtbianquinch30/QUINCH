@@ -14,6 +14,7 @@ export interface Product {
   view_count: number;
   like_count: number;
   share_count: number;
+  save_count?: number;
   is_liked?: boolean;
   is_saved?: boolean;
   video?: ProductVideo;
@@ -72,6 +73,7 @@ export interface SellerInfo {
   member_since?: string;
   is_following?: boolean;
   is_premium?: boolean;
+  review_count?: number;
   badges?: import('../services/badge.service').Badge[];
 }
 

@@ -98,7 +98,12 @@ class ProductFeedController extends Controller
                 }
 
         $products = $query->paginate($request->get('per_page', 10));
-        $sellerBadges = \App\Models\UserBadge::summaryForMany($products->pluck('user_id')->unique()->all());
+        $sellerIds = $products->pluck('user_id')->unique()->all();
+        $sellerBadges = \App\Models\UserBadge::summaryForMany($sellerIds);
+        $sellerReviewCounts = \App\Models\UserReview::whereIn('seller_id', $sellerIds)
+            ->selectRaw('seller_id, count(*) as cnt')
+            ->groupBy('seller_id')
+            ->pluck('cnt', 'seller_id');
 
         // Get liked/saved status for authenticated user
         $likedIds = [];
@@ -112,7 +117,7 @@ class ProductFeedController extends Controller
         }
 
         // Transform for feed display
-        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $followingIds, $authUser, $sellerBadges) {
+        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $followingIds, $authUser, $sellerBadges, $sellerReviewCounts) {
             return [
                 'id' => $product->id,
                 'type' => $product->type ?? 'product',
@@ -160,6 +165,7 @@ class ProductFeedController extends Controller
                     'is_following' => in_array($product->user->id, $followingIds),
                     'badges' => $sellerBadges[$product->user->id] ?? [],
 'is_premium' => $product->user->isPremiumActive(),
+'review_count' => $sellerReviewCounts[$product->user->id] ?? 0,
                 ],
                 'created_at' => $product->created_at,
             ];
@@ -227,14 +233,19 @@ class ProductFeedController extends Controller
             ->latest();
 
         $products = $query->paginate($request->get('per_page', 10));
-        $sellerBadges = \App\Models\UserBadge::summaryForMany($products->pluck('user_id')->unique()->all());
+        $sellerIds = $products->pluck('user_id')->unique()->all();
+        $sellerBadges = \App\Models\UserBadge::summaryForMany($sellerIds);
+        $sellerReviewCounts = \App\Models\UserReview::whereIn('seller_id', $sellerIds)
+            ->selectRaw('seller_id, count(*) as cnt')
+            ->groupBy('seller_id')
+            ->pluck('cnt', 'seller_id');
 
         // Get interaction status
         $productIds = $products->pluck('id')->toArray();
         $likedIds = $authUser->likedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
         $savedIds = \App\Models\FavoriteItem::where('user_id', $authUser->id)->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
 
-        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $sellerBadges) {
+        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $sellerBadges, $sellerReviewCounts) {
             return [
                 'id' => $product->id,
                 'type' => $product->type ?? 'product',
@@ -282,6 +293,7 @@ class ProductFeedController extends Controller
                     'is_following' => true,
                     'is_premium' => $product->user->isPremiumActive(),
                     'badges' => $sellerBadges[$product->user->id] ?? [],
+                    'review_count' => $sellerReviewCounts[$product->user->id] ?? 0,
                 ],
                 'created_at' => $product->created_at,
             ];

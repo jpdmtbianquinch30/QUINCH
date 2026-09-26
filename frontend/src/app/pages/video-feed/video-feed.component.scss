@@ -473,12 +473,12 @@ video.card-video { display: block; }
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 10px 16px;
   border-radius: 20px;
-  background: rgba(8, 8, 16, 0.55);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  background: rgba(8, 8, 16, 0.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
@@ -533,6 +533,11 @@ video.card-video { display: block; }
 .verified-icon {
   font-size: 14px !important;
   color: #4f9cf7;
+  flex-shrink: 0;
+}
+
+.badge-chip {
+  font-size: 15px !important;
   flex-shrink: 0;
 }
 
@@ -604,7 +609,7 @@ video.card-video { display: block; }
   transition: transform 0.15s;
 
   .material-icons {
-    font-size: 19px;
+    font-size: 25px;
     transition: color 0.2s, filter 0.2s;
     &.liked { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239,68,68,0.35)); }
     &.saved { color: #fbbf24; filter: drop-shadow(0 0 5px rgba(251,191,36,0.35)); }
@@ -2117,10 +2122,10 @@ $r-sm: 8px;
 // ─── Compression sur petits écrans / écrans courts ────────────────────────
 @media (max-width: 768px) and (max-height: 700px) {
   .card-info {
-    padding: 12px 14px;
+    padding: 8px 14px;
     gap: 6px;
   }
 
   .seller-avatar-sm { width: 26px; height: 26px; }
-  .h-action .material-icons { font-size: 17px; }
+  .h-action .material-icons { font-size: 21px; }
 }

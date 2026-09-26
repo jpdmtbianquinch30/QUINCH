@@ -328,7 +328,7 @@
 
                   <button class="h-action" (click)="openCommentPanel(product, $event)">
                     <span class="material-icons">chat_bubble_outline</span>
-                    <span>Avis</span>
+                    <span>{{ product.seller?.review_count || 0 | number:'1.0-0':'fr-FR' }}</span>
                   </button>
 
                   <button class="h-action" (click)="shareProduct(product, $event)">
@@ -340,7 +340,7 @@
                     <span class="material-icons" [class.saved]="product.is_saved">
                       {{ product.is_saved ? 'bookmark' : 'bookmark_border' }}
                     </span>
-                    <span>Sauver</span>
+                    <span>{{ product.save_count || 0 | number:'1.0-0':'fr-FR' }}</span>
                   </button>
                 </div>
 
