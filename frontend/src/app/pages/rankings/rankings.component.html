@@ -89,10 +89,10 @@
       }
     </div>
 
-    <p class="rankings-criteria">
+    <div class="rankings-criteria">
       <span class="material-icons">info</span>
-      {{ criteriaText() }} Il faut être <strong>Premium</strong> et avoir activé la participation ci-dessus.
-    </p>
+      <p>{{ criteriaText() }} Il faut être <strong class="text-premium">Premium</strong> et avoir activé la participation ci-dessus.</p>
+    </div>
 
     <!-- ══ CONTENU ══ -->
     @if (loadingRanking()) {

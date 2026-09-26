@@ -251,8 +251,18 @@
   padding: 10px 14px;
   border-radius: 10px;
   background: rgba(255,255,255,0.03);
-  .material-icons { font-size: 16px; color: var(--q-accent-light); flex-shrink: 0; margin-top: 1px; }
-  strong { color: var(--q-text-primary); }
+
+  // L'icone est le seul item flex a part entiere ; le texte (avec son
+  // <strong> incruste) reste un <p> normal qui coule en continu au lieu
+  // d'etre lui-meme decoupe en plusieurs items flex (ce qui cassait le
+  // texte en colonnes desalignees avant ce correctif).
+  > .material-icons { font-size: 16px; color: var(--q-accent-light); flex-shrink: 0; margin-top: 1px; }
+  > p { margin: 0; flex: 1; }
+
+  .text-premium {
+    color: #fbbf24;
+    font-weight: 700;
+  }
 }
 
 /* ══════════════════════ LISTE DE CLASSEMENT ══════════════════════ */
