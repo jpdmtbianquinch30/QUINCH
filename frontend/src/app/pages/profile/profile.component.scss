@@ -72,9 +72,15 @@
 }
 
 // La section politiques partage le meme conteneur-carte que "Mes produits"
-// (.products-section) : on resserre juste son en-tete, trop espace par
-// defaut pour un contenu aussi court.
-.policies-section .section-header { margin-bottom: var(--q-space-sm); }
+// (.products-section) : on resserre son en-tete (espace en dessous, entre
+// le titre et le contenu), MAIS AUSSI son padding-top — sinon le cumul avec
+// le margin-bottom de .profile-tabs (32px) laisse un grand vide au-dessus
+// de la carte, entre les onglets et "Politiques du vendeur".
+.policies-section {
+  padding-top: var(--q-space-md);
+
+  .section-header { margin-bottom: var(--q-space-sm); }
+}
 
 @media (max-width: 640px) {
   .policies-grid { grid-template-columns: 1fr; }
