@@ -26,6 +26,7 @@ class ProductFeedController extends Controller
 
         $query = Product::query()
             ->active()
+            ->withCount('savedByUsers')
             ->with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,icon', 'video']);
 
         // For "following" tab, filter by followed users
@@ -129,6 +130,7 @@ class ProductFeedController extends Controller
                 'share_count' => $product->share_count,
                 'is_liked' => in_array($product->id, $likedIds),
                 'is_saved' => in_array($product->id, $savedIds),
+                'save_count' => $product->saved_by_users_count ?? 0,
                 'poster' => $product->poster_full_url,
                 'payment_methods' => $product->payment_methods ?? [],
                 'delivery_option' => $product->delivery_option ?? 'contact',
@@ -211,7 +213,8 @@ class ProductFeedController extends Controller
         $query = Product::query()
             ->active()
             ->whereIn('user_id', $friendIds)
-            ->with(['user:id,full_name,username,avatar_url,trust_score', 'category:id,name,icon', 'video'])
+            ->withCount('savedByUsers')
+            ->with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,icon', 'video'])
             ->where(function ($q) {
                 $q->whereNotNull('poster_url')
                   ->orWhereHas('video', function ($sub) {
@@ -224,13 +227,14 @@ class ProductFeedController extends Controller
             ->latest();
 
         $products = $query->paginate($request->get('per_page', 10));
+        $sellerBadges = \App\Models\UserBadge::summaryForMany($products->pluck('user_id')->unique()->all());
 
         // Get interaction status
         $productIds = $products->pluck('id')->toArray();
         $likedIds = $authUser->likedProducts()->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
         $savedIds = \App\Models\FavoriteItem::where('user_id', $authUser->id)->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
 
-        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds) {
+        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $sellerBadges) {
             return [
                 'id' => $product->id,
                 'type' => $product->type ?? 'product',
@@ -248,6 +252,7 @@ class ProductFeedController extends Controller
                 'share_count' => $product->share_count,
                 'is_liked' => in_array($product->id, $likedIds),
                 'is_saved' => in_array($product->id, $savedIds),
+                'save_count' => $product->saved_by_users_count ?? 0,
                 'poster' => $product->poster_full_url,
                 'payment_methods' => $product->payment_methods ?? [],
                 'delivery_option' => $product->delivery_option ?? 'contact',
@@ -275,6 +280,8 @@ class ProductFeedController extends Controller
                     'city' => $product->user->city,
                     'member_since' => $product->user->created_at?->format('M Y'),
                     'is_following' => true,
+                    'is_premium' => $product->user->isPremiumActive(),
+                    'badges' => $sellerBadges[$product->user->id] ?? [],
                 ],
                 'created_at' => $product->created_at,
             ];
