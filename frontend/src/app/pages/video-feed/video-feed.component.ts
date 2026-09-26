@@ -62,10 +62,12 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   private readonly MAX_RECENT = 8;
 
   // Video playback state
-  playingIndex = signal<number>(0);
-  private muted = signal(true);
-  videoLoading = signal(false);
-  videoPaused = signal(false);
+  // Video playback state
+playingIndex = signal<number>(0);
+private muted = signal(false);
+private audioUnlocked = signal(false);
+videoLoading = signal(false);
+videoPaused = signal(false);
 
 
   // Following state per seller
@@ -603,11 +605,18 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     if (Math.abs(event.deltaY) < 4) return;
     this.scrollLocked = true;
 
-    if (event.deltaY > 0 && this.currentIndex() < this.products().length - 1) {
-      this.goNext(this.currentIndex());
-    } else if (event.deltaY < 0 && this.currentIndex() > 0) {
-      this.goPrev(this.currentIndex());
-    }
+    this.scrollLocked = true;
+
+// L'utilisateur vient d'interagir avec le feed.
+// Les vidéos suivantes peuvent démarrer avec le son.
+this.audioUnlocked.set(true);
+this.muted.set(false);
+
+if (event.deltaY > 0 && this.currentIndex() < this.products().length - 1) {
+  this.goNext(this.currentIndex());
+} else if (event.deltaY < 0 && this.currentIndex() > 0) {
+  this.goPrev(this.currentIndex());
+}
     setTimeout(() => { this.scrollLocked = false; }, 1000);
   }
 
@@ -640,11 +649,16 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     if (Math.abs(this.touchDeltaY) < threshold) return;
     this.scrollLocked = true;
 
-    if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
-      this.goNext(this.currentIndex());
-    } else if (this.touchDeltaY > 0 && this.currentIndex() > 0) {
-      this.goPrev(this.currentIndex());
-    }
+    // Le swipe est une interaction utilisateur.
+// Il permet d'activer automatiquement le son des vidéos suivantes.
+this.audioUnlocked.set(true);
+this.muted.set(false);
+
+if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
+  this.goNext(this.currentIndex());
+} else if (this.touchDeltaY > 0 && this.currentIndex() > 0) {
+  this.goPrev(this.currentIndex());
+}
     setTimeout(() => { this.scrollLocked = false; }, 1000);
   }
 
@@ -673,48 +687,91 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private forcePlayCurrentVideo(): void {
-    if (!this.videoPlayers || this.videoPlayers.length === 0) {
-      this.videoLoading.set(false);
-      return;
-    }
-    const videoEl = this.videoPlayers.first?.nativeElement;
-    if (!videoEl) { this.videoLoading.set(false); return; }
-
-    this.videoPaused.set(false);
-    videoEl.muted = true;
-    if (videoEl.readyState >= 2) {
-      this.playVideo(videoEl);
-    } else {
-      videoEl.addEventListener('canplay', () => this.playVideo(videoEl), { once: true });
-      videoEl.load();
-    }
+  if (!this.videoPlayers || this.videoPlayers.length === 0) {
+    this.videoLoading.set(false);
+    return;
   }
+
+  const videoEl = this.videoPlayers.first?.nativeElement;
+
+  if (!videoEl) {
+    this.videoLoading.set(false);
+    return;
+  }
+
+  this.videoPaused.set(false);
+
+  // Le son est activé par défaut.
+  // Après un swipe, audioUnlocked() est vrai et le navigateur
+  // a reçu une interaction utilisateur.
+  videoEl.muted = this.muted();
+
+  if (videoEl.readyState >= 2) {
+    this.playVideo(videoEl);
+  } else {
+    videoEl.addEventListener(
+      'canplay',
+      () => this.playVideo(videoEl),
+      { once: true }
+    );
+
+    videoEl.load();
+  }
+}
 
   private playVideo(videoEl: HTMLVideoElement): void {
-    // Always start muted to comply with browser autoplay policies
-    videoEl.muted = true;
-    const promise = videoEl.play();
-    if (promise) {
-      promise
-        .then(() => {
-          this.videoLoading.set(false);
-          this.startProgressTracking(videoEl);
-          // Keep muted - user must explicitly unmute via the button
-        })
-        .catch(() => {
-          // Retry muted if first attempt fails
-          videoEl.muted = true;
-          videoEl.play()
-            .then(() => {
-              this.videoLoading.set(false);
-              this.startProgressTracking(videoEl);
-            })
-            .catch(() => this.videoLoading.set(false));
-        });
-    } else {
-      this.videoLoading.set(false);
-    }
+  // Respecte l'état sonore choisi par l'utilisateur.
+  videoEl.muted = this.muted();
+
+  const promise = videoEl.play();
+
+  if (!promise) {
+    this.videoLoading.set(false);
+    return;
   }
+
+  promise
+    .then(() => {
+      this.videoLoading.set(false);
+      this.videoPaused.set(false);
+      this.startProgressTracking(videoEl);
+    })
+    .catch(() => {
+      /*
+       * Certains navigateurs refusent l'autoplay avec son au premier
+       * chargement si aucune interaction utilisateur n'a encore eu lieu.
+       *
+       * Après un swipe, audioUnlocked() devient vrai et la nouvelle
+       * vidéo est relancée avec le son.
+       */
+      if (this.audioUnlocked()) {
+        videoEl.muted = false;
+
+        videoEl.play()
+          .then(() => {
+            this.videoLoading.set(false);
+            this.videoPaused.set(false);
+            this.startProgressTracking(videoEl);
+          })
+          .catch(() => {
+            this.videoLoading.set(false);
+          });
+      } else {
+        // Premier chargement : on évite de bloquer complètement la vidéo.
+        videoEl.muted = true;
+
+        videoEl.play()
+          .then(() => {
+            this.videoLoading.set(false);
+            this.videoPaused.set(false);
+            this.startProgressTracking(videoEl);
+          })
+          .catch(() => {
+            this.videoLoading.set(false);
+          });
+      }
+    });
+}
 
   private startProgressTracking(videoEl: HTMLVideoElement): void {
     if (this.progressInterval) clearInterval(this.progressInterval);
@@ -744,31 +801,59 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   toggleMute(event: Event): void {
-    event.stopPropagation();
-    this.muted.update(m => !m);
-    const videoEl = this.videoPlayers?.first?.nativeElement;
-    if (videoEl) videoEl.muted = this.muted();
+  event.stopPropagation();
+
+  this.muted.update(m => !m);
+
+  const videoEl = this.videoPlayers?.first?.nativeElement;
+
+  if (!videoEl) return;
+
+  videoEl.muted = this.muted();
+
+  // Le bouton son constitue également une interaction utilisateur.
+  this.audioUnlocked.set(true);
+
+  // Si l'utilisateur vient de réactiver le son,
+  // on s'assure que la vidéo continue immédiatement.
+  if (!this.muted() && videoEl.paused) {
+    videoEl.play().catch(() => {});
   }
+}
 
   toggleVideoPlayPause(event: Event): void {
-    event.stopPropagation();
-    // Delay to distinguish from double-click (like)
-    if (this.clickTimer) return; // Already waiting
-    this.clickTimer = setTimeout(() => {
-      this.clickTimer = null;
-      const videoEl = this.videoPlayers?.first?.nativeElement;
-if (!videoEl) return;
+  event.stopPropagation();
 
-if (videoEl.paused) {
-  videoEl.play()
-    .then(() => this.videoPaused.set(false))
-    .catch(() => {});
-} else {
-  videoEl.pause();
-  this.videoPaused.set(true);
-}
-    }, 250);
+  /*
+   * Un premier clic programme la pause/lecture.
+   * Si un deuxième clic arrive rapidement, il annule le premier :
+   * le double-clic est alors réservé au "like".
+   */
+  if (this.clickTimer) {
+    clearTimeout(this.clickTimer);
+    this.clickTimer = null;
+    return;
   }
+
+  this.clickTimer = setTimeout(() => {
+    this.clickTimer = null;
+
+    const videoEl = this.videoPlayers?.first?.nativeElement;
+
+    if (!videoEl) return;
+
+    if (videoEl.paused) {
+      videoEl.play()
+        .then(() => {
+          this.videoPaused.set(false);
+        })
+        .catch(() => {});
+    } else {
+      videoEl.pause();
+      this.videoPaused.set(true);
+    }
+  }, 250);
+}
 
   // ─── Detail Panel Methods ─────────────────────────────────
 

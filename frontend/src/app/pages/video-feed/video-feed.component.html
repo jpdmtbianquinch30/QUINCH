@@ -239,10 +239,10 @@
               <!-- Video / Media : format d'origine toujours respecté (jamais recadré) -->
               @if (hasVideo(product) && currentIndex() === i) {
                 <video #videoPlayer
-                       class="card-media card-video"
-                       [src]="getVideoUrl(product)!"
-                       muted autoplay loop playsinline
-                       preload="auto"
+       class="card-media card-video"
+       [src]="getVideoUrl(product)!"
+       autoplay loop playsinline
+       preload="auto"
                        (canplay)="onVideoCanPlay(i, $event)"
                        (playing)="onVideoPlaying()"
                        (error)="onVideoError(i)">
