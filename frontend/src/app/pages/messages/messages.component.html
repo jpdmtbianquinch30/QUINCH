@@ -79,17 +79,17 @@
               </div>
               <div class="conv-info">
                 <div class="conv-top">
-                <h3>
-                  {{ selectedConv()?.other_user?.full_name }}
-                  <span class="user-badges-row">
-                    @if (selectedConv()?.other_user?.is_premium) {
-                      <span class="material-icons badge-chip badge-premium" title="Premium">workspace_premium</span>
-                    }
-                    @for (b of selectedConv()?.other_user?.badges; track b.type) {
-                      <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-                    }
+                  <span class="conv-name">
+                    {{ conv.other_user.full_name || 'Utilisateur' }}
+                    <span class="user-badges-row">
+                      @if (conv.other_user.is_premium) {
+                        <span class="material-icons badge-chip badge-premium" title="Premium">workspace_premium</span>
+                      }
+                      @for (b of conv.other_user.badges; track b.type) {
+                        <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
+                      }
+                    </span>
                   </span>
-                </h3>
                   <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
                 </div>
                 <div class="conv-bottom">
@@ -137,7 +137,17 @@
                 <span class="online-dot" [class.online]="selectedConv()?.other_user?.is_online"></span>
               </div>
               <div class="chat-user-info">
-                <h3>{{ selectedConv()?.other_user?.full_name }}</h3>
+                <h3>
+                  {{ selectedConv()?.other_user?.full_name }}
+                  <span class="user-badges-row">
+                    @if (selectedConv()?.other_user?.is_premium) {
+                      <span class="material-icons badge-chip badge-premium" title="Premium">workspace_premium</span>
+                    }
+                    @for (b of selectedConv()?.other_user?.badges; track b.type) {
+                      <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
+                    }
+                  </span>
+                </h3>
                 <span class="chat-status">
                   @if (selectedConv()?.other_user?.is_online) {
                     <span class="status-online">En ligne</span>

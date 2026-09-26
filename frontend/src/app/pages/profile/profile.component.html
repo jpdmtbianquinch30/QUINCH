@@ -50,9 +50,6 @@
         <div class="hero-info">
           <h2 class="hero-name">
             {{ user()!.full_name }}
-                        @if (user()!.is_premium) {
-              <span class="material-icons premium-badge" title="Compte Premium">workspace_premium</span>
-            }
             @if (user()!.kyc_status === 'verified') {
               <span class="material-icons verified-badge">verified</span>
             }
@@ -96,10 +93,6 @@
         <div class="stat-block">
           <span class="stat-num">{{ followingCount() }}</span>
           <span class="stat-lbl">Abonnements</span>
-        </div>
-        <div class="stat-block">
-          <span class="stat-num" [style.color]="getTrustColor()">{{ trustPercent() }}%</span>
-          <span class="stat-lbl">Confiance</span>
         </div>
       </div>
     </div>

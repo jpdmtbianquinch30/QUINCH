@@ -74,7 +74,6 @@
 // La section politiques partage le meme conteneur-carte que "Mes produits"
 // (.products-section) : on resserre juste son en-tete, trop espace par
 // defaut pour un contenu aussi court.
-.policies-section { padding-top: var(--q-space-lg); }
 .policies-section .section-header { margin-bottom: var(--q-space-sm); }
 
 @media (max-width: 640px) {
@@ -319,8 +318,8 @@
 .trust-badges-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--q-space-lg);
-  margin-bottom: var(--q-space-xl);
+  gap: var(--q-space-md);
+  margin-bottom: var(--q-space-lg);
 }
 
 .trust-card, .badges-card {
@@ -339,7 +338,7 @@
 .badges-card::before { background: linear-gradient(90deg, var(--q-warning), #fbbf24); }
 
 .trust-card {
-  padding: var(--q-space-xl);
+  padding: var(--q-space-lg);
 
   .trust-top {
     display: flex;
@@ -371,7 +370,7 @@
 }
 
 .badges-card {
-  padding: var(--q-space-xl);
+  padding: var(--q-space-lg);
 
   h3 {
     font-size: 1rem;
