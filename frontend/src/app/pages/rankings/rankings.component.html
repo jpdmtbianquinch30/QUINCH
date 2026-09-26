@@ -1,0 +1,201 @@
+<div class="rankings-page">
+
+  @if (!isPremiumActive()) {
+
+    <!-- ══ ECRAN VERROUILLE (non-Premium) ══ -->
+    <div class="rankings-lock">
+      <div class="rankings-lock-card">
+        <div class="rankings-lock-icon"><span class="material-icons">lock</span></div>
+        <span class="rankings-lock-kicker">Fonctionnalité Premium</span>
+        <h1>Les classements sont réservés au Premium</h1>
+        <p>
+          Découvrez le top 100 des meilleurs vendeurs et acheteurs du mois, des produits les plus vus
+          et des profils les plus visités. Passez en mode Premium pour consulter les classements
+          <strong>et</strong> y figurer vous-même.
+        </p>
+
+        <div class="rankings-lock-preview">
+          @for (t of tabs; track t.key) {
+            <div class="lock-preview-chip">
+              <span class="material-icons">{{ t.icon }}</span>
+              {{ t.label }}
+            </div>
+          }
+        </div>
+
+        <button type="button" class="rankings-premium-btn" (click)="goToPremium()">
+          <span class="material-icons">workspace_premium</span>
+          Passer Premium
+        </button>
+      </div>
+    </div>
+
+  } @else if (loadingPrefs()) {
+
+    <div class="rankings-loading">
+      <div class="loader"></div>
+    </div>
+
+  } @else {
+
+    <!-- ══ EN-TETE ══ -->
+    <div class="rankings-header">
+      <div class="rankings-header-title">
+        <span class="material-icons">emoji_events</span>
+        <div>
+          <h1>Classements</h1>
+          <p>Le top 100 de la communauté QUINCH{{ month() ? ' · ' + month() : '' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CARTE PARTICIPATION ══ -->
+    @if (!optedIn()) {
+      <div class="join-card">
+        <div class="join-card-icon"><span class="material-icons">military_tech</span></div>
+        <div class="join-card-text">
+          <strong>Envie de figurer parmi les meilleurs ?</strong>
+          <span>Activez votre participation pour apparaître dans les classements où vous êtes éligible.</span>
+        </div>
+        <button type="button" class="rankings-premium-btn" (click)="openJoinModal()">
+          <span class="material-icons">add_circle</span>
+          S'ajouter au classement
+        </button>
+      </div>
+    } @else {
+      <div class="participation-card">
+        <span class="material-icons participation-check">check_circle</span>
+        <span class="participation-text">Vous participez aux classements.</span>
+        <label class="anon-toggle">
+          <input type="checkbox" [checked]="anonymous()" (change)="toggleAnonymous($any($event.target).checked)" />
+          <span>Rester anonyme</span>
+        </label>
+        <button type="button" class="leave-btn" (click)="leaveRanking()">Se retirer</button>
+      </div>
+    }
+
+    <!-- ══ ONGLETS ══ -->
+    <div class="rankings-tabs">
+      @for (t of tabs; track t.key) {
+        <button
+          type="button"
+          class="rankings-tab"
+          [class.active]="activeTab() === t.key"
+          (click)="selectTab(t.key)"
+        >
+          <span class="material-icons">{{ t.icon }}</span>
+          {{ t.label }}
+        </button>
+      }
+    </div>
+
+    <p class="rankings-criteria">
+      <span class="material-icons">info</span>
+      {{ criteriaText() }} Il faut être <strong>Premium</strong> et avoir activé la participation ci-dessus.
+    </p>
+
+    <!-- ══ CONTENU ══ -->
+    @if (loadingRanking()) {
+      <div class="rankings-loading"><div class="loader"></div></div>
+    } @else if (rankingError()) {
+      <div class="rankings-empty">
+        <span class="material-icons">error_outline</span>
+        {{ rankingError() }}
+      </div>
+    } @else {
+
+      @if (activeTab() === 'products') {
+        @if (products().length === 0) {
+          <div class="rankings-empty">
+            <span class="material-icons">visibility_off</span>
+            Aucun produit classé pour l'instant.
+          </div>
+        } @else {
+          <div class="rankings-list">
+            @for (p of products(); track p.product_id) {
+              <a class="ranking-row product-row" [routerLink]="['/product', p.product_slug]">
+                <span class="rank-badge" [class]="rankMedal(p.rank)">{{ p.rank }}</span>
+                <img class="row-thumb" [src]="p.product_image || 'assets/placeholder-product.svg'" alt="" />
+                <div class="row-body">
+                  <span class="row-title">{{ p.product_title }}</span>
+                  <span class="row-sub">{{ p.anonymous ? 'Vendeur anonyme' : ('@' + p.seller_username) }}</span>
+                </div>
+                <div class="row-metric">
+                  <span class="metric-value">{{ p.view_count | number:'1.0-0':'fr-FR' }}</span>
+                  <span class="metric-label">vues</span>
+                </div>
+              </a>
+            }
+          </div>
+        }
+      } @else {
+        @let list = activeTab() === 'sellers' ? sellers() : (activeTab() === 'buyers' ? buyers() : profiles());
+        @if (list.length === 0) {
+          <div class="rankings-empty">
+            <span class="material-icons">emoji_events</span>
+            Aucun classement disponible pour l'instant — soyez le premier à participer !
+          </div>
+        } @else {
+          <div class="rankings-list">
+            @for (u of list; track u.rank) {
+              <div class="ranking-row" [class.is-me]="isCurrentUser(u)">
+                <span class="rank-badge" [class]="rankMedal(u.rank)">{{ u.rank }}</span>
+                @if (u.anonymous || !u.avatar_url) {
+                  <div class="row-avatar-fallback"><span class="material-icons">{{ u.anonymous ? 'visibility_off' : 'person' }}</span></div>
+                } @else {
+                  <img class="row-avatar" [src]="u.avatar_url" alt="" />
+                }
+                <div class="row-body">
+                  <span class="row-title">{{ u.anonymous ? 'Utilisateur anonyme' : u.full_name }}</span>
+                  @if (!u.anonymous && u.username) { <span class="row-sub">&#64;{{ u.username }}</span> }
+                </div>
+                <div class="row-metric">
+                  @if (activeTab() === 'sellers' || activeTab() === 'buyers') {
+                    <span class="metric-value">{{ u.total_amount | number:'1.0-0':'fr-FR' }} F</span>
+                    <span class="metric-label">{{ activeTab() === 'sellers' ? (u.sales_count ?? 0) + ' ventes' : (u.purchases_count ?? 0) + ' achats' }}</span>
+                  } @else {
+                    <span class="metric-value">{{ u.profile_views_count | number:'1.0-0':'fr-FR' }}</span>
+                    <span class="metric-label">visites</span>
+                  }
+                </div>
+                @if (isCurrentUser(u)) { <span class="me-tag">Vous</span> }
+              </div>
+            }
+          </div>
+        }
+      }
+    }
+  }
+
+  <!-- ══ MODALE : rejoindre le classement ══ -->
+  @if (showJoinModal()) {
+    <div class="join-modal-backdrop" (click)="closeJoinModal()">
+      <div class="join-modal" (click)="$event.stopPropagation()">
+        <div class="join-modal-icon"><span class="material-icons">emoji_events</span></div>
+        <h2>S'ajouter au classement</h2>
+        <p>Vous serez pris en compte dans les classements où vous êtes éligible (ventes, achats, vues de vos produits ou de votre profil). Confirmez-vous votre participation ?</p>
+
+        <label class="join-modal-toggle">
+          <input type="checkbox" [checked]="joinAnonymous()" (change)="joinAnonymous.set($any($event.target).checked)" />
+          <span>
+            <strong>Rester anonyme</strong>
+            <small>Votre rang et vos chiffres resteront visibles, mais pas votre nom ni votre photo.</small>
+          </span>
+        </label>
+
+        <div class="join-modal-actions">
+          <button type="button" class="q-btn-ghost" (click)="closeJoinModal()" [disabled]="savingJoin()">Annuler</button>
+          <button type="button" class="rankings-premium-btn" (click)="confirmJoin()" [disabled]="savingJoin()">
+            @if (savingJoin()) {
+              <span class="material-icons spin">autorenew</span>
+            } @else {
+              <span class="material-icons">check_circle</span>
+            }
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

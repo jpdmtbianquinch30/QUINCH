@@ -51,6 +51,7 @@ export const routes: Routes = [
   { path: 'premium', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
   { path: 'premium/success', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
   { path: 'premium/error', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
+    { path: 'rankings', canActivate: [authGuard], loadComponent: () => import('./pages/rankings/rankings.component').then(m => m.RankingsComponent) },
   { path: 'transactions', canActivate: [authGuard], loadComponent: () => import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent) },
   { path: 'transactions/:id/:outcome', canActivate: [authGuard], loadComponent: () => import('./pages/transaction-status/transaction-status.component').then(m => m.TransactionStatusComponent) },
   { path: 'profile', canActivate: [authGuard], loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },
