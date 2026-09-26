@@ -436,6 +436,14 @@ textarea.q-input { resize: vertical; min-height: 100px; }
     .material-icons { font-size: 14px; }
   }
 }
+.user-badges-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: middle;
+}
+.badge-chip { font-size: 15px; }
+.badge-premium { color: #f59e0b; }
 
 // L'icône "premium-badge" seule (à côté d'un avatar, sans la pilule
 // .q-badge) doit toujours porter la même couleur dorée que .q-badge-premium

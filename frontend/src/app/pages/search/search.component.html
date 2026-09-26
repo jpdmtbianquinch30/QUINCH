@@ -5,8 +5,8 @@
     </button>
     <div class="search-input-wrap">
       <span class="material-icons">search</span>
-      <input type="text" [ngModel]="query()" (ngModelChange)="onInput($event)"
-             placeholder="Rechercher un produit, un vendeur…" autofocus />
+      <input #searchInput type="text" [ngModel]="query()" (ngModelChange)="onInput($event)"
+             placeholder="Rechercher un produit, un vendeur…" />
     </div>
   </div>
 
@@ -78,7 +78,9 @@
             <span class="user-name-row">
               <strong>{{ u.full_name }}</strong>
               @if (u.is_premium) { <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span> }
-              @if (u.trust_score >= 0.7) { <span class="material-icons verified-icon-sm" title="Vendeur verifie">verified</span> }
+              @for (b of u.badges; track b.type) {
+                <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
+              }
             </span>
             <span>&#64;{{ u.username }}</span>
           </div>

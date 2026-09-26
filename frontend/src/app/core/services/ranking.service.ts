@@ -12,6 +12,7 @@ export interface RankingUserEntry {
   sales_count?: number;
   purchases_count?: number;
   profile_views_count?: number;
+  badges?: import('./badge.service').Badge[];
 }
 
 export interface RankingProductEntry {

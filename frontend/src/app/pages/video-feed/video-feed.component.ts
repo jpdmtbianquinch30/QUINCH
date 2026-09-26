@@ -68,6 +68,7 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   videoLoading = signal(false);
   videoPaused = signal(false);
 
+
   // Following state per seller
   followingMap = signal<Record<string, boolean>>({});
 
@@ -613,6 +614,43 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     setTimeout(() => { this.scrollLocked = false; }, 1000);
   }
 
+  // ─── Touch Navigation (swipe au doigt) ──────────────────
+  private touchStartY = 0;
+  private touchDeltaY = 0;
+  private touchTracking = false;
+
+  onTouchStart(event: TouchEvent): void {
+    if (this.detailMode() || this.showSearch()) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('.feed-detail-panel') || target.closest('.fd-resize-handle')) return;
+    this.touchStartY = event.touches[0].clientY;
+    this.touchDeltaY = 0;
+    this.touchTracking = true;
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (!this.touchTracking) return;
+    this.touchDeltaY = event.touches[0].clientY - this.touchStartY;
+    event.preventDefault();
+  }
+
+  onTouchEnd(): void {
+    if (!this.touchTracking) return;
+    this.touchTracking = false;
+    if (this.scrollLocked || this.showSearch() || this.detailMode()) return;
+
+    const threshold = 60;
+    if (Math.abs(this.touchDeltaY) < threshold) return;
+    this.scrollLocked = true;
+
+    if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
+      this.goNext(this.currentIndex());
+    } else if (this.touchDeltaY > 0 && this.currentIndex() > 0) {
+      this.goPrev(this.currentIndex());
+    }
+    setTimeout(() => { this.scrollLocked = false; }, 1000);
+  }
+
   @HostListener('window:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     if (this.showSearch() || this.detailMode()) {
@@ -712,7 +750,9 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
     event.stopPropagation();
     this.muted.update(m => !m);
     const videoEl = this.videoPlayers?.first?.nativeElement;
+    const backdropEl = this.backdropPlayers?.first?.nativeElement;
     if (videoEl) videoEl.muted = this.muted();
+    if (backdropEl) backdropEl.muted = this.muted();
   }
 
   toggleVideoPlayPause(event: Event): void {

@@ -24,13 +24,14 @@ class ConversationController extends Controller
 
         $conversations = Conversation::where('buyer_id', $userId)
             ->orWhere('seller_id', $userId)
-            ->with(['buyer:id,full_name,avatar_url,username,last_seen_at', 'seller:id,full_name,avatar_url,username,last_seen_at', 'product:id,title,slug,price', 'lastMessage'])
+            ->with(['buyer:id,full_name,avatar_url,username,last_seen_at,is_premium,premium_expires_at', 'seller:id,full_name,avatar_url,username,last_seen_at,is_premium,premium_expires_at', 'product:id,title,slug,price', 'lastMessage'])
             ->orderBy('last_message_at', 'desc')
             ->paginate(20);
 
         $conversations->getCollection()->transform(function ($conv) use ($userId) {
             $conv->unread_count = $conv->unreadCountFor($userId);
             $conv->other_user = $conv->buyer_id === $userId ? $conv->seller : $conv->buyer;
+            $conv->other_user->is_premium = $conv->other_user->isPremiumActive();
             $conv->other_user->badges = \App\Models\UserBadge::summaryFor($conv->other_user->id);
             return $conv;
         });
@@ -158,6 +159,7 @@ if (!empty($validated['message'])) {
         // conversation precise (visible uniquement dans la liste avant).
         $conversation->other_user = $conversation->buyer_id === $userId ? $conversation->seller : $conversation->buyer;
         $conversation->other_user->badges = \App\Models\UserBadge::summaryFor($conversation->other_user->id);
+        $conversation->other_user->is_premium = $conversation->other_user->isPremiumActive();
 
         return response()->json([
             'conversation' => $conversation,

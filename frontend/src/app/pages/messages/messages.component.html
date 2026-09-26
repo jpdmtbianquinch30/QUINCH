@@ -79,7 +79,17 @@
               </div>
               <div class="conv-info">
                 <div class="conv-top">
-                  <span class="conv-name">{{ conv.other_user.full_name || 'Utilisateur' }}</span>
+                <h3>
+                  {{ selectedConv()?.other_user?.full_name }}
+                  <span class="user-badges-row">
+                    @if (selectedConv()?.other_user?.is_premium) {
+                      <span class="material-icons badge-chip badge-premium" title="Premium">workspace_premium</span>
+                    }
+                    @for (b of selectedConv()?.other_user?.badges; track b.type) {
+                      <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
+                    }
+                  </span>
+                </h3>
                   <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
                 </div>
                 <div class="conv-bottom">

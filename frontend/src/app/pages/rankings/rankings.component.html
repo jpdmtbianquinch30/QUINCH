@@ -147,6 +147,13 @@
                 }
                 <div class="row-body">
                   <span class="row-title">{{ u.anonymous ? 'Utilisateur anonyme' : u.full_name }}</span>
+                  @if (!u.anonymous) {
+                    <span class="user-badges-row">
+                      @for (b of u.badges; track b.type) {
+                        <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
+                      }
+                    </span>
+                  }
                   @if (!u.anonymous && u.username) { <span class="row-sub">&#64;{{ u.username }}</span> }
                 </div>
                 <div class="row-metric">

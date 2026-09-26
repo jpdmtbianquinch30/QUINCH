@@ -23,6 +23,7 @@ export class FeedComponent implements OnInit {
 
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
+  videoTotalCount = signal(0);
   loading = signal(true);
   loadingMore = signal(false);
   currentPage = signal(1);
@@ -54,6 +55,9 @@ export class FeedComponent implements OnInit {
     });
     this.productService.getFeed(1, { ...categoryParams, type: 'service', per_page: 1 }).subscribe({
       next: (res: any) => this.servicesCount.set(res.total ?? 0),
+    });
+        this.productService.getFeed(1, { per_page: 1 }).subscribe({
+      next: (res: any) => this.videoTotalCount.set(res.total ?? 0),
     });
   }
 
@@ -163,7 +167,7 @@ export class FeedComponent implements OnInit {
     const services = videos.filter(p => p.type === 'service').length;
     if (products > 0 && services > 0) return `${products} produits · ${services} services en vidéo`;
     if (services > 0) return `${services} services en vidéo`;
-    return `${products} produits en vidéo`;
+    return `${this.videoTotalCount()} produits en vidéo`;
   }
 
   categoryIcon(name: string): string {

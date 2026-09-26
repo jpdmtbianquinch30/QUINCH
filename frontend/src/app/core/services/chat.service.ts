@@ -24,6 +24,8 @@ export interface Conversation {
     avatar_url?: string;
     username?: string;
     is_online?: boolean;
+    is_premium?: boolean;
+    badges?: import('./badge.service').Badge[];
   };
   product?: { id: string; title: string; slug: string; price: number };
   product_tags?: ConversationProductTag[];

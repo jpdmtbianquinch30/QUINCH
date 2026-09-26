@@ -290,11 +290,19 @@ $service-glow: rgba(16, 185, 129, 0.3);
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(45px) saturate(1.4) brightness(0.75);
+  filter: blur(45px) saturate(1.3) brightness(0.55);
   transform: scale(1.2);
   z-index: 0;
   pointer-events: none;
   user-select: none;
+}
+
+.media-backdrop-shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.547);
+  z-index: 0;
+  pointer-events: none;
 }
 
 // Media elements — format d'origine toujours respecté (jamais recadré)

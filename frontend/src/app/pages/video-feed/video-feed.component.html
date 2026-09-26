@@ -171,7 +171,8 @@
   }
 
   <!-- ═══════ SWIPER CONTAINER ═══════ -->
-  <div class="swiper-container" #swiperRef (wheel)="onWheel($event)">
+  <div class="swiper-container" #swiperRef (wheel)="onWheel($event)"
+       (touchstart)="onTouchStart($event)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd()">
     @if (loading() && products().length === 0) {
       <div class="feed-state">
         <div class="loader"></div>
@@ -222,6 +223,9 @@
                 <video class="media-backdrop" [src]="getVideoUrl(product)!" muted autoplay loop playsinline aria-hidden="true" tabindex="-1"></video>
               } @else if (getMediaUrl(product)) {
                 <img [src]="getMediaUrl(product)" alt="" class="media-backdrop" aria-hidden="true" />
+              }
+              @if ((hasVideo(product) || getMediaUrl(product)) && currentIndex() === i) {
+                <div class="media-backdrop-shade" aria-hidden="true"></div>
               }
 
               <!-- Video / Media : format d'origine toujours respecté (jamais recadré) -->
@@ -290,9 +294,12 @@
                       <span class="material-icons">person</span>
                     }
                   </div>
-                 <span class="seller-username" (click)="viewSellerProfile(product, $event)">&#64;{{ product.seller?.username || 'vendeur' }}</span>
+                                  <span class="seller-username" (click)="viewSellerProfile(product, $event)">&#64;{{ product.seller?.username || 'vendeur' }}</span>
                     @if (product.seller?.is_premium) {
                       <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span>
+                    }
+                    @for (b of product.seller?.badges; track b.type) {
+                      <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
                     }
                     @if (product.seller?.trust_score >= 0.7) {
                       <span class="material-icons verified-icon">verified</span>

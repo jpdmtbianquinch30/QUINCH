@@ -319,25 +319,29 @@ class ProductFeedController extends Controller
     });
 
         // Search users (sellers)
- $users = User::query()
-    ->where('account_status', 'active')
-    ->where(function ($query) use ($q) {
-        $query->where('full_name', 'LIKE', "%{$q}%")
-              ->orWhere('username', 'LIKE', "%{$q}%");
-    })
-    ->select('id', 'full_name', 'username', 'avatar_url', 'trust_score', 'city', 'is_premium', 'premium_expires_at')
-    ->orderByRaw("(CASE WHEN is_premium = true AND premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")
-    ->limit(10)
-    ->get()
-    ->map(fn ($u) => [
-        'id' => $u->id,
-        'full_name' => $u->full_name,
-        'username' => $u->username,
-        'avatar_url' => $u->avatar_url,
-        'trust_score' => $u->trust_score,
-        'city' => $u->city,
-        'is_premium' => $u->isPremiumActive(),
-    ]);
+         $userResults = User::query()
+            ->where('account_status', 'active')
+            ->where(function ($query) use ($q) {
+                $query->where('full_name', 'LIKE', "%{$q}%")
+                      ->orWhere('username', 'LIKE', "%{$q}%");
+            })
+            ->select('id', 'full_name', 'username', 'avatar_url', 'trust_score', 'city', 'is_premium', 'premium_expires_at')
+            ->orderByRaw("(CASE WHEN is_premium = true AND premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")
+            ->limit(10)
+            ->get();
+
+        $userBadges = \App\Models\UserBadge::summaryForMany($userResults->pluck('id')->all());
+
+        $users = $userResults->map(fn ($u) => [
+            'id' => $u->id,
+            'full_name' => $u->full_name,
+            'username' => $u->username,
+            'avatar_url' => $u->avatar_url,
+            'trust_score' => $u->trust_score,
+            'city' => $u->city,
+            'is_premium' => $u->isPremiumActive(),
+            'badges' => $userBadges[$u->id] ?? [],
+        ]);
 
         return response()->json([
             'products' => $products,

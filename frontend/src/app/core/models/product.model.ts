@@ -72,6 +72,7 @@ export interface SellerInfo {
   member_since?: string;
   is_following?: boolean;
   is_premium?: boolean;
+  badges?: import('../services/badge.service').Badge[];
 }
 
 export interface FeedResponse {

@@ -239,6 +239,21 @@
 
 .product-card { cursor: pointer; }
 
+.card-seller {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px 8px;
+  font-size: 12px;
+  color: var(--q-text-muted);
+}
+
+.card-seller-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .card-media {
   position: relative;
   aspect-ratio: 0.72;

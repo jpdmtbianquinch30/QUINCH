@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -35,6 +35,12 @@ loadingDefaults = signal(false);
 ngOnInit() {
   this.loadDefaultSuggestions();
 }
+
+  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
+
+  ngAfterViewInit() {
+    setTimeout(() => this.searchInput?.nativeElement?.focus(), 0);
+  }
 
 private loadDefaultSuggestions() {
   this.loadingDefaults.set(true);
