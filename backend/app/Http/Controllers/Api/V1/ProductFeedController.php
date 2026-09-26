@@ -97,6 +97,7 @@ class ProductFeedController extends Controller
                 }
 
         $products = $query->paginate($request->get('per_page', 10));
+        $sellerBadges = \App\Models\UserBadge::summaryForMany($products->pluck('user_id')->unique()->all());
 
         // Get liked/saved status for authenticated user
         $likedIds = [];
@@ -110,7 +111,7 @@ class ProductFeedController extends Controller
         }
 
         // Transform for feed display
-        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $followingIds, $authUser) {
+        $products->getCollection()->transform(function ($product) use ($likedIds, $savedIds, $followingIds, $authUser, $sellerBadges) {
             return [
                 'id' => $product->id,
                 'type' => $product->type ?? 'product',
@@ -155,6 +156,7 @@ class ProductFeedController extends Controller
                     'city' => $product->user->city,
                     'member_since' => $product->user->created_at?->format('M Y'),
                     'is_following' => in_array($product->user->id, $followingIds),
+                    'badges' => $sellerBadges[$product->user->id] ?? [],
 'is_premium' => $product->user->isPremiumActive(),
                 ],
                 'created_at' => $product->created_at,

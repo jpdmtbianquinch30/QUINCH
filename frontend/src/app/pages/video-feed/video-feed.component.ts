@@ -241,14 +241,17 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
 
   goNext(currentIdx: number) {
     if (currentIdx < this.products().length - 1) {
+      this.stopAllVideos();
       this.currentIndex.set(currentIdx + 1);
-      // Load more when approaching end (5 items before for smoother scrolling)
       if (currentIdx >= this.products().length - 5) this.loadMore();
     }
   }
 
   goPrev(currentIdx: number) {
-    if (currentIdx > 0) this.currentIndex.set(currentIdx - 1);
+    if (currentIdx > 0) {
+      this.stopAllVideos();
+      this.currentIndex.set(currentIdx - 1);
+    }
   }
 
   private loadingMore = false;

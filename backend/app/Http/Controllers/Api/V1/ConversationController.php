@@ -31,6 +31,7 @@ class ConversationController extends Controller
         $conversations->getCollection()->transform(function ($conv) use ($userId) {
             $conv->unread_count = $conv->unreadCountFor($userId);
             $conv->other_user = $conv->buyer_id === $userId ? $conv->seller : $conv->buyer;
+            $conv->other_user->badges = \App\Models\UserBadge::summaryFor($conv->other_user->id);
             return $conv;
         });
 
@@ -156,6 +157,7 @@ if (!empty($validated['message'])) {
         // laissait le nom/avatar/statut du contact vide des qu'on ouvrait une
         // conversation precise (visible uniquement dans la liste avant).
         $conversation->other_user = $conversation->buyer_id === $userId ? $conversation->seller : $conversation->buyer;
+        $conversation->other_user->badges = \App\Models\UserBadge::summaryFor($conversation->other_user->id);
 
         return response()->json([
             'conversation' => $conversation,
@@ -190,7 +192,7 @@ if (!empty($validated['message'])) {
             'other_user' => $otherUser,
         ]);
     }
-    
+
     public function sendMessage(Request $request, Conversation $conversation): JsonResponse
     {
         $userId = $request->user()->id;

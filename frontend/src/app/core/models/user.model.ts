@@ -1,3 +1,5 @@
+import { Badge } from "../services/badge.service";
+
 export interface User {
   id: string;
   phone_number: string;
@@ -9,6 +11,7 @@ export interface User {
   trust_score: number;
   trust_level: string;
   trust_badge: string;
+  badges?: Badge[];
   kyc_status: 'pending' | 'verified' | 'rejected';
   is_premium?: boolean;
   premium_expires_at?: string | null;

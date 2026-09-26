@@ -37,6 +37,30 @@ class UserBadge extends Model
         ];
     }
 
+        public static function summaryFor(string $userId): array
+    {
+        return static::summaryForMany([$userId])[$userId] ?? [];
+    }
+
+    public static function summaryForMany(array $userIds): array
+    {
+        $definitions = static::badgeDefinitions();
+
+        return static::whereIn('user_id', $userIds)
+            ->active()
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($badges) => $badges->map(fn ($b) => [
+                'type' => $b->badge_type,
+                'name' => $definitions[$b->badge_type]['name'] ?? $b->badge_type,
+                'icon' => $definitions[$b->badge_type]['icon'] ?? 'stars',
+                'color' => $definitions[$b->badge_type]['color'] ?? '#666',
+                'description' => $definitions[$b->badge_type]['description'] ?? '',
+                'awarded_at' => $b->created_at?->toISOString(),
+            ])->values()->all())
+            ->toArray();
+    }
+
         /**
      * Un badge avec expires_at dans le passé ne doit plus jamais s'afficher
      * ni compter.

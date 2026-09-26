@@ -43,6 +43,10 @@ class RankingController extends Controller
             'username' => $anonymous ? null : $user->username,
             'full_name' => $anonymous ? 'Utilisateur anonyme' : $user->full_name,
             'avatar_url' => $anonymous ? null : $user->avatar_url,
+            // Pas de badges pour une entree anonyme : afficher "Client Fidele"
+            // a cote d'un profil masque reveindrait a partiellement lever
+            // l'anonymat choisi.
+            'badges' => $anonymous ? [] : \App\Models\UserBadge::summaryFor($user->id),
         ], $metric);
     }
 
