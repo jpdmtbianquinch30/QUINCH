@@ -437,6 +437,16 @@ textarea.q-input { resize: vertical; min-height: 100px; }
   }
 }
 
+// L'icône "premium-badge" seule (à côté d'un avatar, sans la pilule
+// .q-badge) doit toujours porter la même couleur dorée que .q-badge-premium
+// ci-dessus — avant, seul profile.component.scss la stylait (et avec un
+// ambre légèrement différent, #f59e0b) ; seller-profile et video-feed
+// l'affichaient donc dans la couleur du texte ambiant, pas en doré.
+.premium-badge {
+  color: #fbbf24 !important;
+  font-size: 20px;
+}
+
 // ─── Material Icons ─────────────────────────────────────────────────────────
 .material-icons {
   font-family: 'Material Icons';

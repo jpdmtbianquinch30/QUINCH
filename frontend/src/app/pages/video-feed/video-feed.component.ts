@@ -27,6 +27,7 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 })
 export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChildren('videoPlayer') videoPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
+  @ViewChildren('backdropPlayer') backdropPlayers!: QueryList<ElementRef<HTMLVideoElement>>;
   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
   private productService = inject(ProductService);
   private apiService = inject(ApiService);
@@ -164,6 +165,24 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy() {
     this.searchSubject.complete();
     if (this.progressInterval) clearInterval(this.progressInterval);
+    // Avant : rien ici ne mettait en pause la/les vidéo(s). En pratique la
+    // suppression du <video> par Angular (@if) suffit la plupart du temps,
+    // mais pas toujours de façon fiable (retrait pendant qu'une promesse
+    // play() est encore en vol, webview Android, etc.) — d'où le son qui
+    // continuait parfois après avoir quitté la page. On coupe explicitement
+    // les deux lecteurs (premier plan + fond flouté) à la destruction.
+    this.stopAllVideos();
+  }
+
+  private stopAllVideos(): void {
+    [this.videoPlayers, this.backdropPlayers].forEach(list => {
+      list?.forEach(ref => {
+        const el = ref.nativeElement;
+        el.pause();
+        el.removeAttribute('src');
+        el.load();
+      });
+    });
   }
 
     // ─── Retour vers le feed marketplace ──────────────────
@@ -701,10 +720,17 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
       this.clickTimer = null;
       const videoEl = this.videoPlayers?.first?.nativeElement;
       if (!videoEl) return;
+      // La vidéo de fond flouté (backdropPlayer) est une <video> distincte,
+      // sans lien avec videoEl — avant, seule videoEl était mise en pause
+      // ici, donc le fond continuait de jouer (et de faire du bruit s'il
+      // n'était pas resté vraiment muet) même écran mis en pause.
+      const backdropEl = this.backdropPlayers?.first?.nativeElement;
       if (videoEl.paused) {
         videoEl.play().then(() => this.videoPaused.set(false)).catch(() => {});
+        backdropEl?.play().catch(() => {});
       } else {
         videoEl.pause();
+        backdropEl?.pause();
         this.videoPaused.set(true);
       }
     }, 250);

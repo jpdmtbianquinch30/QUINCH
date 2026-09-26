@@ -1472,8 +1472,9 @@
     &.pm-btn-disable:hover { background: rgba(107,114,128,0.04); }
   }
 }
+// Couleur unifiée dans le style global (styles.scss) : gardé ici seulement
+// pour la taille/marge propres à cette page.
 .premium-badge {
-  color: #f59e0b;
   font-size: 20px;
   margin-right: 4px;
 }
