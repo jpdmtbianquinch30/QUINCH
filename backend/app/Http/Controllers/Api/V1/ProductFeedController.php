@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserFollow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductFeedController extends Controller
 {
@@ -387,7 +388,7 @@ class ProductFeedController extends Controller
             ->toArray();
 
         // Get categories of products the user shared
-        $sharedProductIds = \DB::table('product_shares')
+        $sharedProductIds = DB::table('product_shares')
             ->where('user_id', $authUser->id)
             ->pluck('product_id')
             ->toArray();

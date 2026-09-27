@@ -7,7 +7,6 @@ use App\Jobs\ProcessVideoJob;
 use App\Models\ProductVideo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductVideoController extends Controller
 {
