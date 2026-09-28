@@ -308,6 +308,23 @@
               <div class="d-stat"><strong>{{ selectedUser().user.city || 'N/A' }}</strong><span>Ville</span></div>
             </div>
 
+            <!-- Badges actuels -->
+            @if (selectedUser().user.badges?.length) {
+              <h4>Badges actuels</h4>
+              <div class="log-list">
+                @for (b of selectedUser().user.badges; track b.id) {
+                  <div class="log-item">
+                    <span class="log-action">
+                      <span class="material-icons" style="font-size:16px; vertical-align:text-bottom;">{{ getBadgeIcon(b.badge_type) }}</span>
+                      {{ getBadgeLabel(b.badge_type) }}
+                    </span>
+                    <span class="log-detail">{{ b.expires_at ? ('expire le ' + (b.expires_at | date:'dd/MM/yyyy')) : 'permanent' }}</span>
+                    <button class="btn-sm danger" (click)="revokeBadge(b.badge_type)"><span class="material-icons">close</span></button>
+                  </div>
+                }
+              </div>
+            }
+
             <!-- Recent admin actions -->
             @if (selectedUser().admin_actions?.length) {
               <h4>Actions admin recentes</h4>
@@ -510,9 +527,34 @@
     }
 
     @if (moderationTab() === 'flagged') {
-      <div class="empty-state">
-        <span class="material-icons">flag</span>
-        <span>Pas encore de vue dediee aux videos signalees (le backend ne filtre pour l'instant que les videos "pending").</span>
+      <div class="moderation-list">
+        @for (video of flaggedVideos(); track video.id) {
+          <div class="mod-card">
+            <div class="mod-card-preview">
+              <span class="material-icons">flag</span>
+            </div>
+            <div class="mod-card-info">
+              <span class="mod-card-title">{{ video.product?.title || 'Video' }}</span>
+              <span class="mod-card-meta">
+                {{ video.user?.full_name || 'Utilisateur' }} &middot; {{ video.created_at | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+            <div class="mod-card-actions">
+              <button class="mod-btn approve" (click)="moderateVideo(video.id, 'approved')" title="Approuver">
+                <span class="material-icons">check</span>
+              </button>
+              <button class="mod-btn reject" (click)="moderateVideo(video.id, 'rejected')" title="Rejeter">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          </div>
+        }
+        @if (flaggedVideos().length === 0) {
+          <div class="empty-state">
+            <span class="material-icons">check_circle</span>
+            <span>Aucune video signalee</span>
+          </div>
+        }
       </div>
     }
 
@@ -789,12 +831,20 @@
       </div>
       @if (alerts().length > 0) {
         @for (alert of alerts(); track alert.id || $index) {
-          <div class="alert-item" [class.critical]="alert.severity === 'critical'">
-            <span class="material-icons">{{ alert.severity === 'critical' ? 'error' : 'warning' }}</span>
+          <div class="alert-item" [class.critical]="alert.confidence_score >= 0.8">
+            <span class="material-icons">{{ alert.confidence_score >= 0.8 ? 'error' : 'warning' }}</span>
             <div class="alert-content">
-              <span class="alert-title">{{ alert.description || alert.type }}</span>
-              <span class="alert-detail">{{ alert.ip_address }} &middot; {{ alert.user?.full_name || 'N/A' }}</span>
+              <span class="alert-title">{{ alert.description || alert.detection_type }}</span>
+              <span class="alert-detail">{{ (alert.confidence_score * 100).toFixed(0) }}% confiance &middot; {{ alert.user?.full_name || 'N/A' }}</span>
               <span class="alert-time">{{ alert.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="mod-card-actions">
+              <button class="mod-btn reject" (click)="resolveFraudCase(alert, 'confirmed')" title="Confirmer la fraude">
+                <span class="material-icons">gavel</span>
+              </button>
+              <button class="mod-btn approve" (click)="resolveFraudCase(alert, 'dismissed')" title="Ecarter l'alerte">
+                <span class="material-icons">check</span>
+              </button>
             </div>
           </div>
         }

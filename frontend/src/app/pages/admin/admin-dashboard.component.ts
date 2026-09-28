@@ -26,6 +26,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   realTime = signal<any>(null);
   alerts = signal<any[]>([]);
   pendingVideos = signal<any[]>([]);
+  flaggedVideos = signal<any[]>([]);
 
   // Users tab
   userSearchText = '';
@@ -55,12 +56,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   moderationTab = signal<'pending' | 'flagged' | 'reports'>('pending');
   selectedModerationIds = signal<string[]>([]);
 
-  // Reports tab
-  reportPeriod = signal(7);
-  reportData = signal<any>(null);
-  transactionReport = signal<any>(null);
-  userReport = signal<any>(null);
-
   // Signalements & tickets (sous-onglet Rapports de la moderation)
   reportsSubTab = signal<'products' | 'users' | 'tickets'>('products');
   reportsStatusFilter = signal<'pending' | 'reviewed' | 'resolved' | 'dismissed' | 'all'>('pending');
@@ -68,6 +63,12 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   userReports = signal<any[]>([]);
   supportTickets = signal<any[]>([]);
   loadingReports = signal(false);
+
+  // Reports tab
+  reportPeriod = signal(7);
+  reportData = signal<any>(null);
+  transactionReport = signal<any>(null);
+  userReport = signal<any>(null);
 
   // Security
   securityLogs = signal<any[]>([]);
@@ -123,24 +124,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   loadRealTime() {
     this.admin.getRealTimeData().subscribe({
       next: (res) => this.realTime.set(res),
-    });
-  }
-
-    loadBannedIps() {
-    this.admin.getBannedIps().subscribe({ next: (res) => this.bannedIps.set(res || []) });
-  }
-
-  submitBanIp() {
-    if (!this.banIpAddress.trim() || !this.banIpReason.trim()) return;
-    this.admin.banIp(this.banIpAddress.trim(), this.banIpReason.trim()).subscribe({
-      next: () => { this.notif.success('IP bannie'); this.banIpAddress = ''; this.banIpReason = ''; this.loadBannedIps(); },
-      error: () => this.notif.error('Erreur lors du bannissement de l\'IP'),
-    });
-  }
-
-  unbanIp(id: string) {
-    this.admin.unbanIp(id).subscribe({
-      next: () => { this.bannedIps.update(list => list.filter(b => b.id !== id)); this.notif.success('IP debannie'); },
     });
   }
 
@@ -214,10 +197,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const user = this.selectedUser()?.user;
     if (!user) return;
     const reason = window.prompt('Raison du bannissement definitif (obligatoire) :');
-     if (!reason || !reason.trim()) return;
-     if (!confirm('Etes-vous SUR de vouloir bannir definitivement ce compte ? Cette action est IRREVERSIBLE.')) return;
-     this.admin.banUser(user.id, reason.trim()).subscribe({
-    next: () => {
+    if (!reason || !reason.trim()) return;
+    if (!confirm('Etes-vous SUR de vouloir bannir definitivement ce compte ? Cette action est IRREVERSIBLE.')) return;
+    this.admin.banUser(user.id, reason.trim()).subscribe({
+      next: () => {
         this.notif.success('Utilisateur banni definitivement');
         this.showSuspendModal.set(false);
         this.loadUsers();
@@ -255,8 +238,29 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       next: () => {
         this.notif.success('Badge attribue');
         this.showBadgeModal.set(false);
+        this.viewUser(user);
       },
     });
+  }
+
+  revokeBadge(badgeType: string) {
+    const user = this.selectedUser()?.user;
+    if (!user) return;
+    if (!confirm('Revoquer ce badge ?')) return;
+    this.admin.revokeBadge(user.id, badgeType).subscribe({
+      next: () => {
+        this.notif.success('Badge revoque');
+        this.viewUser(user);
+      },
+    });
+  }
+
+  getBadgeLabel(type: string): string {
+    return this.badgeDefinitions.find(b => b.type === type)?.name || type;
+  }
+
+  getBadgeIcon(type: string): string {
+    return this.badgeDefinitions.find(b => b.type === type)?.icon || 'stars';
   }
 
   sendUserNotification() {
@@ -283,6 +287,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.admin.moderateVideo(videoId, status).subscribe({
       next: () => {
         this.pendingVideos.update(v => v.filter(video => video.id !== videoId));
+        this.flaggedVideos.update(v => v.filter(video => video.id !== videoId));
         this.notif.success('Contenu modere');
       },
     });
@@ -318,6 +323,78 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ─── Signalements & tickets ───────────────────────────────────────────
+  setModerationTab(tab: 'pending' | 'flagged' | 'reports') {
+    this.moderationTab.set(tab);
+    if (tab === 'flagged') this.loadFlagged();
+    if (tab === 'reports') this.loadReportsSubTab();
+  }
+
+  loadFlagged() {
+    this.admin.getPendingModeration('flagged').subscribe({
+      next: (res) => this.flaggedVideos.set(res.data || []),
+    });
+  }
+
+  setReportsSubTab(tab: 'products' | 'users' | 'tickets') {
+    this.reportsSubTab.set(tab);
+    this.loadReportsSubTab();
+  }
+
+  changeReportsStatusFilter(status: 'pending' | 'reviewed' | 'resolved' | 'dismissed' | 'all') {
+    this.reportsStatusFilter.set(status);
+    this.loadReportsSubTab();
+  }
+
+  loadReportsSubTab() {
+    this.loadingReports.set(true);
+    const status = this.reportsStatusFilter();
+    const sub = this.reportsSubTab();
+    if (sub === 'products') {
+      this.admin.getProductReports(status).subscribe({
+        next: (res) => { this.productReports.set(res.data || []); this.loadingReports.set(false); },
+        error: () => this.loadingReports.set(false),
+      });
+    } else if (sub === 'users') {
+      this.admin.getUserReports(status).subscribe({
+        next: (res) => { this.userReports.set(res.data || []); this.loadingReports.set(false); },
+        error: () => this.loadingReports.set(false),
+      });
+    } else {
+      this.admin.getSupportTickets(status).subscribe({
+        next: (res) => { this.supportTickets.set(res.data || []); this.loadingReports.set(false); },
+        error: () => this.loadingReports.set(false),
+      });
+    }
+  }
+
+  resolveProductReport(reportId: string, status: string) {
+    this.admin.resolveProductReport(reportId, status).subscribe({
+      next: () => {
+        this.productReports.update(r => r.filter(item => item.id !== reportId));
+        this.notif.success('Signalement traite');
+      },
+    });
+  }
+
+  resolveUserReport(reportId: string, status: string) {
+    this.admin.resolveUserReport(reportId, status).subscribe({
+      next: () => {
+        this.userReports.update(r => r.filter(item => item.id !== reportId));
+        this.notif.success('Signalement traite');
+      },
+    });
+  }
+
+  resolveSupportTicket(ticketId: string, status: string) {
+    this.admin.resolveSupportTicket(ticketId, status).subscribe({
+      next: () => {
+        this.supportTickets.update(t => t.filter(item => item.id !== ticketId));
+        this.notif.success('Ticket traite');
+      },
+    });
+  }
+
   // ─── Reports ───────────────────────────────────────────────────────────
   loadReports() {
     const days = this.reportPeriod();
@@ -337,10 +414,48 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.loadReports();
   }
 
+  resolveFraudCase(alert: any, status: 'confirmed' | 'dismissed') {
+    const actionTaken = status === 'confirmed' ? 'suspension' : 'none';
+    this.admin.resolveFraud(alert.id, status, actionTaken).subscribe({
+      next: () => {
+        this.alerts.update(list => list.filter(a => a.id !== alert.id));
+        this.notif.success(status === 'confirmed' ? 'Fraude confirmee' : 'Alerte ecartee');
+      },
+    });
+  }
+
   // ─── Security ──────────────────────────────────────────────────────────
   loadSecurityLogs() {
     this.admin.getAuditLogs({ per_page: 50 }).subscribe({
       next: (res) => this.securityLogs.set(res.data || []),
+    });
+  }
+
+  loadBannedIps() {
+    this.admin.getBannedIps().subscribe({
+      next: (res) => this.bannedIps.set(res || []),
+    });
+  }
+
+  submitBanIp() {
+    if (!this.banIpAddress.trim() || !this.banIpReason.trim()) return;
+    this.admin.banIp(this.banIpAddress.trim(), this.banIpReason.trim()).subscribe({
+      next: () => {
+        this.notif.success('IP bannie');
+        this.banIpAddress = '';
+        this.banIpReason = '';
+        this.loadBannedIps();
+      },
+      error: () => this.notif.error('Erreur lors du bannissement de l\'IP'),
+    });
+  }
+
+  unbanIp(id: string) {
+    this.admin.unbanIp(id).subscribe({
+      next: () => {
+        this.bannedIps.update(list => list.filter(b => b.id !== id));
+        this.notif.success('IP debannie');
+      },
     });
   }
 
@@ -378,59 +493,4 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/feed']); // '/profile' pour edit-profile
   }
 }
-
-  setModerationTab(tab: 'pending' | 'flagged' | 'reports') {
-    this.moderationTab.set(tab);
-    if (tab === 'reports') this.loadReportsSubTab();
-  }
-
-  setReportsSubTab(tab: 'products' | 'users' | 'tickets') {
-    this.reportsSubTab.set(tab);
-    this.loadReportsSubTab();
-  }
-
-  changeReportsStatusFilter(status: 'pending' | 'reviewed' | 'resolved' | 'dismissed' | 'all') {
-    this.reportsStatusFilter.set(status);
-    this.loadReportsSubTab();
-  }
-
-  loadReportsSubTab() {
-    this.loadingReports.set(true);
-    const status = this.reportsStatusFilter();
-    const sub = this.reportsSubTab();
-    if (sub === 'products') {
-      this.admin.getProductReports(status).subscribe({
-        next: (res) => { this.productReports.set(res.data || []); this.loadingReports.set(false); },
-        error: () => this.loadingReports.set(false),
-      });
-    } else if (sub === 'users') {
-      this.admin.getUserReports(status).subscribe({
-        next: (res) => { this.userReports.set(res.data || []); this.loadingReports.set(false); },
-        error: () => this.loadingReports.set(false),
-      });
-    } else {
-      this.admin.getSupportTickets(status).subscribe({
-        next: (res) => { this.supportTickets.set(res.data || []); this.loadingReports.set(false); },
-        error: () => this.loadingReports.set(false),
-      });
-    }
-  }
-
-  resolveProductReport(reportId: string, status: string) {
-    this.admin.resolveProductReport(reportId, status).subscribe({
-      next: () => { this.productReports.update(r => r.filter(item => item.id !== reportId)); this.notif.success('Signalement traite'); },
-    });
-  }
-
-  resolveUserReport(reportId: string, status: string) {
-    this.admin.resolveUserReport(reportId, status).subscribe({
-      next: () => { this.userReports.update(r => r.filter(item => item.id !== reportId)); this.notif.success('Signalement traite'); },
-    });
-  }
-
-  resolveSupportTicket(ticketId: string, status: string) {
-    this.admin.resolveSupportTicket(ticketId, status).subscribe({
-      next: () => { this.supportTickets.update(t => t.filter(item => item.id !== ticketId)); this.notif.success('Ticket traite'); },
-    });
-  }
 }

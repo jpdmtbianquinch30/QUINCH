@@ -318,6 +318,7 @@ Route::prefix('admin')
         // Reports
         Route::get('reports/transactions', [AdminController::class, 'transactionReport']);
         Route::get('reports/fraud', [AdminController::class, 'fraudReport']);
+        Route::post('reports/fraud/{fraudDetection}/resolve', [AdminController::class, 'resolveFraud']);
         Route::get('reports/users', [AdminController::class, 'userReport']);
         Route::get('reports/overview', [AdminController::class, 'overviewReport']);
 

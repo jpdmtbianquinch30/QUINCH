@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminActionLog;
+use App\Models\AuditLog;
 use App\Models\FraudDetection;
 use App\Models\Product;
 use App\Models\ProductReport;
@@ -96,14 +97,14 @@ class AdminController extends Controller
     {
         $days = $request->get('days', 30);
 
-        $transactions = Transaction::selectRaw('
+        $transactions = Transaction::selectRaw("
                 DATE(created_at) as date,
                 COUNT(*) as total,
-                SUM(CASE WHEN payment_status = \'completed\' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN payment_status = \'failed\' THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN payment_status = \'completed\' THEN amount ELSE 0 END) as volume,
+                SUM(CASE WHEN payment_status = 'completed' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN payment_status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN payment_status = 'completed' THEN amount ELSE 0 END) as volume,
                 payment_method
-            ')
+            ")
             ->where('created_at', '>=', now()->subDays($days))
             ->groupByRaw('DATE(created_at), payment_method')
             ->orderBy('date')
@@ -129,6 +130,31 @@ class AdminController extends Controller
             ->paginate(20);
 
         return response()->json($fraudCases);
+    }
+
+    public function resolveFraud(Request $request, FraudDetection $fraudDetection): JsonResponse
+    {
+        $request->validate([
+            'status' => ['required', 'in:confirmed,dismissed'],
+            'action_taken' => ['required', 'in:none,warning,suspension,ban,payment_hold'],
+        ]);
+
+        $fraudDetection->update([
+            'status' => $request->status,
+            'action_taken' => $request->action_taken,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+
+        AuditLog::create([
+            'user_id' => $request->user()->id,
+            'action_type' => 'fraud_case_reviewed',
+            'entity_type' => 'FraudDetection',
+            'new_values' => ['fraud_detection_id' => $fraudDetection->id, 'status' => $request->status, 'action_taken' => $request->action_taken],
+            'severity' => $request->status === 'confirmed' ? 'critical' : 'info',
+        ]);
+
+        return response()->json(['message' => 'Cas de fraude traite.']);
     }
 
     public function userReport(Request $request): JsonResponse

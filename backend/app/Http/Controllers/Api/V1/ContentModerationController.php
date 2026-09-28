@@ -12,10 +12,12 @@ use Illuminate\Http\Request;
 
 class ContentModerationController extends Controller
 {
-    public function pending(): JsonResponse
+    public function pending(Request $request): JsonResponse
     {
+        $status = $request->get('status', 'pending');
+
         $videos = ProductVideo::with(['user:id,full_name,username,avatar_url,trust_score', 'product:id,title,video_id'])
-            ->pending()
+            ->where('moderation_status', $status)
             ->latest()
             ->paginate(20);
 

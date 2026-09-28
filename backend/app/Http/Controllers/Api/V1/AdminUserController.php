@@ -10,6 +10,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+
 class AdminUserController extends Controller
 {
     public function __construct(private NotificationService $notif) {}
