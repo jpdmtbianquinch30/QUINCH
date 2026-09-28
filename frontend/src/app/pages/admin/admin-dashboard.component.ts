@@ -61,8 +61,19 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   transactionReport = signal<any>(null);
   userReport = signal<any>(null);
 
+  // Signalements & tickets (sous-onglet Rapports de la moderation)
+  reportsSubTab = signal<'products' | 'users' | 'tickets'>('products');
+  reportsStatusFilter = signal<'pending' | 'reviewed' | 'resolved' | 'dismissed' | 'all'>('pending');
+  productReports = signal<any[]>([]);
+  userReports = signal<any[]>([]);
+  supportTickets = signal<any[]>([]);
+  loadingReports = signal(false);
+
   // Security
   securityLogs = signal<any[]>([]);
+  bannedIps = signal<any[]>([]);
+  banIpAddress = '';
+  banIpReason = '';
 
   private refreshInterval: any;
 
@@ -92,6 +103,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     if (tab === 'moderation' && this.pendingVideos().length === 0) this.loadModeration();
     if (tab === 'reports' && !this.reportData()) this.loadReports();
     if (tab === 'security' && this.securityLogs().length === 0) this.loadSecurityLogs();
+    if (tab === 'security') this.loadBannedIps();
   }
 
   loadDashboard() {
@@ -111,6 +123,24 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   loadRealTime() {
     this.admin.getRealTimeData().subscribe({
       next: (res) => this.realTime.set(res),
+    });
+  }
+
+    loadBannedIps() {
+    this.admin.getBannedIps().subscribe({ next: (res) => this.bannedIps.set(res || []) });
+  }
+
+  submitBanIp() {
+    if (!this.banIpAddress.trim() || !this.banIpReason.trim()) return;
+    this.admin.banIp(this.banIpAddress.trim(), this.banIpReason.trim()).subscribe({
+      next: () => { this.notif.success('IP bannie'); this.banIpAddress = ''; this.banIpReason = ''; this.loadBannedIps(); },
+      error: () => this.notif.error('Erreur lors du bannissement de l\'IP'),
+    });
+  }
+
+  unbanIp(id: string) {
+    this.admin.unbanIp(id).subscribe({
+      next: () => { this.bannedIps.update(list => list.filter(b => b.id !== id)); this.notif.success('IP debannie'); },
     });
   }
 
@@ -183,8 +213,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   banUser() {
     const user = this.selectedUser()?.user;
     if (!user) return;
-    this.admin.banUser(user.id, this.suspendReason || 'Bannissement permanent').subscribe({
-      next: () => {
+    const reason = window.prompt('Raison du bannissement definitif (obligatoire) :');
+     if (!reason || !reason.trim()) return;
+     if (!confirm('Etes-vous SUR de vouloir bannir definitivement ce compte ? Cette action est IRREVERSIBLE.')) return;
+     this.admin.banUser(user.id, reason.trim()).subscribe({
+    next: () => {
         this.notif.success('Utilisateur banni definitivement');
         this.showSuspendModal.set(false);
         this.loadUsers();
@@ -345,4 +378,59 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/feed']); // '/profile' pour edit-profile
   }
 }
+
+  setModerationTab(tab: 'pending' | 'flagged' | 'reports') {
+    this.moderationTab.set(tab);
+    if (tab === 'reports') this.loadReportsSubTab();
+  }
+
+  setReportsSubTab(tab: 'products' | 'users' | 'tickets') {
+    this.reportsSubTab.set(tab);
+    this.loadReportsSubTab();
+  }
+
+  changeReportsStatusFilter(status: 'pending' | 'reviewed' | 'resolved' | 'dismissed' | 'all') {
+    this.reportsStatusFilter.set(status);
+    this.loadReportsSubTab();
+  }
+
+  loadReportsSubTab() {
+    this.loadingReports.set(true);
+    const status = this.reportsStatusFilter();
+    const sub = this.reportsSubTab();
+    if (sub === 'products') {
+      this.admin.getProductReports(status).subscribe({
+        next: (res) => { this.productReports.set(res.data || []); this.loadingReports.set(false); },
+        error: () => this.loadingReports.set(false),
+      });
+    } else if (sub === 'users') {
+      this.admin.getUserReports(status).subscribe({
+        next: (res) => { this.userReports.set(res.data || []); this.loadingReports.set(false); },
+        error: () => this.loadingReports.set(false),
+      });
+    } else {
+      this.admin.getSupportTickets(status).subscribe({
+        next: (res) => { this.supportTickets.set(res.data || []); this.loadingReports.set(false); },
+        error: () => this.loadingReports.set(false),
+      });
+    }
+  }
+
+  resolveProductReport(reportId: string, status: string) {
+    this.admin.resolveProductReport(reportId, status).subscribe({
+      next: () => { this.productReports.update(r => r.filter(item => item.id !== reportId)); this.notif.success('Signalement traite'); },
+    });
+  }
+
+  resolveUserReport(reportId: string, status: string) {
+    this.admin.resolveUserReport(reportId, status).subscribe({
+      next: () => { this.userReports.update(r => r.filter(item => item.id !== reportId)); this.notif.success('Signalement traite'); },
+    });
+  }
+
+  resolveSupportTicket(ticketId: string, status: string) {
+    this.admin.resolveSupportTicket(ticketId, status).subscribe({
+      next: () => { this.supportTickets.update(t => t.filter(item => item.id !== ticketId)); this.notif.success('Ticket traite'); },
+    });
+  }
 }

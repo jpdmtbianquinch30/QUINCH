@@ -6,39 +6,107 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         apiPrefix: 'api/v1',
     )
-->withMiddleware(function (Middleware $middleware): void {
-    $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
-    // Ping de présence : alimente last_seen_at (-> is_online) pour tout
-    // appel API authentifié.
-    $middleware->appendToGroup('api', \App\Http\Middleware\TouchLastSeen::class);
+    ->withMiddleware(function (Middleware $middleware): void {
 
-    $middleware->alias([
-        'role' => \App\Http\Middleware\CheckRole::class,
-        'fraud.check' => \App\Http\Middleware\FraudDetection::class,
-        'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
-        'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
-    ]);
-        // API pure : il n'existe aucune route web nommée "login". Sans ceci,
-        // une requête non authentifiée qui n'envoie pas Accept:application/json
-        // (ex. Postman par défaut) fait planter Laravel en 500 (au lieu d'un
-        // 401 propre) car il tente de rediriger vers route('login'), qui
-        // n'existe pas. On force donc à ne jamais rediriger : toujours
-        // renvoyer une exception d'authentification JSON.
-        $middleware->redirectGuestsTo(fn () => null);
+        /*
+        |--------------------------------------------------------------------------
+        | Security Headers
+        |--------------------------------------------------------------------------
+        |
+        | Ajoute les en-têtes de sécurité à toutes les réponses HTTP.
+        |
+        */
+        $middleware->append(
+            \App\Http\Middleware\SecurityHeaders::class
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | IP bannies
+        |--------------------------------------------------------------------------
+        |
+        | Bloque les requêtes provenant d'une IP bannie par un administrateur,
+        | avant même l'authentification.
+        |
+        | Voir SecurityController::banIp().
+        |
+        */
+        $middleware->prependToGroup(
+            'api',
+            \App\Http\Middleware\CheckBannedIp::class
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Présence utilisateur
+        |--------------------------------------------------------------------------
+        |
+        | Met à jour last_seen_at afin de permettre le calcul de is_online
+        | pour les utilisateurs authentifiés.
+        |
+        */
+        $middleware->appendToGroup(
+            'api',
+            \App\Http\Middleware\TouchLastSeen::class
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Middleware aliases
+        |--------------------------------------------------------------------------
+        |
+        | Ces alias peuvent ensuite être utilisés directement dans les routes.
+        |
+        */
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+
+            'fraud.check' => \App\Http\Middleware\FraudDetection::class,
+
+            'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
+
+            'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | API : pas de redirection vers /login
+        |--------------------------------------------------------------------------
+        |
+        | L'API ne possède pas nécessairement de route web "login".
+        | Une requête non authentifiée doit donc recevoir une réponse
+        | d'authentification appropriée plutôt qu'une redirection HTML.
+        |
+        */
+        $middleware->redirectGuestsTo(
+            fn () => null
+        );
     })
+
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Garde-fou : une API ne doit jamais renvoyer une page d'erreur HTML
-        // à un client mobile/JS. Sans ça, une exception imprévue (bug, 500,
-        // 404, etc.) sur une route api/* renverrait la page d'erreur HTML de
-        // Laravel, que Flutter/Angular ne sauraient pas parser.
-        $exceptions->shouldRenderJsonWhen(function ($request, \Throwable $e) {
-            return $request->is('api/*') || $request->expectsJson();
-        });
-    })->create();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Réponses JSON pour l'API
+        |--------------------------------------------------------------------------
+        |
+        | Les routes API doivent toujours recevoir des erreurs JSON
+        | plutôt qu'une page HTML Laravel.
+        |
+        */
+        $exceptions->shouldRenderJsonWhen(
+            function ($request, \Throwable $e): bool {
+                return $request->is('api/*')
+                    || $request->expectsJson();
+            }
+        );
+    })
+
+    ->create();

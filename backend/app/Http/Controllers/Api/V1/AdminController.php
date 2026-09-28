@@ -99,9 +99,9 @@ class AdminController extends Controller
         $transactions = Transaction::selectRaw('
                 DATE(created_at) as date,
                 COUNT(*) as total,
-                SUM(CASE WHEN payment_status = "completed" THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN payment_status = "failed" THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN payment_status = "completed" THEN amount ELSE 0 END) as volume,
+                SUM(CASE WHEN payment_status = \'completed\' THEN 1 ELSE 0 END) as completed,
+                SUM(CASE WHEN payment_status = \'failed\' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN payment_status = \'completed\' THEN amount ELSE 0 END) as volume,
                 payment_method
             ')
             ->where('created_at', '>=', now()->subDays($days))

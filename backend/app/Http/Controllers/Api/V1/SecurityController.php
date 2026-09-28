@@ -44,6 +44,12 @@ class SecurityController extends Controller
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
+              \App\Models\BannedIp::updateOrCreate(
+           ['ip_address' => $request->ip_address],
+           ['reason' => $request->reason, 'banned_by' => $request->user()->id]
+       );
+
+
         AuditLog::create([
             'user_id' => $request->user()->id,
             'action_type' => 'ip_banned',
@@ -57,4 +63,25 @@ class SecurityController extends Controller
             'message' => "IP {$request->ip_address} bannie.",
         ]);
     }
+
+    public function bannedIps(): JsonResponse
+   {
+       return response()->json(
+           \App\Models\BannedIp::with('bannedBy:id,full_name')->latest()->get()
+       );
+   }
+
+   public function unbanIp(\App\Models\BannedIp $bannedIp, Request $request): JsonResponse
+   {
+       AuditLog::create([
+           'user_id' => $request->user()->id,
+           'action_type' => 'ip_unbanned',
+           'entity_type' => 'Security',
+           'ip_address' => $bannedIp->ip_address,
+           'new_values' => ['unbanned_ip' => $bannedIp->ip_address],
+           'severity' => 'warning',
+       ]);
+       $bannedIp->delete();
+       return response()->json(['message' => "IP {$bannedIp->ip_address} debannie."]);
+   }
 }

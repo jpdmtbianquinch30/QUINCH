@@ -333,6 +333,14 @@
                   <span class="material-icons">check_circle</span> Reactiver
                 </button>
               }
+              @if (selectedUser().user.role !== 'super_admin') {
+                <button class="action-btn danger" (click)="banUser()">
+                  <span class="material-icons">gavel</span> Bannir definitivement
+                </button>
+                <button class="action-btn danger" (click)="deleteUser()">
+                  <span class="material-icons">delete_forever</span> Supprimer le compte
+                </button>
+              }
               <button class="action-btn" (click)="showTrustModal.set(true)">
                 <span class="material-icons">tune</span> Ajuster confiance
               </button>
@@ -450,11 +458,11 @@
   @if (activeTab() === 'moderation') {
     <div class="section-toolbar">
       <div class="sub-tabs">
-        <button [class.active]="moderationTab() === 'pending'" (click)="moderationTab.set('pending')">
+        <button [class.active]="moderationTab() === 'pending'" (click)="setModerationTab('pending')">
           En attente <span class="count-badge">{{ pendingVideos().length }}</span>
         </button>
-        <button [class.active]="moderationTab() === 'flagged'" (click)="moderationTab.set('flagged')">Signales</button>
-        <button [class.active]="moderationTab() === 'reports'" (click)="moderationTab.set('reports')">Rapports</button>
+        <button [class.active]="moderationTab() === 'flagged'" (click)="setModerationTab('flagged')">Signales</button>
+        <button [class.active]="moderationTab() === 'reports'" (click)="setModerationTab('reports')">Rapports</button>
       </div>
       @if (selectedModerationIds().length > 0) {
         <div class="bulk-actions">
@@ -465,39 +473,140 @@
       }
     </div>
 
-    <div class="moderation-list">
-      @for (video of pendingVideos(); track video.id) {
-        <div class="mod-card">
-          <div class="mod-card-check">
-            <input type="checkbox" [checked]="selectedModerationIds().includes(video.id)" (change)="toggleModerationSelect(video.id)" />
+    @if (moderationTab() === 'pending') {
+      <div class="moderation-list">
+        @for (video of pendingVideos(); track video.id) {
+          <div class="mod-card">
+            <div class="mod-card-check">
+              <input type="checkbox" [checked]="selectedModerationIds().includes(video.id)" (change)="toggleModerationSelect(video.id)" />
+            </div>
+            <div class="mod-card-preview">
+              <span class="material-icons">play_circle</span>
+            </div>
+            <div class="mod-card-info">
+              <span class="mod-card-title">{{ video.product?.title || 'Video' }}</span>
+              <span class="mod-card-meta">
+                {{ video.user?.full_name || 'Utilisateur' }} &middot; {{ video.created_at | date:'dd/MM/yyyy HH:mm' }}
+              </span>
+            </div>
+            <div class="mod-card-actions">
+              <button class="mod-btn approve" (click)="moderateVideo(video.id, 'approved')">
+                <span class="material-icons">check</span>
+              </button>
+              <button class="mod-btn reject" (click)="moderateVideo(video.id, 'rejected')">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
           </div>
-          <div class="mod-card-preview">
-            <span class="material-icons">play_circle</span>
-          </div>
-          <div class="mod-card-info">
-            <span class="mod-card-title">{{ video.product?.title || 'Video' }}</span>
-            <span class="mod-card-meta">
-              {{ video.user?.full_name || 'Utilisateur' }} &middot; {{ video.created_at | date:'dd/MM/yyyy HH:mm' }}
-            </span>
-          </div>
-          <div class="mod-card-actions">
-            <button class="mod-btn approve" (click)="moderateVideo(video.id, 'approved')">
-              <span class="material-icons">check</span>
-            </button>
-            <button class="mod-btn reject" (click)="moderateVideo(video.id, 'rejected')">
-              <span class="material-icons">close</span>
-            </button>
-          </div>
-        </div>
-      }
+        }
 
-      @if (pendingVideos().length === 0) {
-        <div class="empty-state">
-          <span class="material-icons">check_circle</span>
-          <span>File de moderation vide</span>
+        @if (pendingVideos().length === 0) {
+          <div class="empty-state">
+            <span class="material-icons">check_circle</span>
+            <span>File de moderation vide</span>
+          </div>
+        }
+      </div>
+    }
+
+    @if (moderationTab() === 'flagged') {
+      <div class="empty-state">
+        <span class="material-icons">flag</span>
+        <span>Pas encore de vue dediee aux videos signalees (le backend ne filtre pour l'instant que les videos "pending").</span>
+      </div>
+    }
+
+    @if (moderationTab() === 'reports') {
+      <div class="section-toolbar">
+        <div class="sub-tabs">
+          <button [class.active]="reportsSubTab() === 'products'" (click)="setReportsSubTab('products')">
+            Produits signales <span class="count-badge">{{ productReports().length }}</span>
+          </button>
+          <button [class.active]="reportsSubTab() === 'users'" (click)="setReportsSubTab('users')">
+            Utilisateurs signales <span class="count-badge">{{ userReports().length }}</span>
+          </button>
+          <button [class.active]="reportsSubTab() === 'tickets'" (click)="setReportsSubTab('tickets')">
+            Tickets support <span class="count-badge">{{ supportTickets().length }}</span>
+          </button>
         </div>
+        <div class="sub-tabs">
+          <button [class.active]="reportsStatusFilter() === 'pending'" (click)="changeReportsStatusFilter('pending')">En attente</button>
+          <button [class.active]="reportsStatusFilter() === 'all'" (click)="changeReportsStatusFilter('all')">Tous</button>
+        </div>
+      </div>
+
+      @if (loadingReports()) {
+        <div class="empty-state"><span class="material-icons">hourglass_top</span><span>Chargement...</span></div>
+      } @else {
+        @if (reportsSubTab() === 'products') {
+          <div class="moderation-list">
+            @for (report of productReports(); track report.id) {
+              <div class="mod-card">
+                <div class="mod-card-info">
+                  <span class="mod-card-title">{{ report.product?.title || 'Produit supprime' }}</span>
+                  <span class="mod-card-meta">
+                    Motif : {{ report.reason }} &middot; par {{ report.reporter?.full_name || 'Utilisateur' }}
+                    &middot; {{ report.created_at | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                  @if (report.description) { <span class="mod-card-meta">{{ report.description }}</span> }
+                </div>
+                <div class="mod-card-actions">
+                  <button class="mod-btn approve" (click)="resolveProductReport(report.id, 'resolved')" title="Resoudre"><span class="material-icons">check</span></button>
+                  <button class="mod-btn reject" (click)="resolveProductReport(report.id, 'dismissed')" title="Rejeter"><span class="material-icons">close</span></button>
+                </div>
+              </div>
+            }
+            @if (productReports().length === 0) {
+              <div class="empty-state"><span class="material-icons">check_circle</span><span>Aucun signalement produit</span></div>
+            }
+          </div>
+        }
+
+        @if (reportsSubTab() === 'users') {
+          <div class="moderation-list">
+            @for (report of userReports(); track report.id) {
+              <div class="mod-card">
+                <div class="mod-card-info">
+                  <span class="mod-card-title">{{ report.reported_user?.full_name || 'Utilisateur supprime' }}</span>
+                  <span class="mod-card-meta">
+                    Motif : {{ report.reason }} &middot; par {{ report.reporter?.full_name || 'Utilisateur' }}
+                    &middot; {{ report.created_at | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                  @if (report.description) { <span class="mod-card-meta">{{ report.description }}</span> }
+                </div>
+                <div class="mod-card-actions">
+                  <button class="mod-btn approve" (click)="resolveUserReport(report.id, 'resolved')" title="Resoudre"><span class="material-icons">check</span></button>
+                  <button class="mod-btn reject" (click)="resolveUserReport(report.id, 'dismissed')" title="Rejeter"><span class="material-icons">close</span></button>
+                </div>
+              </div>
+            }
+            @if (userReports().length === 0) {
+              <div class="empty-state"><span class="material-icons">check_circle</span><span>Aucun signalement utilisateur</span></div>
+            }
+          </div>
+        }
+
+        @if (reportsSubTab() === 'tickets') {
+          <div class="moderation-list">
+            @for (ticket of supportTickets(); track ticket.id) {
+              <div class="mod-card">
+                <div class="mod-card-info">
+                  <span class="mod-card-title">{{ ticket.category }} &middot; {{ ticket.user?.full_name || 'Utilisateur' }}</span>
+                  <span class="mod-card-meta">{{ ticket.description }}</span>
+                  <span class="mod-card-meta">{{ ticket.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                <div class="mod-card-actions">
+                  <button class="mod-btn approve" (click)="resolveSupportTicket(ticket.id, 'resolved')" title="Resoudre"><span class="material-icons">check</span></button>
+                </div>
+              </div>
+            }
+            @if (supportTickets().length === 0) {
+              <div class="empty-state"><span class="material-icons">check_circle</span><span>Aucun ticket de support</span></div>
+            }
+          </div>
+        }
       }
-    </div>
+    }
   }
 
   <!-- ═════════════════ FINANCE TAB ═════════════════ -->
@@ -713,6 +822,39 @@
         <div class="empty-state small">
           <span class="material-icons">description</span>
           <span>Aucun log</span>
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <h3>IP bannies</h3>
+      <div class="form-group">
+        <label>Adresse IP</label>
+        <input type="text" [(ngModel)]="banIpAddress" placeholder="ex: 41.82.12.34" />
+      </div>
+      <div class="form-group">
+        <label>Raison</label>
+        <textarea [(ngModel)]="banIpReason" rows="2" placeholder="Raison du bannissement..."></textarea>
+      </div>
+      <button class="btn-danger" (click)="submitBanIp()" [disabled]="!banIpAddress.trim() || !banIpReason.trim()">
+        <span class="material-icons">block</span> Bannir cette IP
+      </button>
+
+      @if (bannedIps().length > 0) {
+        <div class="log-list" style="margin-top: 16px;">
+          @for (b of bannedIps(); track b.id) {
+            <div class="log-item">
+              <span class="log-action critical">{{ b.ip_address }}</span>
+              <span class="log-detail">{{ b.reason }} &middot; par {{ b.banned_by?.full_name || 'Admin' }}</span>
+              <span class="log-time">{{ b.created_at | date:'dd/MM/yyyy' }}</span>
+              <button class="btn-sm" (click)="unbanIp(b.id)"><span class="material-icons">lock_open</span></button>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state small">
+          <span class="material-icons">shield</span>
+          <span>Aucune IP bannie</span>
         </div>
       }
     </div>

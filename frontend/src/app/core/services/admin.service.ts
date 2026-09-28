@@ -1,7 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-
 export interface AdminMetrics {
   users: { total: number; active: number; clients: number; admins: number; verified: number; new_today: number; new_this_week: number; new_this_month: number; suspended: number };
   products: { total: number; active: number; sold: number; new_today: number };
@@ -85,7 +84,7 @@ export class AdminService {
   }
 
   banUser(id: string, reason: string): Observable<any> {
-    return this.api.post(`admin/users/${id}/suspend`, { reason, duration: 3650, permanent: true });
+   return this.api.post(`admin/users/${id}/ban`, { reason });
   }
 
   verifyKyc(id: string, status: string, reason?: string): Observable<any> {
@@ -136,6 +135,14 @@ export class AdminService {
     return this.api.post('admin/security/ip-ban', { ip_address: ip, reason });
   }
 
+   getBannedIps(): Observable<any> {
+   return this.api.get('admin/security/banned-ips');
+ }
+
+ unbanIp(id: string): Observable<any> {
+   return this.api.delete(`admin/security/banned-ips/${id}`);
+ }
+
   getTransactionReport(days: number = 30): Observable<any> {
     return this.api.get('admin/reports/transactions', { days });
   }
@@ -151,4 +158,30 @@ export class AdminService {
   getFraudReport(): Observable<any> {
     return this.api.get('admin/reports/fraud');
   }
+
+    // ─── Signalements & tickets (jamais consultés depuis l'admin jusqu'ici) ──
+  getProductReports(status: string = 'pending'): Observable<any> {
+    return this.api.get('admin/reports/products', { status });
+  }
+
+  resolveProductReport(reportId: string, status: string, adminNotes?: string): Observable<any> {
+    return this.api.post(`admin/reports/products/${reportId}/resolve`, { status, admin_notes: adminNotes });
+  }
+
+  getUserReports(status: string = 'pending'): Observable<any> {
+    return this.api.get('admin/reports/reported-users', { status });
+  }
+
+  resolveUserReport(reportId: string, status: string, adminNotes?: string): Observable<any> {
+    return this.api.post(`admin/reports/reported-users/${reportId}/resolve`, { status, admin_notes: adminNotes });
+  }
+
+  getSupportTickets(status: string = 'pending'): Observable<any> {
+    return this.api.get('admin/reports/support-tickets', { status });
+  }
+
+  resolveSupportTicket(ticketId: string, status: string, adminNotes?: string): Observable<any> {
+    return this.api.post(`admin/reports/support-tickets/${ticketId}/resolve`, { status, admin_notes: adminNotes });
+  }
+
 }

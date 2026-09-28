@@ -312,6 +312,8 @@ Route::prefix('admin')
         Route::get('security/alerts', [SecurityController::class, 'alerts']);
         Route::get('security/logs', [SecurityController::class, 'logs']);
         Route::post('security/ip-ban', [SecurityController::class, 'banIp']);
+        Route::get('security/banned-ips', [SecurityController::class, 'bannedIps']);
+        Route::delete('security/banned-ips/{bannedIp}', [SecurityController::class, 'unbanIp']);
 
         // Reports
         Route::get('reports/transactions', [AdminController::class, 'transactionReport']);
