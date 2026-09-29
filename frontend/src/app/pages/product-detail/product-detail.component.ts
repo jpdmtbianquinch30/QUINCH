@@ -643,9 +643,38 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   }
 
   // ─── Report ────────────────────────────────────────────
+  showReportModal = signal(false);
+  reportReason = '';
+  reportDescription = '';
+  submittingReport = signal(false);
+
   reportThisProduct() {
     if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    this.notify.success('Signalement envoye. Notre equipe va examiner ce contenu. Merci!');
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.showReportModal.set(true);
+  }
+
+  submitReport() {
+    const p = this.product();
+    if (!p || !this.reportReason) return;
+    this.submittingReport.set(true);
+    this.productService.reportProduct(p.id, this.reportReason, this.reportDescription || undefined).subscribe({
+      next: () => {
+        this.submittingReport.set(false);
+        this.showReportModal.set(false);
+        this.notify.success('Signalement envoye. Notre equipe va examiner ce contenu. Merci!');
+      },
+      error: (err) => {
+        this.submittingReport.set(false);
+        if (err?.status === 409) {
+          this.showReportModal.set(false);
+          this.notify.success(err?.error?.message || 'Vous avez deja signale ce contenu. Il est en cours de traitement.');
+        } else {
+          this.notify.error('Erreur lors de l\'envoi du signalement.');
+        }
+      },
+    });
   }
 
   // ─── Condition label ───────────────────────────────────

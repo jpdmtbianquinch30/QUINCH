@@ -756,6 +756,39 @@
       </div>
     }
 
+    <!-- Report Modal -->
+    @if (showReportModal()) {
+      <div class="modal-overlay" (click)="showReportModal.set(false)">
+        <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+          <div class="modal-head">
+            <h2>Signaler ce {{ isService() ? 'service' : 'produit' }}</h2>
+            <button class="modal-close" (click)="showReportModal.set(false)">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          <div class="form-field">
+            <label>Motif</label>
+            <select [(ngModel)]="reportReason">
+              <option value="" disabled selected>Choisir un motif...</option>
+              <option value="fraud">Fraude / arnaque</option>
+              <option value="counterfeit">Contrefacon</option>
+              <option value="inappropriate">Contenu inapproprie</option>
+              <option value="spam">Spam</option>
+              <option value="other">Autre</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Details (optionnel)</label>
+            <textarea [(ngModel)]="reportDescription" placeholder="Precisez si besoin..."></textarea>
+          </div>
+          <button class="modal-cta" (click)="submitReport()" [disabled]="!reportReason || submittingReport()">
+            <span class="material-icons">flag</span>
+            Envoyer le signalement
+          </button>
+        </div>
+      </div>
+    }
+
     <!-- Quote Modal (services only) -->
     @if (showQuoteModal()) {
       <div class="modal-overlay" (click)="showQuoteModal.set(false)">
