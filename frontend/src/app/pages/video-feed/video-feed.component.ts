@@ -105,7 +105,13 @@ videoPaused = signal(false);
   // Resize
   resizing = signal(false);
   private resizeStartX = 0;
+  private resizeStartY = 0;
   private resizeStartWidth = 0;
+  private resizeStartHeight = 0;
+  private resizeMode: 'desktop' | 'mobile' = 'desktop';
+  private resizeSlide: HTMLElement | null = null;
+  private resizePanel: HTMLElement | null = null;
+  private resizeVideoCard: HTMLElement | null = null;
   private resizeBound: any = null;
   private resizeUpBound: any = null;
 
@@ -165,6 +171,7 @@ videoPaused = signal(false);
   }
 
   ngOnDestroy() {
+    this.stopResize();
     this.searchSubject.complete();
     if (this.progressInterval) clearInterval(this.progressInterval);
     // Avant : rien ici ne mettait en pause la/les vidéo(s). En pratique la
@@ -915,52 +922,145 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
   }
 
   closeDetail() {
+    this.stopResize();
     this.detailMode.set(false);
     this.dp.set(null);
     this.dpReviews.set([]);
     this.dpStats.set(null);
     this.dpShowContact.set(false);
-    this.dpShowNego.set(false); this.dpShowQuote.set(false);
-    // Reset any inline flex style from drag-resize
+    this.dpShowNego.set(false);
+    this.dpShowQuote.set(false);
+
+    // Reset only the temporary inline dimensions created by the drag.
     document.querySelectorAll('.slide-inner .video-card').forEach((el: any) => {
       el.style.flex = '';
+      el.style.width = '';
       el.style.maxWidth = '';
+    });
+    document.querySelectorAll('.slide-inner .feed-detail-panel').forEach((el: any) => {
+      el.style.flex = '';
+      el.style.width = '';
+      el.style.maxWidth = '';
+      el.style.minWidth = '';
+      el.style.height = '';
+      el.style.maxHeight = '';
+      el.style.transition = '';
     });
   }
 
   // ─── Resize Handle ────────────────────────────────────────────
-  startResize(e: MouseEvent) {
+  // Le même handle sert aux deux layouts :
+  //  - desktop/tablette : ajuste la largeur vidéo <-> détails ;
+  //  - mobile : ajuste la hauteur du bottom-sheet.
+  // On utilise Pointer Events pour que souris, tactile et stylet passent
+  // par exactement le même chemin, sans ouvrir de popup/modale.
+  startResize(e: PointerEvent | MouseEvent): void {
     e.preventDefault();
+    e.stopPropagation();
+
+    const target = e.target as HTMLElement;
+    const panel = target.closest('.feed-detail-panel') as HTMLElement | null;
+    const slide = target.closest('.slide-inner') as HTMLElement | null;
+    const videoCard = slide?.querySelector('.video-card') as HTMLElement | null;
+
+    if (!panel || !slide || !videoCard) return;
+
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    this.resizeMode = isMobile ? 'mobile' : 'desktop';
+    this.resizeSlide = slide;
+    this.resizePanel = panel;
+    this.resizeVideoCard = videoCard;
     this.resizing.set(true);
-    this.resizeStartX = e.clientX;
-    // Find the video card in split mode
-    const slide = (e.target as HTMLElement).closest('.slide-inner');
-    const videoCard = slide?.querySelector('.video-card') as HTMLElement;
-    if (videoCard) this.resizeStartWidth = videoCard.getBoundingClientRect().width;
-    this.resizeBound = this.onResize.bind(this, slide as HTMLElement);
-    this.resizeUpBound = this.stopResize.bind(this);
-    document.addEventListener('mousemove', this.resizeBound);
-    document.addEventListener('mouseup', this.resizeUpBound);
+
+    this.resizeStartX = 'clientX' in e ? e.clientX : 0;
+    this.resizeStartY = 'clientY' in e ? e.clientY : 0;
+    this.resizeStartWidth = videoCard.getBoundingClientRect().width;
+    this.resizeStartHeight = panel.getBoundingClientRect().height;
+
+    target.classList.add('dragging');
+
+    // Empêche le navigateur de transformer le geste en scroll/selection.
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = this.resizeMode === 'mobile' ? 'ns-resize' : 'col-resize';
+    document.documentElement.style.setProperty('overscroll-behavior', 'none');
+
+    this.resizeBound = (ev: PointerEvent) => this.onResize(ev);
+    this.resizeUpBound = () => this.stopResize();
+
+    document.addEventListener('pointermove', this.resizeBound, { passive: false });
+    document.addEventListener('pointerup', this.resizeUpBound, { once: true });
+    document.addEventListener('pointercancel', this.resizeUpBound, { once: true });
   }
 
-  onResize(slide: HTMLElement, e: MouseEvent) {
-    const dx = e.clientX - this.resizeStartX;
-    const newW = Math.max(250, Math.min(this.resizeStartWidth + dx, window.innerWidth - 300));
-    const videoCard = slide?.querySelector('.video-card') as HTMLElement;
-    if (videoCard) {
-      videoCard.style.flex = `0 0 ${newW}px`;
-      videoCard.style.maxWidth = `${newW}px`;
+  onResize(e: PointerEvent): void {
+    if (!this.resizing() || !this.resizePanel || !this.resizeVideoCard) return;
+    e.preventDefault();
+
+    if (this.resizeMode === 'mobile') {
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const minHeight = Math.min(190, viewportHeight * 0.28);
+      const maxHeight = Math.max(minHeight + 40, viewportHeight - 56);
+      const deltaY = this.resizeStartY - e.clientY;
+      const newHeight = Math.max(minHeight, Math.min(maxHeight, this.resizeStartHeight + deltaY));
+
+      this.resizePanel.style.height = `${newHeight}px`;
+      this.resizePanel.style.maxHeight = `${maxHeight}px`;
+      this.resizePanel.style.transition = 'none';
+      return;
     }
+
+    const slide = this.resizeSlide;
+    if (!slide) return;
+
+    const slideWidth = slide.getBoundingClientRect().width;
+    const panel = this.resizePanel;
+    const video = this.resizeVideoCard;
+    const gap = parseFloat(getComputedStyle(slide).gap || '20') || 20;
+
+    // Le panneau reste toujours dans l'écran : déplacer la poignée à droite
+    // agrandit la vidéo et réduit les détails, et inversement.
+    const minVideo = 280;
+    const minPanel = Math.max(440, Math.min(820, slideWidth * 0.32));
+    const maxVideo = Math.max(minVideo, slideWidth - gap - minPanel);
+    const deltaX = e.clientX - this.resizeStartX;
+    const newVideoWidth = Math.max(minVideo, Math.min(maxVideo, this.resizeStartWidth + deltaX));
+    const newPanelWidth = Math.max(minPanel, slideWidth - newVideoWidth - gap);
+
+    video.style.flex = `0 0 ${newVideoWidth}px`;
+    video.style.width = `${newVideoWidth}px`;
+    video.style.maxWidth = `${newVideoWidth}px`;
+
+    panel.style.flex = `0 0 ${newPanelWidth}px`;
+    panel.style.width = `${newPanelWidth}px`;
+    panel.style.maxWidth = `${newPanelWidth}px`;
+    panel.style.minWidth = `${minPanel}px`;
   }
 
-  stopResize() {
+  stopResize(): void {
+    if (!this.resizing()) return;
+
     this.resizing.set(false);
-    document.removeEventListener('mousemove', this.resizeBound);
-    document.removeEventListener('mouseup', this.resizeUpBound);
+
+    if (this.resizeBound) {
+      document.removeEventListener('pointermove', this.resizeBound);
+    }
+    if (this.resizeUpBound) {
+      document.removeEventListener('pointerup', this.resizeUpBound);
+      document.removeEventListener('pointercancel', this.resizeUpBound);
+    }
+
+    const handle = this.resizePanel?.querySelector('.fd-resize-handle');
+    handle?.classList.remove('dragging');
+
     document.body.style.userSelect = '';
     document.body.style.cursor = '';
+    document.documentElement.style.removeProperty('overscroll-behavior');
+
+    this.resizeBound = null;
+    this.resizeUpBound = null;
+    this.resizeSlide = null;
+    this.resizePanel = null;
+    this.resizeVideoCard = null;
   }
 
   // Helpers
