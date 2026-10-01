@@ -395,6 +395,54 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
         return response()->json(['tag' => $tag->load('product', 'taggedBy')], 201);
     }
 
+        /**
+     * Le vendeur répond à une demande de contact sur un produit
+     * ("disponible" / "indisponible"). Poste un message de réponse
+     * et notifie l'acheteur.
+     */
+    public function respondAvailability(Request $request, Conversation $conversation, Message $message): JsonResponse
+    {
+        $userId = $request->user()->id;
+        if ($conversation->seller_id !== $userId) {
+            return response()->json(['message' => 'Seul le vendeur peut répondre à cette demande.'], 403);
+        }
+        if ($message->conversation_id !== $conversation->id || $message->type !== 'product_tag') {
+            abort(404);
+        }
+        if (($message->metadata['availability'] ?? null) !== null) {
+            return response()->json(['message' => 'Vous avez déjà répondu à cette demande.'], 422);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'in:available,unavailable'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $message->update(['metadata' => array_merge($message->metadata ?? [], [
+            'availability' => $validated['status'],
+        ])]);
+
+        $reply = $validated['status'] === 'available'
+            ? 'Produit disponible ✅' . (!empty($validated['note']) ? ' — ' . $validated['note'] : '')
+            : 'Produit indisponible ❌' . (!empty($validated['note']) ? ' — ' . $validated['note'] : '');
+
+        $responseMessage = Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $userId,
+            'body' => $reply,
+            'type' => 'text',
+            'metadata' => ['availability_response_for' => $message->id],
+        ]);
+
+        $conversation->update(['last_message_at' => now()]);
+        $this->notif->notifyMessage($conversation->buyer_id, $request->user(), $conversation->id, $reply);
+
+        return response()->json([
+            'tag_message' => $message->fresh(),
+            'reply' => $responseMessage->load('sender'),
+        ]);
+    }
+
 
     public function destroy(Request $request, Conversation $conversation): JsonResponse
     {

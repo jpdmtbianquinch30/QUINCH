@@ -180,8 +180,10 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::post('{conversation}/audio', [ConversationController::class, 'sendAudio'])->middleware('feature:chat_audio');
         Route::post('{conversation}/file', [ConversationController::class, 'sendFile']);
         Route::post('{conversation}/tags', [ConversationController::class, 'tagProduct']);
+        Route::post('{conversation}/messages/{message}/availability', [ConversationController::class, 'respondAvailability']);
          Route::delete('{conversation}', [ConversationController::class, 'destroy']);
          Route::delete('{conversation}/messages/{message}', [ConversationController::class, 'deleteMessage']);
+
     });
 
     // Favorites

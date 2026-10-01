@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { ProductService } from '../../core/services/product.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
+import { Router } from '@angular/router';
+import { ChatService } from '../../core/services/chat.service';
 
 @Component({
   selector: 'app-transactions',
@@ -16,6 +18,8 @@ import { AuthService } from '../../core/services/auth.service';
 export class TransactionsComponent implements OnInit {
   private productService = inject(ProductService);
   private notify = inject(NotificationService);
+   private router = inject(Router);
+  private chat = inject(ChatService);
   auth = inject(AuthService);
 
   purchases = signal<any[]>([]);
@@ -33,6 +37,11 @@ export class TransactionsComponent implements OnInit {
   actionLoading = signal<string | null>(null);
     // Signalement (modale simple : choix du motif + envoi)
   reportingTx = signal<any>(null);
+
+    // ─── Annulation avec motif ──────────────
+  cancellingTx = signal<any>(null);
+  cancelReason = '';
+
   reportReason = '';
 
   // Stats from backend
@@ -160,16 +169,40 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
-  cancelOrder(tx: any) {
+  openCancelModal(tx: any) {
+    this.cancellingTx.set(tx);
+    this.cancelReason = '';
+  }
+
+  closeCancelModal() {
+    this.cancellingTx.set(null);
+    this.cancelReason = '';
+  }
+
+  confirmCancel() {
+    const tx = this.cancellingTx();
+    if (!tx || !this.cancelReason.trim()) return;
     this.actionLoading.set(tx.id);
-    this.productService.updateTransactionStatus(tx.id, 'cancelled').subscribe({
+    this.productService.updateTransactionStatus(tx.id, 'cancelled', this.cancelReason.trim()).subscribe({
       next: (res: any) => {
         this.updateTxInList(res.transaction);
         this.notify.success('Commande annulée.');
         this.actionLoading.set(null);
+        this.closeCancelModal();
         this.loadHistory();
       },
       error: (err) => { this.notify.error(err.error?.message || 'Erreur'); this.actionLoading.set(null); },
+    });
+  }
+
+  // ─── Message rapide depuis une transaction ──────────────
+  messageOtherParty(tx: any) {
+    const isSeller = this.activeTab() === 'sales';
+    const otherId = isSeller ? tx.buyer?.id : tx.seller?.id;
+    if (!otherId) return;
+    this.chat.startConversation(otherId, '', tx.product?.id).subscribe({
+      next: () => this.router.navigate(['/messages']),
+      error: (err) => this.notify.error(err.error?.message || 'Erreur'),
     });
   }
 

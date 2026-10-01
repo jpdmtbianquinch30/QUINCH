@@ -24,7 +24,10 @@ class TransactionController extends Controller
 {
     use ResolvesFrontendUrl;
     use VerifiesWaveWebhook;
-        public function initiate(Request $request): JsonResponse
+
+    public function __construct(private \App\Services\NotificationService $notif) {}
+
+    public function initiate(Request $request): JsonResponse
     {
         $enabledMethods = config('quinch.enabled_payment_methods', ['wave']);
 
@@ -92,6 +95,10 @@ class TransactionController extends Controller
             'transaction_fee' => $fee,
         ]);
 
+         $this->notif->notifyTransaction(
+        $product->user_id, 'initiated', $transaction->id, $product->title, $transaction->amount
+        );
+
         $this->tagProductInConversation($transaction, $product);
         $frontendUrl = $this->resolveFrontendUrl($request);
 
@@ -120,6 +127,29 @@ class TransactionController extends Controller
             'total_amount' => $product->price * $qty + $fee,
             'fee' => $fee,
         ], 201);
+    }
+
+        /**
+     * Notifie l'autre partie à la transaction d'un changement de statut,
+     * et lui envoie en plus le motif (annulation, etc.) comme message
+     * si l'auteur de l'action en a laissé un.
+     */
+    private function notifyOtherParty(Transaction $transaction, string $status, ?string $note = null): void
+    {
+        $actingUserId = request()->user()->id;
+        $recipientId = $transaction->buyer_id === $actingUserId ? $transaction->seller_id : $transaction->buyer_id;
+
+        $this->notif->notifyTransaction($recipientId, $status, $transaction->id, $transaction->product->title, $transaction->amount);
+
+        if ($note) {
+            $role = $actingUserId === $transaction->seller_id ? 'vendeur' : 'acheteur';
+            $this->notif->send($recipientId, 'transaction', "Message du {$role}", $note, [
+                'icon' => 'info',
+                'action_url' => '/transactions',
+                'priority' => \App\Services\NotificationService::PRIORITY_NORMAL,
+                'data' => ['transaction_id' => $transaction->id],
+            ]);
+        }
     }
 
     /**
@@ -230,18 +260,20 @@ class TransactionController extends Controller
                 $transaction->update(['order_status' => 'delivered']);
                 $transaction->product->update(['status' => 'sold']);
                 $user->incrementTrustScore(0.02);
+                $this->notifyOtherParty($transaction, 'delivered');
                 return response()->json([
                     'message' => 'Commande marquée comme livrée.',
                     'transaction' => $transaction->fresh()->load(['product', 'buyer:id,username,full_name,avatar_url']),
                 ]);
             }
 
-            if ($newStatus === 'cancelled') {
+             if ($newStatus === 'cancelled') {
                 if (!in_array($transaction->order_status, ['pending_payment', 'processing'])) {
                     return response()->json(['message' => 'Cette commande ne peut plus être annulée.'], 422);
                 }
                 $transaction->update(['order_status' => 'cancelled']);
                 $transaction->product->update(['status' => 'active']);
+                $this->notifyOtherParty($transaction, 'cancelled', $validated['note'] ?? null);
                 return response()->json([
                     'message' => 'Commande annulée.',
                     'transaction' => $transaction->fresh()->load(['product', 'buyer:id,username,full_name,avatar_url']),
@@ -249,6 +281,7 @@ class TransactionController extends Controller
             }
 
             $transaction->update(['order_status' => $newStatus]);
+            $this->notifyOtherParty($transaction, $newStatus);
             return response()->json([
                 'message' => 'Statut mis à jour.',
                 'transaction' => $transaction->fresh()->load(['product', 'buyer:id,username,full_name,avatar_url']),
@@ -260,11 +293,10 @@ class TransactionController extends Controller
                 $transaction->update([
                     'order_status' => 'completed',
                     'completed_at' => now(),
-                    // La réception confirmée d'une commande cash vaut aussi
-                    // encaissement confirmé (remise en main propre).
                     'payment_status' => $transaction->payment_method === 'cash' ? 'completed' : $transaction->payment_status,
                 ]);
                 $transaction->seller->incrementTrustScore(0.02);
+                $this->notifyOtherParty($transaction, 'completed');
                 return response()->json([
                     'message' => 'Réception confirmée. Merci !',
                     'transaction' => $transaction->fresh()->load(['product', 'seller:id,username,full_name,avatar_url']),
@@ -274,6 +306,7 @@ class TransactionController extends Controller
             if ($newStatus === 'cancelled' && $transaction->order_status === 'pending_payment') {
                 $transaction->update(['order_status' => 'cancelled']);
                 $transaction->product->update(['status' => 'active']);
+                $this->notifyOtherParty($transaction, 'cancelled', $validated['note'] ?? null);
                 return response()->json([
                     'message' => 'Commande annulée.',
                     'transaction' => $transaction->fresh()->load(['product', 'seller:id,username,full_name,avatar_url']),
@@ -335,6 +368,8 @@ class TransactionController extends Controller
             $transaction = Transaction::find($data['client_reference'] ?? null);
             if ($transaction && $transaction->payment_status !== 'completed') {
                 $transaction->markPaid($data['id'] ?? null);
+                $this->notif->notifyTransaction($transaction->buyer_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
+                $this->notif->notifyTransaction($transaction->seller_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
             }
         }
 
@@ -378,7 +413,11 @@ class TransactionController extends Controller
                 if ($transaction->order_status === 'pending_payment') {
                     $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
                 }
-                $transaction->markPaymentFailed();
+            if ($transaction && $transaction->payment_status !== 'completed') {
+                $transaction->markPaid($data['id'] ?? null);
+                $this->notif->notifyTransaction($transaction->buyer_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
+                $this->notif->notifyTransaction($transaction->seller_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
+            }
             }
         }
 

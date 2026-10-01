@@ -134,6 +134,10 @@ export class ChatService {
     );
   }
 
+    respondAvailability(conversationId: string, messageId: string, status: 'available' | 'unavailable', note?: string): Observable<any> {
+    return this.api.post<any>(`conversations/${conversationId}/messages/${messageId}/availability`, { status, note });
+  }
+
   sendAudioMessage(conversationId: string, audioBlob: Blob, duration: number): Observable<any> {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'voice_message.webm');

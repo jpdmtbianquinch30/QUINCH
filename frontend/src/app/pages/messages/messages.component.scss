@@ -174,6 +174,15 @@ button {
   visibility: hidden;
 }
 
+.tag-availability-actions {
+  display: flex; gap: 8px; margin-top: 8px;
+  button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 8px; border-radius: var(--q-radius-md); border: none; font-size: 13px; cursor: pointer; }
+  .available { background: var(--q-success, #16a34a); color: #fff; }
+  .unavailable { background: var(--q-border, #e5e7eb); color: var(--q-text-secondary, #666); }
+}
+.tag-availability-status { margin-top: 6px; font-size: 13px; color: var(--q-danger, #dc2626); }
+
 
 /* =========================================================
    GRAND CERCLE LUMINEUX / BACKGROUND FLOU

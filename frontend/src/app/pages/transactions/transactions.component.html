@@ -208,7 +208,7 @@
                       <button class="action-btn action-ship" (click)="shipOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         <span class="material-icons">local_shipping</span> Expédier
                       </button>
-                      <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                      <button class="action-btn action-cancel" (click)="openCancelModal(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         <span class="material-icons">close</span> Refuser
                       </button>
                     }
@@ -220,7 +220,7 @@
                       <button class="action-btn action-deliver" (click)="markDelivered(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         <span class="material-icons">done_all</span> Marquer livré
                       </button>
-                      <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                      <button class="action-btn action-cancel" (click)="openCancelModal(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         <span class="material-icons">close</span> Annuler
                       </button>
                     }
@@ -252,7 +252,7 @@
                   <!-- BUYER actions -->
                   @if (activeTab() === 'purchases') {
                     @if (tx.order_status === 'pending_payment') {
-                      <button class="action-btn action-cancel" (click)="cancelOrder(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
+                      <button class="action-btn action-cancel" (click)="openCancelModal(tx); $event.stopPropagation()" [disabled]="actionLoading() === tx.id">
                         @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
                         @else { <span class="material-icons">close</span> Annuler la commande }
                       </button>
@@ -271,11 +271,15 @@
                     }
                   }
 
-                  <!-- Signaler : toujours disponible pour l'acheteur comme pour
+                                   <!-- Signaler : toujours disponible pour l'acheteur comme pour
                        le vendeur, quel que soit le statut — on ne sait jamais. -->
+                  <button type="button" class="action-btn action-message" (click)="messageOtherParty(tx); $event.stopPropagation()">
+                    <span class="material-icons">chat</span> Message
+                  </button>
                   <button type="button" class="action-btn action-report" (click)="openReport(tx); $event.stopPropagation()">
                     <span class="material-icons">flag</span> Signaler
                   </button>
+
 
                   <!-- Product link -->
                   @if (tx.product?.slug) {
@@ -318,6 +322,26 @@
           <button type="button" class="q-btn q-btn-danger" [disabled]="actionLoading() === tx.id" (click)="submitReport()">
             @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
             @else { <span class="material-icons">send</span> Envoyer le signalement }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+      @if (cancellingTx(); as tx) {
+    <div class="report-backdrop" (click)="closeCancelModal()">
+      <div class="report-modal" (click)="$event.stopPropagation()">
+        <div class="report-header">
+          <h3><span class="material-icons">close</span> Annuler la commande</h3>
+          <button type="button" class="report-close" (click)="closeCancelModal()"><span class="material-icons">close</span></button>
+        </div>
+        <p class="report-sub">Motif pour : {{ tx.product?.title || 'cette commande' }} (visible par l'autre partie)</p>
+        <textarea class="q-input report-textarea" rows="4" placeholder="Expliquez pourquoi vous annulez..." [(ngModel)]="cancelReason"></textarea>
+        <div class="report-actions">
+          <button type="button" class="q-btn q-btn-ghost" (click)="closeCancelModal()">Retour</button>
+          <button type="button" class="q-btn q-btn-danger" [disabled]="actionLoading() === tx.id || !cancelReason.trim()" (click)="confirmCancel()">
+            @if (actionLoading() === tx.id) { <div class="btn-loader"></div> }
+            @else { <span class="material-icons">close</span> Confirmer l'annulation }
           </button>
         </div>
       </div>
