@@ -10,11 +10,13 @@ use Illuminate\Http\Request;
 use App\Services\PaymentGateway\PaymentGatewayFactory;
 use Illuminate\Support\Facades\Log;
 use App\Support\VerifiesWaveWebhook;
+use App\Support\ResolvesFrontendUrl;
 
 
 class ProductController extends Controller
 {
     use VerifiesWaveWebhook;
+    use ResolvesFrontendUrl;
         public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -125,14 +127,61 @@ class ProductController extends Controller
         }
 
         // ─── Publication directe ────────────────────────────────────────
-        // Sur demande explicite : "Publier" doit toujours publier tout de
-        // suite, exactement comme "Enregistrer en brouillon" enregistre tout
-        // de suite - seule la visibilité change (draft = vendeur seul,
-        // active = public). Le système de frais de publication payants
-        // (Wave) reste dans le code (webhookWaveListingFee ci-dessous,
-        // config quinch.premium.listing_fee_*) mais n'est plus déclenché
-        // depuis ce endpoint - à réactiver explicitement si le produit
-        // business le demande un jour.
+        // "Publier" publie tout de suite, exactement comme "Enregistrer en
+        // brouillon" enregistre tout de suite - seule la visibilité change
+        // (draft = vendeur seul, active = public). SAUF un cas : une vidéo
+        // est jointe (video_id) et le compte n'est pas premium. Une vidéo
+        // active la visibilité du produit dans le feed vidéo — réservé par
+        // défaut au premium, ou payable à l'unité (150 F) pour un compte
+        // gratuit. Pas de vidéo, ou compte premium -> toujours gratuit et
+        // immédiat, comme avant.
+        $hasVideo = !empty($validated['video_id']);
+
+        if ($hasVideo && !$isPremium) {
+            $validated['status'] = 'draft';
+            $validated['listing_fee_status'] = 'pending';
+
+            $product = Product::create($validated);
+            $product->load(['category', 'video', 'user']);
+
+            $fee = (int) config('quinch.premium.listing_fee_with_video');
+
+            try {
+                $gateway = PaymentGatewayFactory::create('wave');
+            } catch (\InvalidArgumentException $e) {
+                Log::error('Publication vidéo: passerelle Wave indisponible', ['error' => $e->getMessage()]);
+                return response()->json([
+                    'message' => "Le paiement n'est pas disponible pour le moment. Vous pouvez publier sans vidéo, ou réessayer plus tard.",
+                ], 422);
+            }
+
+            $frontendUrl = $this->resolveFrontendUrl($request);
+
+            $result = $gateway->initiatePayment([
+                'amount' => $fee,
+                'transaction_id' => 'listing_' . $product->id,
+                'success_url' => "{$frontendUrl}/feed",
+                'error_url' => "{$frontendUrl}/sell",
+                'notif_url' => url('/api/v1/webhooks/wave-listing'),
+            ]);
+
+            if (!($result['success'] ?? false)) {
+                $product->update(['listing_fee_status' => 'failed']);
+                return response()->json([
+                    'message' => $result['message'] ?? "Le paiement des 150 F n'a pas pu être initié.",
+                ], 502);
+            }
+
+            $product->update(['listing_fee_gateway_id' => $result['gateway_reference'] ?? null]);
+
+            return response()->json([
+                'message' => 'Un dernier pas : réglez les 150 F de publication vidéo pour mettre votre annonce en ligne.',
+                'product' => $product,
+                'payment_url' => $result['payment_url'],
+                'fee' => $fee,
+            ], 201);
+        }
+
         $validated['status'] = 'active';
         $validated['listing_fee_status'] = 'none';
 

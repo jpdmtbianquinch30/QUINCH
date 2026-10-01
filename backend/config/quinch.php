@@ -82,7 +82,7 @@ return [
 
         // Frais de publication d'annonce pour un compte NON premium.
         // Gratuit pour les comptes premium (is_premium=true et non expiré).
-        'listing_fee_with_video'    => (int) env('QUINCH_LISTING_FEE_WITH_VIDEO', 500),
+        'listing_fee_with_video'    => (int) env('QUINCH_LISTING_FEE_WITH_VIDEO', 150),
         'listing_fee_without_video' => (int) env('QUINCH_LISTING_FEE_WITHOUT_VIDEO', 300),
                 // Poids additionnel dans le classement du feed/marketplace pour un
         // vendeur premium actif. À l'échelle du feed_score existant

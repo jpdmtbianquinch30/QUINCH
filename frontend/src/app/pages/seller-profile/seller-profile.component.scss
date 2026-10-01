@@ -52,17 +52,27 @@ $card-border: 1px solid var(--q-border);
   flex-direction: column;
   gap: 14px;
   position: sticky;
-  top: 0;
+  // Avant : height: 100vh + overflow-y: auto forçaient la colonne à tenir
+  // exactement dans la hauteur de l'écran, avec un défilement interne dont
+  // la barre (scrollbar-width: thin, couleur translucide) était quasi
+  // invisible. Résultat : dès que le contenu (profil + stats + confiance +
+  // certifications) dépassait la hauteur d'écran, le score de confiance se
+  // retrouvait sous la ligne de flottaison sans aucun signe qu'il fallait
+  // défiler À L'INTÉRIEUR de la barre latérale — donc "caché" en pratique.
+  // max-height (au lieu de height) + un défilement qui ne s'active que si
+  // vraiment nécessaire garantit que tout reste atteignable.
+  top: 16px;
   align-self: start;
-  height: 100vh;
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 14px 24px 20px;
   z-index: 3;
 
-  // Hide scrollbar but keep scrollable
+  // Scrollbar fine mais visible (pas transparente) : si jamais ça défile
+  // encore sur un très petit écran, on le voit.
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.08) transparent;
+  scrollbar-color: rgba(255,255,255,0.25) transparent;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
   &::-webkit-scrollbar-track { background: transparent; }
