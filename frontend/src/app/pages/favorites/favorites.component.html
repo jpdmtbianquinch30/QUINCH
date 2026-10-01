@@ -1,64 +1,167 @@
 <div class="favorites-page q-page">
   <div class="q-container">
-    <div class="page-header">
-      <h1>
-        <span class="material-icons">star</span>
-        Mes Favoris
-      </h1>
-    </div>
 
+    <!-- HEADER -->
+    <header class="page-header">
+      <div class="header-content">
+        <div class="header-icon">
+          <span class="material-icons">star</span>
+        </div>
+
+        <div class="header-text">
+          <h1>Mes Favoris</h1>
+          <p>Retrouvez facilement les produits que vous aimez.</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- LOADING -->
     @if (loading()) {
+
       <div class="loading-state">
         <div class="loader"></div>
-        <p>Chargement...</p>
+        <p>Chargement de vos favoris...</p>
       </div>
+
     } @else {
+
+      <!-- EMPTY -->
       @if (favService.favorites().length === 0) {
+
         <div class="empty-state">
-          <span class="material-icons">star_border</span>
-          <h2>Aucun favori</h2>
-          <p>Ajoutez des produits a vos favoris pour les retrouver facilement!</p>
+          <div class="empty-icon">
+            <span class="material-icons">star_border</span>
+          </div>
+
+          <h2>Aucun favori pour le moment</h2>
+
+          <p>
+            Ajoutez des produits à vos favoris pour les retrouver
+            facilement plus tard.
+          </p>
+
           <a routerLink="/marketplace" class="q-btn q-btn-primary">
             <span class="material-icons">explore</span>
             Explorer les produits
           </a>
         </div>
+
       } @else {
-        <div class="fav-grid">
-          @for (item of favService.favorites(); track item.id) {
-            <div class="fav-card q-card">
-              <a [routerLink]="['/product', item.product?.slug]" class="fav-media">
-                @if (getThumb(item.product); as thumb) {
-                  <img [src]="thumb" [alt]="item.product?.title" />
-                } @else {
-                  <div class="fav-placeholder">
-                    <span class="material-icons">image</span>
-                  </div>
-                }
-                <button class="fav-remove" (click)="removeFavorite(item); $event.preventDefault()">
-                  <span class="material-icons">close</span>
-                </button>
-              </a>
-              <div class="fav-info">
-                <a [routerLink]="['/product', item.product?.slug]" class="fav-title">{{ item.product?.title }}</a>
-                <div class="fav-price-row">
-                  <span class="fav-price">{{ item.product?.price | number:'1.0-0' }} F</span>
-                  @if (item.price_at_save && item.product?.price < item.price_at_save) {
-                    <span class="fav-discount">
-                      <span class="material-icons">trending_down</span>
-                      Prix en baisse!
-                    </span>
-                  }
-                </div>
-                <button class="q-btn q-btn-primary q-btn-sm q-btn-full" (click)="addToCart(item)">
-                  <span class="material-icons">shopping_cart</span>
-                  Ajouter au panier
-                </button>
-              </div>
+
+        <!-- FAVORITES -->
+        <div class="favorites-section">
+
+          <div class="favorites-toolbar">
+            <div class="results-count">
+              <span class="material-icons">bookmark</span>
+              <span>
+                {{ favService.favorites().length }}
+                produit{{ favService.favorites().length > 1 ? 's' : '' }}
+              </span>
             </div>
-          }
+          </div>
+
+          <div class="fav-grid">
+
+            @for (item of favService.favorites(); track item.id) {
+
+              <article class="fav-card q-card">
+
+                <!-- IMAGE -->
+                <a
+                  [routerLink]="['/product', item.product?.slug]"
+                  class="fav-media"
+                >
+
+                  @if (getThumb(item.product); as thumb) {
+
+                    <img
+                      [src]="thumb"
+                      [alt]="item.product?.title"
+                      loading="lazy"
+                    />
+
+                  } @else {
+
+                    <div class="fav-placeholder">
+                      <span class="material-icons">image</span>
+                    </div>
+
+                  }
+
+                  <!-- FAVORITE BADGE -->
+                  <div class="favorite-badge">
+                    <span class="material-icons">star</span>
+                  </div>
+
+                  <!-- REMOVE -->
+                  <button
+                    type="button"
+                    class="fav-remove"
+                    aria-label="Retirer des favoris"
+                    (click)="removeFavorite(item); $event.preventDefault()"
+                  >
+                    <span class="material-icons">close</span>
+                  </button>
+
+                  <!-- IMAGE OVERLAY -->
+                  <div class="media-overlay"></div>
+
+                </a>
+
+                <!-- INFO -->
+                <div class="fav-info">
+
+                  <a
+                    [routerLink]="['/product', item.product?.slug]"
+                    class="fav-title"
+                  >
+                    {{ item.product?.title }}
+                  </a>
+
+                  <div class="fav-price-row">
+
+                    <span class="fav-price">
+                      {{ item.product?.price | number:'1.0-0' }} F
+                    </span>
+
+                    @if (
+                      item.price_at_save &&
+                      item.product?.price < item.price_at_save
+                    ) {
+
+                      <span class="fav-discount">
+                        <span class="material-icons">trending_down</span>
+                        Prix en baisse
+                      </span>
+
+                    }
+
+                  </div>
+
+                  <button
+                    type="button"
+                    class="q-btn q-btn-primary q-btn-sm q-btn-full cart-btn"
+                    (click)="addToCart(item)"
+                  >
+                    <span class="material-icons">shopping_cart</span>
+                    Ajouter au panier
+                  </button>
+
+                </div>
+
+              </article>
+
+            }
+
+          </div>
+
         </div>
+
       }
+
     }
+
   </div>
 </div>
+

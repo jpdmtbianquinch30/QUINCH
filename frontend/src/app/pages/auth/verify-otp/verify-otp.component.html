@@ -1,82 +1,215 @@
-<div class="auth-page">
+<div class="auth-page otp-page">
   <div class="auth-split">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         BRANDING
+    ═══════════════════════════════════════════════════════════════ -->
     <div class="auth-brand">
+
+      <!-- Décorations -->
+      <div class="brand-orb brand-orb-1"></div>
+      <div class="brand-orb brand-orb-2"></div>
+
       <div class="brand-content">
-        <img src="logoquinch.png" alt="QUINCH" class="brand-logo" />
-        <h1 class="brand-title">QUINCH</h1>
-        <p class="brand-tagline">Derniere etape avant de commencer</p>
-        <div class="brand-features">
-          <div class="feature"><span class="material-icons">sms</span><span>Code envoye par SMS</span></div>
-          <div class="feature"><span class="material-icons">verified_user</span><span>Compte securise</span></div>
+
+        <div class="logo-wrap">
+          <img src="logoquinch.png" alt="QUINCH" class="brand-logo" />
         </div>
+
+        <h1 class="brand-title">QUINCH</h1>
+
+        <p class="brand-tagline">
+          Dernière étape avant de commencer
+        </p>
+
+        <div class="brand-features">
+
+          <div class="feature">
+            <span class="feature-icon">
+              <span class="material-icons">sms</span>
+            </span>
+            <span>Code envoyé par SMS</span>
+          </div>
+
+          <div class="feature">
+            <span class="feature-icon">
+              <span class="material-icons">verified_user</span>
+            </span>
+            <span>Compte sécurisé</span>
+          </div>
+
+          <div class="feature">
+            <span class="feature-icon">
+              <span class="material-icons">rocket_launch</span>
+            </span>
+            <span>Commencez votre aventure</span>
+          </div>
+
+        </div>
+
       </div>
     </div>
 
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FORMULAIRE
+    ═══════════════════════════════════════════════════════════════ -->
     <div class="auth-form-side">
+
       <div class="auth-form-container">
-        <h2>Verifiez votre numero</h2>
+
+        <!-- Petit indicateur d'étape -->
+        <div class="otp-step">
+          <span class="step-line active"></span>
+          <span class="step-line active"></span>
+          <span class="step-line active"></span>
+        </div>
+
+        <div class="otp-icon">
+          <span class="material-icons">mark_email_read</span>
+        </div>
+
+        <h2>Vérifiez votre numéro</h2>
+
         <p class="auth-subtitle">
-          Entrez le code a 6 chiffres envoye au {{ phoneNumber }}
+          Entrez le code à 6 chiffres envoyé au
+          <strong>{{ phoneNumber }}</strong>
         </p>
 
+
+        <!-- Erreur -->
         @if (error()) {
-          <div class="error-message">{{ error() }}</div>
+          <div class="message-box error-message">
+            <span class="material-icons">error_outline</span>
+            <span>{{ error() }}</span>
+          </div>
         }
+
+
+        <!-- Succès / information -->
         @if (info()) {
-          <div class="success-message">{{ info() }}</div>
+          <div class="message-box success-message">
+            <span class="material-icons">check_circle</span>
+            <span>{{ info() }}</span>
+          </div>
         }
 
-        <!-- Code de démo (environnements local/testing uniquement, voir
-             AuthController::register/resendOtp). N'apparaît jamais en
-             production : demoOtp() reste null si le backend ne renvoie pas
-             ce champ. -->
+
+        <!-- Code de démo -->
         @if (demoOtp()) {
-          <div class="demo-otp-banner" (click)="fillDemoOtp()">
+          <div
+            class="demo-otp-banner"
+            (click)="fillDemoOtp()"
+            title="Cliquer pour remplir le code"
+          >
             <span class="material-icons">bug_report</span>
-            <span>Mode démo — code : <strong>{{ demoOtp() }}</strong> (cliquer pour remplir)</span>
+
+            <div>
+              <small>Mode démo</small>
+              <strong>{{ demoOtp() }}</strong>
+              <span>Cliquer pour remplir</span>
+            </div>
+
+            <span class="material-icons demo-arrow">
+              arrow_forward
+            </span>
           </div>
         }
 
-        <form (ngSubmit)="verify()">
+
+        <!-- FORMULAIRE -->
+        <form (ngSubmit)="verify()" class="otp-form">
+
           <div class="form-group">
-            <label>Code de verification</label>
-            <input
-              type="text"
-              inputmode="numeric"
-              class="q-input otp-input"
-              [(ngModel)]="otp"
-              name="otp"
-              placeholder="123456"
-              maxlength="6"
-              autocomplete="one-time-code"
-            />
+
+            <label for="otp">
+              Code de vérification
+            </label>
+
+            <div class="otp-input-wrapper">
+
+              <span class="material-icons otp-input-icon">
+                lock
+              </span>
+
+              <input
+                id="otp"
+                type="text"
+                inputmode="numeric"
+                class="q-input otp-input"
+                [(ngModel)]="otp"
+                name="otp"
+                placeholder="123456"
+                maxlength="6"
+                autocomplete="one-time-code"
+              />
+
+            </div>
+
+            <small class="input-hint">
+              Saisissez le code reçu par SMS
+            </small>
+
           </div>
 
-          <button type="submit" class="q-btn q-btn-primary q-btn-full q-btn-lg" [disabled]="loading()">
+
+          <button
+            type="submit"
+            class="q-btn q-btn-primary q-btn-full q-btn-lg otp-submit"
+            [disabled]="loading()"
+          >
+
             @if (loading()) {
-              <span class="spinner"></span> Verification...
+
+              <span class="spinner"></span>
+              Vérification...
+
             } @else {
-              Verifier
+
+              <span>Vérifier mon numéro</span>
+              <span class="material-icons">arrow_forward</span>
+
             }
+
           </button>
+
         </form>
 
-        <div class="auth-footer">
-          <p>Vous n'avez rien recu ?</p>
+
+        <!-- RENVOI -->
+        <div class="resend-section">
+
+          <div class="resend-divider">
+            <span></span>
+            <small>Vous n'avez rien reçu ?</small>
+            <span></span>
+          </div>
+
           <button
             type="button"
-            class="q-btn q-btn-secondary q-btn-full"
+            class="resend-btn"
             [disabled]="resending()"
             (click)="resend()"
           >
+
             @if (resending()) {
-              <span class="spinner"></span> Envoi...
+
+              <span class="spinner"></span>
+              Envoi en cours...
+
             } @else {
+
+              <span class="material-icons">refresh</span>
               Renvoyer le code
+
             }
+
           </button>
+
         </div>
+
       </div>
     </div>
+
   </div>
 </div>

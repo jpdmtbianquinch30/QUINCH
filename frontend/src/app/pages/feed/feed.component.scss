@@ -528,3 +528,434 @@
 
   .loading-more .loader { border-color: #e5e7eb; border-top-color: #6366f1; }
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════════
+// QUINCH — Hero + message défilant + animations premium
+// Ajout visuel uniquement : aucune logique Angular n'est modifiée.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/* ─── Hero QUINCH en haut du feed ─────────────────────────────────────────── */
+.quinch-hero {
+  position: relative;
+  width: 100%;
+  min-height: clamp(155px, 20vw, 290px);
+  margin-bottom: 0;
+  overflow: hidden;
+  background: #050711;
+  border-bottom: 1px solid rgba(37, 99, 235, 0.28);
+  isolation: isolate;
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    z-index: -2;
+    transform: scale(1.002);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(2, 5, 18, 0.12), transparent 45%, rgba(2, 5, 18, 0.18)),
+      linear-gradient(180deg, transparent 55%, rgba(2, 5, 18, 0.42));
+  }
+
+  &:hover img {
+    transform: scale(1.015);
+    transition: transform 1.2s ease;
+  }
+}
+
+.quinch-hero-glow {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  right: 7%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.14);
+  filter: blur(35px);
+  pointer-events: none;
+  animation: heroGlow 5s ease-in-out infinite;
+}
+
+@keyframes heroGlow {
+  0%, 100% { opacity: .45; transform: translateY(-50%) scale(.95); }
+  50% { opacity: .85; transform: translateY(-50%) scale(1.08); }
+}
+
+/* ─── Bandeau style journal télévisé ─────────────────────────────────────── */
+.news-ticker {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  background: linear-gradient(90deg, #071b55 0%, #0b3fc7 48%, #07338e 100%);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.28);
+  box-shadow: 0 5px 18px rgba(0, 48, 180, 0.18);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.news-ticker-label {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px;
+  background: linear-gradient(135deg, #08256f, #1558e8);
+  color: #fff;
+  font-size: 0.69rem;
+  font-weight: 900;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  box-shadow: 8px 0 18px rgba(0, 0, 0, .18);
+
+  &::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #60a5fa;
+    box-shadow: 0 0 10px #60a5fa;
+    animation: tickerLive 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes tickerLive {
+  0%, 100% { opacity: .45; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.news-ticker-track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: tickerScroll 34s linear infinite;
+  will-change: transform;
+
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+
+.news-ticker-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 42px 9px 18px;
+  color: #eef6ff;
+  font-size: .76rem;
+  font-weight: 600;
+  letter-spacing: .1px;
+
+  &::before {
+    content: "✦";
+    color: #60a5fa;
+    font-size: .65rem;
+  }
+}
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ─── Barre de recherche ─────────────────────────────────────────────────── */
+.search-bar {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform .22s ease,
+    background .22s ease,
+    border-color .22s ease,
+    box-shadow .22s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 70%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+    transform: skewX(-18deg);
+    transition: left .55s ease;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    background: rgba(37, 99, 235, .12);
+    box-shadow: 0 7px 22px rgba(0, 52, 180, .14);
+
+    &::after { left: 140%; }
+  }
+
+  &:active { transform: scale(.985); }
+}
+
+/* ─── Bouton notification ───────────────────────────────────────────────── */
+.topbar-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  justify-content: center;
+  transition: transform .22s ease, background .22s ease, color .22s ease;
+
+  &:hover {
+    color: #60a5fa;
+    background: rgba(37, 99, 235, .13);
+    transform: translateY(-2px) rotate(2deg);
+  }
+
+  &:active { transform: scale(.92); }
+}
+
+/* ─── Boutons de filtres : effet premium ─────────────────────────────────── */
+.type-segment-vertical button,
+.type-segment button,
+.category-chips .chip,
+.category-list-vertical .cat-item {
+  transition:
+    transform .2s ease,
+    background .2s ease,
+    border-color .2s ease,
+    color .2s ease,
+    box-shadow .2s ease;
+
+  &:hover {
+    transform: translateX(3px);
+  }
+
+  &:active {
+    transform: scale(.96);
+  }
+}
+
+.type-segment-vertical button,
+.type-segment button {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.13), transparent 75%);
+    transform: translateX(-120%);
+    transition: transform .5s ease;
+  }
+
+  &:hover::after { transform: translateX(120%); }
+
+  &.active {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    border-color: #3b82f6;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, .25);
+  }
+}
+
+.category-chips .chip {
+  &:hover {
+    color: #93c5fd;
+    border-bottom-color: rgba(59, 130, 246, .55);
+  }
+
+  &.active {
+    color: #fff;
+    border-bottom-color: #3b82f6;
+    text-shadow: 0 0 12px rgba(59, 130, 246, .35);
+  }
+}
+
+/* ─── Bannière vidéos ────────────────────────────────────────────────────── */
+.video-banner {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform .25s ease,
+    border-color .25s ease,
+    background .25s ease,
+    box-shadow .25s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent, rgba(59, 130, 246, .08), transparent);
+    transform: translateX(-100%);
+    transition: transform .7s ease;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
+    border-color: rgba(59, 130, 246, .35);
+    background: rgba(37, 99, 235, .07);
+    box-shadow: 0 12px 30px rgba(0, 35, 130, .2);
+
+    &::before { transform: translateX(100%); }
+  }
+
+  &:active { transform: scale(.985); }
+}
+
+.video-banner-play {
+  transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
+
+  .video-banner:hover & {
+    transform: scale(1.12);
+    background: rgba(37, 99, 235, .25);
+    box-shadow: 0 0 18px rgba(37, 99, 235, .3);
+  }
+}
+
+/* ─── Cartes produits : mouvement léger, sans changer le clic ───────────── */
+.product-card {
+  transition: transform .25s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+
+    .card-media {
+      border-color: rgba(59, 130, 246, .28);
+      box-shadow: 0 12px 28px rgba(0, 28, 110, .24);
+    }
+
+    .card-media img {
+      transform: scale(1.035);
+    }
+
+    .card-title {
+      color: #fff;
+    }
+  }
+
+  &:active { transform: translateY(-1px) scale(.99); }
+}
+
+.card-media {
+  border: 1px solid transparent;
+  transition: border-color .25s ease, box-shadow .25s ease;
+}
+
+.card-media img {
+  transition: transform .55s cubic-bezier(.2,.7,.2,1);
+}
+
+.type-badge,
+.video-badge,
+.save-btn {
+  transition: transform .22s ease, box-shadow .22s ease, background .22s ease;
+}
+
+.type-badge {
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+
+.video-badge {
+  animation: videoBadgePulse 2.4s ease-in-out infinite;
+
+  &:hover {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes videoBadgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.18); }
+  50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+}
+
+.save-btn {
+  &:hover {
+    transform: scale(1.12);
+    background: rgba(37, 99, 235, .72);
+    box-shadow: 0 5px 15px rgba(0,0,0,.28);
+  }
+
+  &:active { transform: scale(.88); }
+
+  .material-icons {
+    transition: transform .2s ease;
+  }
+
+  &:hover .material-icons {
+    transform: rotate(-8deg);
+  }
+}
+
+.card-price {
+  text-shadow: 0 2px 9px rgba(0,0,0,.55);
+}
+
+/* ─── Entrée douce des cartes ────────────────────────────────────────────── */
+.product-card {
+  animation: cardReveal .45s ease both;
+}
+
+.product-grid .product-card:nth-child(2) { animation-delay: .035s; }
+.product-grid .product-card:nth-child(3) { animation-delay: .07s; }
+.product-grid .product-card:nth-child(4) { animation-delay: .105s; }
+.product-grid .product-card:nth-child(5) { animation-delay: .14s; }
+.product-grid .product-card:nth-child(6) { animation-delay: .175s; }
+.product-grid .product-card:nth-child(7) { animation-delay: .21s; }
+.product-grid .product-card:nth-child(8) { animation-delay: .245s; }
+
+@keyframes cardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Accessibilité : respecter les utilisateurs qui réduisent les animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Mobile : hero plus compact ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .quinch-hero {
+    min-height: 145px;
+  }
+
+  .news-ticker-label {
+    padding: 0 10px;
+    font-size: .62rem;
+  }
+
+  .news-ticker-msg {
+    padding-right: 28px;
+    font-size: .7rem;
+  }
+}
+
+/* ─── Très grands écrans : conserver une bannière élégante ──────────────── */
+@media (min-width: 1440px) {
+  .quinch-hero {
+    min-height: 275px;
+  }
+}
