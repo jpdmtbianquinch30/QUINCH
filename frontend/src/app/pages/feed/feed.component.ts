@@ -17,7 +17,7 @@ import { Product, Category } from '../../core/models/product.model';
 export class FeedComponent implements OnInit {
   private productService = inject(ProductService);
   private favService = inject(FavoriteService);
-  private notify = inject(NotificationService);
+  notify = inject(NotificationService);
   private router = inject(Router);
   auth = inject(AuthService);
 
@@ -48,7 +48,7 @@ export class FeedComponent implements OnInit {
 
   private loadCounts() {
     const categoryParams: Record<string, any> = {};
-    if (this.selectedCategory()) categoryParams['category_id'] = this.selectedCategory();
+    if (this.selectedCategory()) categoryParams['category'] = this.selectedCategory();
 
     this.productService.getFeed(1, { ...categoryParams, type: 'product', per_page: 1 }).subscribe({
       next: (res: any) => this.productsCount.set(res.total ?? 0),
@@ -102,7 +102,7 @@ export class FeedComponent implements OnInit {
 
   private buildParams(): Record<string, any> {
     const params: Record<string, any> = {};
-    if (this.selectedCategory()) params['category_id'] = this.selectedCategory();
+    if (this.selectedCategory()) params['category'] = this.selectedCategory();
     if (this.selectedType() !== 'all') params['type'] = this.selectedType();
     return params;
   }
