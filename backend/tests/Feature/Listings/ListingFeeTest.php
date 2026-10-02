@@ -103,10 +103,9 @@ class ListingFeeTest extends TestCase
 
         public function test_free_account_listing_publishes_immediately_without_fee(): void
     {
-        // Le "Publier" doit toujours publier tout de suite, même pour un
-        // compte gratuit : le système de frais de publication payants reste
-        // dans le code (webhookWaveListingFee plus bas) mais n'est plus
-        // déclenché depuis ce endpoint, sur demande produit explicite.
+        // Sans vidéo, "Publier" publie toujours tout de suite pour un compte
+        // gratuit — les 150 F ne sont dus que si une vidéo est jointe (voir
+        // test_free_account_listing_with_video_requires_payment_before_going_live).
         $user = User::factory()->create(['is_premium' => false]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload());
@@ -119,8 +118,16 @@ class ListingFeeTest extends TestCase
         $this->assertDatabaseHas('products', ['status' => 'active']);
     }
 
-    public function test_free_account_listing_with_video_also_publishes_immediately(): void
+    public function test_free_account_listing_with_video_requires_payment_before_going_live(): void
     {
+        // Mis a jour suite au commit "150 fr en gratuit avec video optionnelle" :
+        // une video active la visibilite dans le feed video, reservee par
+        // defaut au premium ou payable a l'unite (150 F) pour un compte
+        // gratuit. L'annonce est creee en draft, en attente du paiement Wave
+        // (confirme par webhookWaveListingFee), au lieu d'etre publiee
+        // immediatement comme avant.
+        $this->fakeSuccessfulWaveCheckout();
+
         $user = User::factory()->create(['is_premium' => false]);
         $video = \App\Models\ProductVideo::factory()->create(['user_id' => $user->id]);
 
@@ -128,7 +135,37 @@ class ListingFeeTest extends TestCase
             'video_id' => $video->id,
         ]));
 
-        $response->assertCreated()->assertJsonPath('product.status', 'active');
+        $response->assertCreated()
+            ->assertJsonPath('product.status', 'draft')
+            ->assertJsonPath('product.listing_fee_status', 'pending')
+            ->assertJsonPath('fee', 150)
+            ->assertJsonStructure(['payment_url']);
+
+        $this->assertDatabaseHas('products', [
+            'status' => 'draft',
+            'listing_fee_status' => 'pending',
+        ]);
+    }
+
+    public function test_premium_account_with_video_still_publishes_immediately_for_free(): void
+    {
+        // Contre-exemple du test precedent : le premium n'est jamais facture,
+        // video ou pas — confirme que la condition !$isPremium est bien
+        // verifiee avant de declencher le paiement.
+        $user = User::factory()->create([
+            'is_premium' => true,
+            'premium_expires_at' => now()->addMonth(),
+        ]);
+        $video = \App\Models\ProductVideo::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/products', $this->basePayload([
+            'video_id' => $video->id,
+        ]));
+
+        $response->assertCreated()
+            ->assertJsonPath('product.status', 'active')
+            ->assertJsonPath('product.listing_fee_status', 'none')
+            ->assertJsonMissingPath('payment_url');
     }
 
         public function test_listing_fee_amount_cannot_be_overridden_by_the_client(): void
