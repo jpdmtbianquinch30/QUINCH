@@ -7,6 +7,8 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Product, Category } from '../../core/models/product.model';
 
+export type FeedSort = 'foryou' | 'recent' | 'popular' | 'day' | 'following';
+
 @Component({
   selector: 'app-feed',
   standalone: true,
@@ -30,6 +32,15 @@ export class FeedComponent implements OnInit {
   lastPage = signal(1);
   selectedCategory = signal<string | null>(null);
   selectedType = signal<'all' | 'product' | 'service'>('all');
+  selectedSort = signal<FeedSort>('foryou');
+
+  sortOptions: { key: FeedSort; label: string; icon: string }[] = [
+    { key: 'foryou', label: 'Pour toi', icon: 'auto_awesome' },
+    { key: 'recent', label: 'Récents', icon: 'schedule' },
+    { key: 'popular', label: 'Populaires', icon: 'local_fire_department' },
+    { key: 'day', label: 'Dernières 24 h', icon: 'today' },
+    { key: 'following', label: 'Mes abonnements', icon: 'people' },
+  ];
 
   videoProducts = computed(() => this.products().filter(p => !!p.video));
 
@@ -104,12 +115,30 @@ export class FeedComponent implements OnInit {
     const params: Record<string, any> = {};
     if (this.selectedCategory()) params['category'] = this.selectedCategory();
     if (this.selectedType() !== 'all') params['type'] = this.selectedType();
+
+    const sort = this.selectedSort();
+    if (sort === 'following') {
+      params['tab'] = 'following';
+      params['sort'] = 'recent';
+    } else if (sort !== 'foryou') {
+      params['sort'] = sort;
+    }
     return params;
   }
 
   setType(type: 'all' | 'product' | 'service') {
     if (this.selectedType() === type) return;
     this.selectedType.set(type);
+    this.loadData();
+  }
+
+  setSort(sort: FeedSort) {
+    if (this.selectedSort() === sort) return;
+    if (sort === 'following' && !this.auth.isAuthenticated()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+    this.selectedSort.set(sort);
     this.loadData();
   }
 
@@ -121,6 +150,7 @@ export class FeedComponent implements OnInit {
   resetFilters() {
     this.selectedCategory.set(null);
     this.selectedType.set('all');
+    this.selectedSort.set('foryou');
     this.loadData();
   }
 

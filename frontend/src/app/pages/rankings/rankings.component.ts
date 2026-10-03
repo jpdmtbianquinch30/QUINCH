@@ -43,6 +43,7 @@ export class RankingsComponent implements OnInit, OnDestroy {
   sellers = signal<RankingUserEntry[]>([]);
   products = signal<RankingProductEntry[]>([]);
   profiles = signal<RankingUserEntry[]>([]);
+  followers = signal<RankingUserEntry[]>([]);
 
   loadingRanking = signal(false);
   rankingError = signal<string | null>(null);
@@ -58,6 +59,7 @@ export class RankingsComponent implements OnInit, OnDestroy {
     { key: 'sellers', label: 'Meilleurs vendeurs', icon: 'storefront' },
     { key: 'products', label: 'Produits les + vus', icon: 'visibility' },
     { key: 'profiles', label: 'Profils les + visités', icon: 'person_search' },
+    { key: 'followers', label: 'Les + suivis', icon: 'groups' },
   ];
 
   currentUsername = computed(() => this.auth.user()?.username);
@@ -138,6 +140,12 @@ export class RankingsComponent implements OnInit, OnDestroy {
       case 'profiles':
         this.ranking.getProfiles().subscribe({
           next: (res) => { this.profiles.set(res.ranking); done(); },
+          error: fail,
+        });
+        break;
+      case 'followers':
+        this.ranking.getFollowers().subscribe({
+          next: (res) => { this.followers.set(res.ranking); done(); },
           error: fail,
         });
         break;
@@ -223,6 +231,8 @@ export class RankingsComponent implements OnInit, OnDestroy {
         return 'Classement basé sur le nombre de vues du produit (le vendeur doit être Premium et participer).';
       case 'profiles':
         return 'Classement basé sur le nombre de visites du profil.';
+      case 'followers':
+        return 'Classement des 100 profils ayant le plus d\'abonnés.';
     }
   }
 }

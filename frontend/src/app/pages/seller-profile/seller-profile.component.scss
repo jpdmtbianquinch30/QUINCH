@@ -2267,3 +2267,38 @@ $card-border: 1px solid var(--q-border);
     max-width: calc(100vw - 30px);
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CORRECTIFS (à garder en toute fin de fichier : ils doivent gagner sur les
+// blocs précédents)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Les cartes de la colonne gauche étaient des enfants flex "rétrécissables".
+// .sp-trust-card a overflow:hidden => son min-height automatique tombe à 0 ;
+// dès que la colonne était contrainte en hauteur (max-height), la carte
+// "Score de confiance" s'écrasait jusqu'à ne montrer que son titre, et la
+// barre d'onglets venait recouvrir les certifications.
+.sp-sidebar > * {
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  .sp-sidebar {
+    position: static !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+// Sélecteur du motif de signalement (cohérent avec les champs du modal).
+.sp-report-select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font: inherit;
+}

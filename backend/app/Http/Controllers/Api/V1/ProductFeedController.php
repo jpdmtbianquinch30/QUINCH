@@ -74,10 +74,12 @@ class ProductFeedController extends Controller
 
         // Search
         if ($request->has('q') && !empty($request->q)) {
-            $searchTerm = $request->q;
+            $searchTerm = $this->likeTerm((string) $request->q);
             $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('description', 'LIKE', "%{$searchTerm}%");
+                $q->where('products.title', 'ILIKE', $searchTerm)
+                  ->orWhere('products.description', 'ILIKE', $searchTerm)
+                  ->orWhere('products.slug', 'ILIKE', $searchTerm)
+                  ->orWhereRaw('products.id::text ILIKE ?', [$searchTerm]);
             });
         }
 
@@ -86,19 +88,26 @@ class ProductFeedController extends Controller
             $query->priceRange($request->min_price, $request->max_price);
         }
 
-        // ═══ SORTING ═══
-        if ($request->has('q')) {
-            // Search: relevance then newest
-            $query->latest();
-        } elseif ($tab === 'following') {
-            // Following: newest first with slight randomness
-            $query->inRandomOrder()->latest();
-                } else {
-                    // "Pour toi" - meme algorithme de paliers que l'Explorer et la
-                    // recherche (voir Product::scopeTieredRank), pour une coherence de
-                    // classement sur toute la plateforme.
-                    $query->tieredRank();
-                }
+        // ═══ TRI ═══
+        // ?sort=recent | popular | day (dernières 24 h, classées par popularité).
+        // Sans paramètre : "Pour toi" (paliers) ; onglet abonnements : du plus
+        // récent au plus ancien (l'ancien ordre aléatoire dupliquait des
+        // annonces d'une page à l'autre).
+        $sort = $request->get('sort');
+
+        if ($sort === 'day') {
+            $query->where('products.created_at', '>=', now()->subDay());
+        }
+
+        if ($sort === 'day' || $sort === 'popular') {
+            $query->orderByRaw('(products.like_count * 3 + products.view_count + COALESCE(products.share_count, 0) * 2) DESC')
+                  ->orderByDesc('products.created_at');
+        } elseif ($sort === 'recent' || $request->has('q') || $tab === 'following') {
+            $query->orderByDesc('products.created_at');
+        } else {
+            // "Pour toi" : même algorithme de paliers que l'Explorer et la recherche.
+            $query->tieredRank();
+        }
 
         $products = $query->paginate($this->perPage($request, 10, 30));
         $sellerIds = $products->pluck('user_id')->unique()->all();
@@ -320,8 +329,13 @@ class ProductFeedController extends Controller
     ->active()
     ->with(['user:id,full_name,username,avatar_url,is_premium,premium_expires_at', 'video'])
     ->where(function ($query) use ($q) {
-        $query->where('title', 'LIKE', "%{$q}%")
-              ->orWhere('description', 'LIKE', "%{$q}%");
+        // ILIKE : insensible à la casse (LIKE ne l'est pas sous PostgreSQL).
+        // Recherche aussi par identifiant (début d'UUID) et par lien (slug).
+        $term = $this->likeTerm((string) $q);
+        $query->where('products.title', 'ILIKE', $term)
+              ->orWhere('products.description', 'ILIKE', $term)
+              ->orWhere('products.slug', 'ILIKE', $term)
+              ->orWhereRaw('products.id::text ILIKE ?', [$term]);
     })
     ->tieredRank()
     ->limit(10)
@@ -344,8 +358,10 @@ class ProductFeedController extends Controller
          $userResults = User::query()
             ->where('account_status', 'active')
             ->where(function ($query) use ($q) {
-                $query->where('full_name', 'LIKE', "%{$q}%")
-                      ->orWhere('username', 'LIKE', "%{$q}%");
+                $term = $this->likeTerm((string) $q);
+                $query->where('full_name', 'ILIKE', $term)
+                      ->orWhere('username', 'ILIKE', $term)
+                      ->orWhereRaw('users.id::text ILIKE ?', [$term]);
             })
             ->select('id', 'full_name', 'username', 'avatar_url', 'trust_score', 'city', 'is_premium', 'premium_expires_at')
             ->orderByRaw("(CASE WHEN is_premium = true AND premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")

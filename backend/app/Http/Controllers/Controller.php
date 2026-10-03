@@ -22,4 +22,13 @@ abstract class Controller
 
         return $value < 1 ? $default : min($value, $max);
     }
+
+    /**
+     * Motif ILIKE sûr : échappe les % et _ saisis par l'utilisateur
+     * (sinon une recherche "100%" ou "a_b" se comporte comme un joker).
+     */
+    protected function likeTerm(string $q): string
+    {
+        return '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($q)) . '%';
+    }
 }

@@ -44,7 +44,7 @@
 
       <!-- ══ LEFT: Media Panel ══ -->
       <div class="media-panel">
-        <div class="media-main" (click)="openFullscreen()">
+        <div class="media-main" [class.has-video]="activeMediaTab() === 'video' && hasVideo()" (click)="openFullscreen()">
           @if (activeMediaTab() === 'video' && hasVideo()) {
             <video #detailVideo
                    class="media-video"

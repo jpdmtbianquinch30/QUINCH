@@ -65,9 +65,11 @@ export class NotificationsComponent implements OnInit {
       return convId ? '/messages?conversation=' + convId : '/messages';
     }
 
-    // If we have a direct action_url from the backend, use it
+    // action_url envoyé par le serveur : utilisé seulement s'il pointe vers une
+    // page qui existe ENCORE (anciennes notifications : /transactions, /cart...).
     if (notif.action_url) {
-      return notif.action_url;
+      const safe = this.sanitizeUrl(notif.action_url);
+      if (safe) return safe;
     }
 
     // Fallback: build URL from type and data
@@ -121,6 +123,10 @@ export class NotificationsComponent implements OnInit {
         if (notif.data?.product_slug) return '/product/' + notif.data.product_slug;
         return '/marketplace';
 
+      case 'mention':
+        if (notif.data?.product_slug) return '/product/' + notif.data.product_slug;
+        return '/feed';
+
       case 'comment':
         if (notif.data?.product_slug) return '/product/' + notif.data.product_slug;
         return '/feed';
@@ -131,6 +137,22 @@ export class NotificationsComponent implements OnInit {
       default:
         return '/feed';
     }
+  }
+
+  private readonly VALID_PREFIXES = [
+    '/feed', '/videos', '/marketplace', '/search', '/product', '/seller', '/messages',
+    '/profile', '/settings', '/notifications', '/premium', '/rankings', '/sell',
+    '/favorites', '/onboarding', '/admin',
+  ];
+
+  /** Jamais de lien externe ; les pages supprimées renvoient vers les messages. */
+  private sanitizeUrl(raw: string): string | null {
+    if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+    if (raw.startsWith('/transactions') || raw.startsWith('/cart')) return '/messages';
+
+    const path = raw.split('?')[0].split('#')[0];
+    const ok = this.VALID_PREFIXES.some(p => path === p || path.startsWith(p + '/'));
+    return ok ? raw : null;
   }
 
   deleteNotification(event: MouseEvent, notif: AppNotification) {
@@ -146,6 +168,7 @@ export class NotificationsComponent implements OnInit {
   getIcon(type: string): string {
     const icons: Record<string, string> = {
       message: 'chat',
+      mention: 'alternate_email',
       purchase: 'shopping_cart',
       like: 'favorite',
       follow: 'person_add',

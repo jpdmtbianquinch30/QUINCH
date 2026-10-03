@@ -16,21 +16,17 @@ class MarketplaceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::with(['user:id,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
-            ->where('products.status', 'active')
-            ->where(function ($q) {
-                $q->whereNotNull('products.poster_url')
-                  ->orWhereHas('video', fn($s) => $s->whereIn('moderation_status', ['approved', 'pending']))
-                  ->orWhere(function ($s) {
-                      $s->whereNotNull('products.images')->whereRaw("products.images::jsonb != '[]'::jsonb");
-                  });
-            });
+            // Tous les produits et services actifs, avec ou sans vidéo / photo.
+            ->where('products.status', 'active');
 
         // Recherche texte
         if ($request->filled('q')) {
-            $search = '%' . $request->q . '%';
+            $search = $this->likeTerm((string) $request->q);
             $query->where(function ($q) use ($search) {
                 $q->where('products.title', 'ilike', $search)
-                  ->orWhere('products.description', 'ilike', $search);
+                  ->orWhere('products.description', 'ilike', $search)
+                  ->orWhere('products.slug', 'ilike', $search)
+                  ->orWhereRaw('products.id::text ILIKE ?', [$search]);
             });
         }
 
@@ -68,7 +64,8 @@ match ($sortBy) {
     'popular'    => $query->leftJoin('users', 'products.user_id', '=', 'users.id')
                            ->select('products.*')
                            ->orderByRaw("(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) DESC")
-                           ->orderByDesc('products.like_count'),
+                           ->orderByRaw('(products.like_count * 3 + products.view_count + COALESCE(products.share_count, 0) * 2) DESC')
+                           ->orderByDesc('products.created_at'),
     default      => $query->tieredRank(),
 };
 

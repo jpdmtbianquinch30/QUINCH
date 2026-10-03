@@ -123,7 +123,21 @@ export class SellerProfileComponent implements OnInit {
     this.reviewService.getSellerReviews(userId).subscribe({
       next: (res: any) => {
         this.reviews.set(res.reviews?.data || res.reviews || []);
-        this.reviewStats.set(res.stats);
+        // Normalise : le serveur peut renvoyer des chaînes ("4.5") ou omettre des
+        // champs ; un seul .toFixed() sur une chaîne faisait planter tout l'onglet Avis.
+        const s: any = res.stats || {};
+        this.reviewStats.set({
+          average: Number(s.average) || 0,
+          total: Number(s.total) || 0,
+          distribution: s.distribution || {},
+          avg_delivery: Number(s.avg_delivery) || 0,
+          avg_communication: Number(s.avg_communication) || 0,
+          avg_accuracy: Number(s.avg_accuracy) || 0,
+        });
+      },
+      error: () => {
+        this.reviews.set([]);
+        this.reviewStats.set(null);
       },
     });
   }
@@ -203,25 +217,38 @@ export class SellerProfileComponent implements OnInit {
   // ─── Contact ─────────────────────────────────────────
   openContact() {
     if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
+    if (this.isOwnProfile()) {
+      this.notif.info('Ceci est votre propre profil.');
+      return;
+    }
     this.showContactModal.set(true);
   }
 
+  contactSending = signal(false);
+
   sendMessage() {
-    if (!this.contactMessage.trim()) return;
+    if (!this.contactMessage.trim() || this.contactSending()) return;
     const sellerId = this.profile()?.user?.id;
     if (!sellerId) return;
 
+    this.contactSending.set(true);
     this.api.post('conversations/start', {
       seller_id: sellerId,
       message: this.contactMessage.trim(),
     }).subscribe({
       next: () => {
+        this.contactSending.set(false);
         this.showContactModal.set(false);
         this.contactMessage = '';
         this.notif.success('Message envoye!');
         this.router.navigate(['/messages']);
       },
-      error: () => this.notif.error('Erreur lors de l\'envoi.'),
+      error: (err: any) => {
+        this.contactSending.set(false);
+        // On affiche la vraie raison renvoyée par le serveur (compte non
+        // vérifié, trop de messages, etc.) au lieu d'un message générique.
+        this.notif.error(err?.error?.message || 'Erreur lors de l\'envoi.');
+      },
     });
   }
 
@@ -264,7 +291,47 @@ export class SellerProfileComponent implements OnInit {
   // ─── Report ──────────────────────────────────────────
   reportProfile() {
     this.showMoreMenu.set(false);
+    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
+    if (this.isOwnProfile()) {
+      this.notif.info('Vous ne pouvez pas vous signaler vous-même.');
+      return;
+    }
+    this.reportReason = '';
+    this.reportDescription = '';
     this.showReportModal.set(true);
+  }
+
+  reportReasons = [
+    { id: 'harassment', label: 'Harcèlement' },
+    { id: 'spam', label: 'Spam' },
+    { id: 'inappropriate_content', label: 'Contenu inapproprié' },
+    { id: 'fraud', label: 'Fraude / arnaque' },
+    { id: 'impersonation', label: 'Usurpation d\'identité' },
+    { id: 'other', label: 'Autre' },
+  ];
+  reportReason = '';
+  reportDescription = '';
+  reportSending = signal(false);
+
+  submitReport() {
+    const userId = this.profile()?.user?.id;
+    if (!userId || !this.reportReason || this.reportSending()) return;
+
+    this.reportSending.set(true);
+    this.api.post(`users/${userId}/report`, {
+      reason: this.reportReason,
+      description: this.reportDescription.trim() || null,
+    }).subscribe({
+      next: () => {
+        this.reportSending.set(false);
+        this.showReportModal.set(false);
+        this.notif.success('Signalement envoyé. Merci, notre équipe va l\'examiner.');
+      },
+      error: (err: any) => {
+        this.reportSending.set(false);
+        this.notif.error(err?.error?.message || 'Impossible d\'envoyer le signalement.');
+      },
+    });
   }
 
   // ─── Seller Review Reply ─────────────────────────────

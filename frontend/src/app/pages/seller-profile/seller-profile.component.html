@@ -40,13 +40,19 @@
 
           <!-- Action Buttons -->
           <div class="sp-actions">
-            <button class="sp-btn sp-btn-primary" (click)="openContact()">
-              <span class="material-icons">chat</span> Contacter
-            </button>
-            <button class="sp-btn sp-btn-follow" [class.active]="isFollowing()" (click)="toggleFollow()" [disabled]="followLoading()">
-              <span class="material-icons">{{ isFollowing() ? 'check' : 'person_add' }}</span>
-              {{ isFollowing() ? 'Abonne' : 'Suivre' }}
-            </button>
+            @if (isOwnProfile()) {
+              <a class="sp-btn sp-btn-primary" routerLink="/profile/edit">
+                <span class="material-icons">edit</span> Modifier mon profil
+              </a>
+            } @else {
+              <button class="sp-btn sp-btn-primary" (click)="openContact()">
+                <span class="material-icons">chat</span> Contacter
+              </button>
+              <button class="sp-btn sp-btn-follow" [class.active]="isFollowing()" (click)="toggleFollow()" [disabled]="followLoading()">
+                <span class="material-icons">{{ isFollowing() ? 'check' : 'person_add' }}</span>
+                {{ isFollowing() ? 'Abonne' : 'Suivre' }}
+              </button>
+            }
           </div>
           <div class="sp-secondary-actions">
             <button class="sp-icon-btn" (click)="openShare()" title="Partager">
@@ -58,7 +64,9 @@
               </button>
               @if (showMoreMenu()) {
                 <div class="sp-dropdown" (click)="showMoreMenu.set(false)">
-                  <button (click)="reportProfile()"><span class="material-icons">flag</span> Signaler</button>
+                  @if (!isOwnProfile()) {
+                    <button (click)="reportProfile()"><span class="material-icons">flag</span> Signaler</button>
+                  }
                   <button (click)="shareVia('copy')"><span class="material-icons">link</span> Copier le lien</button>
                 </div>
               }
@@ -231,7 +239,7 @@
             @if (reviewStats()) {
               <div class="sp-review-summary">
                 <div class="sp-review-score">
-                  <span class="sp-score-num">{{ reviewStats()!.average.toFixed(1) }}</span>
+                  <span class="sp-score-num">{{ reviewStats()!.average | number:'1.1-1' }}</span>
                   <div class="sp-score-stars">
                     @for (star of getStarArray(reviewStats()!.average); track $index) {
                       <span class="material-icons" [class.filled]="star">star</span>
@@ -243,8 +251,8 @@
                   @for (i of [5,4,3,2,1]; track i) {
                     <div class="sp-bar-row">
                       <span class="sp-bar-label">{{ i }} <span class="material-icons tiny">star</span></span>
-                      <div class="sp-bar-track"><div class="sp-bar-fill" [style.width.%]="getDistributionPercent(reviewStats()!.distribution[i] || 0)"></div></div>
-                      <span class="sp-bar-count">{{ reviewStats()!.distribution[i] || 0 }}</span>
+                      <div class="sp-bar-track"><div class="sp-bar-fill" [style.width.%]="getDistributionPercent(reviewStats()!.distribution?.[i] || 0)"></div></div>
+                      <span class="sp-bar-count">{{ reviewStats()!.distribution?.[i] || 0 }}</span>
                     </div>
                   }
                 </div>
@@ -473,8 +481,36 @@
             <label>Votre message</label>
             <textarea [(ngModel)]="contactMessage" rows="3" placeholder="Ecrivez votre message..."></textarea>
           </div>
-          <button class="sp-send-btn" (click)="sendMessage()" [disabled]="!contactMessage.trim()">
-            <span class="material-icons">send</span> Envoyer le message
+          <button class="sp-send-btn" (click)="sendMessage()" [disabled]="!contactMessage.trim() || contactSending()">
+            <span class="material-icons">send</span> {{ contactSending() ? 'Envoi...' : 'Envoyer le message' }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ═══════ REPORT MODAL ═══════ -->
+    @if (showReportModal()) {
+      <div class="sp-modal-bg" (click)="showReportModal.set(false)">
+        <div class="sp-modal lg" (click)="$event.stopPropagation()">
+          <div class="sp-modal-head">
+            <h2>Signaler {{ profile().user.full_name }}</h2>
+            <button (click)="showReportModal.set(false)"><span class="material-icons">close</span></button>
+          </div>
+          <div class="sp-form-group">
+            <label>Motif du signalement</label>
+            <select [(ngModel)]="reportReason" class="sp-report-select">
+              <option value="" disabled>Choisissez un motif…</option>
+              @for (r of reportReasons; track r.id) {
+                <option [value]="r.id">{{ r.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="sp-form-group">
+            <label>Détails (facultatif)</label>
+            <textarea [(ngModel)]="reportDescription" rows="3" maxlength="2000" placeholder="Expliquez ce qui s'est passé..."></textarea>
+          </div>
+          <button class="sp-send-btn" (click)="submitReport()" [disabled]="!reportReason || reportSending()">
+            <span class="material-icons">flag</span> {{ reportSending() ? 'Envoi...' : 'Envoyer le signalement' }}
           </button>
         </div>
       </div>

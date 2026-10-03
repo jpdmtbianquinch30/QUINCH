@@ -959,3 +959,101 @@
     min-height: 275px;
   }
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Défilement global : la bannière remonte, le bandeau INFO reste en haut
+// (à garder en fin de fichier pour gagner sur les règles précédentes)
+// ═════════════════════════════════════════════════════════════════════════
+.feed-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.feed-scroll .news-ticker {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.feed-layout {
+  flex: none;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+.feed-main {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+}
+
+.filters-sidebar {
+  position: sticky;
+  top: 46px;
+  align-self: flex-start;
+  max-height: calc(100dvh - 130px);
+}
+
+// Tri : liste verticale (desktop) et pastilles (mobile)
+.sort-list-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 18px;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-align: left;
+
+    .material-icons { font-size: 17px; }
+    &:hover { background: rgba(255, 255, 255, 0.04); }
+    &.active { background: rgba(99, 102, 241, 0.15); color: #a5a8f5; font-weight: 700; }
+  }
+}
+
+.sort-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+
+    .material-icons { font-size: 15px; }
+    &.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+  }
+}
+
+// Mêmes couleurs partout : Produit = indigo, Service = ambre.
+.type-segment button.service-btn.active,
+.type-segment-vertical button.service-btn.active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #1a1200;
+}

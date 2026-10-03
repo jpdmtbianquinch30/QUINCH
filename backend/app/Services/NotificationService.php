@@ -162,6 +162,48 @@ class NotificationService
     }
 
     /**
+     * Utilisateurs @mentionnés dans le titre ou la description d'une annonce :
+     * ils reçoivent une notification renvoyant vers l'annonce.
+     */
+    public function notifyMentions(\App\Models\Product $product, User $author): void
+    {
+        $text = ($product->title ?? '') . ' ' . ($product->description ?? '');
+
+        if (!preg_match_all('/@([A-Za-z0-9_.]{3,30})/u', $text, $m)) {
+            return;
+        }
+
+        $usernames = array_slice(array_values(array_unique(array_map('mb_strtolower', $m[1]))), 0, 10);
+        if (!$usernames) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($usernames), '?'));
+
+        $users = User::query()
+            ->whereRaw("LOWER(username) IN ({$placeholders})", $usernames)
+            ->where('id', '!=', $author->id)
+            ->where('account_status', 'active')
+            ->get(['id', 'username']);
+
+        foreach ($users as $mentioned) {
+            $this->send(
+                $mentioned->id,
+                'mention',
+                'Vous avez été mentionné',
+                $author->full_name . ' vous a mentionné dans « ' . mb_substr((string) $product->title, 0, 40) . ' »',
+                [
+                    'icon'       => 'alternate_email',
+                    'action_url' => '/product/' . $product->slug,
+                    'sender_id'  => $author->id,
+                    'image_url'  => $author->avatar_url,
+                    'group_key'  => "mention_{$product->id}_{$mentioned->id}",
+                ]
+            );
+        }
+    }
+
+    /**
      * Product liked.
      */
     public function notifyLike(string $userId, User $liker, string $productSlug, string $productTitle): ?UserNotification
@@ -220,7 +262,7 @@ class NotificationService
 
         return $this->send($userId, 'transaction', $info[0], $info[1], [
             'icon'       => $this->transactionIcon($status),
-            'action_url' => '/transactions',
+            'action_url' => '/messages',
             'priority'   => self::PRIORITY_CRITICAL,
             'data'       => ['transaction_id' => $transactionId, 'status' => $status],
         ]);
@@ -252,7 +294,7 @@ class NotificationService
 
         return $this->send($userId, 'transaction', 'Négociation', $labels[$action] ?? 'Mise à jour de négociation', [
             'icon'       => 'local_offer',
-            'action_url' => '/transactions',
+            'action_url' => '/messages',
             'priority'   => self::PRIORITY_NORMAL,
             'sender_id'  => $sender->id,
             'image_url'  => $sender->avatar_url,

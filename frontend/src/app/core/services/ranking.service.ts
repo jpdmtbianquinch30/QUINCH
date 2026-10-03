@@ -14,6 +14,8 @@ export interface RankingUserEntry {
   total_likes?: number;
   products_count?: number;
   profile_views_count?: number;
+  /** Classement "plus suivis" : nombre d'abonnés. */
+  followers_count?: number;
   badges?: import('./badge.service').Badge[];
 }
 
@@ -35,7 +37,7 @@ export interface RankingPreferences {
   ranking_anonymous: boolean;
 }
 
-export type RankingKind = 'sellers' | 'products' | 'profiles';
+export type RankingKind = 'sellers' | 'products' | 'profiles' | 'followers';
 
 @Injectable({ providedIn: 'root' })
 export class RankingService {
@@ -54,6 +56,10 @@ export class RankingService {
 
   getProfiles(): Observable<{ ranking: RankingUserEntry[] }> {
     return this.api.get<{ ranking: RankingUserEntry[] }>('rankings/profiles');
+  }
+
+  getFollowers(): Observable<{ ranking: RankingUserEntry[] }> {
+    return this.api.get<{ ranking: RankingUserEntry[] }>('rankings/followers');
   }
 
   /** Accessible meme hors Premium : sert a afficher l'ecran cadenas plutot qu'une 403 brute. */

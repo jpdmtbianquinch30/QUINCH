@@ -182,6 +182,8 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
       min_price: this.priceMin() || undefined,
       max_price: this.priceMax() || undefined,
       type: this.selectedType() || undefined,
+      // Avant : le tri choisi n'était JAMAIS envoyé au serveur (le menu ne faisait rien).
+      sort_by: this.sortBy() === 'popular' ? 'popular' : 'recent',
     };
 
     this.productService.getProducts(params).subscribe({

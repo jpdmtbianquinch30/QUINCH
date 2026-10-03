@@ -2709,3 +2709,51 @@ button {
     opacity: 1;
   }
 }
+
+
+/* =========================================================
+   CORRECTIFS DE MISE EN PAGE (fin de fichier : ils priment)
+   ---------------------------------------------------------
+   - :host avait un margin-left (--q-nav-width) EN PLUS de la marge déjà
+     appliquée par .main-content : d'où le grand vide entre la barre de
+     navigation et la liste des conversations.
+   - La page n'avait pas de hauteur fixe : tout défilait ensemble. Désormais
+     seule la zone des messages défile ; l'en-tête du chat et la zone de saisie
+     restent fixes, ainsi que l'en-tête de la liste.
+   ========================================================= */
+:host {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+@media (min-width: 701px) {
+  :host {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .messages-page,
+  .messages-layout {
+    height: 100dvh;
+    min-height: 0;
+    max-height: 100dvh;
+  }
+
+  .conv-list,
+  .chat-area {
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .conv-items {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .chat-header,
+  .chat-input {
+    flex-shrink: 0;
+  }
+}

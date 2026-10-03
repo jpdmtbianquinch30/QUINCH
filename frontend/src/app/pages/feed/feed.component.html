@@ -11,6 +11,8 @@
     </button>
   </div>
 
+  <!-- Tout ce qui suit défile ENSEMBLE : la bannière remonte, le bandeau INFO reste collé en haut. -->
+  <div class="feed-scroll" (scroll)="onScroll($event)">
   <!-- ═══════ MESSAGE QUINCH EN HAUT ═══════ -->
 <!-- Place cette partie juste après </div> de .feed-topbar
      et juste avant <div class="feed-layout"> -->
@@ -79,7 +81,15 @@
       <div class="type-segment-vertical">
         <button [class.active]="selectedType() === 'all'" (click)="setType('all')">Tout</button>
         <button [class.active]="selectedType() === 'product'" (click)="setType('product')">Produits</button>
-        <button [class.active]="selectedType() === 'service'" (click)="setType('service')">Services</button>
+        <button class="service-btn" [class.active]="selectedType() === 'service'" (click)="setType('service')">Services</button>
+      </div>
+
+      <div class="sort-list-vertical">
+        @for (opt of sortOptions; track opt.key) {
+          <button [class.active]="selectedSort() === opt.key" (click)="setSort(opt.key)">
+            <span class="material-icons">{{ opt.icon }}</span> {{ opt.label }}
+          </button>
+        }
       </div>
 
       @if (categories().length > 0) {
@@ -95,13 +105,21 @@
     </aside>
 
     <!-- ═══════ CONTENU PRINCIPAL ═══════ -->
-    <main class="feed-main" (scroll)="onScroll($event)">
+    <main class="feed-main">
       <!-- Filtres mobile (masqués sur desktop, voir CSS) -->
       <div class="mobile-filter-bar">
         <div class="type-segment">
           <button [class.active]="selectedType() === 'all'" (click)="setType('all')">Tout</button>
           <button [class.active]="selectedType() === 'product'" (click)="setType('product')">Produits</button>
-          <button [class.active]="selectedType() === 'service'" (click)="setType('service')">Services</button>
+          <button class="service-btn" [class.active]="selectedType() === 'service'" (click)="setType('service')">Services</button>
+        </div>
+
+        <div class="sort-chips">
+          @for (opt of sortOptions; track opt.key) {
+            <button [class.active]="selectedSort() === opt.key" (click)="setSort(opt.key)">
+              <span class="material-icons">{{ opt.icon }}</span> {{ opt.label }}
+            </button>
+          }
         </div>
 
         @if (categories().length > 0) {
@@ -192,5 +210,6 @@
         }
       }
     </main>
+  </div>
   </div>
 </div>

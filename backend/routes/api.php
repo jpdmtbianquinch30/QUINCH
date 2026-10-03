@@ -238,6 +238,7 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::get('sellers', [RankingController::class, 'sellers']);
         Route::get('products', [RankingController::class, 'products']);
         Route::get('profiles', [RankingController::class, 'profiles']);
+        Route::get('followers', [RankingController::class, 'followers']);
         Route::get('preferences', [RankingController::class, 'myPreferences']);
         Route::patch('preferences', [RankingController::class, 'updatePreferences']);
     });

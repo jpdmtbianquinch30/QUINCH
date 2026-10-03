@@ -129,7 +129,7 @@
           </div>
         }
       } @else {
-        @let list = activeTab() === 'sellers' ? sellers() : profiles();
+        @let list = activeTab() === 'sellers' ? sellers() : (activeTab() === 'followers' ? followers() : profiles());
         @if (list.length === 0) {
           <div class="rankings-empty">
             <span class="material-icons">emoji_events</span>
@@ -160,6 +160,9 @@
                   @if (activeTab() === 'sellers') {
                     <span class="metric-value">{{ u.score ?? 0 | number:'1.0-0':'fr-FR' }}</span>
                     <span class="metric-label">{{ (u.total_views ?? 0) | number:'1.0-0':'fr-FR' }} vues · {{ (u.total_likes ?? 0) | number:'1.0-0':'fr-FR' }} likes</span>
+                  } @else if (activeTab() === 'followers') {
+                    <span class="metric-value">{{ u.followers_count ?? 0 | number:'1.0-0':'fr-FR' }}</span>
+                    <span class="metric-label">abonnés</span>
                   } @else {
                     <span class="metric-value">{{ u.profile_views_count | number:'1.0-0':'fr-FR' }}</span>
                     <span class="metric-label">visites</span>

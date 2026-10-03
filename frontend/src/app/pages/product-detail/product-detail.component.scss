@@ -1971,3 +1971,18 @@ $radius-sm: 8px;
 
   .reviews-empty .material-icons { color: rgba(0,0,0,0.08); }
 }
+
+
+// Vidéo : le cadre épouse la vidéo (plus de bandes noires haut/bas ou sur les côtés).
+.media-main.has-video {
+  aspect-ratio: auto;
+  max-height: none;
+  background: transparent;
+  border-color: transparent;
+}
+
+.media-main.has-video .media-video {
+  height: auto;
+  max-height: 72vh;
+  background: transparent;
+}

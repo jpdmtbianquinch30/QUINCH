@@ -141,6 +141,34 @@ class RankingController extends Controller
         return response()->json(['ranking' => $ranking]);
     }
 
+    // Top 100 des profils les plus suivis (nombre d'abonnés). Mêmes règles
+    // d'éligibilité que les autres classements (Premium + participation).
+    public function followers(Request $request): JsonResponse
+    {
+        $this->requirePremium($request);
+
+        $users = User::query()
+            ->where('is_premium', true)
+            ->where('ranking_opt_in', true)
+            ->select('users.*')
+            ->selectSub(
+                DB::table('user_follows')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('user_follows.following_id', 'users.id'),
+                'followers_total'
+            )
+            ->orderByDesc('followers_total')
+            ->orderBy('users.id')
+            ->limit(self::LIMIT)
+            ->get();
+
+        $ranking = $users->values()->map(fn (User $user, int $i) => $this->presentUser($user, $i + 1, [
+            'followers_count' => (int) $user->followers_total,
+        ]));
+
+        return response()->json(['ranking' => $ranking]);
+    }
+
     // "Postuler" aux classements — reserve aux comptes Premium. Un compte
     // gratuit ne peut pas activer opt_in (mais garder la preference
     // choisie avant expiration n'a pas d'effet tant qu'il n'est pas actif,

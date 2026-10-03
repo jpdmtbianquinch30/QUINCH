@@ -3275,3 +3275,44 @@ $r-sm: 8px;
     text-align: left !important;
   }
 }
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// Barre du haut alignée (retour · Abonnements/Pour toi · recherche)
+// ═════════════════════════════════════════════════════════════════════════
+.feed-header .header-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.feed-header .feed-tabs {
+  height: 44px;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+.feed-header .feed-tabs .tab {
+  display: inline-flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.feed-header .header-left,
+.feed-header .header-right {
+  display: flex;
+  align-items: center;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+// En mode "détail produit", la vidéo se déplace : les flèches haut/bas la
+// suivaient jusque dans la zone vidéo. On les masque tant que le détail est ouvert.
+.slide-inner.split-mode ~ .nav-arrow {
+  display: none;
+}

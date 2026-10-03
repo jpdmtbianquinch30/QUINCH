@@ -130,31 +130,6 @@ export class ProductService {
     return this.api.post(`products/${productId}/report`, { reason, description });
   }
 
-  // Transactions
-  initiateTransaction(data: any): Observable<any> {
-    return this.api.post('transactions/initiate', data);
-  }
-
-  cancelTransaction(transactionId: string): Observable<any> {
-    return this.api.post(`transactions/${transactionId}/cancel`);
-  }
-
-  getTransactionHistory(): Observable<any> {
-    return this.api.get('transactions/history');
-  }
-
-  getTransaction(transactionId: string): Observable<any> {
-    return this.api.get(`transactions/${transactionId}`);
-  }
-
-  updateTransactionStatus(transactionId: string, status: string, note?: string): Observable<any> {
-    return this.api.put(`transactions/${transactionId}/status`, { status, note });
-  }
-
-  disputeTransaction(transactionId: string, reason: string): Observable<any> {
-    return this.api.post(`transactions/${transactionId}/dispute`, { reason });
-  }
-
   awardLoyaltyBadge(buyerId: string, reason?: string): Observable<any> {
     return this.api.post(`users/${buyerId}/loyalty-badge`, { reason });
   }

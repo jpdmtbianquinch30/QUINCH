@@ -152,6 +152,16 @@ class ProductController extends Controller
         $validated['listing_fee_status'] = 'none';
 
         $product = Product::create($validated);
+
+        // @pseudo dans le titre / la description : on prévient les personnes
+        // mentionnées (uniquement si l'annonce est réellement en ligne).
+        if ($product->status === 'active') {
+            try {
+                app(\App\Services\NotificationService::class)->notifyMentions($product, $request->user());
+            } catch (\Throwable $e) {
+                Log::warning('notifyMentions a échoué', ['error' => $e->getMessage()]);
+            }
+        }
         $product->load(['category', 'video', 'user']);
 
         return response()->json([
@@ -246,6 +256,12 @@ class ProductController extends Controller
             'status' => 'active',
             'listing_fee_status' => $product->listing_fee_status === 'paid' ? 'paid' : 'none',
         ]);
+
+        try {
+            app(\App\Services\NotificationService::class)->notifyMentions($product->fresh(), $user);
+        } catch (\Throwable $e) {
+            Log::warning('notifyMentions a échoué', ['error' => $e->getMessage()]);
+        }
 
         return response()->json([
             'message' => 'Annonce publiée.',
@@ -344,6 +360,14 @@ class ProductController extends Controller
                     'listing_fee_status' => 'paid',
                     'listing_fee_gateway_id' => $data['id'] ?? $product->listing_fee_gateway_id,
                 ]);
+
+                try {
+                    if ($product->user) {
+                        app(\App\Services\NotificationService::class)->notifyMentions($product->fresh(), $product->user);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('notifyMentions a échoué', ['error' => $e->getMessage()]);
+                }
             });
         }
 

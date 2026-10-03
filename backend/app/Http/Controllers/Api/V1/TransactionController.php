@@ -145,7 +145,7 @@ class TransactionController extends Controller
             $role = $actingUserId === $transaction->seller_id ? 'vendeur' : 'acheteur';
             $this->notif->send($recipientId, 'transaction', "Message du {$role}", $note, [
                 'icon' => 'info',
-                'action_url' => '/transactions',
+                'action_url' => '/messages',
                 'priority' => \App\Services\NotificationService::PRIORITY_NORMAL,
                 'data' => ['transaction_id' => $transaction->id],
             ]);
