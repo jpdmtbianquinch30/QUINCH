@@ -26,29 +26,66 @@ export class ForgotPasswordComponent {
   password = '';
   passwordConfirmation = '';
 
+  /** Même format que la connexion : le backend exige +221XXXXXXXXX (sans espaces). */
+  private normalizedPhone(): string {
+    const raw = this.phoneNumber.replace(/\s/g, '');
+    return raw.startsWith('+221') ? raw : '+221' + raw;
+  }
+
+  /** Envoie le code SMS (utilisé par les deux méthodes : SMS et e-mail). */
   requestOtp() {
-    if (!this.phoneNumber.trim()) return;
+    if (!this.phoneNumber.trim()) {
+      this.notify.error('Veuillez saisir votre numéro de téléphone.');
+      return;
+    }
     this.loading.set(true);
-    this.auth.forgotPassword(this.phoneNumber.trim()).subscribe({
+    this.auth.forgotPassword(this.normalizedPhone()).subscribe({
       next: (res: any) => {
         this.loading.set(false);
         this.notify.success(res.message);
         this.step.set('reset');
+        this.otp = '';
         if (res.demo_otp) {
           this.notify.info(`Code de démonstration (local) : ${res.demo_otp}`);
         }
       },
       error: (err: any) => {
         this.loading.set(false);
-        this.notify.error(err.error?.message || 'Erreur lors de la demande.');
+        const errors = err.error?.errors;
+        this.notify.error(
+          errors ? Object.values(errors).flat().join(' ') : (err.error?.message || 'Erreur lors de la demande.')
+        );
       },
     });
   }
 
+  /** Revenir saisir un autre numéro (faute de frappe). */
+  changeNumber() {
+    this.step.set('request');
+    this.otp = '';
+  }
+
+  /** Validation commune avant d'envoyer le nouveau mot de passe. */
+  private passwordsValid(): boolean {
+    if (this.password.length < 8 || !/[a-z]/.test(this.password) || !/[A-Z]/.test(this.password) || !/\d/.test(this.password)) {
+      this.notify.error('Le mot de passe doit faire 8 caractères minimum, avec une majuscule, une minuscule et un chiffre.');
+      return false;
+    }
+    if (this.password !== this.passwordConfirmation) {
+      this.notify.error('Les mots de passe ne correspondent pas.');
+      return false;
+    }
+    return true;
+  }
+
   resetWithOtp() {
-    if (!this.otp || !this.password || this.password !== this.passwordConfirmation) return;
+    if (this.otp.length !== 6) {
+      this.notify.error('Le code doit contenir 6 chiffres.');
+      return;
+    }
+    if (!this.passwordsValid()) return;
     this.loading.set(true);
-    this.auth.resetPassword(this.phoneNumber.trim(), this.otp, this.password, this.passwordConfirmation).subscribe({
+    this.auth.resetPassword(this.normalizedPhone(), this.otp, this.password, this.passwordConfirmation).subscribe({
       next: (res: any) => {
         this.loading.set(false);
         this.notify.success(res.message);
@@ -61,10 +98,19 @@ export class ForgotPasswordComponent {
     });
   }
 
+  /** Par e-mail : le code SMS reste obligatoire (l'e-mail est un 2ᵉ facteur, pas le seul). */
   resetWithEmail() {
-    if (!this.phoneNumber.trim() || !this.email.trim() || !this.password || this.password !== this.passwordConfirmation) return;
+    if (!this.email.trim()) {
+      this.notify.error("Veuillez saisir l'e-mail associé au compte.");
+      return;
+    }
+    if (this.otp.length !== 6) {
+      this.notify.error('Le code doit contenir 6 chiffres.');
+      return;
+    }
+    if (!this.passwordsValid()) return;
     this.loading.set(true);
-    this.auth.resetPasswordByEmail(this.phoneNumber.trim(), this.email.trim(), this.password, this.passwordConfirmation).subscribe({
+    this.auth.resetPasswordByEmail(this.normalizedPhone(), this.email.trim(), this.otp, this.password, this.passwordConfirmation).subscribe({
       next: (res: any) => {
         this.loading.set(false);
         this.notify.success(res.message);

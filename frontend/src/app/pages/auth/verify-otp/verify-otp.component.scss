@@ -1095,3 +1095,28 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+.phone-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .phone-prefix {
+    font-weight: 600;
+    opacity: 0.8;
+    padding-left: 12px;
+  }
+
+  .phone-input {
+    flex: 1;
+    letter-spacing: normal;
+    text-align: left;
+  }
+}
+
+.change-phone-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}

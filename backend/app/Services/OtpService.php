@@ -50,6 +50,14 @@ class OtpService
      */
     public function issue(User $user, ?string $phone = null): string
     {
+        // Code envoyé au numéro du COMPTE (inscription, mot de passe oublié,
+        // renvoi) : un éventuel changement de numéro resté en attente est annulé.
+        // Sans ça, le code reçu sur l'ancien numéro pouvait valider un changement
+        // de numéro que le propriétaire n'avait jamais confirmé.
+        if ($phone === null && $user->pending_phone_number) {
+            $user->forceFill(['pending_phone_number' => null]);
+        }
+
         $phone ??= $user->phone_number;
 
         $otp = $user->generateOtp();
@@ -65,6 +73,24 @@ class OtpService
         );
 
         return $otp;
+    }
+
+    /**
+     * Le code OTP peut-il être renvoyé dans la réponse API (champ demo_otp) ?
+     *
+     * Oui UNIQUEMENT quand aucun vrai SMS ne part : environnement de test, ou
+     * environnement local avec SMS_DRIVER=log (simulation). Dès que
+     * SMS_DRIVER=orange|twilio, le code n'est plus jamais exposé : il n'arrive
+     * que par SMS, comme en production.
+     */
+    public function shouldExposeDemoCode(): bool
+    {
+        if (app()->environment('testing')) {
+            return true;
+        }
+
+        return app()->environment('local')
+            && config('services.sms.driver', 'log') === 'log';
     }
 
     public function tooManyResponse(int $retryAfter): JsonResponse

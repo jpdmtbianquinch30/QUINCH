@@ -110,6 +110,18 @@ class GoogleAuthController extends Controller
     {
         $user = $request->user();
 
+        // Cette route sert à RENSEIGNER un numéro (compte Google sans numéro,
+        // ou numéro d'inscription saisi avec une faute avant toute vérification).
+        // Un compte dont le numéro est déjà vérifié doit passer par
+        // user/phone/request-change (mot de passe + code SMS) : sinon un simple
+        // jeton volé suffirait à rediriger le compte vers le numéro d'un attaquant.
+        if ($user->phone_verified) {
+            return response()->json([
+                'message' => 'Votre numéro est déjà vérifié. Utilisez « Changer de numéro » dans votre profil.',
+                'error'   => 'phone_already_verified',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number,' . $user->id],
         ], [
@@ -141,7 +153,7 @@ class GoogleAuthController extends Controller
             'otp_sent' => true,
         ];
 
-        if (app()->environment(['local', 'testing'])) {
+        if ($otpService->shouldExposeDemoCode()) {
             $response['demo_otp'] = $otp;
         }
 

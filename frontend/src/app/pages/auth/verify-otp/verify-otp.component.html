@@ -69,12 +69,19 @@
           <span class="material-icons">mark_email_read</span>
         </div>
 
-        <h2>Vérifiez votre numéro</h2>
-
-        <p class="auth-subtitle">
-          Entrez le code à 6 chiffres envoyé au
-          <strong>{{ phoneNumber }}</strong>
-        </p>
+        @if (editingPhone()) {
+          <h2>Votre numéro de téléphone</h2>
+          <p class="auth-subtitle">
+            Saisissez votre numéro sénégalais : nous vous envoyons un code par SMS
+            pour le vérifier.
+          </p>
+        } @else {
+          <h2>Vérifiez votre numéro</h2>
+          <p class="auth-subtitle">
+            Entrez le code à 6 chiffres envoyé au
+            <strong>{{ phoneNumber }}</strong>
+          </p>
+        }
 
 
         <!-- Erreur -->
@@ -117,7 +124,46 @@
         }
 
 
-        <!-- FORMULAIRE -->
+        @if (editingPhone()) {
+
+          <!-- SAISIE DU NUMÉRO -->
+          <form (ngSubmit)="savePhone()" class="otp-form">
+            <div class="form-group">
+              <label for="newPhone">Numéro de téléphone</label>
+              <div class="otp-input-wrapper phone-input-wrapper">
+                <span class="phone-prefix">+221</span>
+                <input
+                  id="newPhone"
+                  type="tel"
+                  inputmode="tel"
+                  class="q-input otp-input phone-input"
+                  [(ngModel)]="newPhone"
+                  name="newPhone"
+                  placeholder="77 123 45 67"
+                  maxlength="15"
+                  autocomplete="tel-national"
+                />
+              </div>
+            </div>
+
+            <button type="submit" class="q-btn q-btn-primary q-btn-full q-btn-lg otp-submit" [disabled]="savingPhone()">
+              @if (savingPhone()) {
+                <span class="spinner"></span>
+                Envoi du code...
+              } @else {
+                <span>Recevoir le code</span>
+                <span class="material-icons">arrow_forward</span>
+              }
+            </button>
+
+            @if (phoneNumber) {
+              <button type="button" class="resend-btn" (click)="cancelEditPhone()">Annuler</button>
+            }
+          </form>
+
+        } @else {
+
+        <!-- SAISIE DU CODE -->
         <form (ngSubmit)="verify()" class="otp-form">
 
           <div class="form-group">
@@ -207,6 +253,16 @@
           </button>
 
         </div>
+
+
+          <div class="change-phone-row">
+            <button type="button" class="resend-btn" (click)="startEditPhone()">
+              <span class="material-icons">edit</span>
+              Mauvais numéro ? Le modifier
+            </button>
+          </div>
+
+        }
 
       </div>
     </div>

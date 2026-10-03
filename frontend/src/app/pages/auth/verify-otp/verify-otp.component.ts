@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { GoogleAuthService } from '../../../core/services/google-auth.service';
 
 @Component({
   selector: 'app-verify-otp',
@@ -13,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class VerifyOtpComponent {
   auth = inject(AuthService);
   private router = inject(Router);
+  private phoneApi = inject(GoogleAuthService);
 
   otp = '';
   loading = signal(false);
@@ -21,6 +23,13 @@ export class VerifyOtpComponent {
   info = signal('');
 
   phoneNumber = this.auth.user()?.phone_number ?? '';
+
+  /** Étape « numéro de téléphone » : affichée quand le compte n'a encore aucun
+   *  numéro (1ère connexion Google, ou retour sur cet écran après avoir quitté
+   *  l'app) ou quand l'utilisateur veut corriger une faute de frappe. */
+  editingPhone = signal(!(this.auth.user()?.phone_number));
+  newPhone = '';
+  savingPhone = signal(false);
 
   // Code de démo (environnements local/testing) transmis par register()/
   // resendOtp() via AuthService.lastDemoOtp. Avant ce fix, ce code n'était
@@ -39,6 +48,56 @@ export class VerifyOtpComponent {
   fillDemoOtp() {
     const code = this.demoOtp();
     if (code) this.otp = code;
+  }
+
+  /** Corriger / renseigner le numéro avant vérification (jamais pour un numéro déjà vérifié :
+   *  le backend refuse, le changement passe alors par le profil). */
+  startEditPhone() {
+    this.error.set('');
+    this.info.set('');
+    this.newPhone = '';
+    this.editingPhone.set(true);
+  }
+
+  cancelEditPhone() {
+    // Impossible d'annuler tant qu'aucun numéro n'est enregistré.
+    if (this.phoneNumber) this.editingPhone.set(false);
+  }
+
+  savePhone() {
+    const raw = this.newPhone.replace(/\s/g, '');
+    if (!raw) {
+      this.error.set('Veuillez saisir votre numéro de téléphone.');
+      return;
+    }
+    const phone = raw.startsWith('+221') ? raw : '+221' + raw;
+
+    this.savingPhone.set(true);
+    this.error.set('');
+    this.info.set('');
+
+    this.phoneApi.addPhone(phone).subscribe({
+      next: (res: any) => {
+        this.savingPhone.set(false);
+        if (res.user) this.auth.updateUser(res.user);
+        this.phoneNumber = phone;
+        this.otp = '';
+        this.editingPhone.set(false);
+        this.info.set(
+          res.demo_otp
+            ? `Code envoyé à ${phone} (démo: ${res.demo_otp}).`
+            : `Un code a été envoyé par SMS au ${phone}.`
+        );
+      },
+      error: (err: any) => {
+        this.savingPhone.set(false);
+        const errors = err.error?.errors;
+        this.error.set(
+          errors ? Object.values(errors).flat().join(' ')
+                 : (err.error?.message || "Impossible d'enregistrer ce numéro.")
+        );
+      },
+    });
   }
 
   verify() {
@@ -78,9 +137,12 @@ export class VerifyOtpComponent {
             : 'Un nouveau code a été envoyé par SMS.'
         );
       },
-      error: () => {
+      error: (err: any) => {
         this.resending.set(false);
-        this.error.set("Impossible d'envoyer un nouveau code pour le moment.");
+        // 429 : le backend indique combien de secondes attendre.
+        this.error.set(err.status === 429
+          ? (err.error?.message || 'Trop de demandes. Réessayez dans un instant.')
+          : "Impossible d'envoyer un nouveau code pour le moment.");
       },
     });
   }

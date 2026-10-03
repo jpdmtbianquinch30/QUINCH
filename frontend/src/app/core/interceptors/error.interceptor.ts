@@ -38,7 +38,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       // `error: 'phone_not_verified'` (voir EnsurePhoneVerified côté API) :
       // on relaie la même redirection ici plutôt que de laisser un message
       // d'erreur générique s'afficher.
-      if (error.status === 403 && error.error?.error === 'phone_not_verified') {
+      // Pas de redirection si on est déjà sur un écran d'authentification
+      // (connexion, inscription, vérification, mot de passe oublié) : l'écran
+      // courant gère lui-même cette étape (ex. saisie du numéro après Google)
+      // et une redirection automatique le faisait disparaître en un éclair.
+      if (error.status === 403 && error.error?.error === 'phone_not_verified' && !router.url.startsWith('/auth/')) {
         router.navigate(['/auth/verify-otp']);
       }
 

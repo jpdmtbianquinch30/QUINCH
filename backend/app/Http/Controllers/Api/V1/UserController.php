@@ -97,7 +97,7 @@ class UserController extends Controller
         $otp = $otpService->issue($user, $validated['new_phone_number']);
 
         $response = ['message' => 'Un code de vérification a été envoyé au nouveau numéro.'];
-        if (app()->environment(['local', 'testing'])) {
+        if ($otpService->shouldExposeDemoCode()) {
             $response['demo_otp'] = $otp;
         }
 
@@ -123,12 +123,29 @@ class UserController extends Controller
             ], 422);
         }
 
-        $user->update([
+        // Le numéro a pu être pris par un autre compte entre la demande et la
+        // confirmation (la règle `unique` n'est vérifiée qu'à la demande) :
+        // sans ce contrôle, la base lèverait une erreur 500 sur l'index unique.
+        $taken = \App\Models\User::where('phone_number', $user->pending_phone_number)
+            ->where('id', '!=', $user->id)
+            ->exists();
+        if ($taken) {
+            $user->forceFill(['pending_phone_number' => null])->save();
+
+            return response()->json([
+                'message' => 'Ce numéro est déjà utilisé par un autre compte.',
+                'error' => 'phone_taken',
+            ], 422);
+        }
+
+        // forceFill : otp_code / otp_expires_at ne sont pas dans $fillable, donc
+        // update() les ignorait en silence et le code restait valable 10 minutes.
+        $user->forceFill([
             'phone_number' => $user->pending_phone_number,
             'pending_phone_number' => null,
             'otp_code' => null,
             'otp_expires_at' => null,
-        ]);
+        ])->save();
 
         return response()->json([
             'message' => 'Numéro de téléphone mis à jour avec succès.',

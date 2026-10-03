@@ -123,10 +123,11 @@ export class AuthService {
     });
   }
 
-  resetPasswordByEmail(phoneNumber: string, email: string, password: string, passwordConfirmation: string): Observable<any> {
+  resetPasswordByEmail(phoneNumber: string, email: string, otp: string, password: string, passwordConfirmation: string): Observable<any> {
     return this.api.post('auth/reset-password-email', {
       phone_number: phoneNumber,
       email,
+      otp,
       password,
       password_confirmation: passwordConfirmation,
     });

@@ -60,7 +60,7 @@ class AuthController extends Controller
         }
 
         // Le code n'est renvoyé dans la réponse qu'en local/testing, jamais en production.
-        if ($otp !== null && app()->environment(['local', 'testing'])) {
+        if ($otp !== null && $otpService->shouldExposeDemoCode()) {
             $response['demo_otp'] = $otp;
         }
 
@@ -215,7 +215,7 @@ class AuthController extends Controller
         if ($user && !$user->phone_verified) {
             $otp = $otpService->issue($user);
 
-            if (app()->environment(['local', 'testing'])) {
+            if ($otpService->shouldExposeDemoCode()) {
                 $response['demo_otp'] = $otp;
             }
         }
@@ -251,7 +251,7 @@ class AuthController extends Controller
         if ($user) {
             $otp = $otpService->issue($user);
 
-            if (app()->environment(['local', 'testing'])) {
+            if ($otpService->shouldExposeDemoCode()) {
                 $response['demo_otp'] = $otp;
             }
         }
