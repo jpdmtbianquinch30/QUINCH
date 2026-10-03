@@ -138,7 +138,7 @@ class PublicProfileController extends Controller
                 $query->latest();
         }
 
-        $products = $query->paginate($request->get('per_page', 12));
+        $products = $query->paginate($this->perPage($request, 12, 30));
 
         return response()->json($products);
     }

@@ -82,9 +82,19 @@ class UserController extends Controller
             ], 422);
         }
 
+        $otpService = app(\App\Services\OtpService::class);
+
+        // Limite par NOUVEAU numéro : empêche d'inonder un numéro tiers de SMS.
+        $wait = $otpService->throttle($validated['new_phone_number']);
+        if ($wait !== null) {
+            return $otpService->tooManyResponse($wait);
+        }
+
         $user->pending_phone_number = $validated['new_phone_number'];
         $user->save();
-        $otp = $user->generateOtp();
+
+        // Le code part vers le NOUVEAU numéro (preuve qu'on le possède).
+        $otp = $otpService->issue($user, $validated['new_phone_number']);
 
         $response = ['message' => 'Un code de vérification a été envoyé au nouveau numéro.'];
         if (app()->environment(['local', 'testing'])) {

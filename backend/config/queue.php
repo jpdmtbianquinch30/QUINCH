@@ -40,7 +40,7 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 720),
             'after_commit' => false,
         ],
 
@@ -68,7 +68,8 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // DOIT être > au plus long timeout de job (vidéo : 600 s), sinon un job en cours est relancé en double.
+'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 720),
             'block_for' => null,
             'after_commit' => false,
         ],
@@ -124,6 +125,22 @@ return [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
         'database' => env('DB_CONNECTION', 'sqlite'),
         'table' => 'failed_jobs',
+    ],
+
+
+    // ─── Limiteur global de l'API (requêtes / minute) ──────────────────────
+    'rate_limits' => [
+        'authenticated' => (int) env('QUINCH_RATE_LIMIT_AUTHENTICATED', 300),
+        'guest'         => (int) env('QUINCH_RATE_LIMIT_GUEST', 200),
+    ],
+
+    // ─── Diffusion vidéo ───────────────────────────────────────────────────
+    // true  : nginx envoie la vidéo (X-Accel-Redirect). UNIQUEMENT derrière le nginx du docker-compose.
+    // false : PHP sert le fichier lui-même (dev local XAMPP / artisan serve).
+    'video' => [
+        'accel_redirect' => (bool) env('VIDEO_ACCEL_REDIRECT', false),
+        'accel_prefix'   => env('VIDEO_ACCEL_PREFIX', '/_protected_storage/'),
+        'queue'          => env('VIDEO_QUEUE', 'videos'),
     ],
 
 ];

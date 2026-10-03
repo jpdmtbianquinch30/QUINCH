@@ -57,7 +57,7 @@ class AdminUserController extends Controller
 
         $users = $query->withCount(['products', 'purchasedTransactions', 'soldTransactions'])
             ->with('badges:id,user_id,badge_type')
-            ->paginate($request->get('per_page', 20));
+            ->paginate($this->perPage($request, 20, 100));
 
         return response()->json($users);
     }

@@ -41,22 +41,26 @@ class AuthController extends Controller
             'device_fingerprint' => $request->header('X-Device-Fingerprint'),
         ]);
 
-        // Generate OTP for phone verification
-        $otp = $user->generateOtp();
+        // Code de vérification envoyé par SMS (en arrière-plan).
+        $otpService = app(\App\Services\OtpService::class);
+        $wait = $otpService->throttle($user->phone_number);
+        $otp = $wait === null ? $otpService->issue($user) : null;
 
         $token = $user->createToken('quinch-app')->plainTextToken;
 
-        // TODO: brancher un vrai envoi SMS ici (ex. Orange SMS API / Twilio).
-        // En attendant, l'OTP n'est renvoyé dans la réponse qu'en environnement
-        // local/testing, jamais en production, pour ne pas contourner la 2FA.
         $response = [
             'message' => 'Inscription réussie. Vérifiez votre téléphone.',
             'user' => $this->formatUser($user),
             'token' => $token,
-            'otp_sent' => true,
+            'otp_sent' => $otp !== null,
         ];
 
-        if (app()->environment(['local', 'testing'])) {
+        if ($wait !== null) {
+            $response['retry_after'] = $wait;
+        }
+
+        // Le code n'est renvoyé dans la réponse qu'en local/testing, jamais en production.
+        if ($otp !== null && app()->environment(['local', 'testing'])) {
             $response['demo_otp'] = $otp;
         }
 
@@ -69,17 +73,49 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-    'phone_number' => ['required', 'string'],
-    'password'     => ['required', 'string'],
-]);
+            'phone_number' => ['required', 'string'],
+            'password'     => ['required', 'string'],
+        ]);
 
-        $user = User::where('phone_number', $validated['phone_number'])->first();
+        $phone = $validated['phone_number'];
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        // Deux compteurs : strict par (numéro + IP), large par numéro seul
+        // (attaque répartie sur plusieurs IP). Un numéro inconnu est compté
+        // exactement pareil : aucune énumération de comptes possible.
+        $pairKey  = 'login:pair:' . sha1($phone . '|' . $request->ip());
+        $phoneKey = 'login:phone:' . sha1($phone);
+
+        foreach ([[$pairKey, 5], [$phoneKey, 20]] as [$key, $max]) {
+            if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, $max)) {
+                $minutes = (int) ceil(\Illuminate\Support\Facades\RateLimiter::availableIn($key) / 60);
+
+                throw ValidationException::withMessages([
+                    'phone_number' => ["Trop de tentatives. Réessayez dans {$minutes} minute(s)."],
+                ])->status(429);
+            }
+        }
+
+        $user = User::where('phone_number', $phone)->first();
+
+        if ($user) {
+            $passwordOk = Hash::check($validated['password'], $user->password);
+        } else {
+            // Même durée de calcul qu'un vrai compte : on ne révèle pas
+            // l'existence d'un numéro par le temps de réponse.
+            Hash::make($validated['password']);
+            $passwordOk = false;
+        }
+
+        if (!$passwordOk) {
+            \Illuminate\Support\Facades\RateLimiter::hit($pairKey, 900);
+            \Illuminate\Support\Facades\RateLimiter::hit($phoneKey, 3600);
+
             throw ValidationException::withMessages([
                 'phone_number' => ['Les identifiants sont incorrects.'],
             ]);
         }
+
+        \Illuminate\Support\Facades\RateLimiter::clear($pairKey);
 
         if ($user->isBanned()) {
             return response()->json([
@@ -112,7 +148,6 @@ class AuthController extends Controller
             'user' => $this->formatUser($user),
             'token' => $token,
         ]);
-
     }
 
     /**
@@ -162,6 +197,15 @@ class AuthController extends Controller
             'phone_number' => ['required', 'string'],
         ]);
 
+        $otpService = app(\App\Services\OtpService::class);
+
+        // Limite comptée AVANT de chercher le compte : numéro connu ou non,
+        // la réponse est identique (pas d'énumération).
+        $wait = $otpService->throttle($validated['phone_number']);
+        if ($wait !== null) {
+            return $otpService->tooManyResponse($wait);
+        }
+
         $user = User::where('phone_number', $validated['phone_number'])->first();
 
         $response = [
@@ -169,7 +213,7 @@ class AuthController extends Controller
         ];
 
         if ($user && !$user->phone_verified) {
-            $otp = $user->generateOtp();
+            $otp = $otpService->issue($user);
 
             if (app()->environment(['local', 'testing'])) {
                 $response['demo_otp'] = $otp;
@@ -191,6 +235,13 @@ class AuthController extends Controller
             'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/'],
         ]);
 
+        $otpService = app(\App\Services\OtpService::class);
+
+        $wait = $otpService->throttle($validated['phone_number']);
+        if ($wait !== null) {
+            return $otpService->tooManyResponse($wait);
+        }
+
         $user = User::where('phone_number', $validated['phone_number'])->first();
 
         $response = [
@@ -198,8 +249,8 @@ class AuthController extends Controller
         ];
 
         if ($user) {
-            $otp = $user->generateOtp();
-            // TODO: brancher un vrai envoi SMS ici (ex. Orange SMS API / Twilio).
+            $otp = $otpService->issue($user);
+
             if (app()->environment(['local', 'testing'])) {
                 $response['demo_otp'] = $otp;
             }

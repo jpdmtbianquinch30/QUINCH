@@ -17,11 +17,19 @@ FROM php:8.3-fpm-alpine
 # notoirement lent a compiler sur Alpine/musl).
 ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
-RUN apk add --no-cache libpq \
-    && install-php-extensions pdo_pgsql gd zip intl mbstring bcmath opcache
+# ffmpeg : nécessaire à ProcessVideoJob. redis : cache, files d'attente, limiteur.
+RUN apk add --no-cache libpq ffmpeg \
+    && install-php-extensions pdo_pgsql gd zip intl mbstring bcmath opcache redis pcntl
 
 # Config PHP de production : pas d'exposition d'infos sensibles, opcache actif
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-quinch.ini
+
+# Pool PHP-FPM dimensionné par variables d'environnement.
+COPY docker/php/zz-quinch-fpm.conf /usr/local/etc/php-fpm.d/zz-quinch-fpm.conf
+ENV PHP_FPM_MAX_CHILDREN=30 \
+    PHP_FPM_START_SERVERS=6 \
+    PHP_FPM_MIN_SPARE=4 \
+    PHP_FPM_MAX_SPARE=10
 
 WORKDIR /var/www/html
 

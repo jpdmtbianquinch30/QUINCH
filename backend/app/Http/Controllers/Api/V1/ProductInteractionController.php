@@ -8,6 +8,7 @@ use App\Models\ProductReport;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductInteractionController extends Controller
 {
@@ -40,24 +41,41 @@ class ProductInteractionController extends Controller
     public function toggleLike(Request $request, Product $product): JsonResponse
     {
         $user = $request->user();
-        $isLiked = $product->likedByUsers()->where('user_id', $user->id)->exists();
 
-        if ($isLiked) {
-            $product->likedByUsers()->detach($user->id);
-            $product->decrement('like_count');
-        } else {
-            $product->likedByUsers()->attach($user->id);
-            $product->increment('like_count');
+        [$liked, $isNewLike] = DB::transaction(function () use ($user, $product) {
+            // detach() renvoie le nombre de lignes réellement supprimées :
+            // l'opération est atomique côté SQL (pas de "exists puis delete").
+            if ($product->likedByUsers()->detach($user->id) > 0) {
+                // Le compteur ne descend jamais sous 0, même s'il était désynchronisé.
+                Product::whereKey($product->id)->where('like_count', '>', 0)->decrement('like_count');
 
-            // Notify product owner (don't notify self)
-            if ($product->user_id !== $user->id) {
-                $this->notif->notifyLike($product->user_id, $user, $product->slug, $product->title);
+                return [false, false];
             }
+
+            // insertOrIgnore = INSERT ... ON CONFLICT DO NOTHING (clé unique user+produit) :
+            // un double clic simultané ne provoque plus d'erreur 500 ni de double comptage.
+            $inserted = DB::table('product_likes')->insertOrIgnore([
+                'user_id'    => $user->id,
+                'product_id' => $product->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            if ($inserted > 0) {
+                Product::whereKey($product->id)->increment('like_count');
+            }
+
+            return [true, $inserted > 0];
+        });
+
+        // Notifier le vendeur seulement pour un NOUVEAU like (pas pour soi-même).
+        if ($isNewLike && $product->user_id !== $user->id) {
+            $this->notif->notifyLike($product->user_id, $user, $product->slug, $product->title);
         }
 
         return response()->json([
-            'liked' => !$isLiked,
-            'like_count' => $product->fresh()->like_count,
+            'liked' => $liked,
+            'like_count' => (int) Product::whereKey($product->id)->value('like_count'),
         ]);
     }
 
@@ -72,27 +90,27 @@ class ProductInteractionController extends Controller
 
     public function toggleSave(Request $request, Product $product): JsonResponse
     {
-        // BUG CORRIGE : ce bouton (affiché partout dans le feed) manipulait
-        // un pivot "product_saves" totalement déconnecté de la vraie page
-        // Favoris (qui lit la table favorite_items via FavoriteController).
-        // Résultat : un produit "sauvegardé" depuis le feed n'apparaissait
-        // JAMAIS dans les Favoris de l'utilisateur. On utilise maintenant
-        // la même table des deux côtés.
+        // Même table que la page Favoris (favorite_items).
         $user = $request->user();
-        $existing = \App\Models\FavoriteItem::where('user_id', $user->id)
-            ->where('product_id', $product->id)
-            ->first();
 
-        if ($existing) {
-            $existing->delete();
+        // delete() renvoie le nombre de lignes supprimées : atomique.
+        $deleted = \App\Models\FavoriteItem::where('user_id', $user->id)
+            ->where('product_id', $product->id)
+            ->delete();
+
+        if ($deleted > 0) {
             return response()->json(['saved' => false]);
         }
 
-        \App\Models\FavoriteItem::create([
-            'user_id' => $user->id,
-            'product_id' => $product->id,
-            'price_at_save' => $product->price,
-        ]);
+        try {
+            \App\Models\FavoriteItem::create([
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'price_at_save' => $product->price,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Une requête simultanée l'a déjà ajouté : résultat identique.
+        }
 
         return response()->json(['saved' => true]);
     }

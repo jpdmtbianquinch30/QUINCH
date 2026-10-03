@@ -54,11 +54,12 @@ class User extends Authenticatable
         'ranking_anonymous',
     ];
 
-    protected $hidden = [
+        protected $hidden = [
         'password',
         'remember_token',
         'otp_code',
         'otp_expires_at',
+        'otp_attempts',
         'device_fingerprint',
     ];
 
@@ -239,23 +240,41 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
         return $this->account_status === 'banned';
     }
 
-    public function generateOtp(): string
+        public function generateOtp(): string
     {
-        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        // forceFill : otp_code/otp_expires_at ne sont plus dans $fillable
-        // (champs sensibles, jamais assignables via une requête externe).
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // forceFill : ces champs ne sont pas dans $fillable (jamais assignables
+        // via une requête externe). Un nouveau code remet le compteur d'essais à 0.
         $this->forceFill([
             'otp_code' => bcrypt($otp),
-            'otp_expires_at' => now()->addMinutes(10),
+            'otp_expires_at' => now()->addMinutes((int) config('quinch.otp.ttl_minutes', 10)),
+            'otp_attempts' => 0,
         ])->save();
+
         return $otp;
     }
 
     public function verifyOtp(string $otp): bool
     {
-        if (!$this->otp_expires_at || $this->otp_expires_at->isPast()) {
+        if (!$this->otp_code || !$this->otp_expires_at || $this->otp_expires_at->isPast()) {
             return false;
         }
+
+        $max = (int) config('quinch.otp.max_attempts', 5);
+
+        // On "réserve" un essai de façon ATOMIQUE en base avant de comparer :
+        // même 50 requêtes simultanées ne peuvent pas dépasser $max essais.
+        // Si le quota est déjà épuisé, aucune ligne n'est modifiée -> refus,
+        // même avec le bon code (il faut en redemander un).
+        $reserved = static::whereKey($this->getKey())
+            ->where('otp_attempts', '<', $max)
+            ->increment('otp_attempts');
+
+        if ($reserved === 0) {
+            return false;
+        }
+
         return password_verify($otp, $this->otp_code);
     }
 

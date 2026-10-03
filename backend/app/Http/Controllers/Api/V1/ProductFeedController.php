@@ -41,6 +41,8 @@ class ProductFeedController extends Controller
             $excludeIds = is_array($request->exclude_ids)
                 ? $request->exclude_ids
                 : array_filter(explode(',', $request->exclude_ids));
+            // Borne la liste et ne garde que des chaînes.
+            $excludeIds = array_slice(array_values(array_filter($excludeIds, 'is_string')), 0, 200);
             if (!empty($excludeIds)) {
                 $query->whereNotIn('products.id', $excludeIds);
             }
@@ -98,7 +100,7 @@ class ProductFeedController extends Controller
                     $query->tieredRank();
                 }
 
-        $products = $query->paginate($request->get('per_page', 10));
+        $products = $query->paginate($this->perPage($request, 10, 30));
         $sellerIds = $products->pluck('user_id')->unique()->all();
         $sellerBadges = \App\Models\UserBadge::summaryForMany($sellerIds);
         $sellerReviewCounts = \App\Models\UserReview::whereIn('seller_id', $sellerIds)

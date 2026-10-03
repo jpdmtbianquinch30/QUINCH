@@ -91,4 +91,18 @@ return [
         // engagé d'un compte gratuit.
         'feed_boost' => (int) env('QUINCH_PREMIUM_FEED_BOOST', 30),
     ],
+
+        // ─── Codes OTP (SMS) ───────────────────────────────────────────────────
+    'otp' => [
+        'ttl_minutes'             => (int) env('QUINCH_OTP_TTL_MINUTES', 10),
+        'max_attempts'            => (int) env('QUINCH_OTP_MAX_ATTEMPTS', 5),
+        'resend_cooldown_seconds' => (int) env('QUINCH_OTP_RESEND_COOLDOWN', 60),
+        'max_sends_per_hour'      => (int) env('QUINCH_OTP_MAX_PER_HOUR', 5),
+        // Plafond global (protège votre facture SMS contre un abus massif).
+        'global_sends_per_hour'   => (int) env('QUINCH_OTP_GLOBAL_PER_HOUR', 2000),
+    ],
+    
 ];
+
+
+

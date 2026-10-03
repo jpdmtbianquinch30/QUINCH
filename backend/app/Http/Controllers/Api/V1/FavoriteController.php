@@ -29,22 +29,28 @@ class FavoriteController extends Controller
         ]);
 
         $userId = $request->user()->id;
-        $existing = FavoriteItem::where('user_id', $userId)
-            ->where('product_id', $validated['product_id'])
-            ->first();
 
-        if ($existing) {
-            $existing->delete();
+        // delete() renvoie le nombre de lignes supprimées : atomique.
+        $deleted = FavoriteItem::where('user_id', $userId)
+            ->where('product_id', $validated['product_id'])
+            ->delete();
+
+        if ($deleted > 0) {
             return response()->json(['favorited' => false, 'message' => 'Retiré des favoris.']);
         }
 
         $product = Product::findOrFail($validated['product_id']);
-        FavoriteItem::create([
-            'user_id' => $userId,
-            'product_id' => $product->id,
-            'collection_id' => $validated['collection_id'] ?? null,
-            'price_at_save' => $product->price,
-        ]);
+
+        try {
+            FavoriteItem::create([
+                'user_id' => $userId,
+                'product_id' => $product->id,
+                'collection_id' => $validated['collection_id'] ?? null,
+                'price_at_save' => $product->price,
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // Ajout simultané déjà effectué : résultat identique.
+        }
 
         return response()->json([
             'favorited' => true,

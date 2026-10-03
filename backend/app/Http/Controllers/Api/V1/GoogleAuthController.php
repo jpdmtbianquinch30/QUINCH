@@ -117,16 +117,27 @@ class GoogleAuthController extends Controller
             'phone_number.unique' => 'Ce numéro est déjà utilisé par un autre compte.',
         ]);
 
-        $user->update([
-            'phone_number' => $validated['phone_number'],
-        ]);
+        $otpService = app(\App\Services\OtpService::class);
 
-        // Generate OTP for phone verification
-        $otp = $user->generateOtp();
+        $wait = $otpService->throttle($validated['phone_number']);
+        if ($wait !== null) {
+            return $otpService->tooManyResponse($wait);
+        }
+
+        // Changer de numéro invalide la vérification : sinon un compte déjà
+        // vérifié pourrait s'attribuer n'importe quel numéro sans preuve.
+        if ($user->phone_number !== $validated['phone_number']) {
+            $user->update([
+                'phone_number'   => $validated['phone_number'],
+                'phone_verified' => false,
+            ]);
+        }
+
+        $otp = $otpService->issue($user);
 
         $response = [
             'message'  => 'Numéro ajouté. Vérifiez votre téléphone.',
-            'user'     => $this->formatUser($user),
+            'user'     => $this->formatUser($user->fresh()),
             'otp_sent' => true,
         ];
 

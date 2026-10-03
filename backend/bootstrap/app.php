@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
 ->withMiddleware(function (Middleware $middleware): void {
     $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+
+    // Limiteur global de l'API (défini dans AppServiceProvider). En production
+    // CACHE_STORE doit être redis, sinon chaque requête écrit en base.
+    $middleware->throttleApi('api');
+
     // Bloque toute requete venant d'une IP bannie par un admin (voir
     // SecurityController::banIp) — avant meme l'authentification.
     $middleware->prependToGroup('api', \App\Http\Middleware\CheckBannedIp::class);

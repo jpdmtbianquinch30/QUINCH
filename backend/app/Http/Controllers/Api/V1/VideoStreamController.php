@@ -6,21 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductVideo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * VideoStreamController
- *
- * Serves video files from storage with proper Content-Type headers
- * and supports HTTP Range requests for seeking/streaming.
+ * Sert les vidéos du stockage avec les bons Content-Type et le support des
+ * requêtes HTTP Range (avance/recul dans la vidéo).
  */
 class VideoStreamController extends Controller
 {
-    /**
-     * Stream a video by its ID.
-     */
-    public function stream(string $videoId): BinaryFileResponse|StreamedResponse
+    public function stream(string $videoId): BinaryFileResponse|\Illuminate\Http\Response
     {
         $video = ProductVideo::find($videoId);
 
@@ -37,32 +31,15 @@ class VideoStreamController extends Controller
 
         $fullPath = $disk->path($path);
         $mimeType = $this->getMimeType($video->format, $fullPath);
-        $fileSize = $disk->size($path);
 
-        // Return a BinaryFileResponse which handles Range requests automatically
-        $response = new BinaryFileResponse($fullPath);
-        $response->headers->set('Content-Type', $mimeType);
-        $response->headers->set('Accept-Ranges', 'bytes');
-        $response->headers->set('Cache-Control', 'public, max-age=86400');
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Range');
-        $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
-
-        return $response;
+        return $this->fileResponse($path, $fullPath, $mimeType);
     }
 
     /**
-     * Stream a video by direct path (for storage paths).
-     *
-     * SÉCURITÉ: le paramètre `path` ne doit JAMAIS être utilisé tel quel pour
-     * résoudre un chemin disque (risque de path traversal / lecture de fichier
-     * arbitraire, ex. ?path=../../../../.env). On exige donc que ce chemin
-     * corresponde exactement au video_path d'une ProductVideo existante en
-     * base, et on vérifie en plus que le chemin résolu reste bien à
-     * l'intérieur du dossier racine du disque "public".
+     * SÉCURITÉ : le paramètre `path` doit correspondre exactement au video_path
+     * d'une ProductVideo en base, et le chemin réel doit rester dans le disque public.
      */
-    public function streamByPath(Request $request): BinaryFileResponse
+    public function streamByPath(Request $request): BinaryFileResponse|\Illuminate\Http\Response
     {
         $path = $request->query('path');
 
@@ -70,7 +47,6 @@ class VideoStreamController extends Controller
             abort(400, 'Path parameter invalid.');
         }
 
-        // Le chemin doit correspondre à une vidéo réellement enregistrée.
         $video = ProductVideo::where('video_path', $path)->first();
         if (!$video) {
             abort(404, 'Video not found.');
@@ -84,8 +60,6 @@ class VideoStreamController extends Controller
 
         $fullPath = $disk->path($path);
 
-        // Garde-fou supplémentaire: le chemin réel résolu doit rester dans
-        // le dossier racine du disque public.
         $root = realpath($disk->path(''));
         $real = realpath($fullPath);
         if (!$real || !$root || !str_starts_with($real, $root)) {
@@ -95,21 +69,9 @@ class VideoStreamController extends Controller
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         $mimeType = $this->getMimeType($extension, $fullPath);
 
-        $response = new BinaryFileResponse($fullPath);
-        $response->headers->set('Content-Type', $mimeType);
-        $response->headers->set('Accept-Ranges', 'bytes');
-        $response->headers->set('Cache-Control', 'public, max-age=86400');
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Range');
-        $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
-
-        return $response;
+        return $this->fileResponse($path, $fullPath, $mimeType);
     }
 
-    /**
-     * Serve a thumbnail image for a video.
-     */
     public function thumbnail(string $videoId): BinaryFileResponse
     {
         $video = ProductVideo::find($videoId);
@@ -128,15 +90,44 @@ class VideoStreamController extends Controller
 
         $response = new BinaryFileResponse($fullPath);
         $response->headers->set('Content-Type', mime_content_type($fullPath) ?: 'image/jpeg');
-        $response->headers->set('Cache-Control', 'public, max-age=604800'); // 7 days
+        $response->headers->set('Cache-Control', 'public, max-age=604800'); // 7 jours
         $response->headers->set('Access-Control-Allow-Origin', '*');
 
         return $response;
     }
 
     /**
-     * Get MIME type for video format.
+     * - quinch.video.accel_redirect = true : PHP ne lit pas le fichier, il répond
+     *   avec X-Accel-Redirect et c'est nginx qui envoie la vidéo.
+     * - sinon : BinaryFileResponse (dev local sans nginx).
      */
+    private function fileResponse(string $relativePath, string $fullPath, string $mimeType): BinaryFileResponse|\Illuminate\Http\Response
+    {
+        if (config('quinch.video.accel_redirect')) {
+            $internal = rtrim((string) config('quinch.video.accel_prefix', '/_protected_storage/'), '/')
+                . '/' . ltrim($relativePath, '/');
+
+            $response = response('', 200);
+            $response->headers->set('X-Accel-Redirect', $internal);
+            $response->headers->set('Content-Type', $mimeType);
+            $response->headers->set('Accept-Ranges', 'bytes');
+            $response->headers->set('Cache-Control', 'public, max-age=86400');
+
+            return $response;
+        }
+
+        $response = new BinaryFileResponse($fullPath);
+        $response->headers->set('Content-Type', $mimeType);
+        $response->headers->set('Accept-Ranges', 'bytes');
+        $response->headers->set('Cache-Control', 'public, max-age=86400');
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'Range');
+        $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
+
+        return $response;
+    }
+
     private function getMimeType(?string $format, string $fullPath): string
     {
         $mimeMap = [
@@ -153,12 +144,11 @@ class VideoStreamController extends Controller
             return $mimeMap[strtolower($format)];
         }
 
-        // Fallback to file detection
         $detected = mime_content_type($fullPath);
         if ($detected && str_starts_with($detected, 'video/')) {
             return $detected;
         }
 
-        return 'video/mp4'; // safe default
+        return 'video/mp4';
     }
 }

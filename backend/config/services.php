@@ -72,4 +72,26 @@ return [
     'redirect'             => 'postmessage',
 ],
 
+'sms' => [
+    // log (développement) | orange | twilio
+    'driver' => env('SMS_DRIVER', 'log'),
+
+    'orange' => [
+        'base_url'      => env('ORANGE_SMS_BASE_URL', 'https://api.orange.com/smsmessaging/v1'),
+        'auth_url'      => env('ORANGE_SMS_AUTH_URL', 'https://api.orange.com/oauth/v3/token'),
+        'client_id'     => env('ORANGE_SMS_CLIENT_ID'),
+        'client_secret' => env('ORANGE_SMS_CLIENT_SECRET'),
+        // Numéro émetteur au format +221XXXXXXXXX, tel que déclaré chez Orange.
+        'sender'        => env('ORANGE_SMS_SENDER'),
+        'sender_name'   => env('ORANGE_SMS_SENDER_NAME', 'QUINCH'),
+    ],
+
+    'twilio' => [
+        'sid'                   => env('TWILIO_SID'),
+        'token'                 => env('TWILIO_TOKEN'),
+        'from'                  => env('TWILIO_FROM'),
+        'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
+    ],
+],
+
 ];

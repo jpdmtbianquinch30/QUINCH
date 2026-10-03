@@ -232,16 +232,20 @@ class ProductController extends Controller
         return response()->json(['status' => 'received']);
     }
 
-    public function show(Product $product): JsonResponse
+    public function show(Request $request, Product $product): JsonResponse
     {
         $product->load(['user', 'category', 'video']);
 
         $isLiked = false;
         $isSaved = false;
 
-        if (auth()->check()) {
-            $isLiked = $product->likedByUsers()->where('user_id', auth()->id())->exists();
-            $isSaved = \App\Models\FavoriteItem::where('user_id', auth()->id())->where('product_id', $product->id)->exists();
+        // Route publique : le guard par défaut est "web" (session), qui ne voit
+        // jamais un token Bearer. Il faut demander explicitement Sanctum.
+        $authUser = $request->user('sanctum');
+
+        if ($authUser) {
+            $isLiked = $product->likedByUsers()->where('user_id', $authUser->id)->exists();
+            $isSaved = \App\Models\FavoriteItem::where('user_id', $authUser->id)->where('product_id', $product->id)->exists();
         }
 
         $badges = UserBadge::where('user_id', $product->user->id)->active()->get()->map(fn ($b) => [

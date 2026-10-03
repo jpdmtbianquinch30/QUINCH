@@ -70,7 +70,8 @@ class ProductVideoController extends Controller
         ]);
 
         // Traitement vidéo en arrière-plan (thumbnail + durée)
-        ProcessVideoJob::dispatch($productVideo);
+        // File dédiée "videos" (voir ProcessVideoJob), après commit.
+        ProcessVideoJob::dispatch($productVideo)->afterCommit();
 
         return response()->json([
             'message' => 'Vidéo uploadée avec succès. Traitement en cours.',

@@ -11,7 +11,10 @@ use App\Jobs\RecalculateTrustScores;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
-Schedule::job(new ReleaseExpiredReservations)->everyMinute();
-Schedule::job(new ExpirePremiumSubscriptions)->daily();
-Schedule::job(new CleanupAbandonedDraftListings)->hourly();
-Schedule::job(new RecalculateTrustScores)->daily();
+
+// withoutOverlapping + onOneServer : une seule exécution même avec plusieurs
+// conteneurs "scheduler". Nécessite un cache à verrous atomiques (Redis en prod).
+Schedule::job(new ReleaseExpiredReservations)->everyMinute()->withoutOverlapping(10)->onOneServer();
+Schedule::job(new ExpirePremiumSubscriptions)->daily()->withoutOverlapping()->onOneServer();
+Schedule::job(new CleanupAbandonedDraftListings)->hourly()->withoutOverlapping()->onOneServer();
+Schedule::job(new RecalculateTrustScores)->daily()->withoutOverlapping()->onOneServer();
