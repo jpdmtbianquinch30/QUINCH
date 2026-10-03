@@ -8,9 +8,11 @@ export interface RankingUserEntry {
   username?: string | null;
   full_name?: string | null;
   avatar_url?: string | null;
-  total_amount?: number;
-  sales_count?: number;
-  purchases_count?: number;
+  /** Classement vendeurs : vues + likes cumulés des annonces actives. */
+  score?: number;
+  total_views?: number;
+  total_likes?: number;
+  products_count?: number;
   profile_views_count?: number;
   badges?: import('./badge.service').Badge[];
 }
@@ -33,7 +35,7 @@ export interface RankingPreferences {
   ranking_anonymous: boolean;
 }
 
-export type RankingKind = 'sellers' | 'buyers' | 'products' | 'profiles';
+export type RankingKind = 'sellers' | 'products' | 'profiles';
 
 @Injectable({ providedIn: 'root' })
 export class RankingService {
@@ -42,12 +44,8 @@ export class RankingService {
   /** Preferences de l'utilisateur courant vis-a-vis des classements (chargees une fois, reutilisees partout). */
   preferences = signal<RankingPreferences | null>(null);
 
-  getSellers(): Observable<{ month: string; ranking: RankingUserEntry[] }> {
-    return this.api.get<{ month: string; ranking: RankingUserEntry[] }>('rankings/sellers');
-  }
-
-  getBuyers(): Observable<{ month: string; ranking: RankingUserEntry[] }> {
-    return this.api.get<{ month: string; ranking: RankingUserEntry[] }>('rankings/buyers');
+  getSellers(): Observable<{ ranking: RankingUserEntry[] }> {
+    return this.api.get<{ ranking: RankingUserEntry[] }>('rankings/sellers');
   }
 
   getProducts(): Observable<{ ranking: RankingProductEntry[] }> {

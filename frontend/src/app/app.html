@@ -36,14 +36,6 @@
             <span class="sidebar-link-label">Publier</span>
           </a>
 
-          <a routerLink="/cart" routerLinkActive="active" class="sidebar-link">
-            <span class="sidebar-link-icon"><span class="material-icons">shopping_cart</span></span>
-            <span class="sidebar-link-label">Panier</span>
-            @if (cart.count() > 0) {
-              <span class="sidebar-badge">{{ cart.count() }}</span>
-            }
-          </a>
-
           <a routerLink="/messages" routerLinkActive="active" class="sidebar-link mobile-primary">
             <span class="sidebar-link-icon notif-icon-wrap">
               <span class="material-icons">chat</span>
@@ -86,13 +78,6 @@
           <a routerLink="/rankings" routerLinkActive="active" class="sidebar-link">
             <span class="sidebar-link-icon"><span class="material-icons">emoji_events</span></span>
             <span class="sidebar-link-label">Classement</span>
-          </a>
-
-          <div class="sidebar-divider"></div>
-
-          <a routerLink="/transactions" routerLinkActive="active" class="sidebar-link">
-            <span class="sidebar-link-icon"><span class="material-icons">receipt_long</span></span>
-            <span class="sidebar-link-label">Transactions</span>
           </a>
 
           @if (auth.isAdmin()) {

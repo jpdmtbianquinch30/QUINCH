@@ -236,7 +236,6 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
     // Classements — reserves aux comptes Premium (voir RankingController).
     Route::prefix('rankings')->group(function () {
         Route::get('sellers', [RankingController::class, 'sellers']);
-        Route::get('buyers', [RankingController::class, 'buyers']);
         Route::get('products', [RankingController::class, 'products']);
         Route::get('profiles', [RankingController::class, 'profiles']);
         Route::get('preferences', [RankingController::class, 'myPreferences']);

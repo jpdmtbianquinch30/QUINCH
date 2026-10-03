@@ -258,47 +258,21 @@
             }
           } @else {
             <!-- ══ PRODUCT CTAs ══ -->
-            @if (hasSellerPaymentMethods) {
-              <div class="cta-row">
-                <button class="cta-primary buy-cta" (click)="buyNow()" [disabled]="checkingSession()">
-                  <span class="material-icons">{{ checkingSession() ? 'hourglass_top' : 'flash_on' }}</span>
-                  {{ checkingSession() ? 'Verification...' : 'Acheter maintenant' }}
-                </button>
-                <button class="cta-secondary cart-cta" (click)="addToCart()" [disabled]="addingToCart()">
-                  <span class="material-icons">{{ addingToCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span>
-                  {{ addingToCart() ? 'Ajout...' : 'Ajouter au panier' }}
-                </button>
-              </div>
-            } @else {
-              <!-- No payment methods — contact seller directly -->
-              <div class="cta-row">
-                <button class="cta-primary contact-cta" (click)="openContact()">
-                  <span class="material-icons">chat</span>
-                  Contacter le vendeur
-                </button>
-                <button class="cta-secondary cart-cta" (click)="addToCart()" [disabled]="addingToCart()">
-                  <span class="material-icons">{{ addingToCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span>
-                  {{ addingToCart() ? 'Ajout...' : 'Ajouter au panier' }}
-                </button>
-              </div>
-              <div class="payment-notice">
-                <span class="material-icons">info</span>
-                <span>Contactez le vendeur pour convenir du mode de paiement</span>
-              </div>
+            <!-- QUINCH ne gère pas les transactions entre utilisateurs : le seul
+                 parcours est la mise en relation (discussion avec le vendeur). -->
+            <button class="cta-primary contact-cta" (click)="openContact()">
+              <span class="material-icons">chat</span>
+              Contacter le vendeur
+            </button>
+            @if (p.is_negotiable) {
+              <button class="cta-tertiary" (click)="openNegotiate()">
+                <span class="material-icons">local_offer</span>
+                Negocier le prix
+              </button>
             }
-            <div class="cta-row">
-              @if (hasSellerPaymentMethods) {
-                <button class="cta-tertiary" (click)="openContact()">
-                  <span class="material-icons">chat</span>
-                  Contacter le vendeur
-                </button>
-              }
-              @if (p.is_negotiable) {
-                <button class="cta-tertiary" (click)="openNegotiate()">
-                  <span class="material-icons">local_offer</span>
-                  Negocier le prix
-                </button>
-              }
+            <div class="payment-notice">
+              <span class="material-icons">info</span>
+              <span>Contactez le vendeur pour convenir du mode de paiement et de la remise</span>
             </div>
           }
         </div>
@@ -618,55 +592,6 @@
     </div>
 
     <!-- ═══════ MODALS ═══════ -->
-
-    <!-- Payment Modal (products) -->
-@if (showPayment()) {
-  <div class="modal-overlay" (click)="cancelCurrentPayment()">
-    <div class="modal-box" (click)="$event.stopPropagation()">
-      <div class="modal-head">
-        <h2>Choisir un moyen de paiement</h2>
-        <button class="modal-close" (click)="cancelCurrentPayment()">
-          <span class="material-icons">close</span>
-        </button>
-      </div>
-      <div class="modal-summary">
-        <span>{{ p.title }}</span>
-        <strong>{{ formatPrice(p.price * buyQuantity()) }} F CFA</strong>
-      </div>
-      <div class="payment-list">
-        @for (method of sellerPaymentMethods; track method.id) {
-          <button class="payment-item" [class.selected]="selectedPayment() === method.id"
-                  (click)="selectedPayment.set(method.id)">
-            <span class="material-icons pay-icon">{{ method.icon }}</span>
-            <div class="pay-info">
-              <span class="pay-name">{{ method.name }}</span>
-              <span class="pay-desc">{{ method.desc }}</span>
-            </div>
-            @if (selectedPayment() === method.id) {
-              <span class="material-icons pay-check">check_circle</span>
-            }
-          </button>
-        }
-      </div>
-      <div class="qty-selector">
-        <label>Quantité</label>
-        <div class="qty-controls">
-          <button type="button" (click)="decrementQty()" [disabled]="buyQuantity() <= 1">−</button>
-          <span>{{ buyQuantity() }}</span>
-          <button type="button" (click)="incrementQty()" [disabled]="buyQuantity() >= (p.stock_quantity || 1)">+</button>
-        </div>
-      </div>
-      <div class="delivery-address-field">
-        <label>Adresse de livraison</label>
-        <textarea [ngModel]="deliveryAddressText()" (ngModelChange)="deliveryAddressText.set($event)"
-                  placeholder="Quartier, ville, point de repère..." rows="2"></textarea>
-      </div>
-      <button class="modal-cta" [disabled]="!selectedPayment()" (click)="confirmPayment()">
-        Confirmer le paiement - {{ formatPrice(p.price * buyQuantity()) }} F CFA
-      </button>
-    </div>
-  </div>
-}
 
     <!-- Share Modal -->
     @if (showShareModal()) {

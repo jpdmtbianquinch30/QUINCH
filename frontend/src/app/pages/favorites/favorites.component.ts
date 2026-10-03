@@ -3,7 +3,6 @@ import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FavoriteService, FavoriteItem } from '../../core/services/favorite.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { CartService } from '../../core/services/cart.service';
 
 @Component({
   selector: 'app-favorites',
@@ -14,7 +13,6 @@ import { CartService } from '../../core/services/cart.service';
 })
 export class FavoritesComponent implements OnInit {
   favService = inject(FavoriteService);
-  private cartService = inject(CartService);
   private notify = inject(NotificationService);
 
   loading = signal(false);
@@ -30,13 +28,6 @@ export class FavoritesComponent implements OnInit {
         this.notify.success('Retiré des favoris.');
         this.favService.getFavorites().subscribe();
       },
-    });
-  }
-
-  addToCart(item: FavoriteItem) {
-    this.cartService.addToCart(item.product_id).subscribe({
-      next: () => this.notify.success('Ajouté au panier!'),
-      error: () => this.notify.error('Erreur lors de l\'ajout au panier'),
     });
   }
 

@@ -7,7 +7,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { FollowService } from '../../core/services/follow.service';
 import { ReviewService, ReviewStats } from '../../core/services/review.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { CartService } from '../../core/services/cart.service';
 import { ProductService } from '../../core/services/product.service';
 
 type SellerTab = 'products' | 'reviews' | 'about' | 'policies';
@@ -27,7 +26,6 @@ export class SellerProfileComponent implements OnInit {
   private followService = inject(FollowService);
   private reviewService = inject(ReviewService);
   private notif = inject(NotificationService);
-  private cartService = inject(CartService);
 
   // Data
   loading = signal(true);
@@ -200,17 +198,6 @@ export class SellerProfileComponent implements OnInit {
     const end = Math.min(total, current + 2);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
-  }
-
-  // ─── Quick Buy / Cart ────────────────────────────────
-  quickAddToCart(product: any, event: Event) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    this.cartService.addToCart(product.id).subscribe({
-      next: () => this.notif.success('Ajoute au panier!'),
-      error: () => this.notif.error('Erreur.'),
-    });
   }
 
   // ─── Contact ─────────────────────────────────────────

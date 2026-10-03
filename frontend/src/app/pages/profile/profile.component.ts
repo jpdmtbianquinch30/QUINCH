@@ -397,7 +397,6 @@ export class ProfileComponent implements OnInit {
   // Navigation
   editProfile() { this.router.navigate(['/profile/edit']); }
   openSettings() { this.router.navigate(['/settings']); }
-  openMyPurchases() { this.router.navigate(['/transactions'], { queryParams: { tab: 'purchases' } }); }
   addProduct() { this.router.navigate(['/sell']); }
 
   async shareProfile() {

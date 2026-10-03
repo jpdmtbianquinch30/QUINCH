@@ -39,10 +39,8 @@ export class RankingsComponent implements OnInit, OnDestroy {
   anonymous = signal(false);
 
   activeTab = signal<RankingKind>('sellers');
-  month = signal<string | null>(null);
 
   sellers = signal<RankingUserEntry[]>([]);
-  buyers = signal<RankingUserEntry[]>([]);
   products = signal<RankingProductEntry[]>([]);
   profiles = signal<RankingUserEntry[]>([]);
 
@@ -58,7 +56,6 @@ export class RankingsComponent implements OnInit, OnDestroy {
 
   tabs: { key: RankingKind; label: string; icon: string }[] = [
     { key: 'sellers', label: 'Meilleurs vendeurs', icon: 'storefront' },
-    { key: 'buyers', label: 'Meilleurs acheteurs', icon: 'shopping_bag' },
     { key: 'products', label: 'Produits les + vus', icon: 'visibility' },
     { key: 'profiles', label: 'Profils les + visités', icon: 'person_search' },
   ];
@@ -94,7 +91,7 @@ export class RankingsComponent implements OnInit, OnDestroy {
 
   private startPolling() {
     // Les classements evoluent avec l'activite des autres utilisateurs
-    // (ventes, achats, vues) : on repolle l'onglet actif toutes les 20s pour
+    // (vues, likes, visites) : on repolle l'onglet actif toutes les 20s pour
     // que le rang se mette a jour tout seul, sans que l'utilisateur ait a
     // rafraichir la page a chaque fois qu'il est depasse.
     this.pollInterval = setInterval(() => {
@@ -128,13 +125,7 @@ export class RankingsComponent implements OnInit, OnDestroy {
     switch (tab) {
       case 'sellers':
         this.ranking.getSellers().subscribe({
-          next: (res) => { this.sellers.set(res.ranking); this.month.set(res.month); done(); },
-          error: fail,
-        });
-        break;
-      case 'buyers':
-        this.ranking.getBuyers().subscribe({
-          next: (res) => { this.buyers.set(res.ranking); this.month.set(res.month); done(); },
+          next: (res) => { this.sellers.set(res.ranking); done(); },
           error: fail,
         });
         break;
@@ -227,9 +218,7 @@ export class RankingsComponent implements OnInit, OnDestroy {
   criteriaText(): string {
     switch (this.activeTab()) {
       case 'sellers':
-        return 'Classement basé sur le montant total des ventes confirmées ce mois-ci.';
-      case 'buyers':
-        return "Classement basé sur le montant total des achats confirmés ce mois-ci.";
+        return 'Classement basé sur le total des vues et des likes de vos annonces actives (le vendeur doit être Premium et participer).';
       case 'products':
         return 'Classement basé sur le nombre de vues du produit (le vendeur doit être Premium et participer).';
       case 'profiles':

@@ -139,14 +139,13 @@
 
                   </div>
 
-                  <button
-                    type="button"
+                  <a
                     class="q-btn q-btn-primary q-btn-sm q-btn-full cart-btn"
-                    (click)="addToCart(item)"
+                    [routerLink]="['/product', item.product?.slug]"
                   >
-                    <span class="material-icons">shopping_cart</span>
-                    Ajouter au panier
-                  </button>
+                    <span class="material-icons">visibility</span>
+                    Voir le produit
+                  </a>
 
                 </div>
 

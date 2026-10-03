@@ -43,7 +43,9 @@ export const routes: Routes = [
 
   // ─── Pages necessitant un compte ─────────────────────────────────────────
   { path: 'sell', canActivate: [authGuard], loadComponent: () => import('./pages/sell/sell.component').then(m => m.SellComponent) },
-  { path: 'cart', canActivate: [authGuard], loadComponent: () => import('./pages/cart/cart.component').then(m => m.CartComponent) },
+  // Panier et transactions retirés (QUINCH ne gère pas de paiement entre utilisateurs) :
+  // on redirige les anciens liens plutôt que d'afficher une page cassée.
+  { path: 'cart', redirectTo: 'marketplace', pathMatch: 'full' },
   { path: 'messages', canActivate: [authGuard], loadComponent: () => import('./pages/messages/messages.component').then(m => m.MessagesComponent) },
   { path: 'favorites', canActivate: [authGuard], loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent) },
   { path: 'notifications', canActivate: [authGuard], loadComponent: () => import('./pages/notifications/notifications.component').then(m => m.NotificationsComponent) },
@@ -52,8 +54,8 @@ export const routes: Routes = [
   { path: 'premium/success', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
   { path: 'premium/error', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
     { path: 'rankings', canActivate: [authGuard], loadComponent: () => import('./pages/rankings/rankings.component').then(m => m.RankingsComponent) },
-  { path: 'transactions', canActivate: [authGuard], loadComponent: () => import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent) },
-  { path: 'transactions/:id/:outcome', canActivate: [authGuard], loadComponent: () => import('./pages/transaction-status/transaction-status.component').then(m => m.TransactionStatusComponent) },
+  { path: 'transactions', redirectTo: 'messages', pathMatch: 'full' },
+  { path: 'transactions/:id/:outcome', redirectTo: 'messages' },
   { path: 'profile', canActivate: [authGuard], loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent) },
   { path: 'profile/edit', canActivate: [authGuard], loadComponent: () => import('./pages/edit-profile/edit-profile.component').then(m => m.EditProfileComponent) },
   { path: 'settings', canActivate: [authGuard], loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) },

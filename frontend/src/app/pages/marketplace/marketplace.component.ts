@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { ProductService } from '../../core/services/product.service';
-import { CartService } from '../../core/services/cart.service';
 import { FavoriteService } from '../../core/services/favorite.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
@@ -20,7 +19,6 @@ import { Product, Category } from '../../core/models/product.model';
 })
 export class MarketplaceComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
-  private cartService = inject(CartService);
   private favService = inject(FavoriteService);
   private notify = inject(NotificationService);
   private analytics = inject(AnalyticsService);
@@ -267,18 +265,6 @@ export class MarketplaceComponent implements OnInit, OnDestroy {
     } else {
       img.style.display = 'none';
     }
-  }
-
-  quickAddToCart(product: Product, event: Event) {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!this.auth.isAuthenticated()) return;
-    this.cartService.addToCart(product.id).subscribe({
-      next: () => {
-        this.notify.success('Ajoute au panier!');
-        this.analytics.trackAddToCart(product.id, product.price);
-      },
-    });
   }
 
   quickFavorite(product: Product, event: Event) {

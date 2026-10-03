@@ -654,25 +654,30 @@ deleteMessage(msg: Message) {
   });
 }
 
+  // Seul le propriétaire du produit peut répondre, et jamais à sa propre demande.
+  // Anciens messages sans product_owner_id : on garde l'ancien comportement
+  // (le backend reste l'autorité et refuse si ce n'est pas le bon utilisateur).
+  canRespondAvailability(msg: any): boolean {
+    if (msg.metadata?.['transaction_id'] || msg.metadata?.['availability']) return false;
+    if (this.isMe(msg)) return false;
+    const ownerId = msg.metadata?.['product_owner_id'];
+    return ownerId ? String(ownerId) === String(this.auth.user()?.id) : true;
+  }
+
   respondAvailability(msg: any, status: 'available' | 'unavailable') {
     const conv = this.selectedConv();
     if (!conv) return;
     this.chat.respondAvailability(conv.id, msg.id, status).subscribe({
       next: (res: any) => {
         msg.metadata = { ...msg.metadata, availability: status };
-        if (res.reply) this.chat.messages.update(list => [...list, res.reply]);
+        if (res.reply) {
+          // Évite un doublon si le polling a déjà ramené la réponse.
+          this.chat.messages.update(list =>
+            list.some(m => m.id === res.reply.id) ? list : [...list, res.reply]);
+        }
       },
       error: (err) => this.notify.error(err.error?.message || 'Erreur'),
     });
-  }
-
-  goBuyFromChat(msg: any) {
-    const slug = msg.metadata?.product_slug;
-    if (slug) this.router.navigate(['/product', slug], { fragment: 'buy' });
-  }
-
-  dismissBuyFromChat(msg: any) {
-    msg.metadata = { ...msg.metadata, dismissed: true };
   }
 
 selectionMode = signal(false);

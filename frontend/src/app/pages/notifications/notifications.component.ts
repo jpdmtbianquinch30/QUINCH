@@ -89,12 +89,13 @@ export class NotificationsComponent implements OnInit {
       case 'purchase':
       case 'order':
       case 'transaction':
-        // Transaction → transactions page
-        return '/transactions';
+        // Plus de page transactions (pas de paiement entre utilisateurs) :
+        // les anciennes notifications renvoient vers les conversations.
+        return '/messages';
 
       case 'negotiation':
-        // Negotiation → transactions page
-        return '/transactions';
+        // Negotiation → conversations
+        return '/messages';
 
       case 'review':
         // Review → own profile (reviews section)
@@ -199,9 +200,9 @@ export class NotificationsComponent implements OnInit {
       like: 'Voir le produit',
       follow: 'Voir le profil',
       friend: 'Envoyer un message',
-      purchase: 'Voir la commande',
-      order: 'Voir la commande',
-      transaction: 'Voir les transactions',
+      purchase: 'Voir les messages',
+      order: 'Voir les messages',
+      transaction: 'Voir les messages',
       negotiation: 'Voir la negociation',
       review: 'Voir mon profil',
       welcome: 'Completer mon profil',

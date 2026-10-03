@@ -389,7 +389,7 @@
 </a>
 
 
-      @if (!isMe(msg) && !msg.metadata?.transaction_id && !msg.metadata?.['availability']) {
+      @if (canRespondAvailability(msg)) {
         <div class="tag-availability-actions">
           <button class="btn-availability available" (click)="respondAvailability(msg, 'available')">
             <span class="material-icons">check_circle</span> Produit disponible
@@ -399,18 +399,8 @@
           </button>
         </div>
       }
-      @if (isMe(msg) && msg.metadata?.['availability'] === 'available' && !msg.metadata?.['dismissed']) {
-        <div class="tag-availability-actions">
-          <button class="btn-availability available" (click)="goBuyFromChat(msg)">
-            <span class="material-icons">shopping_cart</span> Acheter
-          </button>
-          <button class="btn-availability unavailable" (click)="dismissBuyFromChat(msg)">
-            <span class="material-icons">close</span> Annuler
-          </button>
-        </div>
-      }
-      @if (msg.metadata?.['availability'] === 'unavailable') {
-        <p class="tag-availability-status">Produit indisponible</p>
+      @if (msg.metadata?.['availability'] === 'available') {
+        <p class="tag-availability-status available">Produit disponible</p>
       }
 
 

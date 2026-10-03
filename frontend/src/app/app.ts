@@ -1,7 +1,6 @@
 import { Component, computed, inject, OnInit, OnDestroy, signal, effect } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
-import { CartService } from './core/services/cart.service';
 import { NotificationService } from './core/services/notification.service';
 import { ChatService } from './core/services/chat.service';
 import { FavoriteService } from './core/services/favorite.service';
@@ -18,7 +17,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 })
 export class App implements OnInit, OnDestroy {
   auth = inject(AuthService);
-  cart = inject(CartService);
   notif = inject(NotificationService);
   chat = inject(ChatService);
   fav = inject(FavoriteService);
@@ -102,9 +100,8 @@ export class App implements OnInit, OnDestroy {
     this.stopCountsPolling();
   }
 
-  /** Panier, notifications non lues, conversations (→ chat.unreadTotal). Favoris inclus pour cohérence. */
+  /** Notifications non lues, conversations (→ chat.unreadTotal), favoris. */
   private refreshCounts() {
-    this.cart.getCount().subscribe();
     this.notif.getUnreadCount().subscribe();
     this.chat.getConversations().subscribe();
     this.fav.getCount().subscribe();

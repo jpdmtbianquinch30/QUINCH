@@ -4,17 +4,19 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Classements : 100 meilleurs vendeurs du mois, 100 meilleurs acheteurs du
- * mois, 100 produits les plus vus, 100 profils les plus visites.
+ * Classements : 100 meilleurs vendeurs (vues + likes cumules de leurs annonces
+ * actives), 100 produits les plus vus, 100 profils les plus visites.
  *
- * Regle commune aux 4 : reserve aux comptes Premium, a la fois pour
+ * QUINCH ne gere pas de transactions entre utilisateurs : aucun classement
+ * ne depend de ventes ou d'achats (ancien classement acheteurs supprime).
+ *
+ * Regle commune aux 3 : reserve aux comptes Premium, a la fois pour
  * consulter ET pour y figurer. Figurer dans un classement est un choix
  * explicite (ranking_opt_in) — un vendeur en tete des ventes qui n'a pas
  * postule n'apparait nulle part, meme classe premier en interne.
@@ -50,52 +52,39 @@ class RankingController extends Controller
         ], $metric);
     }
 
+    // Score vendeur = vues + likes cumules de ses annonces ACTIVES (les
+    // annonces vendues, expirees ou desactivees ne comptent pas, sinon un
+    // vendeur garderait son rang avec des produits qui n'existent plus).
+    // Ex aequo departages par user_id pour un ordre stable d'un appel a l'autre.
     public function sellers(Request $request): JsonResponse
     {
         $this->requirePremium($request);
 
-        $rows = Transaction::query()
-            ->select('seller_id', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as sales_count'))
-            ->where('payment_status', 'completed')
-            ->whereYear('completed_at', now()->year)
-            ->whereMonth('completed_at', now()->month)
-            ->whereHas('seller', fn ($q) => $q->where('is_premium', true)->where('ranking_opt_in', true))
-            ->groupBy('seller_id')
-            ->orderByDesc('total_amount')
+        $rows = Product::query()
+            ->select(
+                'user_id',
+                DB::raw('SUM(view_count) as total_views'),
+                DB::raw('SUM(like_count) as total_likes'),
+                DB::raw('SUM(view_count + like_count) as score'),
+                DB::raw('COUNT(*) as products_count')
+            )
+            ->where('status', 'active')
+            ->whereHas('user', fn ($q) => $q->where('is_premium', true)->where('ranking_opt_in', true))
+            ->groupBy('user_id')
+            ->orderByDesc('score')
+            ->orderBy('user_id')
             ->limit(self::LIMIT)
-            ->with('seller')
+            ->with('user')
             ->get();
 
-        $ranking = $rows->values()->map(fn ($row, $i) => $this->presentUser($row->seller, $i + 1, [
-            'total_amount' => (float) $row->total_amount,
-            'sales_count' => (int) $row->sales_count,
+        $ranking = $rows->values()->map(fn ($row, $i) => $this->presentUser($row->user, $i + 1, [
+            'score' => (int) $row->score,
+            'total_views' => (int) $row->total_views,
+            'total_likes' => (int) $row->total_likes,
+            'products_count' => (int) $row->products_count,
         ]));
 
-        return response()->json(['month' => now()->format('Y-m'), 'ranking' => $ranking]);
-    }
-
-    public function buyers(Request $request): JsonResponse
-    {
-        $this->requirePremium($request);
-
-        $rows = Transaction::query()
-            ->select('buyer_id', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as purchases_count'))
-            ->where('payment_status', 'completed')
-            ->whereYear('completed_at', now()->year)
-            ->whereMonth('completed_at', now()->month)
-            ->whereHas('buyer', fn ($q) => $q->where('is_premium', true)->where('ranking_opt_in', true))
-            ->groupBy('buyer_id')
-            ->orderByDesc('total_amount')
-            ->limit(self::LIMIT)
-            ->with('buyer')
-            ->get();
-
-        $ranking = $rows->values()->map(fn ($row, $i) => $this->presentUser($row->buyer, $i + 1, [
-            'total_amount' => (float) $row->total_amount,
-            'purchases_count' => (int) $row->purchases_count,
-        ]));
-
-        return response()->json(['month' => now()->format('Y-m'), 'ranking' => $ranking]);
+        return response()->json(['ranking' => $ranking]);
     }
 
     // Le produit "represente" son vendeur dans ce classement : meme regle

@@ -9,7 +9,7 @@
         <span class="rankings-lock-kicker">Fonctionnalité Premium</span>
         <h1>Les classements sont réservés au Premium</h1>
         <p>
-          Découvrez le top 100 des meilleurs vendeurs et acheteurs du mois, des produits les plus vus
+          Découvrez le top 100 des meilleurs vendeurs, des produits les plus vus
           et des profils les plus visités. Passez en mode Premium pour consulter les classements
           <strong>et</strong> y figurer vous-même.
         </p>
@@ -44,7 +44,7 @@
         <span class="material-icons">emoji_events</span>
         <div>
           <h1>Classements</h1>
-          <p>Le top 100 de la communauté QUINCH{{ month() ? ' · ' + month() : '' }}</p>
+          <p>Le top 100 de la communauté QUINCH</p>
         </div>
       </div>
     </div>
@@ -129,7 +129,7 @@
           </div>
         }
       } @else {
-        @let list = activeTab() === 'sellers' ? sellers() : (activeTab() === 'buyers' ? buyers() : profiles());
+        @let list = activeTab() === 'sellers' ? sellers() : profiles();
         @if (list.length === 0) {
           <div class="rankings-empty">
             <span class="material-icons">emoji_events</span>
@@ -157,9 +157,9 @@
                   @if (!u.anonymous && u.username) { <span class="row-sub">&#64;{{ u.username }}</span> }
                 </div>
                 <div class="row-metric">
-                  @if (activeTab() === 'sellers' || activeTab() === 'buyers') {
-                    <span class="metric-value">{{ u.total_amount | number:'1.0-0':'fr-FR' }} F</span>
-                    <span class="metric-label">{{ activeTab() === 'sellers' ? (u.sales_count ?? 0) + ' ventes' : (u.purchases_count ?? 0) + ' achats' }}</span>
+                  @if (activeTab() === 'sellers') {
+                    <span class="metric-value">{{ u.score ?? 0 | number:'1.0-0':'fr-FR' }}</span>
+                    <span class="metric-label">{{ (u.total_views ?? 0) | number:'1.0-0':'fr-FR' }} vues · {{ (u.total_likes ?? 0) | number:'1.0-0':'fr-FR' }} likes</span>
                   } @else {
                     <span class="metric-value">{{ u.profile_views_count | number:'1.0-0':'fr-FR' }}</span>
                     <span class="metric-label">visites</span>
@@ -180,7 +180,7 @@
       <div class="join-modal" (click)="$event.stopPropagation()">
         <div class="join-modal-icon"><span class="material-icons">emoji_events</span></div>
         <h2>S'ajouter au classement</h2>
-        <p>Vous serez pris en compte dans les classements où vous êtes éligible (ventes, achats, vues de vos produits ou de votre profil). Confirmez-vous votre participation ?</p>
+        <p>Vous serez pris en compte dans les classements où vous êtes éligible (vues et likes de vos annonces, vues de vos produits ou de votre profil). Confirmez-vous votre participation ?</p>
 
         <label class="join-modal-toggle">
           <input type="checkbox" [checked]="joinAnonymous()" (change)="joinAnonymous.set($any($event.target).checked)" />

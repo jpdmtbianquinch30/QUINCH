@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
 use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
 {
@@ -103,6 +104,7 @@ if (!empty($validated['message'])) {
             $type = 'product_tag';
             $metadata = [
                 'product_id' => $product->id,
+                'product_owner_id' => $product->user_id,
                 'product_slug' => $product->slug,
                 'product_title' => $product->title,
                 'product_price' => $product->price,
@@ -395,22 +397,37 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
         return response()->json(['tag' => $tag->load('product', 'taggedBy')], 201);
     }
 
-        /**
-     * Le vendeur répond à une demande de contact sur un produit
-     * ("disponible" / "indisponible"). Poste un message de réponse
-     * et notifie l'acheteur.
+    /**
+     * Le propriétaire du produit répond à une demande de contact sur ce produit
+     * ("disponible" / "indisponible"). Poste un message de réponse et notifie
+     * l'autre participant de la conversation.
+     *
+     * Le droit de répondre vient du PRODUIT (product->user_id), pas du rôle
+     * buyer/seller de la conversation : une conversation est unique par paire
+     * d'utilisateurs, dans les deux sens, donc seller_id ne désigne pas
+     * forcément le propriétaire de chaque produit taggué dedans.
      */
     public function respondAvailability(Request $request, Conversation $conversation, Message $message): JsonResponse
     {
         $userId = $request->user()->id;
-        if ($conversation->seller_id !== $userId) {
-            return response()->json(['message' => 'Seul le vendeur peut répondre à cette demande.'], 403);
+
+        if ($conversation->buyer_id !== $userId && $conversation->seller_id !== $userId) {
+            abort(403);
         }
         if ($message->conversation_id !== $conversation->id || $message->type !== 'product_tag') {
             abort(404);
         }
-        if (($message->metadata['availability'] ?? null) !== null) {
-            return response()->json(['message' => 'Vous avez déjà répondu à cette demande.'], 422);
+
+        $productId = $message->metadata['product_id'] ?? null;
+        $product = $productId ? Product::find($productId) : null;
+        if (!$product) {
+            return response()->json(['message' => "Ce produit n'existe plus."], 404);
+        }
+        if ((string) $product->user_id !== (string) $userId) {
+            return response()->json(['message' => 'Seul le propriétaire du produit peut répondre à cette demande.'], 403);
+        }
+        if ((string) $message->sender_id === (string) $userId) {
+            return response()->json(['message' => 'Vous ne pouvez pas répondre à votre propre demande.'], 422);
         }
 
         $validated = $request->validate([
@@ -418,28 +435,45 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $message->update(['metadata' => array_merge($message->metadata ?? [], [
-            'availability' => $validated['status'],
-        ])]);
+        $recipientId = $conversation->buyer_id === $userId ? $conversation->seller_id : $conversation->buyer_id;
 
-        $reply = $validated['status'] === 'available'
-            ? 'Produit disponible ✅' . (!empty($validated['note']) ? ' — ' . $validated['note'] : '')
-            : 'Produit indisponible ❌' . (!empty($validated['note']) ? ' — ' . $validated['note'] : '');
+        // Verrou : deux clics rapides ne doivent pas poster deux réponses.
+        $result = DB::transaction(function () use ($message, $conversation, $validated, $userId) {
+            $locked = Message::whereKey($message->id)->lockForUpdate()->first();
+            if (($locked->metadata['availability'] ?? null) !== null) {
+                return null;
+            }
 
-        $responseMessage = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $userId,
-            'body' => $reply,
-            'type' => 'text',
-            'metadata' => ['availability_response_for' => $message->id],
-        ]);
+            $locked->update(['metadata' => array_merge($locked->metadata ?? [], [
+                'availability' => $validated['status'],
+            ])]);
 
-        $conversation->update(['last_message_at' => now()]);
-        $this->notif->notifyMessage($conversation->buyer_id, $request->user(), $conversation->id, $reply);
+            $reply = $validated['status'] === 'available'
+                ? 'Produit disponible ✅' . (!empty($validated['note']) ? ' — ' . $validated['note'] : '')
+                : 'Produit indisponible ❌' . (!empty($validated['note']) ? ' — ' . $validated['note'] : '');
+
+            $responseMessage = Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $userId,
+                'body' => $reply,
+                'type' => 'text',
+                'metadata' => ['availability_response_for' => $locked->id],
+            ]);
+
+            $conversation->update(['last_message_at' => now()]);
+
+            return ['tag' => $locked->fresh(), 'reply' => $responseMessage, 'text' => $reply];
+        });
+
+        if ($result === null) {
+            return response()->json(['message' => 'Vous avez déjà répondu à cette demande.'], 422);
+        }
+
+        $this->notif->notifyMessage($recipientId, $request->user(), $conversation->id, $result['text']);
 
         return response()->json([
-            'tag_message' => $message->fresh(),
-            'reply' => $responseMessage->load('sender'),
+            'tag_message' => $result['tag'],
+            'reply' => $result['reply']->load('sender'),
         ]);
     }
 

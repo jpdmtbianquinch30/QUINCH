@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product.service';
-import { CartService } from '../../core/services/cart.service';
 import { FavoriteService } from '../../core/services/favorite.service';
 import { ShareService } from '../../core/services/share.service';
 import { NegotiationService } from '../../core/services/negotiation.service';
@@ -28,7 +27,6 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   private router = inject(Router);
   private location = inject(Location);
   private productService = inject(ProductService);
-  private cartService = inject(CartService);
   private favService = inject(FavoriteService);
   private shareService = inject(ShareService);
   private negotiationService = inject(NegotiationService);
@@ -42,18 +40,11 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
   loading = signal(true);
 
   // UI State
-   showPayment = signal(false);
-  checkingSession = signal(false);
   showShareModal = signal(false);
   showNegotiateModal = signal(false);
   showContactModal = signal(false);
-  selectedPayment = signal('');
   isFavorited = signal(false);
-  addingToCart = signal(false);
   activeMediaTab = signal<'video' | 'photos'>('video');
-  deliveryAddressText = signal('');
-  buyQuantity = signal(1);
-  pendingTransactionId = signal<string | null>(null);
 
   // Video
   videoPlaying = signal(false);
@@ -155,9 +146,11 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
             setTimeout(() => {
               document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
             }, 500);
-            } else if (fragment === 'buy') {
-              setTimeout(() => this.buyNow(), 300);
-            }
+          } else if (fragment === 'buy') {
+            // Ancien lien « Acheter » (conservé pour les liens déjà partagés) :
+            // QUINCH n'a plus d'achat en ligne, on ouvre la discussion à la place.
+            setTimeout(() => this.openContact(), 300);
+          }
         },
         error: () => this.loading.set(false),
       });
@@ -228,25 +221,6 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
       next: (res: any) => {
         this.isFavorited.set(res.favorited);
         this.notify.success(res.favorited ? 'Ajoute aux favoris!' : 'Retire des favoris.');
-      },
-    });
-  }
-
-  // ─── Cart (products only) ─────────────────────────────
-  addToCart() {
-    const p = this.product();
-    if (!p) return;
-    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    this.addingToCart.set(true);
-    this.cartService.addToCart(p.id).subscribe({
-      next: () => {
-        this.addingToCart.set(false);
-        this.notify.success('Ajoute au panier!');
-        this.analytics.trackAddToCart(p.id, p.price);
-      },
-      error: () => {
-        this.addingToCart.set(false);
-        this.notify.error('Erreur lors de l\'ajout au panier.');
       },
     });
   }
@@ -332,87 +306,6 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
         this.router.navigate(['/messages']);
       },
       error: (err: any) => this.notify.error(err?.error?.message || 'Erreur lors de l\'envoi.'),
-    });
-  }
-
-  // ─── Buy now (products only) ───────────────────────────
-  buyNow() {
-    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    // Verifie que la session est encore valide cote serveur AVANT d'ouvrir
-    // le tunnel d'achat (choix methode, adresse...). Sans ca, un token
-    // perime en local (isAuthenticated() ne regarde que sa presence, pas sa
-    // validite) laissait l'utilisateur parcourir tout le tunnel pour se
-    // faire ejecter vers /auth/login seulement a la confirmation finale.
-    this.checkingSession.set(true);
-    this.auth.getMe().subscribe(res => {
-      this.checkingSession.set(false);
-      if (!res.user) {
-        this.notify.error('Votre session a expire. Reconnectez-vous pour continuer.');
-        this.router.navigate(['/auth/login']);
-        return;
-      }
-      if (this.hasSellerPaymentMethods) {
-        this.showPayment.set(true);
-      } else {
-        // No payment methods set by seller — redirect to contact
-        this.openContact();
-        this.notify.info('Le vendeur n\'a pas configure de methode de paiement. Contactez-le directement.');
-      }
-    });
-  }
-
-  incrementQty() {
-    const max = this.product()?.stock_quantity ?? 1;
-    this.buyQuantity.update(q => Math.min(q + 1, max));
-  }
-
-  decrementQty() {
-    this.buyQuantity.update(q => Math.max(q - 1, 1));
-  }
-
-  confirmPayment() {
-    const p = this.product();
-    if (!p || !this.selectedPayment()) return;
-
-    this.notify.info('Redirection vers le paiement...');
-    this.productService.initiateTransaction({
-      product_id: p.id,
-      payment_method: this.selectedPayment(),
-      delivery_type: 'delivery',
-      delivery_address: { text: this.deliveryAddressText().trim() || 'À convenir avec le vendeur' },
-      quantity: this.buyQuantity(),
-    }).subscribe({
-      next: (res: any) => {
-        if (res.payment_url) {
-          this.pendingTransactionId.set(res.transaction?.id ?? null);
-          window.location.href = res.payment_url;
-        } else {
-          this.notify.error('Le lien de paiement est introuvable.');
-        }
-      },
-      error: (err: any) => this.notify.error(err?.error?.message || 'Erreur lors de l\'initialisation du paiement.'),
-    });
-  }
-
-  cancelCurrentPayment() {
-    const id = this.pendingTransactionId();
-    if (!id) {
-      this.showPayment.set(false);
-      return;
-    }
-    this.productService.cancelTransaction(id).subscribe({
-      next: () => {
-        this.notify.info('Paiement annulé, stock restitué.');
-        this.pendingTransactionId.set(null);
-        this.showPayment.set(false);
-      },
-      error: (err: any) => {
-        // Même si l'annulation échoue côté serveur (déjà payé, déjà expiré...),
-        // on referme la modale : le job d'expiration reprendra la main de toute façon.
-        this.notify.error(err?.error?.message || 'Impossible d\'annuler pour le moment.');
-        this.pendingTransactionId.set(null);
-        this.showPayment.set(false);
-      },
     });
   }
 

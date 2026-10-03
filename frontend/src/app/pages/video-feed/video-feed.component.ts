@@ -7,7 +7,6 @@ import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product.service';
 import { ApiService } from '../../core/services/api.service';
-import { CartService } from '../../core/services/cart.service';
 import { ShareService } from '../../core/services/share.service';
 import { FollowService } from '../../core/services/follow.service';
 import { ChatService } from '../../core/services/chat.service';
@@ -30,7 +29,6 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('searchInput') searchInputRef!: ElementRef<HTMLInputElement>;
   private productService = inject(ProductService);
   private apiService = inject(ApiService);
-  private cartService = inject(CartService);
   private shareService = inject(ShareService);
   private followService = inject(FollowService);
   private chatService = inject(ChatService);
@@ -77,9 +75,6 @@ videoPaused = signal(false);
   showLikeAnim = signal(false);
   private clickTimer: any = null;
 
-  // Cart added state per product
-  cartAddedMap = signal<Record<string, boolean>>({});
-
   // ─── Detail Panel ─────────────────────────────────────────
   detailMode = signal(false);
   dp = signal<any>(null);        // full product data
@@ -92,7 +87,6 @@ videoPaused = signal(false);
   dpNewComment = '';
   dpSubmitting = signal(false);
   dpSubmitted = signal(false);
-  dpAddingCart = signal(false);
   dpShowContact = signal(false);
   dpShowNego = signal(false);
   dpShowQuote = signal(false);
@@ -494,26 +488,6 @@ videoPaused = signal(false);
     }
     this.showLikeAnim.set(true);
     setTimeout(() => this.showLikeAnim.set(false), 800);
-  }
-
-  // ─── Cart (products only) ─────────────────────────────
-  addToCart(product: any, event: Event) {
-    event.stopPropagation();
-    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    this.cartService.addToCart(product.id).subscribe({
-      next: () => {
-        this.cartAddedMap.update(m => ({ ...m, [product.id]: true }));
-        this.notify.success('Ajoute au panier!');
-        setTimeout(() => {
-          this.cartAddedMap.update(m => ({ ...m, [product.id]: false }));
-        }, 3000);
-      },
-      error: () => this.notify.error('Erreur ajout panier'),
-    });
-  }
-
-  isInCart(productId: string): boolean {
-    return this.cartAddedMap()[productId] || false;
   }
 
   // ─── Contact (services) ────────────────────────────────
@@ -1214,21 +1188,8 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
   dpNextImg() { const l = this.dpImages().length; if (l > 1) this.dpImgIdx.update(i => (i + 1) % l); }
   dpPrevImg() { const l = this.dpImages().length; if (l > 1) this.dpImgIdx.update(i => i === 0 ? l - 1 : i - 1); }
 
-  // CTAs
-  dpBuyNow() {
-  const p = this.dp();
-  if (!p?.slug) return;
-  this.closeDetail();
-  this.router.navigate(['/product', p.slug], { fragment: 'buy' });
-}
-  dpAddToCart() {
-    const p = this.dp(); if (!p) return;
-    this.dpAddingCart.set(true);
-    this.cartService.addToCart(p.id).subscribe({
-      next: () => { this.dpAddingCart.set(false); this.notify.success('Ajoute au panier!'); },
-      error: () => { this.dpAddingCart.set(false); this.notify.error('Erreur'); },
-    });
-  }
+  // CTAs : QUINCH n'a pas d'achat en ligne, seule la mise en relation existe
+  // (contact / négociation, gérés par dpShowContact / dpShowNego).
   dpIsOwner(): boolean {
     const p = this.dp();
     const userId = this.auth.user()?.id;

@@ -483,19 +483,13 @@
                       <button class="cta-secondary quote-cta" (click)="dpShowQuote.set(true)"><span class="material-icons">request_quote</span> Demander un devis</button>
                       @if (p.is_negotiable && p.price) { <button class="cta-tertiary" (click)="dpShowNego.set(true)"><span class="material-icons">local_offer</span> Proposer un prix</button> }
                     } @else {
-                      <div class="cta-row">
-                        <button class="cta-primary buy-cta" (click)="dpBuyNow()"><span class="material-icons">flash_on</span> Acheter maintenant</button>
-                        <button class="cta-secondary cart-cta" (click)="dpAddToCart()" [disabled]="dpAddingCart()"><span class="material-icons">{{ dpAddingCart() ? 'hourglass_top' : 'add_shopping_cart' }}</span> {{ dpAddingCart() ? 'Ajout...' : 'Ajouter au panier' }}</button>
-                      </div>
-                      <div class="cta-row">
-                        <button class="cta-tertiary" (click)="dpShowContact.set(true)"><span class="material-icons">chat</span> Contacter le vendeur</button>
-                        @if (p.is_negotiable) { <button class="cta-tertiary" (click)="dpShowNego.set(true)"><span class="material-icons">local_offer</span> Negocier le prix</button> }
-                      </div>
+                      <button class="cta-primary contact-cta" (click)="dpShowContact.set(true)"><span class="material-icons">chat</span> Contacter le vendeur</button>
+                      @if (p.is_negotiable) { <button class="cta-tertiary" (click)="dpShowNego.set(true)"><span class="material-icons">local_offer</span> Negocier le prix</button> }
                     }
                   </div>
                   <div class="dp-contact-advice">
   <span class="material-icons">info</span>
-  <span>Conseil : contactez {{ dpIsService() ? 'le prestataire' : 'le vendeur' }} pour confirmer les détails avant tout achat direct.</span>
+  <span>Conseil : contactez {{ dpIsService() ? 'le prestataire' : 'le vendeur' }} pour confirmer les détails et convenir de la remise du produit.</span>
 </div>
                   <div class="info-section"><h3 class="section-title">Description</h3><p class="section-text">{{ p.description || 'Aucune description disponible.' }}</p></div>
                   <div class="seller-card" [class.service]="dpIsService()" (click)="viewSellerProfile(p, $event)">
