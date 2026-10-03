@@ -1426,7 +1426,16 @@ $card-border: 1px solid var(--q-border);
   height: 150px;
   background: radial-gradient(circle, rgba(34,209,122,0.14), transparent 68%);
   pointer-events: none;
-}
+  z-index: 0;
+  }
+
+   .sp-trust-header,
+   .sp-trust-score,
+   .sp-trust-bar,
+   .sp-trust-sub {
+   position: relative;
+   z-index: 1;
+ }
 
 .sp-trust-score {
   font-size: 2.35rem;
