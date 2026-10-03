@@ -3,12 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Models\Conversation;
-use App\Models\Notification;
+use App\Models\UserNotification;
 use App\Models\Product;
 use App\Models\ProductVideo;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Remplace l'ancien endpoint HTTP POST /admin/system/reset.
@@ -42,8 +43,11 @@ class QuinchResetData extends Command
         Product::query()->delete();
         ProductVideo::query()->delete();
         Conversation::query()->delete();
-        Notification::query()->delete();
+        UserNotification::query()->delete();
         User::whereNotIn('role', ['admin', 'super_admin'])->delete();
+
+        Storage::disk('public')->deleteDirectory('videos');
+        Storage::disk('public')->deleteDirectory('thumbnails');
 
         $this->info('Reset terminé : utilisateurs, vidéos, produits et transactions supprimés.');
         return self::SUCCESS;
