@@ -41,6 +41,9 @@ return [
         'chat_audio'    => env('QUINCH_FEATURE_CHAT_AUDIO', false),
         'chat_file'     => env('QUINCH_FEATURE_CHAT_FILE', false),
         'favorites_collections' => env('QUINCH_FEATURE_FAVORITES_COLLECTIONS', false),
+        // Achat/paiement entre utilisateurs (panier, transactions). QUINCH ne fait que
+        // la mise en relation : désactivé. Ne l'activer que pour des tests.
+        'purchases'     => env('QUINCH_FEATURE_PURCHASES', false),
     ],
 
         /*
@@ -82,8 +85,9 @@ return [
 
         // Frais de publication d'annonce pour un compte NON premium.
         // Gratuit pour les comptes premium (is_premium=true et non expiré).
+        // Frais de publication d'une annonce AVEC vidéo pour un compte gratuit (F CFA).
+        // Une annonce sans vidéo est toujours gratuite ; le premium ne paie jamais.
         'listing_fee_with_video'    => (int) env('QUINCH_LISTING_FEE_WITH_VIDEO', 150),
-        'listing_fee_without_video' => (int) env('QUINCH_LISTING_FEE_WITHOUT_VIDEO', 300),
                 // Poids additionnel dans le classement du feed/marketplace pour un
         // vendeur premium actif. À l'échelle du feed_score existant
         // (engagement pondéré, fraîcheur jusqu'à 200, bonus vidéo jusqu'à 35,
@@ -101,7 +105,7 @@ return [
         // Plafond global (protège votre facture SMS contre un abus massif).
         'global_sends_per_hour'   => (int) env('QUINCH_OTP_GLOBAL_PER_HOUR', 2000),
     ],
-    
+
 ];
 
 

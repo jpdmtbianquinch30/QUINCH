@@ -155,12 +155,13 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::post('{product}/share', [ProductInteractionController::class, 'share']);
         Route::post('{product}/save', [ProductInteractionController::class, 'toggleSave']);
         Route::post('{product}/report', [ProductInteractionController::class, 'report'])->middleware('throttle:5,1');
+                Route::post('{product}/publish', [ProductController::class, 'publish'])->middleware('throttle:5,1');
     });
     Route::get('my-products', [ProductController::class, 'myProducts']);
     Route::get('my-likes', [ProductInteractionController::class, 'myLikes']);
 
     // Cart
-    Route::prefix('cart')->group(function () {
+        Route::prefix('cart')->middleware('feature:purchases')->group(function () {
         Route::get('/', [CartController::class, 'index']);
         Route::post('add', [CartController::class, 'add']);
         Route::put('{cartItem}', [CartController::class, 'update']);
@@ -216,7 +217,7 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
     });
 
         // Transactions
-    Route::prefix('transactions')->group(function () {
+        Route::prefix('transactions')->middleware('feature:purchases')->group(function () {
         Route::post('initiate', [TransactionController::class, 'initiate'])->middleware('throttle:3,1');
         Route::get('history', [TransactionController::class, 'history']);
         Route::get('{transaction}', [TransactionController::class, 'show']);

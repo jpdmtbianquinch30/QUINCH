@@ -162,4 +162,8 @@ export class ProductService {
   revokeLoyaltyBadge(buyerId: string): Observable<any> {
     return this.api.delete(`users/${buyerId}/loyalty-badge`);
   }
+
+    publishProduct(id: string): Observable<any> {
+    return this.api.post(`products/${id}/publish`);
+  }
 }

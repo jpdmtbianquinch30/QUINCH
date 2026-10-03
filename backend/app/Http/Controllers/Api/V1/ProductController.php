@@ -140,46 +140,12 @@ class ProductController extends Controller
         if ($hasVideo && !$isPremium) {
             $validated['status'] = 'draft';
             $validated['listing_fee_status'] = 'pending';
+            $validated['listing_fee_amount'] = $this->listingFee();
 
             $product = Product::create($validated);
             $product->load(['category', 'video', 'user']);
 
-            $fee = (int) config('quinch.premium.listing_fee_with_video');
-
-            try {
-                $gateway = PaymentGatewayFactory::create('wave');
-            } catch (\InvalidArgumentException $e) {
-                Log::error('Publication vidéo: passerelle Wave indisponible', ['error' => $e->getMessage()]);
-                return response()->json([
-                    'message' => "Le paiement n'est pas disponible pour le moment. Vous pouvez publier sans vidéo, ou réessayer plus tard.",
-                ], 422);
-            }
-
-            $frontendUrl = $this->resolveFrontendUrl($request);
-
-            $result = $gateway->initiatePayment([
-                'amount' => $fee,
-                'transaction_id' => 'listing_' . $product->id,
-                'success_url' => "{$frontendUrl}/feed",
-                'error_url' => "{$frontendUrl}/sell",
-                'notif_url' => url('/api/v1/webhooks/wave-listing'),
-            ]);
-
-            if (!($result['success'] ?? false)) {
-                $product->update(['listing_fee_status' => 'failed']);
-                return response()->json([
-                    'message' => $result['message'] ?? "Le paiement des 150 F n'a pas pu être initié.",
-                ], 502);
-            }
-
-            $product->update(['listing_fee_gateway_id' => $result['gateway_reference'] ?? null]);
-
-            return response()->json([
-                'message' => 'Un dernier pas : réglez les 150 F de publication vidéo pour mettre votre annonce en ligne.',
-                'product' => $product,
-                'payment_url' => $result['payment_url'],
-                'fee' => $fee,
-            ], 201);
+            return $this->startListingPayment($request, $product);
         }
 
         $validated['status'] = 'active';
@@ -192,6 +158,126 @@ class ProductController extends Controller
             'message' => 'Produit créé avec succès.',
             'product' => $product,
         ], 201);
+    }
+
+        /** Frais de publication (F CFA) d'une annonce avec vidéo pour un compte gratuit. */
+    private function listingFee(): int
+    {
+        return (int) config('quinch.premium.listing_fee_with_video', 150);
+    }
+
+    /**
+     * Crée la session de paiement Wave des frais de publication. L'annonce reste
+     * en "draft" tant que le webhook Wave n'a pas confirmé le paiement.
+     */
+    private function startListingPayment(Request $request, Product $product, int $httpStatus = 201): JsonResponse
+    {
+        $fee = $this->listingFee();
+
+        if ($product->listing_fee_status !== 'pending' || (int) $product->listing_fee_amount !== $fee) {
+            $product->update(['listing_fee_status' => 'pending', 'listing_fee_amount' => $fee]);
+        }
+
+        try {
+            $gateway = PaymentGatewayFactory::create('wave');
+        } catch (\InvalidArgumentException $e) {
+            Log::error('Publication vidéo: passerelle Wave indisponible', ['error' => $e->getMessage()]);
+            $product->update(['listing_fee_status' => 'failed']);
+
+            return response()->json([
+                'message' => "Le paiement n'est pas disponible pour le moment. Vous pouvez publier sans vidéo, ou réessayer plus tard.",
+            ], 422);
+        }
+
+        $frontendUrl = $this->resolveFrontendUrl($request);
+
+        $result = $gateway->initiatePayment([
+            'amount' => $fee,
+            'transaction_id' => 'listing_' . $product->id,
+            'success_url' => "{$frontendUrl}/feed",
+            'error_url' => "{$frontendUrl}/sell",
+            'notif_url' => url('/api/v1/webhooks/wave-listing'),
+        ]);
+
+        if (!($result['success'] ?? false)) {
+            $product->update(['listing_fee_status' => 'failed']);
+
+            return response()->json([
+                'message' => $result['message'] ?? "Le paiement des {$fee} F n'a pas pu être initié.",
+            ], 502);
+        }
+
+        $product->update(['listing_fee_gateway_id' => $result['gateway_reference'] ?? null]);
+
+        return response()->json([
+            'message' => "Un dernier pas : réglez les {$fee} F de publication vidéo pour mettre votre annonce en ligne.",
+            'product' => $product,
+            'payment_url' => $result['payment_url'],
+            'fee' => $fee,
+        ], $httpStatus);
+    }
+
+    /**
+     * Publie un brouillon. Seul chemin pour mettre un brouillon en ligne :
+     * - avec vidéo + compte gratuit + frais non payés -> paiement Wave de 150 F ;
+     * - sinon -> publication immédiate et gratuite.
+     */
+    public function publish(Request $request, Product $product): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$product->isOwnedBy($user)) {
+            return response()->json(['message' => 'Non autorisé.'], 403);
+        }
+
+        if ($product->status !== 'draft') {
+            return response()->json(['message' => 'Seul un brouillon peut être publié.'], 422);
+        }
+
+        $needsFee = !empty($product->video_id)
+            && !$user->isPremiumActive()
+            && $product->listing_fee_status !== 'paid';
+
+        if ($needsFee) {
+            return $this->startListingPayment($request, $product->load(['category', 'video', 'user']), 200);
+        }
+
+        $product->update([
+            'status' => 'active',
+            'listing_fee_status' => $product->listing_fee_status === 'paid' ? 'paid' : 'none',
+        ]);
+
+        return response()->json([
+            'message' => 'Annonce publiée.',
+            'product' => $product->fresh()->load(['category', 'video', 'user']),
+        ]);
+    }
+
+    /**
+     * Transitions de statut interdites au propriétaire (un admin peut tout faire).
+     * @return string|null message d'erreur, ou null si la transition est permise
+     */
+    private function statusTransitionError(\App\Models\User $user, Product $product, string $to): ?string
+    {
+        if ($user->isAdmin()) {
+            return null;
+        }
+
+        // Un brouillon ne se publie QUE par /publish (qui gère les frais).
+        if ($product->status === 'draft') {
+            return 'Utilisez « Publier » pour mettre ce brouillon en ligne.';
+        }
+
+        // Retirée par la modération : seul un admin peut la remettre.
+        if ($product->status === 'disabled') {
+            return 'Cette annonce a été désactivée par la modération.';
+        }
+
+        if (in_array($to, ['draft', 'disabled', 'expired'], true)) {
+            return 'Changement de statut non autorisé.';
+        }
+
+        return null;
     }
 
     public function webhookWaveListingFee(Request $request): JsonResponse
@@ -214,15 +300,51 @@ class ProductController extends Controller
 
         $productId = substr($clientReference, strlen('listing_'));
 
+        if (!\Illuminate\Support\Str::isUuid($productId)) {
+            return response()->json(['status' => 'ignored']);
+        }
+
         if (($payload['type'] ?? null) === 'checkout.session.completed' && ($data['payment_status'] ?? null) === 'succeeded') {
-            $product = Product::find($productId);
-            if ($product && $product->listing_fee_status === 'pending') {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($productId, $data) {
+                // Verrou : deux webhooks simultanés ne peuvent pas traiter la même annonce.
+                $product = Product::whereKey($productId)->lockForUpdate()->first();
+
+                if (!$product) {
+                    Log::warning('Wave listing: paiement reçu pour une annonce introuvable (supprimée ?) — remboursement à étudier', [
+                        'product_id' => $productId,
+                    ]);
+                    return;
+                }
+
+                if ($product->listing_fee_status === 'paid') {
+                    return; // déjà traité (idempotent)
+                }
+
+                if (!in_array($product->listing_fee_status, ['pending', 'failed'], true)) {
+                    Log::warning('Wave listing: paiement reçu pour une annonce sans frais en attente — remboursement à étudier', [
+                        'product_id' => $product->id,
+                    ]);
+                    return;
+                }
+
+                // Le montant payé ne doit pas être inférieur aux frais attendus.
+                $expected = (int) ($product->listing_fee_amount ?: config('quinch.premium.listing_fee_with_video', 150));
+                if (isset($data['amount']) && (int) round((float) $data['amount']) < $expected) {
+                    Log::critical('Wave listing: montant payé inférieur aux frais attendus', [
+                        'product_id' => $product->id,
+                        'expected' => $expected,
+                        'received' => $data['amount'],
+                    ]);
+                    return;
+                }
+
+                // Un paiement réussi fait foi, même si une tentative précédente était "failed".
                 $product->update([
                     'status' => 'active',
                     'listing_fee_status' => 'paid',
                     'listing_fee_gateway_id' => $data['id'] ?? $product->listing_fee_gateway_id,
                 ]);
-            }
+            });
         }
 
         if (($payload['type'] ?? null) === 'checkout.session.payment_failed') {
@@ -295,6 +417,16 @@ class ProductController extends Controller
             'is_negotiable' => ['sometimes', 'boolean'],
             'status' => ['sometimes', 'in:draft,active,sold,reserved,expired,paused,disabled'],
         ]);
+
+        // Empêche de contourner les frais de publication (brouillon -> active)
+        // ou la modération (disabled -> active) par un simple PUT.
+        if (isset($validated['status']) && $validated['status'] !== $product->status) {
+            $error = $this->statusTransitionError($request->user(), $product, $validated['status']);
+
+            if ($error !== null) {
+                return response()->json(['message' => $error, 'error' => 'invalid_status_transition'], 422);
+            }
+        }
 
         $product->update($validated);
 

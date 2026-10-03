@@ -63,7 +63,17 @@ class PremiumController extends Controller
             'payment_method' => $validated['payment_method'],
         ]);
 
-        $gateway = PaymentGatewayFactory::create($validated['payment_method']);
+        try {
+            $gateway = PaymentGatewayFactory::create($validated['payment_method']);
+        } catch (\InvalidArgumentException $e) {
+            Log::error('Premium: passerelle indisponible', ['error' => $e->getMessage()]);
+            $subscription->update(['status' => 'cancelled']);
+
+            return response()->json([
+                'message' => "Le paiement n'est pas disponible pour le moment. Réessayez plus tard.",
+            ], 422);
+        }
+
         $frontendUrl = $this->resolveFrontendUrl($request);
 
         $result = $gateway->initiatePayment([
@@ -113,12 +123,31 @@ class PremiumController extends Controller
 
         $subscriptionId = substr($clientReference, strlen('premium_'));
 
+        if (!\Illuminate\Support\Str::isUuid($subscriptionId)) {
+            return response()->json(['status' => 'ignored']);
+        }
+
         if (($payload['type'] ?? null) === 'checkout.session.completed' && ($data['payment_status'] ?? null) === 'succeeded') {
-            $subscription = PremiumSubscription::find($subscriptionId);
-            if ($subscription && $subscription->status === 'pending') {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($subscriptionId, $data) {
+                // Verrou : deux webhooks simultanés ne doublent plus l'abonnement.
+                $subscription = PremiumSubscription::whereKey($subscriptionId)->lockForUpdate()->first();
+
+                if (!$subscription || $subscription->status !== 'pending') {
+                    return;
+                }
+
+                if (isset($data['amount']) && (int) round((float) $data['amount']) < (int) $subscription->amount) {
+                    Log::critical('Wave premium: montant payé inférieur au prix attendu', [
+                        'subscription_id' => $subscription->id,
+                        'expected' => $subscription->amount,
+                        'received' => $data['amount'],
+                    ]);
+                    return;
+                }
+
                 $subscription->update(['payment_gateway_id' => $data['id'] ?? $subscription->payment_gateway_id]);
                 $subscription->activate();
-            }
+            });
         }
 
         if (($payload['type'] ?? null) === 'checkout.session.payment_failed') {

@@ -309,8 +309,32 @@ export class ProfileComponent implements OnInit {
   reactivateProduct(): void {
     const p = this.managingProduct();
     if (!p) return;
-    const qty = this.manageStockQty() > 0 ? this.manageStockQty() : 1;
     this.manageUpdating.set(true);
+
+    // Un brouillon se publie via /publish : le serveur demande les 150 F
+    // (compte gratuit + vidéo) et renvoie alors un lien de paiement.
+    if (p.status === 'draft') {
+      this.productService.publishProduct(p.id).subscribe({
+        next: (res: any) => {
+          this.manageUpdating.set(false);
+          if (res.payment_url) {
+            this.notify.info('Redirection vers le paiement des frais de publication...');
+            window.location.href = res.payment_url;
+            return;
+          }
+          this.updateProductInList(p.id, res.product || res);
+          this.notify.success('Annonce publiée avec succès !');
+          this.closeManageModal();
+        },
+        error: (err: any) => {
+          this.manageUpdating.set(false);
+          this.notify.error(err.error?.message || 'Erreur lors de la publication.');
+        },
+      });
+      return;
+    }
+
+    const qty = this.manageStockQty() > 0 ? this.manageStockQty() : 1;
     this.productService.updateProduct(p.id, { status: 'active', stock_quantity: qty }).subscribe({
       next: (res: any) => {
         this.manageUpdating.set(false);
@@ -319,9 +343,9 @@ export class ProfileComponent implements OnInit {
         this.notify.success('Produit reactive avec succes!');
         this.closeManageModal();
       },
-      error: () => {
+      error: (err: any) => {
         this.manageUpdating.set(false);
-        this.notify.error('Erreur lors de la reactivation.');
+        this.notify.error(err.error?.message || 'Erreur lors de la reactivation.');
       },
     });
   }

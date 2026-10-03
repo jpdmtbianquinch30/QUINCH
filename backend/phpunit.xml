@@ -41,5 +41,6 @@
         <env name="QUINCH_FEATURE_CHAT_AUDIO" value="true"/>
         <env name="QUINCH_FEATURE_CHAT_FILE" value="true"/>
         <env name="QUINCH_FEATURE_FAVORITES_COLLECTIONS" value="true"/>
+        <env name="QUINCH_FEATURE_PURCHASES" value="true"/>
     </php>
 </phpunit>
