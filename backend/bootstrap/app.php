@@ -41,6 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
     // appel API authentifié.
     $middleware->appendToGroup('api', \App\Http\Middleware\TouchLastSeen::class);
 
+    // Compte banni / suspendu : accès API coupé même avec un jeton déjà émis
+    // (voir EnsureAccountActive : sans lui, un banni qui se reconnecte garde tout).
+    $middleware->appendToGroup('api', \App\Http\Middleware\EnsureAccountActive::class);
+
     // Mode maintenance piloté depuis l'admin (réglage maintenance.enabled).
     $middleware->appendToGroup('api', \App\Http\Middleware\MaintenanceMode::class);
 

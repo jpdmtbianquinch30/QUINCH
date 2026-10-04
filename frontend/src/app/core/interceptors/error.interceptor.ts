@@ -46,6 +46,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         router.navigate(['/auth/verify-otp']);
       }
 
+      // Compte banni ou suspendu en cours de session : le backend coupe l'accès
+      // (EnsureAccountActive). On déconnecte proprement au lieu d'afficher des erreurs
+      // génériques sur chaque écran.
+      const code = error.error?.error;
+      if (error.status === 403 && (code === 'account_banned' || code === 'account_suspended')
+          && !router.url.startsWith('/auth/') && auth.isAuthenticated()) {
+        auth.forceLogout();
+        router.navigate(['/auth/login']);
+      }
+
       return throwError(() => error);
     })
   );

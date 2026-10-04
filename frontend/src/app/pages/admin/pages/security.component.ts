@@ -68,7 +68,7 @@ export class AdminSecurityPage implements OnInit {
   tab = signal<'admin' | 'tech' | 'ips'>('admin');
   logs = signal<any[]>([]); tech = signal<any[]>([]); ips = signal<any[]>([]);
   page = signal(1); last = signal(1);
-  lf: Record<string, any> = { action: '', target_id: '', severity: '', from: '', to: '' };
+  lf: { action: string; target_id: string; severity: string; from: string; to: string } = { action: '', target_id: '', severity: '', from: '', to: '' };
   ip = ''; hours: number | null = 24; target: any = null;
   dlg = signal<'ban' | 'unban' | null>(null); busy = signal(false); error = signal('');
 

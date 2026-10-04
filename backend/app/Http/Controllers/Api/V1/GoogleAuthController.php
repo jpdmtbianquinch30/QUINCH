@@ -89,6 +89,22 @@ class GoogleAuthController extends Controller
             if (!empty($updates)) $user->forceFill($updates)->save();
         }
 
+        // Un compte banni ou suspendu ne doit pas pouvoir se reconnecter via Google
+        // (la connexion par mot de passe le refusait déjà, pas celle-ci).
+        if ($user->isBanned()) {
+            return response()->json([
+                'message' => 'Votre compte a été banni.' . ($user->ban_reason ? ' Raison : ' . $user->ban_reason : ''),
+                'error'   => 'account_banned',
+            ], 403);
+        }
+
+        if ($user->isSuspended()) {
+            return response()->json([
+                'message' => 'Votre compte est suspendu' . ($user->suspended_until ? " jusqu'au " . $user->suspended_until->format('d/m/Y H:i') : '') . '.',
+                'error'   => 'account_suspended',
+            ], 403);
+        }
+
         // Revoke old tokens & create new one
         $user->tokens()->delete();
         $token = $user->createToken('quinch-app')->plainTextToken;

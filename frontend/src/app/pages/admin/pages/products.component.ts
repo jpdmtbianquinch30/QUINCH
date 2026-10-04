@@ -122,7 +122,7 @@ export class AdminProductsPage implements OnInit {
   private notif = inject(NotificationService);
   private route = inject(ActivatedRoute);
 
-  f: Record<string, any> = { search: '', status: '', category_id: '', reported: '', flagged: '', has_video: '', trashed: '', min_price: '', max_price: '', from: '', to: '' };
+  f: { search: string; status: string; category_id: string; reported: string; flagged: string; has_video: string; trashed: string; min_price: string | number; max_price: string | number; from: string; to: string } = { search: '', status: '', category_id: '', reported: '', flagged: '', has_video: '', trashed: '', min_price: '', max_price: '', from: '', to: '' };
   items = signal<any[]>([]); cats = signal<any[]>([]); loading = signal(true);
   page = signal(1); last = signal(1); total = signal(0);
   sel = signal<Set<string>>(new Set());

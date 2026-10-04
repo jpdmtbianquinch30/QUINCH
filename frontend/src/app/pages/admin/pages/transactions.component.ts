@@ -82,7 +82,7 @@ export class AdminTransactionsPage implements OnInit {
   private route = inject(ActivatedRoute);
 
   sc = statusClass; money = fmtMoney;
-  f: Record<string, any> = { search: '', payment_status: '', order_status: '', payment_method: '', from: '', to: '' };
+  f: { search: string; payment_status: string; order_status: string; payment_method: string; from: string; to: string } = { search: '', payment_status: '', order_status: '', payment_method: '', from: '', to: '' };
   items = signal<any[]>([]); loading = signal(true);
   page = signal(1); last = signal(1);
   detail = signal<any>(null); conv = signal<any[] | null>(null);

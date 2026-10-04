@@ -20,9 +20,6 @@ type SellerTab = 'products' | 'reviews' | 'about' | 'policies';
 })
 export class SellerProfileComponent implements OnInit {
   private route = inject(ActivatedRoute);
-contactSending() {
-throw new Error('Method not implemented.');
-}
   private router = inject(Router);
   private api = inject(ApiService);
   auth = inject(AuthService);

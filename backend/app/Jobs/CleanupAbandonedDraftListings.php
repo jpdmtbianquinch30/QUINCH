@@ -24,8 +24,11 @@ class CleanupAbandonedDraftListings implements ShouldQueue
         foreach ($abandoned as $product) {
             $this->deleteFiles($product);
 
+            // Produit : suppression DOUCE par défaut (preuve pour litiges/modération),
+            // mais un brouillon jamais payé n'a jamais été publié et ses fichiers sont
+            // déjà effacés ci-dessus : on le supprime définitivement.
             DB::transaction(function () use ($product) {
-                $product->delete();
+                $product->forceDelete();
             });
 
             Log::info('Annonce brouillon abandonnée supprimée (frais de publication impayé)', [

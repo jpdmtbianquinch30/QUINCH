@@ -251,8 +251,8 @@
                   @for (i of [5,4,3,2,1]; track i) {
                     <div class="sp-bar-row">
                       <span class="sp-bar-label">{{ i }} <span class="material-icons tiny">star</span></span>
-                      <div class="sp-bar-track"><div class="sp-bar-fill" [style.width.%]="getDistributionPercent(reviewStats()!.distribution?.[i] || 0)"></div></div>
-                      <span class="sp-bar-count">{{ reviewStats()!.distribution?.[i] || 0 }}</span>
+                      <div class="sp-bar-track"><div class="sp-bar-fill" [style.width.%]="getDistributionPercent(reviewStats()!.distribution[i] || 0)"></div></div>
+                      <span class="sp-bar-count">{{ reviewStats()!.distribution[i] || 0 }}</span>
                     </div>
                   }
                 </div>

@@ -113,7 +113,7 @@ export class AdminUsersPage implements OnInit {
   private route = inject(ActivatedRoute);
 
   roles = ROLE_LABELS; sc = statusClass; money = fmtMoney;
-  f: Record<string, any> = { search: '', status: '', role: '', kyc: '', premium: '', sort: 'created_at' };
+  f: { search: string; status: string; role: string; kyc: string; premium: string; sort: string } = { search: '', status: '', role: '', kyc: '', premium: '', sort: 'created_at' };
   items = signal<any[]>([]); loading = signal(true);
   page = signal(1); last = signal(1); total = signal(0);
   detail = signal<any>(null);
