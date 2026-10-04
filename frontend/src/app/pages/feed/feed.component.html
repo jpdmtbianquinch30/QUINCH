@@ -22,6 +22,24 @@
 <!-- Place cette partie juste après </div> de .feed-topbar
      et juste avant <div class="feed-layout"> -->
 
+<!-- Messages de l'équipe QUINCH (annonces, « problème corrigé »…) : visibles dès l'entrée -->
+@if (adminMessages().length > 0) {
+<section class="admin-msgs" aria-label="Messages de l'équipe QUINCH">
+  @for (m of adminMessages(); track m.id) {
+    <article class="admin-msg">
+      <span class="material-icons admin-msg-icon">{{ m.icon || 'campaign' }}</span>
+      <button type="button" class="admin-msg-body" (click)="openAdminMessage(m)">
+        <strong>{{ m.title }}</strong>
+        <span>{{ m.body }}</span>
+      </button>
+      <button type="button" class="admin-msg-close" (click)="dismissAdminMessage(m)" aria-label="Fermer">
+        <span class="material-icons">close</span>
+      </button>
+    </article>
+  }
+</section>
+}
+
 <!-- Bannière : uniquement si l'admin en a configuré une active (Réglages > Bannières). Rien par défaut. -->
 @if (currentBanner(); as b) {
 <section class="quinch-hero" aria-label="Message QUINCH">

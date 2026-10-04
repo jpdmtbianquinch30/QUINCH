@@ -62,6 +62,11 @@ export class NotificationService {
     );
   }
 
+  /** Messages admin non lus à afficher en haut du feed. */
+  getAdminFeed(): Observable<any> {
+    return this.api.get<any>('notifications/admin-feed');
+  }
+
   /**
    * Get unread count (overall + per tab).
    */

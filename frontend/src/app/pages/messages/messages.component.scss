@@ -2757,3 +2757,20 @@ button {
     flex-shrink: 0;
   }
 }
+
+
+// ─── Filtre Tous / Mes amis + messages de chargement ─────
+.conv-filter {
+  display: flex; gap: 6px; padding: 6px 12px 10px;
+  button {
+    flex: 1; padding: 8px 10px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.82rem;
+    background: transparent; color: inherit; opacity: 0.75;
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    &.active { opacity: 1; background: #6366f1; border-color: #6366f1; color: #fff; font-weight: 600; }
+  }
+}
+.conv-loading, .chat-loading {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 16px;
+}
+.chat-loading { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.loading-text { margin: 0; font-size: 0.85rem; opacity: 0.75; text-align: center; }

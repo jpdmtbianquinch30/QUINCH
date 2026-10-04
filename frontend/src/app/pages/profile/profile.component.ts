@@ -289,14 +289,19 @@ export class ProfileComponent implements OnInit {
     const p = this.managingProduct();
     if (!p) return;
     this.manageUpdating.set(true);
-    this.productService.updateProduct(p.id, { stock_quantity: 0, status: type }).subscribe({
+    const isService = p.type === 'service';
+    // Un service n'a pas de stock : on ne touche qu'au statut.
+    const payload: any = isService ? { status: type } : { stock_quantity: 0, status: type };
+    this.productService.updateProduct(p.id, payload).subscribe({
       next: (res: any) => {
         this.manageUpdating.set(false);
         const updated = res.product || res;
         this.updateProductInList(p.id, updated);
-        this.notify.success(type === 'paused'
-          ? 'Produit desactive temporairement. Vous pouvez le reactiver a tout moment.'
-          : 'Produit desactive definitivement.');
+        this.notify.success(isService
+          ? 'Service désactivé. Vous pouvez le réactiver à tout moment.'
+          : (type === 'paused'
+            ? 'Produit desactive temporairement. Vous pouvez le reactiver a tout moment.'
+            : 'Produit desactive definitivement.'));
         this.closeManageModal();
       },
       error: () => {
@@ -334,13 +339,15 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
+    const isService = p.type === 'service';
     const qty = this.manageStockQty() > 0 ? this.manageStockQty() : 1;
-    this.productService.updateProduct(p.id, { status: 'active', stock_quantity: qty }).subscribe({
+    const reactivatePayload: any = isService ? { status: 'active' } : { status: 'active', stock_quantity: qty };
+    this.productService.updateProduct(p.id, reactivatePayload).subscribe({
       next: (res: any) => {
         this.manageUpdating.set(false);
         const updated = res.product || res;
         this.updateProductInList(p.id, updated);
-        this.notify.success('Produit reactive avec succes!');
+        this.notify.success(isService ? 'Service activé avec succès !' : 'Produit reactive avec succes!');
         this.closeManageModal();
       },
       error: (err: any) => {

@@ -83,9 +83,30 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() { clearInterval(this.bannerTimer); }
 
+  adminMessages = signal<any[]>([]);
+
   ngOnInit() {
     this.loadData();
     this.loadFeedConfig();
+    this.loadAdminMessages();
+  }
+
+  private loadAdminMessages() {
+    if (!this.auth.isAuthenticated()) return;
+    this.notify.getAdminFeed().subscribe({
+      next: (res: any) => this.adminMessages.set(res?.data ?? []),
+      error: () => {}, // le feed fonctionne sans
+    });
+  }
+
+  dismissAdminMessage(m: any) {
+    this.adminMessages.update(list => list.filter(x => x.id !== m.id));
+    this.notify.markRead(m.id).subscribe({ error: () => {} });
+  }
+
+  openAdminMessage(m: any) {
+    this.dismissAdminMessage(m);
+    if (m.action_url && m.action_url.startsWith('/')) this.router.navigateByUrl(m.action_url);
   }
 
   private loadCounts() {

@@ -37,6 +37,8 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Mobile: show chat area instead of list
   mobileShowChat = signal(false);
   messagesReady = signal(false);
+  // Répertoire : « Tous » par défaut, ou « Mes amis » (abonnement mutuel).
+  convFilter = signal<'all' | 'friends'>('all');
 
   // Dropdown menu (more_vert)
   showDropdown = signal(false);
@@ -67,7 +69,8 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Filtered conversations based on search
   filteredConversations = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    const convs = this.chat.conversations();
+    const all = this.chat.conversations();
+    const convs = this.convFilter() === 'friends' ? all.filter(c => !!(c.other_user as any)?.is_friend) : all;
     if (!q) return convs;
     return convs.filter(c => {
       const name = (c.other_user?.full_name || '').toLowerCase();
@@ -89,6 +92,13 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
           const match = this.chat.conversations().find(c => c.id === convId);
           if (match) {
             this.selectConversation(match);
+          } else {
+            // Conversation absente de la 1re page de la liste (pagination) :
+            // on l'ouvre directement pour toujours arriver sur le bon chat.
+            this.chat.getConversation(convId).subscribe({
+              next: (res: any) => { if (res?.conversation) this.selectConversation(res.conversation); },
+              error: () => this.notify.error('Conversation introuvable.'),
+            });
           }
         }
       },

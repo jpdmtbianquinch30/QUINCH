@@ -3316,3 +3316,30 @@ $r-sm: 8px;
 .slide-inner.split-mode ~ .nav-arrow {
   display: none;
 }
+
+
+// ─── Modale de signalement ───────────────────────────────
+.vf-report-overlay {
+  position: fixed; inset: 0; z-index: 1200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(0, 0, 0, 0.6);
+}
+.vf-report-modal {
+  width: min(420px, 100%);
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 20px; border-radius: 16px;
+  background: var(--surface, #14141f); color: var(--text, #fff);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  h3 { margin: 0; font-size: 1.05rem; }
+  select, textarea {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06); color: inherit;
+    border: 1px solid rgba(255, 255, 255, 0.15); font: inherit;
+  }
+  .vf-report-actions {
+    display: flex; justify-content: flex-end; gap: 8px;
+    button { padding: 9px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: transparent; color: inherit; cursor: pointer; }
+    .primary { background: #6366f1; border-color: #6366f1; color: #fff; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+  }
+}

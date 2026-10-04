@@ -486,7 +486,22 @@
         <div class="pm-section">
           <h4><span class="material-icons">flash_on</span> Actions rapides</h4>
           <div class="pm-actions-grid">
-            @if (managingProduct().status === 'active') {
+            @if (managingProduct().type === 'service') {
+              <!-- Service : Activer / Désactiver (Supprimer plus bas) -->
+              @if (managingProduct().status === 'active') {
+                <button class="pm-action-card pm-action-disable" (click)="showDeactivateConfirm.set(true); deactivateType.set('paused')">
+                  <span class="material-icons">toggle_off</span>
+                  <span class="pm-action-title">Désactiver</span>
+                  <span class="pm-action-desc">Masquer le service (réversible)</span>
+                </button>
+              } @else {
+                <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
+                  <span class="material-icons">toggle_on</span>
+                  <span class="pm-action-title">Activer</span>
+                  <span class="pm-action-desc">Remettre le service en ligne</span>
+                </button>
+              }
+            } @else if (managingProduct().status === 'active') {
               <button class="pm-action-card pm-action-outofstock" (click)="markOutOfStock()">
                 <span class="material-icons">remove_shopping_cart</span>
                 <span class="pm-action-title">Produit epuise</span>
@@ -533,7 +548,7 @@
         <div class="pm-section pm-danger-zone">
           <button class="pm-delete-btn" (click)="deleteProduct()" [disabled]="manageUpdating()">
             <span class="material-icons">delete_forever</span>
-            Supprimer le produit
+            Supprimer {{ managingProduct().type === 'service' ? 'le service' : 'le produit' }}
           </button>
         </div>
       } @else {

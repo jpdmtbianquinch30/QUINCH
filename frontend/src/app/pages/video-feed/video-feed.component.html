@@ -721,4 +721,28 @@
 
 
 
+
+  <!-- Signalement (détail vidéo) -->
+  @if (showReport()) {
+    <div class="vf-report-overlay" (click)="showReport.set(false)">
+      <div class="vf-report-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <h3>Signaler ce contenu</h3>
+        <select [(ngModel)]="reportReason" aria-label="Motif du signalement">
+          <option value="">Choisir un motif…</option>
+          <option value="fraud">Arnaque / fraude</option>
+          <option value="inappropriate">Contenu inapproprié</option>
+          <option value="counterfeit">Contrefaçon</option>
+          <option value="spam">Spam</option>
+          <option value="other">Autre</option>
+        </select>
+        <textarea [(ngModel)]="reportDescription" rows="3" maxlength="2000" placeholder="Précisez si besoin…"></textarea>
+        <div class="vf-report-actions">
+          <button type="button" (click)="showReport.set(false)">Annuler</button>
+          <button type="button" class="primary" (click)="submitReport()" [disabled]="!reportReason || reportSending()">
+            {{ reportSending() ? 'Envoi…' : 'Envoyer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </div>

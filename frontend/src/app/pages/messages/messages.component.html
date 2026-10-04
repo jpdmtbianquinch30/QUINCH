@@ -42,14 +42,23 @@
         }
       </div>
 
+      <div class="conv-filter" role="tablist" aria-label="Filtrer les conversations">
+        <button type="button" role="tab" [class.active]="convFilter() === 'all'" [attr.aria-selected]="convFilter() === 'all'" (click)="convFilter.set('all')">Tous</button>
+        <button type="button" role="tab" [class.active]="convFilter() === 'friends'" [attr.aria-selected]="convFilter() === 'friends'" (click)="convFilter.set('friends')">Mes amis</button>
+      </div>
+
       @if (loading()) {
         <div class="conv-loading">
           <div class="loader"></div>
+          <p class="loading-text">Veuillez patienter, chargement des messages…</p>
         </div>
       } @else if (filteredConversations().length === 0) {
         <div class="conv-empty">
           <span class="material-icons">chat_bubble_outline</span>
-          @if (searchQuery()) {
+          @if (convFilter() === 'friends' && !searchQuery()) {
+            <p>Aucun ami pour le moment</p>
+            <p class="hint">Un ami = un utilisateur que vous suivez et qui vous suit</p>
+          } @else if (searchQuery()) {
             <p>Aucun résultat pour "{{ searchQuery() }}"</p>
             <p class="hint">Essayez un autre terme de recherche</p>
           } @else {
@@ -196,6 +205,12 @@
         </div>
 
         <!-- Messages -->
+        @if (!messagesReady()) {
+          <div class="chat-loading" role="status">
+            <div class="loader"></div>
+            <p class="loading-text">Veuillez patienter, chargement des messages…</p>
+          </div>
+        }
         <div class="chat-messages" #messagesContainer [class.messages-hidden]="!messagesReady()">
           <!-- Product/Service Context Card -->
           @if (selectedConv()?.product) {

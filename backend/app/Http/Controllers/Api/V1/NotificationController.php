@@ -45,6 +45,23 @@ class NotificationController extends Controller
     }
 
     /**
+     * Messages de l'équipe QUINCH non lus (annonces, « problème corrigé »…),
+     * affichés en haut du feed dès l'entrée sur le site.
+     */
+    public function adminFeed(Request $request): JsonResponse
+    {
+        $items = UserNotification::where('user_id', $request->user()->id)
+            ->where('type', 'admin')
+            ->unread()
+            ->where('created_at', '>=', now()->subDays(14))
+            ->orderBy('created_at', 'desc')
+            ->limit(3)
+            ->get(['id', 'title', 'body', 'icon', 'action_url', 'created_at']);
+
+        return response()->json(['data' => $items]);
+    }
+
+    /**
      * Get unread count (overall + per tab).
      */
     public function unreadCount(Request $request): JsonResponse

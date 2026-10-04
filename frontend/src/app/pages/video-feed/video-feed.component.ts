@@ -86,6 +86,10 @@ videoPaused = signal(false);
   dpNewHover = signal(0);
   dpNewComment = '';
   dpSubmitting = signal(false);
+  showReport = signal(false);
+  reportReason = '';
+  reportDescription = '';
+  reportSending = signal(false);
   dpSubmitted = signal(false);
   dpShowContact = signal(false);
   dpShowNego = signal(false);
@@ -1313,7 +1317,31 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
     p.is_saved = !p.is_saved; this.dp.set({ ...p }); this.productService.toggleSave(p.id).subscribe({ error: () => { p.is_saved = !p.is_saved; this.dp.set({ ...p }); } });
   }
   dpShare() { const p = this.dp(); if (p) { this.shareService.shareProduct(p); this.productService.shareProduct(p.id).subscribe(); } }
-  dpReport() { this.notify.success('Signalement envoye. Merci!'); }
+  // Signalement réel : enregistré en base puis traité dans l'admin (Modération > Signalements).
+  dpReport() {
+    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.showReport.set(true);
+  }
+  submitReport() {
+    const p = this.dp();
+    if (!p?.id || !this.reportReason || this.reportSending()) return;
+    this.reportSending.set(true);
+    this.productService.reportProduct(p.id, this.reportReason, this.reportDescription || undefined).subscribe({
+      next: () => {
+        this.reportSending.set(false);
+        this.showReport.set(false);
+        this.notify.success('Signalement envoyé. Notre équipe va examiner ce contenu. Merci !');
+      },
+      error: (err: any) => {
+        this.reportSending.set(false);
+        this.showReport.set(false);
+        if (err?.status === 409) this.notify.success(err?.error?.message || 'Vous avez déjà signalé ce contenu.');
+        else this.notify.error('Erreur lors de l\'envoi du signalement.');
+      },
+    });
+  }
   dpGoFull() { const s = this.dp()?.slug; if (s) { this.closeDetail(); this.router.navigate(['/product', s]); } }
 
   onImgError(event: Event): void {
