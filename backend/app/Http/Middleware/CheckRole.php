@@ -12,10 +12,17 @@ class CheckRole
     {
         $user = $request->user();
 
-        if (!$user || !in_array($user->role, $roles)) {
+        if (!$user || !in_array($user->role, $roles, true)) {
             return response()->json([
                 'message' => 'Accès non autorisé.',
                 'error' => 'insufficient_permissions',
+            ], 403);
+        }
+
+        if ($user->isBanned()) {
+            return response()->json([
+                'message' => 'Votre compte a été banni.',
+                'error' => 'account_banned',
             ], 403);
         }
 

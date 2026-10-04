@@ -37,6 +37,14 @@ class ProductVideoController extends Controller
         $video = $request->file('video');
         $hash  = hash_file('sha256', $video->getRealPath());
 
+        // Anti ré-upload : l'empreinte d'une vidéo rejetée par la modération est bloquée.
+        if (\App\Models\BlockedVideoHash::where('hash_sha256', $hash)->exists()) {
+            return response()->json([
+                'message' => 'Cette vidéo a été retirée par la modération et ne peut pas être publiée à nouveau.',
+                'code'    => 'video_blocked',
+            ], 422);
+        }
+
         $existing = ProductVideo::where('hash_sha256', $hash)->first();
         if ($existing) {
             return response()->json([

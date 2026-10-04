@@ -14,13 +14,15 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class VideoStreamController extends Controller
 {
-    public function stream(string $videoId): BinaryFileResponse|\Illuminate\Http\Response
+    public function stream(Request $request, string $videoId): BinaryFileResponse|\Illuminate\Http\Response
     {
         $video = ProductVideo::find($videoId);
 
         if (!$video || !$video->video_path) {
             abort(404, 'Video not found.');
         }
+
+        $this->abortIfHidden($request, $video);
 
         $disk = Storage::disk('public');
         $path = $video->video_path;
@@ -52,6 +54,8 @@ class VideoStreamController extends Controller
             abort(404, 'Video not found.');
         }
 
+        $this->abortIfHidden($request, $video);
+
         $disk = Storage::disk('public');
 
         if (!$disk->exists($path)) {
@@ -72,13 +76,15 @@ class VideoStreamController extends Controller
         return $this->fileResponse($path, $fullPath, $mimeType);
     }
 
-    public function thumbnail(string $videoId): BinaryFileResponse
+    public function thumbnail(Request $request, string $videoId): BinaryFileResponse
     {
         $video = ProductVideo::find($videoId);
 
         if (!$video || !$video->thumbnail_path) {
             abort(404, 'Thumbnail not found.');
         }
+
+        $this->abortIfHidden($request, $video);
 
         $disk = Storage::disk('public');
 
@@ -90,10 +96,24 @@ class VideoStreamController extends Controller
 
         $response = new BinaryFileResponse($fullPath);
         $response->headers->set('Content-Type', mime_content_type($fullPath) ?: 'image/jpeg');
-        $response->headers->set('Cache-Control', 'public, max-age=604800'); // 7 jours
+        $response->headers->set('Cache-Control', $request->hasValidRelativeSignature() ? 'private, no-store' : 'public, max-age=604800'); // 7 jours
         $response->headers->set('Access-Control-Allow-Origin', '*');
 
         return $response;
+    }
+
+    /**
+     * Une vidéo rejetée ou mise en vérification n'est plus servie au public :
+     * 404 (comme si elle n'existait pas). Le staff la visionne via une URL
+     * signée à durée limitée (ProductVideo::adminPreviewUrls()).
+     * Les vidéos « pending » restent visibles : publication immédiate,
+     * modération après.
+     */
+    private function abortIfHidden(Request $request, ProductVideo $video): void
+    {
+        if ($video->isHiddenFromPublic() && !$request->hasValidRelativeSignature()) {
+            abort(404, 'Video not found.');
+        }
     }
 
     /**

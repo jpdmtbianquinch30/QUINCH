@@ -6,13 +6,14 @@ use App\Models\Traits\HasUuid;
 use App\Models\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasUuid, HasFactory, Auditable;
+    use HasUuid, HasFactory, Auditable, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -61,6 +62,11 @@ class Product extends Model
             'share_count' => 'integer',
             'stock_quantity' => 'integer',
             'expires_at' => 'datetime',
+            'is_pinned' => 'boolean',
+            'hidden_by_system' => 'boolean',
+            'screening_flags' => 'array',
+            'moderated_at' => 'datetime',
+            'pinned_at' => 'datetime',
         ];
     }
 
@@ -92,6 +98,16 @@ class Product extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(ProductReport::class);
+    }
+
+    public function moderator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'moderated_by');
     }
 
     public function likedByUsers()
@@ -152,6 +168,7 @@ public function scopeTieredRank($query)
         ->select('products.*')
         ->selectRaw('FLOOR(GREATEST(EXTRACT(EPOCH FROM (NOW() - products.created_at)), 0) / 86400 / 5) AS age_tier')
         ->selectRaw("(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) AS is_premium_active")
+        ->orderBy('products.is_pinned', 'desc')   // épinglés par l'admin : toujours en tête
         ->orderBy('age_tier', 'asc')
         ->orderBy('is_premium_active', 'desc')
         ->orderBy('products.created_at', 'desc');

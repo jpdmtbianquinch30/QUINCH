@@ -2,158 +2,279 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\AdminHelpers;
 use App\Http\Controllers\Controller;
 use App\Models\AdminActionLog;
 use App\Models\AuditLog;
+use App\Models\Product;
+use App\Models\ProductReport;
+use App\Models\Transaction;
 use App\Models\User;
+use App\Models\UserReport;
+use App\Services\Admin\AdminLogger;
+use App\Services\Admin\SanctionService;
+use App\Services\Admin\StrikeService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-
 class AdminUserController extends Controller
 {
-    public function __construct(private NotificationService $notif) {}
+    use AdminHelpers;
+
+    public function __construct(
+        private NotificationService $notif,
+        private SanctionService $sanctions,
+        private StrikeService $strikes
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $query = User::query();
 
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('full_name', 'LIKE', "%{$search}%")
-                  ->orWhere('phone_number', 'LIKE', "%{$search}%")
-                  ->orWhere('username', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%");
-            });
+        if (!$request->boolean('include_deleted')) {
+            $query->whereNull('anonymized_at');
         }
 
-        if ($request->has('status') && $request->status) {
-            $query->where('account_status', $request->status);
+        if ($search = trim((string) $request->query('search', ''))) {
+            // ILIKE + échappement : la recherche est insensible à la casse
+            // (avant : LIKE sensible à la casse sous Postgres, % et _ non échappés).
+            $this->ilike($query, ['full_name', 'phone_number', 'username', 'email'], $search, ['id']);
         }
 
-        if ($request->has('role') && $request->role) {
-            $query->where('role', $request->role);
+        if ($status = $request->query('status')) {
+            $query->where('account_status', $status);
         }
 
-        if ($request->has('kyc') && $request->kyc) {
-            $query->where('kyc_status', $request->kyc);
+        if ($role = $request->query('role')) {
+            $query->where('role', $role);
         }
 
-        if ($request->has('trust_min')) {
-            $query->where('trust_score', '>=', $request->trust_min);
+        if ($kyc = $request->query('kyc')) {
+            $query->where('kyc_status', $kyc);
         }
 
-        if ($request->has('trust_max')) {
-            $query->where('trust_score', '<=', $request->trust_max);
+        if ($request->query('premium') === '1') {
+            $query->where('is_premium', true)->where('premium_expires_at', '>', now());
         }
 
-        $sort = $request->get('sort', 'created_at');
-        $dir = $request->get('dir', 'desc');
-        $allowedSorts = ['created_at', 'trust_score', 'full_name'];
-        if (in_array($sort, $allowedSorts)) {
-            $query->orderBy($sort, $dir === 'asc' ? 'asc' : 'desc');
+        if ($request->filled('trust_min')) {
+            $query->where('trust_score', '>=', (float) $request->query('trust_min'));
         }
 
-        $users = $query->withCount(['products', 'purchasedTransactions', 'soldTransactions'])
+        if ($request->filled('trust_max')) {
+            $query->where('trust_score', '<=', (float) $request->query('trust_max'));
+        }
+
+        $sort = $request->query('sort', 'created_at');
+        $dir = $request->query('dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        if (in_array($sort, ['created_at', 'trust_score', 'full_name', 'last_seen_at'], true)) {
+            $query->orderBy($sort, $dir);
+        }
+
+        $users = $query
+            ->withCount([
+                'products',
+                'purchasedTransactions',
+                'soldTransactions',
+                'strikes as active_strikes_count' => fn ($q) => $q->active(),
+            ])
             ->with('badges:id,user_id,badge_type')
             ->paginate($this->perPage($request, 20, 100));
 
         return response()->json($users);
     }
 
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
         $user->loadCount(['products', 'purchasedTransactions', 'soldTransactions']);
         $user->load('badges');
 
-        $recentActivity = AuditLog::forUser($user->id)->recent(30)->latest('created_at')->limit(20)->get();
-        $adminActions = AdminActionLog::where('target_id', $user->id)
-            ->where('target_type', 'User')
-            ->with('admin:id,full_name')
-            ->latest()
-            ->limit(10)
-            ->get();
+        $fingerprint = $user->device_fingerprint;
+        $sharedQuery = $fingerprint
+            ? User::where('device_fingerprint', $fingerprint)->where('id', '!=', $user->id)
+            : null;
 
         return response()->json([
             'user' => $user,
-            'recent_activity' => $recentActivity,
-            'admin_actions' => $adminActions,
+            'can_manage' => $request->user()->canManage($user),
+            'active_strikes' => $this->strikes->activeCount($user),
+            'strikes' => $user->strikes()->with('issuer:id,full_name')->latest()->limit(20)->get(),
+            'recent_activity' => AuditLog::forUser($user->id)->recent(30)->latest('created_at')->limit(20)->get(),
+            'admin_actions' => AdminActionLog::where('target_id', $user->id)
+                ->where('target_type', 'User')
+                ->with('admin:id,full_name')
+                ->latest()
+                ->limit(30)
+                ->get(),
+            'products' => Product::withTrashed()
+                ->where('user_id', $user->id)
+                ->latest()
+                ->limit(10)
+                ->get(['id', 'title', 'slug', 'status', 'price', 'moderation_reason', 'created_at', 'deleted_at']),
+            'transactions' => Transaction::where(fn ($q) => $q->where('buyer_id', $user->id)->orWhere('seller_id', $user->id))
+                ->latest()
+                ->limit(10)
+                ->get(['id', 'buyer_id', 'seller_id', 'product_id', 'amount', 'payment_status', 'order_status', 'created_at']),
+            'reports_received' => UserReport::where('reported_user_id', $user->id)
+                ->with('reporter:id,full_name,username')->latest()->limit(10)->get(),
+            'reports_made' => UserReport::where('reporter_id', $user->id)->latest()->limit(10)->get(),
+            'product_reports_received' => ProductReport::whereHas('product', fn ($q) => $q->where('user_id', $user->id))
+                ->latest()->limit(10)->get(['id', 'product_id', 'reason', 'status', 'created_at']),
+            'shared_device_count' => $sharedQuery ? (clone $sharedQuery)->count() : 0,
+            'shared_device_accounts' => $sharedQuery
+                ? (clone $sharedQuery)->limit(5)->get(['id', 'full_name', 'username', 'account_status'])
+                : [],
         ]);
     }
 
     public function suspend(Request $request, User $user): JsonResponse
     {
-        $request->validate([
-            'reason' => ['required', 'string', 'max:500'],
+        $validated = $request->validate([
+            'reason' => $this->reasonRules(),
             'duration' => ['nullable', 'integer', 'min:1', 'max:365'],
         ]);
 
-        $user->forceFill(['account_status' => 'suspended'])->save();
-        $user->tokens()->delete();
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
 
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'user_suspended',
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'metadata' => ['reason' => $request->reason, 'duration' => $request->duration],
-            'ip_address' => $request->ip(),
-            'severity' => 'warning',
-        ]);
+        if ($user->account_status === 'banned') {
+            return response()->json(['message' => 'Ce compte est déjà banni.'], 422);
+        }
 
-        $this->notif->notifyAdmin($user->id, 'Compte suspendu', 'Votre compte a été suspendu. Raison: ' . $request->reason);
+        $actor = $request->user();
+        $days = !empty($validated['duration']) ? (int) $validated['duration'] : null;
 
-        return response()->json(['message' => 'Utilisateur suspendu.']);
+        // Un modérateur ne peut suspendre que pour une durée limitée (7 j par défaut).
+        if (!$actor->hasPermission('users.suspend')) {
+            $max = (int) config('permissions.moderator_max_suspension_days', 7);
+            if ($days === null || $days > $max) {
+                return response()->json([
+                    'message' => "Un modérateur ne peut suspendre que {$max} jours maximum.",
+                    'error' => 'suspension_too_long',
+                ], 403);
+            }
+        }
+
+        $this->sanctions->suspend($user, $validated['reason'], $days, $actor);
+
+        return response()->json(['message' => 'Utilisateur suspendu.', 'user' => $user->fresh()]);
     }
 
+    /** Lève une suspension. Un compte BANNI ne se réactive pas ici (voir unban). */
     public function activate(Request $request, User $user): JsonResponse
     {
-        $user->forceFill(['account_status' => 'active'])->save();
+        $validated = $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
 
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'user_activated',
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'ip_address' => $request->ip(),
-            'severity' => 'info',
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
+
+        if ($user->account_status === 'banned') {
+            return response()->json([
+                'message' => 'Ce compte est banni : utilisez « Débannir » (avec un motif).',
+                'error' => 'account_banned',
+            ], 422);
+        }
+
+        if (!$this->sanctions->lift($user, $validated['reason'] ?? 'Levée manuelle', $request->user())) {
+            return response()->json(['message' => "Ce compte n'est pas suspendu."], 422);
+        }
+
+        return response()->json(['message' => 'Utilisateur réactivé.', 'user' => $user->fresh()]);
+    }
+
+    public function ban(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate(['reason' => $this->reasonRules()]);
+
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
+
+        $this->sanctions->ban($user, $validated['reason'], $request->user());
+
+        return response()->json(['message' => 'Utilisateur banni définitivement.', 'user' => $user->fresh()]);
+    }
+
+    public function unban(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate(['reason' => $this->reasonRules()]);
+
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
+
+        if (!$this->sanctions->unban($user, $validated['reason'], $request->user())) {
+            return response()->json(['message' => "Ce compte n'est pas banni."], 422);
+        }
+
+        return response()->json(['message' => 'Utilisateur débanni.', 'user' => $user->fresh()]);
+    }
+
+    /** Avertissement manuel (compte dans le décompte des strikes). */
+    public function warn(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate(['reason' => $this->reasonRules()]);
+
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
+
+        $strike = $this->strikes->add($user, $validated['reason'], $request->user());
+
+        return response()->json([
+            'message' => 'Avertissement envoyé.',
+            'strike' => $strike,
+            'active_strikes' => $this->strikes->activeCount($user),
+            'user' => $user->fresh(),
         ]);
+    }
 
-        $this->notif->notifyAdmin($user->id, 'Compte réactivé', 'Votre compte a été réactivé.');
+    public function revokeStrike(Request $request, User $user, string $strike): JsonResponse
+    {
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
 
-        return response()->json(['message' => 'Utilisateur réactivé.']);
+        $row = $user->strikes()->whereKey($strike)->first();
+        if (!$row) {
+            return response()->json(['message' => 'Avertissement introuvable.'], 404);
+        }
+
+        $row->update(['revoked_at' => now()]);
+
+        AdminLogger::log($request->user(), 'strike_revoked', 'User', $user->id, ['strike_id' => $row->id]);
+
+        return response()->json(['message' => 'Avertissement retiré.', 'active_strikes' => $this->strikes->activeCount($user)]);
     }
 
     public function verifyKyc(Request $request, User $user): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => ['required', 'in:verified,rejected'],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $user->forceFill(['kyc_status' => $request->status])->save();
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
 
-        if ($request->status === 'verified') {
+        $user->forceFill(['kyc_status' => $validated['status']])->save();
+
+        if ($validated['status'] === 'verified') {
             $user->incrementTrustScore(0.2);
         }
 
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'kyc_' . $request->status,
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'metadata' => ['reason' => $request->reason],
-            'ip_address' => $request->ip(),
-            'severity' => 'info',
-        ]);
+        AdminLogger::log($request->user(), 'kyc_' . $validated['status'], 'User', $user->id, ['reason' => $validated['reason'] ?? null]);
 
         $this->notif->notifyAdmin(
             $user->id,
-            $request->status === 'verified' ? 'KYC Vérifié' : 'KYC Rejeté',
-            $request->status === 'verified'
+            $validated['status'] === 'verified' ? 'KYC Vérifié' : 'KYC Rejeté',
+            $validated['status'] === 'verified'
                 ? 'Votre identité a été vérifiée avec succès.'
-                : 'Votre vérification KYC a été rejetée. ' . ($request->reason ?? ''),
+                : 'Votre vérification KYC a été rejetée. ' . ($validated['reason'] ?? ''),
             '/profile'
         );
 
@@ -162,106 +283,76 @@ class AdminUserController extends Controller
 
     public function adjustTrust(Request $request, User $user): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'score' => ['required', 'numeric', 'min:0', 'max:1'],
-            'reason' => ['required', 'string', 'max:500'],
+            'reason' => $this->reasonRules(),
         ]);
 
-        $oldScore = $user->trust_score;
-        $user->forceFill(['trust_score' => $request->score])->save();
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
 
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'trust_score_adjusted',
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'metadata' => ['old_score' => $oldScore, 'new_score' => $request->score, 'reason' => $request->reason],
-            'ip_address' => $request->ip(),
-            'severity' => 'warning',
-        ]);
+        $old = $user->trust_score;
+        $user->forceFill(['trust_score' => $validated['score']])->save();
+
+        AdminLogger::log($request->user(), 'trust_score_adjusted', 'User', $user->id, [
+            'old_score' => $old, 'new_score' => (float) $validated['score'], 'reason' => $validated['reason'],
+        ], 'warning');
 
         return response()->json(['message' => 'Score de confiance ajusté.', 'user' => $user->fresh()]);
     }
 
     public function sendNotification(Request $request, User $user): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'max:1000'],
         ]);
 
-        $this->notif->notifyAdmin($user->id, $request->title, $request->body);
+        $this->notif->notifyAdmin($user->id, $validated['title'], $validated['body']);
 
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'notification_sent',
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'metadata' => ['title' => $request->title],
-            'ip_address' => $request->ip(),
-            'severity' => 'info',
-        ]);
+        AdminLogger::log($request->user(), 'notification_sent', 'User', $user->id, ['title' => $validated['title']]);
 
         return response()->json(['message' => 'Notification envoyée.']);
     }
 
+    /**
+     * « Suppression » = anonymisation. Avant : plantait en 500 dès que le compte
+     * avait une transaction (clé étrangère), et ignorait la raison envoyée.
+     */
     public function destroy(Request $request, User $user): JsonResponse
     {
-        if ($user->role === 'super_admin') {
-            return response()->json(['message' => 'Impossible de supprimer un super administrateur.'], 403);
+        $validated = $request->validate(['reason' => $this->reasonRules()]);
+
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
         }
 
-        // Revoke tokens
-        $user->tokens()->delete();
+        if ($user->anonymized_at) {
+            return response()->json(['message' => 'Ce compte est déjà supprimé.'], 422);
+        }
 
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'user_deleted',
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'metadata' => ['full_name' => $user->full_name, 'email' => $user->email],
-            'ip_address' => $request->ip(),
-            'severity' => 'critical',
-        ]);
+        $this->sanctions->anonymize($user, $validated['reason'], $request->user());
 
-        $user->delete();
-
-        return response()->json(['message' => 'Utilisateur supprimé.']);
+        return response()->json(['message' => 'Compte supprimé (données personnelles anonymisées).']);
     }
 
-    public function ban(Request $request, User $user): JsonResponse
+    /** Export RGPD : toutes les données liées au compte, en JSON téléchargeable. */
+    public function export(Request $request, User $user): JsonResponse
     {
-        $request->validate([
-            'reason' => ['required', 'string', 'max:500'],
-        ]);
+        $payload = [
+            'exported_at' => now()->toIso8601String(),
+            'user' => $user->makeVisible(['kyc_data'])->toArray(),
+            'products' => Product::withTrashed()->where('user_id', $user->id)->get()->toArray(),
+            'transactions' => Transaction::where('buyer_id', $user->id)->orWhere('seller_id', $user->id)->get()->toArray(),
+            'reports_made' => UserReport::where('reporter_id', $user->id)->get()->toArray(),
+            'reports_received' => UserReport::where('reported_user_id', $user->id)->get()->toArray(),
+            'strikes' => $user->strikes()->get()->toArray(),
+        ];
 
-        if ($user->role === 'super_admin') {
-            return response()->json(['message' => 'Impossible de bannir un super administrateur.'], 403);
-        }
+        AdminLogger::log($request->user(), 'user_data_exported', 'User', $user->id, [], 'warning');
 
-        // Revoke tokens and ban. Les anciennes clés 'status'/'ban_reason'/
-        // 'banned_at' n'ont jamais existé en base (aucune migration ne les
-        // créait) : le bannissement était donc silencieusement ignoré et le
-        // compte restait 'active'. Corrigé pour écrire dans account_status
-        // (colonne existante, 'banned' déjà valide dans l'enum) + les
-        // nouvelles colonnes ban_reason/banned_at ajoutées en migration.
-        $user->tokens()->delete();
-        $user->forceFill([
-            'account_status' => 'banned',
-            'ban_reason' => $request->reason,
-            'banned_at' => now(),
-        ])->save();
-
-        AdminActionLog::create([
-            'admin_id' => $request->user()->id,
-            'action' => 'user_banned',
-            'target_type' => 'User',
-            'target_id' => $user->id,
-            'metadata' => ['reason' => $request->reason],
-            'ip_address' => $request->ip(),
-            'severity' => 'critical',
-        ]);
-
-        return response()->json(['message' => 'Utilisateur banni définitivement.']);
+        return response()->json($payload)
+            ->header('Content-Disposition', 'attachment; filename="quinch-user-' . $user->id . '.json"');
     }
 }

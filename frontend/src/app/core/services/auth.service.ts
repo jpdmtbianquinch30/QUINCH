@@ -25,7 +25,8 @@ export class AuthService {
 
   user = this.currentUser.asReadonly();
   isAuthenticated = computed(() => !!this.token());
-  isAdmin = computed(() => this.currentUser()?.role === 'admin' || this.currentUser()?.role === 'super_admin');
+  // « Staff » = modérateur, admin ou super admin : tous accèdent au panneau (menus filtrés par permissions).
+  isAdmin = computed(() => ['moderator', 'admin', 'super_admin'].includes(this.currentUser()?.role ?? ''));
   isClient = computed(() => this.currentUser()?.role === 'user');
 
   constructor(private api: ApiService, private router: Router) {

@@ -15,6 +15,15 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Ce seeder crée un super_admin « +221770000001 / password » : il ne doit
+        // JAMAIS s'exécuter en production ni en préproduction. Pour créer un vrai
+        // compte admin, utiliser : php artisan quinch:set-role +221XXXXXXXXX super_admin
+        if (!app()->environment(['local', 'testing'])) {
+            $this->command?->error("Seeder de démo bloqué hors environnement local/testing (APP_ENV=" . app()->environment() . ").");
+
+            return;
+        }
+
         // Le seeder assigne délibérément des champs privilégiés (role,
         // trust_score, kyc_status) pour construire des comptes de démo
         // précis (admin, utilisateurs vérifiés...). C'est un script lancé

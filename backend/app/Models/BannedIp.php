@@ -13,7 +13,17 @@ class BannedIp extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = ['ip_address', 'reason', 'banned_by'];
+    protected $fillable = ['ip_address', 'reason', 'banned_by', 'expires_at'];
+
+    protected function casts(): array
+    {
+        return ['expires_at' => 'datetime'];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()));
+    }
 
     public function bannedBy(): BelongsTo
     {

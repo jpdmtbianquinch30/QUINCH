@@ -20,7 +20,20 @@ class SupportTicket extends Model
         'status',
         'reviewed_by',
         'admin_notes',
+        'assigned_to',
+        'action_taken',
+        'resolved_at',
     ];
+
+    protected function casts(): array
+    {
+        return ['resolved_at' => 'datetime'];
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
 
     public function user(): BelongsTo
     {

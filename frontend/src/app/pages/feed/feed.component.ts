@@ -1,10 +1,11 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../core/services/product.service';
 import { FavoriteService } from '../../core/services/favorite.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 import { Product, Category } from '../../core/models/product.model';
 
 export type FeedSort = 'foryou' | 'recent' | 'popular' | 'day' | 'following';
@@ -16,7 +17,7 @@ export type FeedSort = 'foryou' | 'recent' | 'popular' | 'day' | 'following';
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
 })
-export class FeedComponent implements OnInit {
+export class FeedComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
   private favService = inject(FavoriteService);
   notify = inject(NotificationService);
@@ -53,8 +54,39 @@ export class FeedComponent implements OnInit {
   productsCount = signal(0);
   servicesCount = signal(0);
 
+  // ─── Bannière et message défilant pilotés par l'admin ───────────────────
+  private api = inject(ApiService);
+  private defaultTicker: string[] = ['Ne te sous-estime jamais : ton talent peut devenir une opportunité sur QUINCH.', 'Achète avec confiance : découvre des produits utiles, proposés par des vendeurs de la communauté.', 'Vends ce que tu sais faire : une idée, un produit ou un talent peut trouver son public.', 'Tu proposes un service ? Présente ton savoir-faire et développe ton activité avec QUINCH.', "Chaque annonce est une nouvelle chance de te faire connaître, de créer des contacts et d'avancer.", "Crois en ton potentiel : QUINCH est là pour t'aider à transformer tes idées en opportunités."];
+  banners = signal<{ id: string; title: string; image_url: string; link_url: string | null }[]>([]);
+  bannerIndex = signal(0);
+  currentBanner = computed(() => this.banners()[this.bannerIndex() % Math.max(1, this.banners().length)] ?? null);
+  tickerEnabled = signal(true);
+  tickerLabel = signal('QUINCH • INFO');
+  tickerMessages = signal<string[]>(this.defaultTicker);
+  private bannerTimer: any;
+
+  private loadFeedConfig() {
+    this.api.get<any>('feed/config').subscribe({
+      next: cfg => {
+        this.banners.set(cfg.banners ?? []);
+        this.tickerEnabled.set(cfg.ticker?.enabled !== false);
+        if (cfg.ticker?.label) this.tickerLabel.set(cfg.ticker.label);
+        // Aucun message configuré : on garde les messages d'origine.
+        if (cfg.ticker?.messages?.length) this.tickerMessages.set(cfg.ticker.messages);
+        clearInterval(this.bannerTimer);
+        if ((cfg.banners?.length ?? 0) > 1) {
+          this.bannerTimer = setInterval(() => this.bannerIndex.update(i => i + 1), 6000);
+        }
+      },
+      error: () => {}, // config indisponible : le feed garde l'affichage d'origine
+    });
+  }
+
+  ngOnDestroy() { clearInterval(this.bannerTimer); }
+
   ngOnInit() {
     this.loadData();
+    this.loadFeedConfig();
   }
 
   private loadCounts() {

@@ -1,0 +1,64 @@
+// Styles communs du panneau admin (utilisent les variables --q-* de l'app).
+:host { display: block; }
+.adm-page { padding: 8px 0 40px; }
+.adm-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.adm-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.adm-card { background: var(--q-bg-card); border: 1px solid var(--q-border); border-radius: 12px; padding: 14px 16px; }
+.adm-card h4 { margin: 0 0 6px; font-size: .8rem; color: var(--q-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.adm-big { font-size: 1.6rem; font-weight: 800; color: var(--q-text-primary); }
+.adm-sub { font-size: .75rem; color: var(--q-text-muted); }
+.adm-muted { color: var(--q-text-secondary); font-size: .85rem; }
+.adm-section { margin: 22px 0 10px; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.adm-input, select.adm-input, textarea.adm-input {
+  width: 100%; box-sizing: border-box; padding: 9px 12px; background: var(--q-bg-input); color: var(--q-text-primary);
+  border: 1px solid var(--q-border); border-radius: 8px; font: inherit; font-size: .85rem;
+  &:focus { outline: none; border-color: var(--q-accent); }
+}
+.adm-input.inline { width: auto; min-width: 140px; }
+.adm-label { display: block; margin: 12px 0 4px; font-size: .75rem; font-weight: 600; color: var(--q-text-secondary); }
+.adm-btn {
+  padding: 8px 14px; border-radius: 8px; border: 1px solid var(--q-border); background: var(--q-bg-elevated);
+  color: var(--q-text-primary); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer;
+  &:hover:not(:disabled) { background: var(--q-bg-card-hover); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &.primary { background: var(--q-accent); border-color: var(--q-accent); color: #fff; }
+  &.success { background: var(--q-success); border-color: var(--q-success); color: #fff; }
+  &.danger { background: var(--q-danger); border-color: var(--q-danger); color: #fff; }
+  &.warn { background: var(--q-warning); border-color: var(--q-warning); color: #111; }
+  &.sm { padding: 4px 9px; font-size: .74rem; }
+}
+.adm-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .68rem; font-weight: 700; background: var(--q-bg-elevated); color: var(--q-text-secondary);
+  &.ok { background: var(--q-success-subtle); color: var(--q-success); }
+  &.warn { background: var(--q-warning-subtle); color: var(--q-warning); }
+  &.bad { background: var(--q-danger-subtle); color: var(--q-danger); }
+  &.info { background: var(--q-info-subtle); color: var(--q-info); }
+}
+.adm-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--q-border); margin-bottom: 16px; }
+.adm-tab { padding: 9px 14px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--q-text-muted); font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer;
+  &.active { color: var(--q-accent); border-bottom-color: var(--q-accent); }
+  .adm-count { margin-left: 6px; background: var(--q-danger); color: #fff; border-radius: 999px; padding: 0 6px; font-size: .65rem; }
+}
+.adm-table-wrap { overflow-x: auto; background: var(--q-bg-card); border: 1px solid var(--q-border); border-radius: 12px; }
+table.adm-table { width: 100%; border-collapse: collapse; font-size: .82rem;
+  th { text-align: left; padding: 10px 12px; color: var(--q-text-muted); font-weight: 600; font-size: .72rem; text-transform: uppercase; border-bottom: 1px solid var(--q-border); white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--q-border-light); vertical-align: middle; }
+  tr.clickable { cursor: pointer; &:hover { background: var(--q-bg-card-hover); } }
+}
+.adm-empty { padding: 36px; text-align: center; color: var(--q-text-muted); }
+.adm-error { margin-top: 10px; padding: 8px 10px; background: var(--q-danger-subtle); color: var(--q-danger); border-radius: 8px; font-size: .8rem; }
+.adm-pager { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 16px 0; font-size: .82rem; color: var(--q-text-secondary); }
+.adm-overlay { position: fixed; inset: 0; background: var(--q-bg-overlay); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.adm-modal { width: 100%; max-width: 480px; max-height: 90vh; overflow: auto; background: var(--q-bg-secondary); border: 1px solid var(--q-border); border-radius: 14px; padding: 20px; h3 { margin: 0 0 8px; } }
+.adm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.adm-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); background: var(--q-bg-secondary); border-left: 1px solid var(--q-border); z-index: 900; overflow-y: auto; padding: 18px 20px 40px; box-shadow: -8px 0 30px rgba(0,0,0,.4); }
+.adm-drawer-close { float: right; }
+.adm-kv { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; font-size: .82rem; dt { color: var(--q-text-muted); } dd { margin: 0; word-break: break-word; } }
+.adm-media { display: flex; gap: 10px; flex-wrap: wrap; }
+.adm-media figure { margin: 0; width: 120px; img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid var(--q-border); display: block; } figcaption { display: flex; gap: 4px; margin-top: 4px; } }
+video.adm-video { width: 100%; max-height: 420px; background: #000; border-radius: 10px; }
+.adm-list-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid var(--q-border-light); &:last-child { border-bottom: none; } }
+.adm-timeline { font-size: .78rem; color: var(--q-text-secondary); li { padding: 4px 0; border-bottom: 1px dashed var(--q-border-light); } ul { list-style: none; padding: 0; margin: 0; } }
+.adm-bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; .bar { flex: 1; background: var(--q-accent); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85; } }
+.adm-inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; > * { flex: 1; min-width: 140px; } }
+.adm-warn-box { padding: 10px 12px; background: var(--q-warning-subtle); color: var(--q-warning); border-radius: 8px; font-size: .8rem; margin: 10px 0; }
+@media (max-width: 640px) { .adm-kv { grid-template-columns: 1fr; } }

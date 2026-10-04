@@ -138,7 +138,12 @@ class AuthController extends Controller
 
         // Revoke old tokens & create new one
         $user->tokens()->delete();
-        $token = $user->createToken('quinch-app')->plainTextToken;
+        // Le staff (modérateur / admin / super admin) reçoit un jeton de durée courte.
+        $token = $user->createToken(
+            'quinch-app',
+            ['*'],
+            $user->isStaff() ? now()->addHours((int) config('quinch.staff_token_hours', 8)) : null
+        )->plainTextToken;
 
         // Welcome notification on first login (no previous tokens = first time)
         app(NotificationService::class)->notifyWelcome($user);
@@ -401,7 +406,11 @@ class AuthController extends Controller
     {
         $user = $request->user();
         $user->currentAccessToken()->delete();
-        $token = $user->createToken('quinch-app')->plainTextToken;
+        $token = $user->createToken(
+            'quinch-app',
+            ['*'],
+            $user->isStaff() ? now()->addHours((int) config('quinch.staff_token_hours', 8)) : null
+        )->plainTextToken;
 
         return response()->json([
             'token' => $token,

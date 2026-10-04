@@ -15,6 +15,19 @@ return Application::configure(basePath: dirname(__DIR__))
 ->withMiddleware(function (Middleware $middleware): void {
     $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+    // Proxys de confiance (nginx, load balancer, Cloudflare...). SANS ceci,
+    // $request->ip() renvoie l'IP du proxy : le bannissement d'IP et les
+    // limiteurs de débit par IP s'appliqueraient à TOUT le monde d'un coup.
+    // .env : TRUSTED_PROXIES=*  (derrière un LB dont l'IP change)
+    //     ou TRUSTED_PROXIES=10.0.0.5,10.0.0.6  (IP précises, plus sûr)
+    // Non défini = aucun proxy de confiance (comportement précédent).
+    $trustedProxies = env('TRUSTED_PROXIES');
+    if (is_string($trustedProxies) && trim($trustedProxies) !== '') {
+        $middleware->trustProxies(
+            at: trim($trustedProxies) === '*' ? '*' : array_map('trim', explode(',', $trustedProxies))
+        );
+    }
+
 
     // Limiteur global de l'API (défini dans AppServiceProvider). En production
     // CACHE_STORE doit être redis, sinon chaque requête écrit en base.
@@ -28,8 +41,13 @@ return Application::configure(basePath: dirname(__DIR__))
     // appel API authentifié.
     $middleware->appendToGroup('api', \App\Http\Middleware\TouchLastSeen::class);
 
+    // Mode maintenance piloté depuis l'admin (réglage maintenance.enabled).
+    $middleware->appendToGroup('api', \App\Http\Middleware\MaintenanceMode::class);
+
     $middleware->alias([
         'role' => \App\Http\Middleware\CheckRole::class,
+        'permission' => \App\Http\Middleware\CheckPermission::class,
+        'sensitive' => \App\Http\Middleware\RequirePasswordConfirmation::class,
         'fraud.check' => \App\Http\Middleware\FraudDetection::class,
         'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
         'phone.verified' => \App\Http\Middleware\EnsurePhoneVerified::class,

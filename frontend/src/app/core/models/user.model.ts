@@ -30,7 +30,7 @@ export interface User {
     pickup_available: boolean;
     negotiable_by_default: boolean;
   } | null;
-  role: 'user' | 'admin' | 'super_admin'; // 'user' = client, 'admin'/'super_admin' = admin
+  role: 'user' | 'moderator' | 'admin' | 'super_admin'; // 'user' = client, le reste = staff
   phone_verified: boolean;
   onboarding_completed: boolean;
   preferences?: UserPreferences;

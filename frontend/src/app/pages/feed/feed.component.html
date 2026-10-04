@@ -17,61 +17,35 @@
 <!-- Place cette partie juste après </div> de .feed-topbar
      et juste avant <div class="feed-layout"> -->
 
+<!-- Bannière : pilotée par l'admin (Réglages > Bannières). Sans bannière active, l'image d'origine reste affichée. -->
 <section class="quinch-hero" aria-label="Message QUINCH">
-  <!-- Place l'image fournie dans : src/assets/quinch-banner.png -->
-  <img
-    src="assets/quinch-banner.png"
-    alt="QUINCH — Ton opportunité, ici !"
-  />
+  @if (currentBanner(); as b) {
+    @if (b.link_url) {
+      <a [href]="b.link_url" target="_blank" rel="noopener"><img [src]="b.image_url" [alt]="b.title" /></a>
+    } @else {
+      <img [src]="b.image_url" [alt]="b.title" />
+    }
+  } @else {
+    <img src="assets/quinch-banner.png" alt="QUINCH — Ton opportunité, ici !" />
+  }
   <span class="quinch-hero-glow" aria-hidden="true"></span>
 </section>
 
-<!-- ═══════ MESSAGE DÉFILANT — STYLE JOURNAL TÉLÉVISÉ ═══════ -->
+<!-- Message défilant : libellé et messages pilotés par l'admin (Réglages > Feed). -->
+@if (tickerEnabled()) {
 <div class="news-ticker" aria-label="Informations QUINCH">
-  <div class="news-ticker-label">QUINCH • INFO</div>
+  <div class="news-ticker-label">{{ tickerLabel() }}</div>
 
   <div class="news-ticker-track">
-    <!-- Bloc 1 -->
-    <div class="news-ticker-msg">
-      Ne te sous-estime jamais : ton talent peut devenir une opportunité sur QUINCH.
-    </div>
-    <div class="news-ticker-msg">
-      Achète avec confiance : découvre des produits utiles, proposés par des vendeurs de la communauté.
-    </div>
-    <div class="news-ticker-msg">
-      Vends ce que tu sais faire : une idée, un produit ou un talent peut trouver son public.
-    </div>
-    <div class="news-ticker-msg">
-      Tu proposes un service ? Présente ton savoir-faire et développe ton activité avec QUINCH.
-    </div>
-    <div class="news-ticker-msg">
-      Chaque annonce est une nouvelle chance de te faire connaître, de créer des contacts et d'avancer.
-    </div>
-    <div class="news-ticker-msg">
-      Crois en ton potentiel : QUINCH est là pour t'aider à transformer tes idées en opportunités.
-    </div>
-
-    <!-- Bloc 2 : duplication nécessaire pour une boucle continue -->
-    <div class="news-ticker-msg">
-      Ne te sous-estime jamais : ton talent peut devenir une opportunité sur QUINCH.
-    </div>
-    <div class="news-ticker-msg">
-      Achète avec confiance : découvre des produits utiles, proposés par des vendeurs de la communauté.
-    </div>
-    <div class="news-ticker-msg">
-      Vends ce que tu sais faire : une idée, un produit ou un talent peut trouver son public.
-    </div>
-    <div class="news-ticker-msg">
-      Tu proposes un service ? Présente ton savoir-faire et développe ton activité avec QUINCH.
-    </div>
-    <div class="news-ticker-msg">
-      Chaque annonce est une nouvelle chance de te faire connaître, de créer des contacts et d'avancer.
-    </div>
-    <div class="news-ticker-msg">
-      Crois en ton potentiel : QUINCH est là pour t'aider à transformer tes idées en opportunités.
-    </div>
+    @for (msg of tickerMessages(); track $index) {
+      <div class="news-ticker-msg">{{ msg }}</div>
+    }
+    @for (msg of tickerMessages(); track $index) {
+      <div class="news-ticker-msg" aria-hidden="true">{{ msg }}</div>
+    }
   </div>
 </div>
+}
 
   <div class="feed-layout">
     <!-- ═══════ SIDEBAR FILTRES (desktop uniquement, voir CSS) ═══════ -->

@@ -50,8 +50,10 @@ class ProductFeedController extends Controller
 
 
         if (!$request->has('q') || empty($request->q)) {
+            // Publication immédiate, modération après : une vidéo « pending » est visible ;
+            // seules les vidéos rejetées ou mises en vérification sont exclues.
             $query->whereHas('video', function ($sub) {
-                $sub->where('moderation_status', 'approved');
+                $sub->whereNotIn('moderation_status', ['rejected', 'flagged']);
             });
         }
 
@@ -236,7 +238,7 @@ class ProductFeedController extends Controller
             ->where(function ($q) {
                 $q->whereNotNull('poster_url')
                   ->orWhereHas('video', function ($sub) {
-                      $sub->where('moderation_status', 'approved');
+                      $sub->whereNotIn('moderation_status', ['rejected', 'flagged']);
                   })
                   ->orWhere(function ($sub) {
                       $sub->whereNotNull('images')->whereRaw("images::jsonb != '[]'::jsonb");

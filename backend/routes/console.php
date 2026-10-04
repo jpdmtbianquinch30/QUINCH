@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Schedule;
 use App\Jobs\ExpirePremiumSubscriptions;
 use App\Jobs\CleanupAbandonedDraftListings;
 use App\Jobs\RecalculateTrustScores;
+use App\Jobs\LiftExpiredSuspensions;
+use App\Jobs\RunFraudScan;
+use App\Jobs\PurgeExpiredAdminData;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -18,3 +21,11 @@ Schedule::job(new ReleaseExpiredReservations)->everyMinute()->withoutOverlapping
 Schedule::job(new ExpirePremiumSubscriptions)->daily()->withoutOverlapping()->onOneServer();
 Schedule::job(new CleanupAbandonedDraftListings)->hourly()->withoutOverlapping()->onOneServer();
 Schedule::job(new RecalculateTrustScores)->daily()->withoutOverlapping()->onOneServer();
+
+// ─── Admin / modération ───────────────────────────────────────────────────
+// Levée automatique des suspensions arrivées à échéance.
+Schedule::job(new LiftExpiredSuspensions)->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+// Détection de fraude (paiements échoués, multi-comptes, vendeurs signalés).
+Schedule::job(new RunFraudScan)->hourly()->withoutOverlapping()->onOneServer();
+// Ménage : bans d'IP expirés, vieux journaux techniques.
+Schedule::job(new PurgeExpiredAdminData)->daily()->withoutOverlapping()->onOneServer();

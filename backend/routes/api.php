@@ -28,6 +28,13 @@ use App\Http\Controllers\Api\V1\VideoStreamController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\GoogleAuthController;
 use App\Http\Controllers\Api\V1\PremiumController;
+use App\Http\Controllers\Api\V1\AdminProductController;
+use App\Http\Controllers\Api\V1\AdminTransactionController;
+use App\Http\Controllers\Api\V1\AdminSettingsController;
+use App\Http\Controllers\Api\V1\AdminStaffController;
+use App\Http\Controllers\Api\V1\AdminPremiumController;
+use App\Http\Controllers\Api\V1\AdminReviewController;
+use App\Http\Controllers\Api\V1\ModerationAppealController;
 /*
 |--------------------------------------------------------------------------
 | QUINCH API Routes v1 - Complete Architecture
@@ -62,12 +69,14 @@ Route::prefix('auth')->group(function () {
 
 // ─── Video Streaming (public — no auth required) ────────────────────────────
 Route::get('videos/{videoId}/stream', [VideoStreamController::class, 'stream'])
-    ->where('videoId', '[a-f0-9\-]{36}');
+    ->where('videoId', '[a-f0-9\-]{36}')->name('videos.stream');
 Route::get('videos/{videoId}/thumbnail', [VideoStreamController::class, 'thumbnail'])
-    ->where('videoId', '[a-f0-9\-]{36}');
+    ->where('videoId', '[a-f0-9\-]{36}')->name('videos.thumbnail');
 Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath']);
 
 // ─── Public ──────────────────────────────────────────────────────────────────
+// Bannières, message défilant et mode maintenance pilotés depuis l'admin.
+Route::get('feed/config', [AdminSettingsController::class, 'publicFeedConfig']);
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('products', [MarketplaceController::class, 'index']);
 Route::get('products/feed', [ProductFeedController::class, 'index']);
@@ -138,6 +147,10 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
     Route::post('users/{user}/block', [UserController::class, 'blockUser']);
     Route::post('users/{user}/unblock', [UserController::class, 'unblockUser']);
     Route::get('users/export-data', [UserController::class, 'exportData']);
+
+    // Contester un retrait de vidéo / d'annonce
+    Route::get('moderation/appeals/mine', [ModerationAppealController::class, 'mine']);
+    Route::post('moderation/appeals', [ModerationAppealController::class, 'store'])->middleware('throttle:5,1');
 
     // Support
     Route::post('support/report', [UserController::class, 'reportProblem']);
@@ -270,64 +283,132 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
 });
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
+// Accès : moderator, admin, super_admin. Chaque route déclare la permission
+// FINE requise (config/permissions.php). Les actions destructrices ou
+// sensibles exigent en plus le mot de passe de l'admin (middleware `sensitive` :
+// champ `admin_password` ou en-tête X-Admin-Password).
 Route::prefix('admin')
-    ->middleware(['auth:sanctum', 'role:admin,super_admin'])
+    ->middleware(['auth:sanctum', 'role:moderator,admin,super_admin'])
     ->group(function () {
+        Route::get('me', [AdminController::class, 'me']);
+
         // Dashboard
         Route::get('dashboard/metrics', [AdminController::class, 'metrics']);
         Route::get('dashboard/real-time', [AdminController::class, 'realTime']);
 
-        // Users
-        Route::get('users', [AdminUserController::class, 'index']);
-        Route::get('users/{user}', [AdminUserController::class, 'show']);
-        Route::post('users/{user}/suspend', [AdminUserController::class, 'suspend']);
-        Route::post('users/{user}/activate', [AdminUserController::class, 'activate']);
-        Route::post('users/{user}/verify-kyc', [AdminUserController::class, 'verifyKyc']);
-        Route::post('users/{user}/adjust-trust', [AdminUserController::class, 'adjustTrust']);
-        Route::post('users/{user}/send-notification', [AdminUserController::class, 'sendNotification']);
-        Route::delete('users/{user}', [AdminUserController::class, 'destroy']);
-        Route::post('users/{user}/ban', [AdminUserController::class, 'ban']);
+        // Boîte unique « À traiter »
+        Route::get('inbox', [ContentModerationController::class, 'inbox'])->middleware('permission:reports.handle');
+
+        // ── Utilisateurs ──
+        Route::get('users', [AdminUserController::class, 'index'])->middleware('permission:users.view');
+        Route::get('users/{user}', [AdminUserController::class, 'show'])->middleware('permission:users.view');
+        Route::post('users/{user}/suspend', [AdminUserController::class, 'suspend'])->middleware('permission:users.suspend,users.suspend_short');
+        Route::post('users/{user}/activate', [AdminUserController::class, 'activate'])->middleware('permission:users.suspend,users.suspend_short');
+        Route::post('users/{user}/warn', [AdminUserController::class, 'warn'])->middleware('permission:users.warn');
+        Route::delete('users/{user}/strikes/{strike}', [AdminUserController::class, 'revokeStrike'])->middleware('permission:users.warn');
+        Route::post('users/{user}/ban', [AdminUserController::class, 'ban'])->middleware(['permission:users.ban', 'sensitive']);
+        Route::post('users/{user}/unban', [AdminUserController::class, 'unban'])->middleware(['permission:users.ban', 'sensitive']);
+        Route::post('users/{user}/verify-kyc', [AdminUserController::class, 'verifyKyc'])->middleware('permission:users.kyc');
+        Route::post('users/{user}/adjust-trust', [AdminUserController::class, 'adjustTrust'])->middleware('permission:users.trust');
+        Route::post('users/{user}/send-notification', [AdminUserController::class, 'sendNotification'])->middleware('permission:users.notify');
+        Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->middleware(['permission:users.delete', 'sensitive']);
+        Route::post('users/{user}/delete', [AdminUserController::class, 'destroy'])->middleware(['permission:users.delete', 'sensitive']);
+        Route::post('users/{user}/export', [AdminUserController::class, 'export'])->middleware(['permission:users.export', 'sensitive']);
+        Route::post('users/{user}/role', [AdminStaffController::class, 'setRole'])->middleware(['permission:staff.manage', 'sensitive']);
+        Route::post('users/{user}/premium/grant', [AdminPremiumController::class, 'grant'])->middleware('permission:premium.manage');
+        Route::post('users/{user}/premium/revoke', [AdminPremiumController::class, 'revoke'])->middleware('permission:premium.manage');
 
         // Badges (admin)
-        Route::post('users/{user}/badges', [BadgeController::class, 'award']);
-        Route::delete('users/{user}/badges/{badgeType}', [BadgeController::class, 'revoke']);
+        Route::post('users/{user}/badges', [BadgeController::class, 'award'])->middleware('permission:users.badges');
+        Route::delete('users/{user}/badges/{badgeType}', [BadgeController::class, 'revoke'])->middleware('permission:users.badges');
 
-        // Categories management
-        Route::post('categories', [CategoryController::class, 'store']);
-        Route::put('categories/{category}', [CategoryController::class, 'update']);
-        Route::delete('categories/{category}', [CategoryController::class, 'destroy']);
+        // Équipe
+        Route::get('staff', [AdminStaffController::class, 'index'])->middleware('permission:staff.manage');
 
-        // Moderation
-        Route::get('moderation/pending', [ContentModerationController::class, 'pending']);
-        Route::post('moderation/bulk-action', [ContentModerationController::class, 'bulkAction']);
+        // ── Produits ──
+        Route::get('products', [AdminProductController::class, 'index'])->middleware('permission:products.view');
+        Route::post('products/bulk', [AdminProductController::class, 'bulk'])->middleware('permission:products.moderate');
+        Route::get('products/{product}', [AdminProductController::class, 'show'])->middleware('permission:products.view');
+        Route::post('products/{product}/hide', [AdminProductController::class, 'hide'])->middleware('permission:products.moderate');
+        Route::post('products/{product}/restore', [AdminProductController::class, 'restore'])->middleware('permission:products.moderate');
+        Route::post('products/{product}/delete', [AdminProductController::class, 'destroy'])->middleware('permission:products.moderate');
+        Route::put('products/{product}', [AdminProductController::class, 'update'])->middleware('permission:products.edit_content');
+        Route::post('products/{product}/force-status', [AdminProductController::class, 'forceStatus'])->middleware('permission:products.force_status');
+        Route::post('products/{product}/pin', [AdminProductController::class, 'pin'])->middleware('permission:products.pin');
+        Route::post('products/{product}/media/remove', [AdminProductController::class, 'removeImage'])->middleware('permission:media.remove');
+        Route::post('products/{product}/media/replace', [AdminProductController::class, 'replaceImage'])->middleware('permission:media.remove');
+        Route::post('products/{product}/video/remove', [AdminProductController::class, 'removeVideo'])->middleware('permission:media.remove');
 
-        // Signalements produits/utilisateurs — jusqu'ici enregistrés (ou pas,
-        // a cause d'un bug) mais jamais consultables par l'admin.
-        Route::get('reports/products', [ContentModerationController::class, 'productReports']);
-        Route::post('reports/products/{report}/resolve', [ContentModerationController::class, 'resolveProductReport']);
-        Route::get('reports/reported-users', [ContentModerationController::class, 'userReports']);
-        Route::post('reports/reported-users/{report}/resolve', [ContentModerationController::class, 'resolveUserReport']);
-        Route::get('reports/support-tickets', [ContentModerationController::class, 'supportTickets']);
-        Route::post('reports/support-tickets/{ticket}/resolve', [ContentModerationController::class, 'resolveSupportTicket']);
-        Route::post('videos/{video}/moderate', [ContentModerationController::class, 'moderate']);
+        // ── Catégories ──
+        Route::get('categories', [CategoryController::class, 'adminIndex'])->middleware('permission:categories.manage');
+        Route::post('categories/reorder', [CategoryController::class, 'reorder'])->middleware('permission:categories.manage');
+        Route::post('categories', [CategoryController::class, 'store'])->middleware('permission:categories.manage');
+        Route::put('categories/{category}', [CategoryController::class, 'update'])->middleware('permission:categories.manage');
+        Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->middleware('permission:categories.manage');
 
-        // Security
-        Route::get('security/alerts', [SecurityController::class, 'alerts']);
-        Route::get('security/logs', [SecurityController::class, 'logs']);
-        Route::post('security/ip-ban', [SecurityController::class, 'banIp']);
-        Route::get('security/banned-ips', [SecurityController::class, 'bannedIps']);
-        Route::delete('security/banned-ips/{bannedIp}', [SecurityController::class, 'unbanIp']);
+        // ── Modération vidéo + contestations ──
+        Route::get('moderation/pending', [ContentModerationController::class, 'pending'])->middleware('permission:videos.moderate');
+        Route::get('moderation/reasons', [ContentModerationController::class, 'reasons'])->middleware('permission:videos.moderate');
+        Route::post('moderation/bulk-action', [ContentModerationController::class, 'bulkAction'])->middleware('permission:videos.moderate');
+        Route::post('videos/{video}/moderate', [ContentModerationController::class, 'moderate'])->middleware('permission:videos.moderate');
+        Route::get('moderation/appeals', [ContentModerationController::class, 'appeals'])->middleware('permission:appeals.handle');
+        Route::post('moderation/appeals/{appeal}/handle', [ContentModerationController::class, 'handleAppeal'])->middleware('permission:appeals.handle');
 
-        // Reports
-        Route::get('reports/transactions', [AdminController::class, 'transactionReport']);
-        Route::get('reports/fraud', [AdminController::class, 'fraudReport']);
-        Route::post('reports/fraud/{fraudDetection}/resolve', [AdminController::class, 'resolveFraud']);
-        Route::get('reports/users', [AdminController::class, 'userReport']);
-        Route::get('reports/overview', [AdminController::class, 'overviewReport']);
+        // ── Signalements, tickets ──
+        Route::get('reports/products', [ContentModerationController::class, 'productReports'])->middleware('permission:reports.handle');
+        Route::post('reports/products/{report}/resolve', [ContentModerationController::class, 'resolveProductReport'])->middleware('permission:reports.handle');
+        Route::get('reports/reported-users', [ContentModerationController::class, 'userReports'])->middleware('permission:reports.handle');
+        Route::post('reports/reported-users/{report}/resolve', [ContentModerationController::class, 'resolveUserReport'])->middleware('permission:reports.handle');
+        Route::get('reports/support-tickets', [ContentModerationController::class, 'supportTickets'])->middleware('permission:reports.handle');
+        Route::post('reports/support-tickets/{ticket}/resolve', [ContentModerationController::class, 'resolveSupportTicket'])->middleware('permission:reports.handle');
+        Route::post('reports/assign/{type}/{id}', [ContentModerationController::class, 'assign'])->middleware('permission:reports.handle');
 
-        // System — reset/delete-all-videos déplacés en commandes Artisan
-        // (quinch:reset-data / quinch:delete-all-videos), volontairement non
-        // exposés en HTTP même sous rôle admin (action destructrice).
+        // ── Fraude ──
+        Route::get('reports/fraud', [AdminController::class, 'fraudReport'])->middleware('permission:fraud.handle');
+        Route::post('reports/fraud/scan', [AdminController::class, 'runFraudScan'])->middleware('permission:fraud.handle');
+        Route::post('reports/fraud/{fraudDetection}/resolve', [AdminController::class, 'resolveFraud'])->middleware('permission:fraud.handle');
+
+        // ── Transactions, litiges, finance ──
+        Route::get('transactions', [AdminTransactionController::class, 'index'])->middleware('permission:finance.view');
+        Route::get('transactions/export', [AdminTransactionController::class, 'export'])->middleware('permission:finance.view');
+        Route::get('transactions/{transaction}', [AdminTransactionController::class, 'show'])->middleware('permission:finance.view');
+        Route::get('transactions/{transaction}/conversation', [AdminTransactionController::class, 'conversation'])->middleware('permission:disputes.resolve');
+        Route::post('transactions/{transaction}/resolve-dispute', [AdminTransactionController::class, 'resolveDispute'])->middleware(['permission:disputes.resolve', 'sensitive']);
+        Route::get('reports/transactions', [AdminController::class, 'transactionReport'])->middleware('permission:finance.view');
+        Route::get('reports/finance', [AdminController::class, 'financeReport'])->middleware('permission:finance.view');
+        Route::get('reports/users', [AdminController::class, 'userReport'])->middleware('permission:audit.view');
+        Route::get('reports/overview', [AdminController::class, 'overviewReport'])->middleware('permission:audit.view');
+
+        // ── Premium, avis ──
+        Route::get('premium', [AdminPremiumController::class, 'index'])->middleware('permission:premium.manage');
+        Route::get('reviews', [AdminReviewController::class, 'index'])->middleware('permission:reviews.moderate');
+        Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.moderate');
+        Route::post('reviews/{review}/delete', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.moderate');
+
+        // ── Sécurité & journaux ──
+        Route::get('security/alerts', [SecurityController::class, 'alerts'])->middleware('permission:fraud.handle');
+        Route::get('security/logs', [SecurityController::class, 'logs'])->middleware('permission:audit.view');
+        Route::get('security/admin-logs', [SecurityController::class, 'adminLogs'])->middleware('permission:audit.view');
+        Route::get('security/admin-logs/export', [SecurityController::class, 'exportAdminLogs'])->middleware('permission:audit.view');
+        Route::post('security/ip-ban', [SecurityController::class, 'banIp'])->middleware(['permission:security.ip_ban', 'sensitive']);
+        Route::get('security/banned-ips', [SecurityController::class, 'bannedIps'])->middleware('permission:security.ip_ban');
+        Route::delete('security/banned-ips/{bannedIp}', [SecurityController::class, 'unbanIp'])->middleware(['permission:security.ip_ban', 'sensitive']);
+        Route::post('security/banned-ips/{bannedIp}/remove', [SecurityController::class, 'unbanIp'])->middleware(['permission:security.ip_ban', 'sensitive']);
+
+        // ── Réglages, bannières du feed, notifications de masse ──
+        Route::get('settings', [AdminSettingsController::class, 'index']);
+        Route::put('settings', [AdminSettingsController::class, 'update'])->middleware('permission:feed.manage,notifications.broadcast');
+        Route::put('settings/system', [AdminSettingsController::class, 'updateSystem'])->middleware(['permission:settings.manage', 'sensitive']);
+        Route::get('feed/banners', [AdminSettingsController::class, 'banners'])->middleware('permission:feed.manage');
+        Route::post('feed/banners', [AdminSettingsController::class, 'storeBanner'])->middleware('permission:feed.manage');
+        Route::post('feed/banners/{banner}', [AdminSettingsController::class, 'updateBanner'])->middleware('permission:feed.manage');
+        Route::delete('feed/banners/{banner}', [AdminSettingsController::class, 'destroyBanner'])->middleware('permission:feed.manage');
+        Route::post('notifications/broadcast/count', [AdminSettingsController::class, 'countAudience'])->middleware('permission:notifications.broadcast');
+        Route::post('notifications/broadcast', [AdminSettingsController::class, 'broadcast'])->middleware(['permission:notifications.broadcast', 'sensitive']);
+        Route::get('notifications/broadcast-history', [AdminSettingsController::class, 'broadcastHistory'])->middleware('permission:notifications.broadcast');
+
+        // System — reset/delete-all-videos : commandes Artisan uniquement
+        // (quinch:reset-data / quinch:delete-all-videos), jamais en HTTP.
     });
 
 // ─── Webhooks ────────────────────────────────────────────────────────────────

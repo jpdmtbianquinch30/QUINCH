@@ -89,6 +89,9 @@ class User extends Authenticatable
             'latitude' => 'float',
             'longitude' => 'float',
             'last_seen_at' => 'datetime',
+            'suspended_until' => 'datetime',
+            'anonymized_at' => 'datetime',
+            'false_reports_count' => 'integer',
     ];
 }
 
@@ -138,6 +141,11 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
     public function badges(): HasMany
     {
         return $this->hasMany(UserBadge::class);
+    }
+
+    public function strikes(): HasMany
+    {
+        return $this->hasMany(UserStrike::class);
     }
 
     public function premiumSubscriptions(): HasMany
@@ -230,9 +238,52 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
         return $this->role === 'super_admin';
     }
 
+    /**
+     * Suspendu = statut 'suspended' ET (pas de date de fin OU date de fin future).
+     * Une suspension arrivée à échéance cesse donc de bloquer immédiatement ;
+     * le job LiftExpiredSuspensions remet ensuite le statut à 'active' en base.
+     */
     public function isSuspended(): bool
     {
-        return $this->account_status === 'suspended';
+        if ($this->account_status !== 'suspended') {
+            return false;
+        }
+
+        return $this->suspended_until === null || $this->suspended_until->isFuture();
+    }
+
+    // ─── Staff : rôles & permissions (config/permissions.php) ──────────
+    public function roleLevel(): int
+    {
+        return (int) (config('permissions.levels')[$this->role] ?? 0);
+    }
+
+    /** moderator, admin ou super_admin : accès au panneau d'administration. */
+    public function isStaff(): bool
+    {
+        return $this->roleLevel() >= 1;
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        $granted = config('permissions.roles')[$this->role] ?? [];
+
+        return in_array('*', $granted, true) || in_array($permission, $granted, true);
+    }
+
+    /**
+     * Hiérarchie : on ne peut agir que sur un rôle STRICTEMENT inférieur au
+     * sien, jamais sur soi-même (un admin ne touche pas à un autre admin,
+     * personne ne touche à un super_admin).
+     */
+    public function canManage(User $target): bool
+    {
+        return $this->id !== $target->id && $this->roleLevel() > $target->roleLevel();
+    }
+
+    public function scopeStaff($query)
+    {
+        return $query->whereIn('role', ['moderator', 'admin', 'super_admin']);
     }
 
     public function isBanned(): bool

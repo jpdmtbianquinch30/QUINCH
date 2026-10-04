@@ -2,215 +2,193 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\AdminHelpers;
 use App\Http\Controllers\Controller;
-use App\Models\AdminActionLog;
-use App\Models\AuditLog;
 use App\Models\FraudDetection;
-use App\Models\Product;
-use App\Models\ProductReport;
-use App\Models\ProductVideo;
 use App\Models\Transaction;
-use App\Models\User;
-use App\Models\UserBadge;
-use App\Models\UserFollow;
-use App\Models\UserReview;
+use App\Services\Admin\AdminLogger;
+use App\Services\Admin\AdminStatsService;
+use App\Services\Admin\FraudScanService;
+use App\Services\Admin\SanctionService;
+use App\Services\Admin\StrikeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
-    public function metrics(): JsonResponse
+    use AdminHelpers;
+
+    public function __construct(
+        private AdminStatsService $stats,
+        private SanctionService $sanctions,
+        private StrikeService $strikes,
+        private FraudScanService $fraudScan
+    ) {}
+
+    /** Identité + permissions du staff connecté : le front masque ce qui n'est pas permis. */
+    public function me(Request $request): JsonResponse
     {
-        $todayStart = now()->startOfDay();
-        $weekStart = now()->startOfWeek();
-        $monthStart = now()->startOfMonth();
+        $user = $request->user();
+        $granted = config('permissions.roles')[$user->role] ?? [];
+        $permissions = in_array('*', $granted, true) ? config('permissions.all') : $granted;
 
         return response()->json([
-            'users' => [
-                'total' => User::count(),
-                'active' => User::active()->count(),
-                'clients' => User::clients()->count(),
-                'admins' => User::admins()->count(),
-                'verified' => User::verified()->count(),
-                'new_today' => User::where('created_at', '>=', $todayStart)->count(),
-                'new_this_week' => User::where('created_at', '>=', $weekStart)->count(),
-                'new_this_month' => User::where('created_at', '>=', $monthStart)->count(),
-                'suspended' => User::where('account_status', 'suspended')->count(),
+            'user' => [
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'username' => $user->username,
+                'avatar_url' => $user->avatar_url,
             ],
-            'products' => [
-                'total' => Product::count(),
-                'active' => Product::active()->count(),
-                'sold' => Product::where('status', 'sold')->count(),
-                'new_today' => Product::where('created_at', '>=', $todayStart)->count(),
-            ],
-            'transactions' => [
-                'total' => Transaction::count(),
-                'completed' => Transaction::completed()->count(),
-                'pending' => Transaction::pending()->count(),
-                'disputed' => Transaction::where('security_check', 'manual_review')->count(),
-                'revenue' => Transaction::completed()->sum('amount'),
-                'total_fees' => Transaction::completed()->sum('transaction_fee'),
-                'today_volume' => Transaction::completed()->where('created_at', '>=', $todayStart)->sum('amount'),
-                'today_count' => Transaction::where('created_at', '>=', $todayStart)->count(),
-                'week_volume' => Transaction::completed()->where('created_at', '>=', $weekStart)->sum('amount'),
-                'month_volume' => Transaction::completed()->where('created_at', '>=', $monthStart)->sum('amount'),
-                'avg_basket' => Transaction::completed()->avg('amount') ?? 0,
-                'success_rate' => Transaction::count() > 0
-                    ? round(Transaction::completed()->count() / Transaction::count() * 100, 1)
-                    : 0,
-            ],
-            'moderation' => [
-                'pending_videos' => ProductVideo::pending()->count(),
-                'flagged_videos' => ProductVideo::where('moderation_status', 'flagged')->count(),
-                'reports' => ProductReport::where('status', 'pending')->count(),
-            ],
-            'security' => [
-                'fraud_alerts' => FraudDetection::pendingReview()->count(),
-                'suspicious_users' => User::whereNotNull('last_suspicious_activity')
-                    ->where('last_suspicious_activity', '>=', now()->subDays(7))
-                    ->count(),
-            ],
-            'social' => [
-                'total_reviews' => UserReview::count(),
-                'total_badges' => UserBadge::count(),
-                'total_follows' => UserFollow::count(),
-            ],
+            'role' => $user->role,
+            'level' => $user->roleLevel(),
+            'permissions' => array_values($permissions),
+            'moderator_max_suspension_days' => (int) config('permissions.moderator_max_suspension_days', 7),
         ]);
     }
 
-    public function realTime(): JsonResponse
+    public function metrics(Request $request): JsonResponse
     {
-        return response()->json([
-            'active_users' => User::where('updated_at', '>=', now()->subMinutes(5))->count(),
-            'transactions_per_minute' => Transaction::where('created_at', '>=', now()->subMinute())->count(),
-            'transactions_today' => Transaction::whereDate('created_at', today())->count(),
-            'revenue_today' => Transaction::completed()->whereDate('created_at', today())->sum('amount'),
-            'pending_moderations' => ProductVideo::pending()->count(),
-            'fraud_alerts' => FraudDetection::pendingReview()->count(),
-            'pending_reports' => ProductReport::where('status', 'pending')->count(),
-            'system_health' => 100,
-            'timestamp' => now(),
-        ]);
+        $metrics = $this->stats->metrics();
+
+        // Un modérateur ne voit pas les chiffres financiers.
+        if (!$request->user()->hasPermission('finance.view')) {
+            foreach (['revenue', 'total_fees', 'today_volume', 'week_volume', 'month_volume', 'avg_basket'] as $k) {
+                $metrics['transactions'][$k] = 0;
+            }
+        }
+
+        return response()->json($metrics);
+    }
+
+    public function realTime(Request $request): JsonResponse
+    {
+        $data = $this->stats->realTime();
+
+        if (!$request->user()->hasPermission('finance.view')) {
+            $data['revenue_today'] = 0;
+        }
+
+        return response()->json($data);
     }
 
     public function transactionReport(Request $request): JsonResponse
     {
-        $days = $request->get('days', 30);
-
-        $transactions = Transaction::selectRaw("
-                DATE(created_at) as date,
-                COUNT(*) as total,
-                SUM(CASE WHEN payment_status = 'completed' THEN 1 ELSE 0 END) as completed,
-                SUM(CASE WHEN payment_status = 'failed' THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN payment_status = 'completed' THEN amount ELSE 0 END) as volume,
-                payment_method
-            ")
-            ->where('created_at', '>=', now()->subDays($days))
-            ->groupByRaw('DATE(created_at), payment_method')
-            ->orderBy('date')
-            ->get();
-
-        $summary = [
-            'total_transactions' => Transaction::where('created_at', '>=', now()->subDays($days))->count(),
-            'total_volume' => Transaction::completed()->where('created_at', '>=', now()->subDays($days))->sum('amount'),
-            'total_fees' => Transaction::completed()->where('created_at', '>=', now()->subDays($days))->sum('transaction_fee'),
-            'success_rate' => Transaction::where('created_at', '>=', now()->subDays($days))->count() > 0
-                ? round(Transaction::completed()->where('created_at', '>=', now()->subDays($days))->count()
-                    / Transaction::where('created_at', '>=', now()->subDays($days))->count() * 100, 1)
-                : 0,
-        ];
-
-        return response()->json(['report' => $transactions, 'summary' => $summary]);
-    }
-
-    public function fraudReport(): JsonResponse
-    {
-        $fraudCases = FraudDetection::with(['user:id,full_name,phone_number,trust_score'])
-            ->latest()
-            ->paginate(20);
-
-        return response()->json($fraudCases);
-    }
-
-    public function resolveFraud(Request $request, FraudDetection $fraudDetection): JsonResponse
-    {
-        $request->validate([
-            'status' => ['required', 'in:confirmed,dismissed'],
-            'action_taken' => ['required', 'in:none,warning,suspension,ban,payment_hold'],
-        ]);
-
-        $fraudDetection->update([
-            'status' => $request->status,
-            'action_taken' => $request->action_taken,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-        ]);
-
-        AuditLog::create([
-            'user_id' => $request->user()->id,
-            'action_type' => 'fraud_case_reviewed',
-            'entity_type' => 'FraudDetection',
-            'new_values' => ['fraud_detection_id' => $fraudDetection->id, 'status' => $request->status, 'action_taken' => $request->action_taken],
-            'severity' => $request->status === 'confirmed' ? 'critical' : 'info',
-        ]);
-
-        return response()->json(['message' => 'Cas de fraude traite.']);
+        return response()->json($this->stats->transactionReport(AdminStatsService::clampDays($request->get('days'), 30)));
     }
 
     public function userReport(Request $request): JsonResponse
     {
-        $days = $request->get('days', 30);
-        $since = now()->subDays($days);
-
-        $newUsers = User::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', $since)
-            ->groupByRaw('DATE(created_at)')
-            ->orderBy('date')
-            ->get();
-
-        $topSellers = User::withCount(['soldTransactions as sales_count' => function ($q) use ($since) {
-                $q->where('created_at', '>=', $since);
-            }])
-            ->withSum(['soldTransactions as revenue' => function ($q) use ($since) {
-                $q->where('created_at', '>=', $since)->where('payment_status', 'completed');
-            }], 'amount')
-            ->orderByDesc('revenue')
-            ->limit(10)
-            ->get(['id', 'full_name', 'username', 'avatar_url', 'trust_score']);
-
-        return response()->json([
-            'growth' => $newUsers,
-            'top_sellers' => $topSellers,
-            'total_users' => User::count(),
-            'new_in_period' => User::where('created_at', '>=', $since)->count(),
-        ]);
+        return response()->json($this->stats->userReport(AdminStatsService::clampDays($request->get('days'), 30)));
     }
 
     public function overviewReport(Request $request): JsonResponse
     {
-        $days = $request->get('days', 7);
-        $since = now()->subDays($days);
+        return response()->json($this->stats->overview(AdminStatsService::clampDays($request->get('days'), 7)));
+    }
 
-        $daily = [];
-        for ($i = $days; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('Y-m-d');
-            $dayStart = now()->subDays($i)->startOfDay();
-            $dayEnd = now()->subDays($i)->endOfDay();
+    public function financeReport(Request $request): JsonResponse
+    {
+        return response()->json($this->stats->finance(AdminStatsService::clampDays($request->get('days'), 30)));
+    }
 
-            $daily[] = [
-                'date' => $date,
-                'users' => User::whereBetween('created_at', [$dayStart, $dayEnd])->count(),
-                'transactions' => Transaction::whereBetween('created_at', [$dayStart, $dayEnd])->count(),
-                'revenue' => Transaction::completed()->whereBetween('created_at', [$dayStart, $dayEnd])->sum('amount'),
-                'products' => Product::whereBetween('created_at', [$dayStart, $dayEnd])->count(),
-            ];
+    // ─── Alertes fraude ──────────────────────────────────────────────────
+
+    public function fraudReport(Request $request): JsonResponse
+    {
+        $status = $request->get('status', 'pending_review');
+
+        $query = FraudDetection::with(['user:id,full_name,username,phone_number,trust_score,account_status,role', 'reviewer:id,full_name']);
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
         }
 
-        return response()->json(['daily' => $daily, 'period' => $days]);
+        return response()->json(
+            $query->orderByDesc('confidence_score')->orderByDesc('created_at')->paginate($this->perPage($request, 20, 50))
+        );
     }
-    // deleteAllVideos() et resetData() ont été retirées de l'API HTTP et
-    // remplacées par les commandes Artisan `quinch:delete-all-videos` et
-    // `quinch:reset-data` (voir app/Console/Commands) : une action aussi
-    // destructrice ne doit pas être accessible via une route, même protégée
-    // par un rôle admin.
+
+    /** Lance l'analyse tout de suite (le scheduler la lance déjà toutes les heures). */
+    public function runFraudScan(Request $request): JsonResponse
+    {
+        $created = $this->fraudScan->run();
+
+        AdminLogger::log($request->user(), 'fraud_scan_run', null, null, $created);
+
+        return response()->json([
+            'message' => array_sum($created) . ' nouvelle(s) alerte(s) créée(s).',
+            'created' => $created,
+        ]);
+    }
+
+    /** Résout une alerte ET exécute réellement l'action choisie (avant : seul le statut changeait). */
+    public function resolveFraud(Request $request, FraudDetection $fraudDetection): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:confirmed,dismissed'],
+            'action_taken' => ['required', 'in:none,warning,suspension,ban,payment_hold'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if ($fraudDetection->status !== 'pending_review') {
+            return response()->json(['message' => 'Cette alerte a déjà été traitée.'], 409);
+        }
+
+        $admin = $request->user();
+        $action = $validated['status'] === 'dismissed' ? 'none' : $validated['action_taken'];
+        $target = $fraudDetection->user;
+        $reason = $validated['reason'] ?? 'Activité frauduleuse confirmée (' . $fraudDetection->detection_type . ')';
+
+        if ($target && $action !== 'none') {
+            if ($deny = $this->denyIfCannotManage($request, $target)) {
+                return $deny;
+            }
+            if ($action === 'ban' && !$admin->hasPermission('users.ban')) {
+                return response()->json(['message' => "Vous n'avez pas la permission de bannir."], 403);
+            }
+            if ($action === 'suspension' && !$admin->hasPermission('users.suspend')) {
+                return response()->json(['message' => "Vous n'avez pas la permission de suspendre."], 403);
+            }
+        }
+
+        DB::transaction(function () use ($fraudDetection, $validated, $action, $admin, $target, $reason) {
+            $fraudDetection->update([
+                'status' => $validated['status'],
+                'action_taken' => $action,
+                'reviewed_by' => $admin->id,
+                'reviewed_at' => now(),
+            ]);
+
+            if (!$target) {
+                return;
+            }
+
+            switch ($action) {
+                case 'warning':
+                    $this->strikes->add($target, $reason, $admin);
+                    break;
+                case 'suspension':
+                    $this->sanctions->suspend($target, $reason, 7, $admin);
+                    break;
+                case 'ban':
+                    $this->sanctions->ban($target, $reason, $admin);
+                    break;
+                case 'payment_hold':
+                    Transaction::where('buyer_id', $target->id)
+                        ->whereIn('payment_status', ['pending', 'processing'])
+                        ->update(['security_check' => 'manual_review']);
+                    break;
+            }
+        });
+
+        AdminLogger::log($admin, 'fraud_case_reviewed', 'FraudDetection', null, [
+            'fraud_detection_id' => $fraudDetection->id,
+            'user_id' => $target?->id,
+            'status' => $validated['status'],
+            'action_taken' => $action,
+        ], $validated['status'] === 'confirmed' ? 'critical' : 'info');
+
+        return response()->json(['message' => 'Cas de fraude traité.']);
+    }
 }

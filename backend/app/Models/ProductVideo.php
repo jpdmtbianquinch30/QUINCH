@@ -43,6 +43,7 @@ class ProductVideo extends Model
             'size_bytes' => 'integer',
             'view_count' => 'integer',
             'engagement_score' => 'float',
+            'moderated_at' => 'datetime',
         ];
     }
 
@@ -54,6 +55,31 @@ class ProductVideo extends Model
     public function product(): HasOne
     {
         return $this->hasOne(Product::class, 'video_id');
+    }
+
+    /**
+     * URLs de prévisualisation SIGNÉES (valables 30 min, relatives) pour le staff :
+     * le streaming public refuse les vidéos rejetées / en vérification, mais les
+     * modérateurs doivent pouvoir les revoir (contestations, réexamen).
+     */
+    public function adminPreviewUrls(): array
+    {
+        $ttl = now()->addMinutes(30);
+
+        return [
+            'video' => $this->video_path
+                ? \Illuminate\Support\Facades\URL::temporarySignedRoute('videos.stream', $ttl, ['videoId' => $this->id], false)
+                : null,
+            'thumbnail' => $this->thumbnail_path
+                ? \Illuminate\Support\Facades\URL::temporarySignedRoute('videos.thumbnail', $ttl, ['videoId' => $this->id], false)
+                : null,
+        ];
+    }
+
+    /** Statuts qui rendent la vidéo invisible du public (feed, streaming, miniature). */
+    public function isHiddenFromPublic(): bool
+    {
+        return in_array($this->moderation_status, ['rejected', 'flagged'], true);
     }
 
     public function scopePending($query)
