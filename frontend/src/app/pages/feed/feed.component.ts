@@ -10,10 +10,12 @@ import { Product, Category } from '../../core/models/product.model';
 
 export type FeedSort = 'foryou' | 'recent' | 'popular' | 'day' | 'following';
 
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
+
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, UserBadgesComponent],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
 })
@@ -106,7 +108,14 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   openAdminMessage(m: any) {
     this.dismissAdminMessage(m);
-    if (m.action_url && m.action_url.startsWith('/')) this.router.navigateByUrl(m.action_url);
+    const url: string | undefined = m.action_url;
+    if (!url || !url.startsWith('/') || url.startsWith('//')) return;
+    if (url === '/docs' || url.startsWith('/docs/') || url.startsWith('/docs#')) {
+      // Page statique (documentation) : navigation complète, hors routeur.
+      window.location.assign(url.startsWith('/docs#') ? '/docs/' + url.slice(5) : (url.endsWith('/') || url.endsWith('.html') ? url : url + '/'));
+      return;
+    }
+    this.router.navigateByUrl(url);
   }
 
   private loadCounts() {

@@ -195,6 +195,12 @@
                   <span class="card-price">{{ product.formatted_price || (product.price | number:'1.0-0') + ' F' }}</span>
                 </div>
                 <div class="card-title">{{ product.title }}</div>
+                @if (product.seller?.username || product.seller?.full_name) {
+                  <div class="card-seller">
+                    <span class="card-seller-name">{{ product.seller?.full_name || product.seller?.username }}</span>
+                    <app-user-badges [badges]="product.seller?.badges" [premium]="!!product.seller?.is_premium" [max]="2" />
+                  </div>
+                }
               </div>
             }
           </div>

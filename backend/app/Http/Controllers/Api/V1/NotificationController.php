@@ -25,6 +25,15 @@ class NotificationController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(30);
 
+        // Badges des expéditeurs en UNE requête pour la page (pas de N+1).
+        $senderIds = collect($notifications->items())->pluck('sender.id')->filter()->unique()->values()->all();
+        $badgesBySender = $senderIds ? \App\Models\UserBadge::summaryForMany($senderIds) : [];
+        foreach ($notifications->items() as $n) {
+            if ($n->sender) {
+                $n->sender->setAttribute('badges', $badgesBySender[$n->sender->id] ?? []);
+            }
+        }
+
         // Also return tab counts
         $counts = [
             'all'          => UserNotification::where('user_id', $userId)->unread()->count(),

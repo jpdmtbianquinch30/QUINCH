@@ -1789,3 +1789,74 @@ select.q-input {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DURCISSEMENT MOBILE — modale « Changer de numéro » + ligne téléphone
+   Objectif : plus aucun débordement horizontal, quelle que soit la largeur.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.report-modal,
+.report-modal * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.report-modal {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+
+  .form-group { width: 100%; }
+
+  .q-input,
+  .input-prefix-wrap {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .otp-input {
+    letter-spacing: 0.35em;
+    text-align: center;
+  }
+
+  .demo-otp-banner {
+    flex-wrap: wrap;
+    max-width: 100%;
+    word-break: break-word;
+  }
+
+  .report-actions {
+    flex-wrap: wrap;
+
+    .q-btn { flex: 1 1 120px; }
+  }
+}
+
+@media (max-width: 480px) {
+  .report-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .report-modal {
+    width: 100%;
+    max-height: calc(100dvh - 12px);
+    border-radius: 22px 22px 0 0;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  // numéro + bouton « Modifier » : empilés pour ne jamais déborder
+  .phone-row {
+    grid-template-columns: minmax(0, 1fr);
+
+    .q-btn { width: 100%; min-width: 0; }
+  }
+
+  .report-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+
+    .q-btn { width: 100%; flex: none; }
+  }
+}

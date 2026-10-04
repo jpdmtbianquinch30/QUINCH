@@ -9,11 +9,12 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Product, Category } from '../../core/models/product.model';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [RouterLink, FormsModule, DecimalPipe],
+  imports: [RouterLink, FormsModule, DecimalPipe, UserBadgesComponent],
   templateUrl: './marketplace.component.html',
   styleUrl: './marketplace.component.scss',
 })

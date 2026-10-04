@@ -17,7 +17,7 @@ export interface AppNotification {
   priority?: string;
   image_url?: string;
   sender_id?: string;
-  sender?: { id: string; full_name: string; avatar_url?: string; username?: string };
+  sender?: { id: string; full_name: string; avatar_url?: string; username?: string; badges?: { type: string; name: string; icon: string; color: string }[] };
 }
 
 export interface NotifCounts {

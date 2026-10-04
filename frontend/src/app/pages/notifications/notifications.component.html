@@ -108,6 +108,9 @@
               <div class="notif-content">
                 <div class="notif-text">
                   <span class="notif-title">{{ notif.title }}</span>
+                  @if (notif.sender?.badges?.length) {
+                    <app-user-badges [badges]="notif.sender?.badges" [max]="2" />
+                  }
                   @if (getGroupedLabel(notif)) {
                     <span class="group-badge">{{ getGroupedLabel(notif) }}</span>
                   }

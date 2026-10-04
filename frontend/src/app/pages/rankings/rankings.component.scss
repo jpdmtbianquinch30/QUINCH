@@ -1097,3 +1097,37 @@
     animation-duration: 0.001ms !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE CLAIR — Classement
+   (les couleurs de base viennent des variables globales --q-*, on ne corrige
+   ici que les fonds translucides blancs et les ombres trop lourdes)
+   ═══════════════════════════════════════════════════════════════════════════ */
+:host-context(body.quinch-light) {
+  .rankings-header {
+    border-color: rgba(15, 23, 42, .10);
+    box-shadow: 0 12px 34px rgba(15, 23, 42, .08);
+  }
+  .rankings-tabs {
+    background: rgba(15, 23, 42, .04);
+    border-color: rgba(15, 23, 42, .08);
+    box-shadow: none;
+  }
+  .rankings-tab:hover { background: rgba(15, 23, 42, .06); }
+  .rankings-criteria,
+  .lock-preview-chip,
+  .join-modal-toggle { background: rgba(15, 23, 42, .04); border-color: rgba(15, 23, 42, .08); }
+
+  .ranking-row {
+    border-color: rgba(15, 23, 42, .10);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+  }
+  .ranking-row:hover { box-shadow: 0 12px 28px rgba(15, 23, 42, .12); }
+  .row-avatar { border-color: rgba(15, 23, 42, .10); }
+
+  .rankings-lock-card { box-shadow: 0 24px 60px rgba(15, 23, 42, .18); }
+  .join-modal { box-shadow: 0 30px 70px rgba(15, 23, 42, .25); }
+  .join-modal-backdrop { background: rgba(15, 23, 42, .45); }
+  .participation-card { box-shadow: 0 10px 28px rgba(15, 23, 42, .08); }
+}

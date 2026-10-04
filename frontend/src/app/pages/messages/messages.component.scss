@@ -2774,3 +2774,92 @@ button {
 }
 .chat-loading { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .loading-text { margin: 0; font-size: 0.85rem; opacity: 0.75; text-align: center; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE CLAIR — Messages
+   Les variables --q-* de :host sont redéfinies, puis les quelques couleurs
+   codées en dur (fonds translucides blancs, gris foncés) sont corrigées.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:host-context(body.quinch-light) {
+  --q-bg: #f4f6fb;
+  --q-bg-2: #eef1f8;
+  --q-panel: #ffffff;
+  --q-panel-2: #f3f5fa;
+  --q-panel-3: #e8ecf5;
+
+  --q-border: rgba(15, 23, 42, .10);
+  --q-border-soft: rgba(15, 23, 42, .06);
+
+  --q-text: #111827;
+  --q-muted: #5b6478;
+  --q-muted-2: #8a93a6;
+
+  --q-blue-light: #4f63e6;
+
+  background: var(--q-bg);
+
+  .msg-delete-btn { background: rgba(255, 255, 255, .95); }
+  .conv-selection-bar { background: rgba(99, 102, 241, .10); }
+
+  .q-btn { background: rgba(15, 23, 42, .04); }
+  .conv-search { background: rgba(15, 23, 42, .045); }
+  .q-input::placeholder { color: #8a93a6; }
+
+  .chat-messages::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, .18); }
+
+  .conv-item:hover { background: rgba(15, 23, 42, .04); }
+  .chat-avatar { border-color: rgba(15, 23, 42, .10); }
+  .chat-avatar > .material-icons { color: #8a93a6; }
+  .online-dot,
+  .online-dot.offline { background: #b6bdcc; }
+
+  .conv-time,
+  .status-offline,
+  .chat-product,
+  .message-time,
+  .read-indicator { color: #7a8398; }
+  .read-check { color: #8a93a6; }
+
+  .conv-empty .material-icons,
+  .chat-empty .material-icons { color: #b6bdcc; }
+  .conv-empty .hint { color: #8a93a6; }
+
+  .chat-header { background: rgba(255, 255, 255, .92); }
+  .chat-input { background: rgba(255, 255, 255, .94); }
+  .chat-input > .q-input { background: rgba(15, 23, 42, .04); }
+  .back-btn { background: rgba(15, 23, 42, .05); }
+
+  .attach-menu { background: #ffffff; box-shadow: 0 18px 50px rgba(15, 23, 42, .18); }
+  .dropdown-item:hover,
+  .attach-option:hover,
+  .attach-menu-header button:hover,
+  .input-action:hover { background: rgba(15, 23, 42, .05); }
+  .dropdown-item .material-icons,
+  .attach-menu-header button,
+  .input-action { color: #6b7488; }
+  .input-action:hover { color: #111827; }
+  .attach-hint { color: #8a93a6; }
+
+  .pcc-label,
+  .pcc-arrow,
+  .msg-file-size,
+  .msg-file-dl,
+  .tag-product-label,
+  .tag-product-price.quote,
+  .system-bubble,
+  .recording-timer { color: #6b7488; }
+
+  .message.theirs .message-bubble { background: #eaeef7; color: #111827; }
+
+  .tag-product-card { background: rgba(15, 23, 42, .04); }
+  .system-bubble { background: rgba(15, 23, 42, .05); }
+  .typing-indicator span { background: #8a93a6; }
+  .rec-label { color: #1f2937; }
+  .pcc-price,
+  .tag-product-price,
+  .tag-product-btn,
+  .pcc-icon,
+  .msg-file-icon { color: #4f63e6; }
+  .quote-tag { color: #6d5be6; }
+}

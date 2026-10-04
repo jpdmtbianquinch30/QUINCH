@@ -2302,3 +2302,82 @@ $card-border: 1px solid var(--q-border);
   color: inherit;
   font: inherit;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE CLAIR — Profil vendeur
+   Les surfaces sombres (dégradés) sont remplacées par des surfaces claires ;
+   les accents de marque (bleu/violet) sont conservés.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:host-context(body.quinch-light) {
+  .sp-page {
+    --sp-surface: #ffffff;
+    --sp-surface-2: #f3f5fa;
+    --sp-line: rgba(15, 23, 42, 0.10);
+    --sp-glow: rgba(79, 99, 230, 0.14);
+    background:
+      radial-gradient(circle at 78% 8%, rgba(79, 99, 230, 0.08), transparent 28%),
+      #f4f6fb;
+  }
+
+  .sp-sidebar { background: #f7f8fc; }
+
+  .sp-profile-card,
+  .sp-stats-card,
+  .sp-trust-card,
+  .sp-certs-card,
+  .sp-tab-panel {
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+  }
+
+  .sp-profile-card { border-color: rgba(15, 23, 42, 0.10); }
+  .sp-profile-card::after { background: none; }
+  .sp-avatar-fallback { border-color: #ffffff; }
+  .sp-verified { background: #ffffff; border-color: #ffffff; }
+  .sp-username { color: #6b7488; }
+  .sp-name { color: #111827; }
+
+  .sp-tag,
+  .sp-btn-follow,
+  .sp-icon-btn,
+  .sp-sort { background: rgba(15, 23, 42, 0.04); border-color: rgba(15, 23, 42, 0.10); }
+  .sp-trust-bar { background: rgba(15, 23, 42, 0.08); }
+
+  .sp-tabs {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+  .sp-tab-badge { background: rgba(15, 23, 42, 0.07); }
+
+  .sp-product {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.09);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  }
+  .sp-product:hover { box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14); }
+  .sp-product-img { background: #eef1f8; }
+  .sp-product-img::after { background: none; }
+  .sp-product-price { color: #3b4cc4; }
+  .sp-product-meta { border-top-color: rgba(15, 23, 42, 0.07); }
+
+  .sp-policy {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.09);
+  }
+  .sp-review-summary { border-color: rgba(15, 23, 42, 0.09); }
+  .sp-score-num {
+    background: linear-gradient(135deg, #1f2a6b, #4f63e6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .sp-modal-bg { background: rgba(15, 23, 42, 0.45); }
+  .sp-modal {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.10);
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+  }
+}

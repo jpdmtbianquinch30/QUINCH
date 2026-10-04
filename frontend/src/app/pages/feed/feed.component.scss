@@ -1080,3 +1080,21 @@
     .material-icons { font-size: 18px; }
   }
 }
+
+
+// Ligne vendeur sous le titre (nom + badges)
+.card-seller {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  min-width: 0;
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+.card-seller-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}

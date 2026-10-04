@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, inject, OnInit, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +20,7 @@ import { Product } from '../../core/models/product.model';
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
-export class ProductDetailComponent implements OnInit, AfterViewInit {
+export class ProductDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('detailVideo') detailVideoRef!: ElementRef<HTMLVideoElement>;
 
   private route = inject(ActivatedRoute);
@@ -432,11 +432,30 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
     if (videoEl) videoEl.muted = this.videoMuted();
   }
 
+  ngOnDestroy(): void {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+      this.progressInterval = null;
+    }
+  }
+
+  /** Clic sur la barre de progression : se déplace dans la vidéo. */
+  seekVideo(event: MouseEvent): void {
+    const videoEl = this.detailVideoRef?.nativeElement;
+    const bar = event.currentTarget as HTMLElement | null;
+    if (!videoEl || !bar || !videoEl.duration || !isFinite(videoEl.duration)) return;
+    const rect = bar.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    videoEl.currentTime = ratio * videoEl.duration;
+    this.videoProgress.set(ratio * 100);
+  }
+
   toggleVideoPlay(): void {
     const videoEl = this.detailVideoRef?.nativeElement;
     if (!videoEl) return;
     if (videoEl.paused) {
-      videoEl.muted = true;
+      videoEl.muted = this.videoMuted();
       // If video hasn't loaded yet, try loading first
       if (videoEl.readyState === 0) {
         videoEl.load();

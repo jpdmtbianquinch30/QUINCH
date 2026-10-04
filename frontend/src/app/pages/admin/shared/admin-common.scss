@@ -2979,3 +2979,157 @@ video.adm-video {
   }
 
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÉCRANS ADMIN — HORS TABLEAU DE BORD (v3)
+   Tout ce bloc est limité à  :host(:not(adm-dashboard))  → le design du
+   dashboard n'est PAS modifié. Pour changer le look des listes/tiroirs/formulaires,
+   modifier uniquement ici (une seule source, maintenable).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Barres de filtres / outils : carte « verre » unique ──────────────────── */
+:host(:not(adm-dashboard)) .adm-row {
+  gap: 10px;
+}
+
+:host(:not(adm-dashboard)) .adm-page > .adm-row:first-child,
+:host(:not(adm-dashboard)) .adm-toolbar {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .08);
+}
+
+/* ── Tableaux : en-tête collant, lignes aérées, survol net ─────────────────── */
+:host(:not(adm-dashboard)) .adm-table-wrap {
+  max-height: min(72vh, 900px);
+  overflow: auto;
+}
+
+:host(:not(adm-dashboard)) table.adm-table {
+  th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--adm-elevated);
+    box-shadow: 0 1px 0 var(--adm-border);
+  }
+
+  tbody tr:nth-child(even) td {
+    background: rgba(255, 255, 255, .012);
+  }
+
+  tbody tr:hover td {
+    background: rgba(82, 109, 255, .06);
+  }
+
+  td {
+    padding-top: 13px;
+    padding-bottom: 13px;
+  }
+}
+
+/* ── Pastilles de statut : plus lisibles ──────────────────────────────────── */
+:host(:not(adm-dashboard)) .adm-chip {
+  min-height: 24px;
+  padding: 3px 10px;
+  font-size: .68rem;
+}
+
+/* ── Pagination ───────────────────────────────────────────────────────────── */
+:host(:not(adm-dashboard)) .adm-pager {
+  gap: 14px;
+  padding: 10px 14px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  background: var(--adm-card);
+  border: 1px solid var(--adm-border);
+  border-radius: 999px;
+}
+
+/* ── Tiroir de détail : plus large sur grand écran, plein écran sur mobile ── */
+:host(:not(adm-dashboard)) .adm-drawer {
+  width: min(720px, 100vw);
+  border-radius: 20px 0 0 20px;
+}
+
+:host(:not(adm-dashboard)) .adm-drawer-close {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+/* ── États vides ──────────────────────────────────────────────────────────── */
+:host(:not(adm-dashboard)) .adm-empty {
+  border: 1px dashed var(--adm-border);
+  border-radius: var(--adm-radius);
+  background: transparent;
+}
+
+/* ── Formulaires : champs pleine largeur et cibles tactiles confortables ──── */
+:host(:not(adm-dashboard)) .adm-input,
+:host(:not(adm-dashboard)) .adm-btn {
+  min-height: 40px;
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  :host(:not(adm-dashboard)) .adm-page > .adm-row:first-child,
+  :host(:not(adm-dashboard)) .adm-toolbar {
+    padding: 10px;
+  }
+
+  :host(:not(adm-dashboard)) .adm-row > .adm-input,
+  :host(:not(adm-dashboard)) .adm-row > select.adm-input {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  :host(:not(adm-dashboard)) .adm-drawer {
+    width: 100vw;
+    border-radius: 0;
+    padding: 16px 14px 40px;
+  }
+
+  :host(:not(adm-dashboard)) .adm-table-wrap {
+    max-height: none;
+  }
+
+  :host(:not(adm-dashboard)) .adm-inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE CLAIR — écrans admin hors dashboard
+   (le shell et les variables --adm-* suivent déjà les variables globales ;
+   on corrige ici les fonds « blanc translucide » conçus pour le sombre)
+   ═══════════════════════════════════════════════════════════════════════════ */
+:host-context(body.quinch-light) .adm-table-wrap { box-shadow: 0 6px 20px rgba(15, 23, 42, .07); }
+
+:host-context(body.quinch-light) table.adm-table th {
+  background: #eef1f8;
+  color: #5b6478;
+}
+
+:host-context(body.quinch-light) table.adm-table tbody tr:nth-child(even) td {
+  background: rgba(15, 23, 42, .022);
+}
+
+:host-context(body.quinch-light) table.adm-table tbody tr:hover td {
+  background: rgba(79, 99, 230, .07);
+}
+
+:host-context(body.quinch-light) .adm-chip { background: rgba(15, 23, 42, .06); }
+
+:host-context(body.quinch-light) .adm-drawer {
+  background: #ffffff;
+  box-shadow: -20px 0 60px rgba(15, 23, 42, .18);
+}
+
+:host-context(body.quinch-light) .adm-modal { background: #ffffff; }

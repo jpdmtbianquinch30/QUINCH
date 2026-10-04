@@ -4,9 +4,12 @@ import { NotificationService, AppNotification } from '../../core/services/notifi
 
 type NotifTab = 'all' | 'interactions' | 'messages' | 'system';
 
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
+
 @Component({
   selector: 'app-notifications',
   standalone: true,
+  imports: [UserBadgesComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
@@ -47,6 +50,11 @@ export class NotificationsComponent implements OnInit {
 
     // Build the best redirect URL and navigate
     const url = this.resolveUrl(notif);
+    if (url && (url === '/docs' || url.startsWith('/docs/'))) {
+      // Page statique (hors routeur Angular) : navigation complète.
+      window.location.assign(url.endsWith('.html') || url.endsWith('/') ? url : url + '/');
+      return;
+    }
     if (url) {
       // Force navigation even if same URL (e.g. /messages → /messages with different state)
       this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
@@ -148,6 +156,7 @@ export class NotificationsComponent implements OnInit {
   /** Jamais de lien externe ; les pages supprimées renvoient vers les messages. */
   private sanitizeUrl(raw: string): string | null {
     if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+    if (raw === '/docs' || raw.startsWith('/docs/') || raw.startsWith('/docs#')) return raw.startsWith('/docs#') ? '/docs/' + raw.slice(5) : raw;
     if (raw.startsWith('/transactions') || raw.startsWith('/cart')) return '/messages';
 
     const path = raw.split('?')[0].split('#')[0];

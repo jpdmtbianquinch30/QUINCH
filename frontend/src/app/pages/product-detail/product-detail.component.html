@@ -52,7 +52,6 @@
                    autoplay
                    loop
                    playsinline
-                   controls
                    preload="auto"
                    (click)="$event.stopPropagation()"
                    (loadeddata)="onVideoLoaded($event)"
@@ -75,7 +74,7 @@
               <button class="vid-ctrl-btn" (click)="toggleVideoPlay()">
                 <span class="material-icons">{{ videoPlaying() ? 'pause' : 'play_arrow' }}</span>
               </button>
-              <div class="vid-progress-bar">
+              <div class="vid-progress-bar" (click)="seekVideo($event)" role="slider" aria-label="Position de lecture">
                 <div class="vid-progress-fill" [style.width.%]="videoProgress()"></div>
               </div>
               <button class="vid-ctrl-btn" (click)="toggleVideoMute()">

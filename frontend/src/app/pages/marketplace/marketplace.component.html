@@ -589,6 +589,7 @@
                 || product.seller?.name
                 || product.user?.full_name }}
             </span>
+            <app-user-badges [badges]="product.seller?.badges" [premium]="!!product.seller?.is_premium" />
 
             @if (product.seller?.city || product.user?.city) {
 

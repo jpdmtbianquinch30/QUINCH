@@ -1346,3 +1346,60 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODE CLAIR — Notifications
+   ═══════════════════════════════════════════════════════════════════════════ */
+:host-context(body.quinch-light) {
+  --q-bg: #f4f6fb;
+  --q-bg-soft: #eef1f8;
+
+  --q-card: rgba(255, 255, 255, 0.92);
+  --q-card-hover: #ffffff;
+
+  --q-text: #111827;
+  --q-text-soft: #374151;
+  --q-text-muted: #6b7488;
+
+  --q-blue: #4f63e6;
+  --q-blue-light: #4f63e6;
+
+  --q-border: rgba(15, 23, 42, 0.10);
+  --q-border-soft: rgba(15, 23, 42, 0.06);
+
+  .notif-header > h1 { color: #111827; }
+
+  .mark-all-btn { color: #4b5563; }
+  .mark-all-btn:hover { color: #111827; }
+
+  .notif-tabs { border-color: rgba(15, 23, 42, 0.08); }
+  .notif-tab { color: #6b7488; }
+  .notif-tab:hover { color: #111827; background: rgba(15, 23, 42, 0.04); }
+  .notif-tab.active { color: #1d2a6b; }
+  .tab-icon { color: #8a93a6; }
+  .tab-badge { border-color: rgba(15, 23, 42, 0.10); }
+
+  .loader { border-color: rgba(15, 23, 42, 0.10); }
+
+  .notif-empty > h3 { color: #111827; }
+  .notif-empty > p,
+  .section-label { color: #6b7488; }
+  .empty-icon-wrap::before { border-color: rgba(15, 23, 42, 0.06); }
+
+  .notif-item:hover { border-color: rgba(15, 23, 42, 0.10); }
+  .notif-item.unread .notif-title { color: #0b1020; }
+  .notif-item.unread .notif-body { color: #374151; }
+
+  .notif-type-badge { border-color: #ffffff; }
+  .notif-icon { border-color: rgba(15, 23, 42, 0.08); }
+  .notif-title { color: #374151; }
+  .notif-body { color: #5b6478; }
+  .notif-time { color: #7a8398; }
+  .group-badge { color: #3b4cc4; }
+  .notif-action-label { color: #4f63e6; }
+  .notif-delete { color: #8a93a6; }
+}
+
+// Badges de l'expéditeur à côté du titre
+.notif-text app-user-badges { margin-left: 6px; }

@@ -15,7 +15,7 @@ class MarketplaceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with(['user:id,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
+        $query = Product::with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
             // Tous les produits et services actifs, avec ou sans vidéo / photo.
             ->where('products.status', 'active');
 
@@ -81,7 +81,12 @@ match ($sortBy) {
             $savedIds = \App\Models\FavoriteItem::where('user_id', $authUser->id)->whereIn('product_id', $productIds)->pluck('product_id')->toArray();
         }
 
-        $items = $products->getCollection()->map(function ($product) use ($likedIds, $savedIds) {
+        // Badges des vendeurs en UNE requête pour toute la page (pas de N+1).
+        $sellerBadges = \App\Models\UserBadge::summaryForMany(
+            $products->getCollection()->pluck('user_id')->filter()->unique()->values()->all()
+        );
+
+        $items = $products->getCollection()->map(function ($product) use ($likedIds, $savedIds, $sellerBadges) {
             $thumbnail = $product->poster_full_url
                 ?? ($product->video?->id ? '/api/v1/videos/' . $product->video->id . '/thumbnail' : null)
                 ?? ($product->images[0] ?? null);
@@ -104,7 +109,10 @@ match ($sortBy) {
                 'seller'       => [
                     'id'          => $product->user?->id,
                     'username'    => $product->user?->username,
+                    'full_name'   => $product->user?->full_name,
                     'avatar'      => $product->user?->avatar_url,
+                    'avatar_url'  => $product->user?->avatar_url,
+                    'badges'      => $sellerBadges[$product->user?->id] ?? [],
                     'trust_score' => $product->user?->trust_score,
                     'is_premium'  => $product->user?->isPremiumActive() ?? false,
                 ],
