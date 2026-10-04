@@ -28,11 +28,12 @@ export interface ReviewStats {
 export class ReviewService {
   constructor(private api: ApiService) {}
 
-  getSellerReviews(userId: string): Observable<{ reviews: any; stats: ReviewStats }> {
-    return this.api.get(`users/${userId}/reviews`);
+  /** Sans productId : tous les avis du vendeur. Avec productId : uniquement ceux de cette annonce. */
+  getSellerReviews(userId: string, productId?: string): Observable<{ reviews: any; stats: ReviewStats }> {
+    return this.api.get(`users/${userId}/reviews`, productId ? { product_id: productId } : undefined);
   }
 
-  createReview(data: { seller_id: string; transaction_id?: string; rating: number; comment?: string; delivery_rating?: number; communication_rating?: number; accuracy_rating?: number }): Observable<any> {
+  createReview(data: { seller_id: string; product_id?: string; transaction_id?: string; rating: number; comment?: string; delivery_rating?: number; communication_rating?: number; accuracy_rating?: number }): Observable<any> {
     return this.api.post('reviews', data);
   }
 

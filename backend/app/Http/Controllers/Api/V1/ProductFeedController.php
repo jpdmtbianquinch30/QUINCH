@@ -27,7 +27,7 @@ class ProductFeedController extends Controller
 
         $query = Product::query()
             ->active()
-            ->withCount('savedByUsers')
+            ->withCount(['savedByUsers', 'reviews'])
             ->with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,icon', 'video']);
 
         // For "following" tab, filter by followed users
@@ -150,6 +150,7 @@ class ProductFeedController extends Controller
                 'is_liked' => in_array($product->id, $likedIds),
                 'is_saved' => in_array($product->id, $savedIds),
                 'save_count' => $product->saved_by_users_count ?? 0,
+                'review_count' => $product->reviews_count ?? 0,
                 'poster' => $product->poster_full_url,
                 'payment_methods' => $product->payment_methods ?? [],
                 'delivery_option' => $product->delivery_option ?? 'contact',
@@ -233,7 +234,7 @@ class ProductFeedController extends Controller
         $query = Product::query()
             ->active()
             ->whereIn('user_id', $friendIds)
-            ->withCount('savedByUsers')
+            ->withCount(['savedByUsers', 'reviews'])
             ->with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,icon', 'video'])
             ->where(function ($q) {
                 $q->whereNotNull('poster_url')
@@ -278,6 +279,7 @@ class ProductFeedController extends Controller
                 'is_liked' => in_array($product->id, $likedIds),
                 'is_saved' => in_array($product->id, $savedIds),
                 'save_count' => $product->saved_by_users_count ?? 0,
+                'review_count' => $product->reviews_count ?? 0,
                 'poster' => $product->poster_full_url,
                 'payment_methods' => $product->payment_methods ?? [],
                 'delivery_option' => $product->delivery_option ?? 'contact',

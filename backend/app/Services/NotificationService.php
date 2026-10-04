@@ -313,11 +313,17 @@ class NotificationService
 
         if ($exists) return null;
 
-        return $this->send($user->id, 'welcome', 'Bienvenue sur QUINCH ! 🎉', 'Découvrez des milliers de produits, publiez vos articles et rejoignez la communauté. Commencez par compléter votre profil !', [
-            'icon'       => 'waving_hand',
-            'action_url' => '/profile/edit',
-            'priority'   => self::PRIORITY_NORMAL,
-        ]);
+        return $this->send(
+            $user->id,
+            'welcome',
+            'Bienvenue sur QUINCH ! 🎉',
+            "Merci de nous avoir rejoints. Pour atteindre 80 % de score de confiance et inspirer confiance aux acheteurs : ajoutez votre photo et votre couverture, renseignez votre ville, votre région, votre bio, votre e-mail et votre site, puis configurez vos politiques vendeur. Touchez ici pour configurer votre profil.",
+            [
+                'icon'       => 'waving_hand',
+                'action_url' => '/profile/edit',
+                'priority'   => self::PRIORITY_NORMAL,
+            ]
+        );
     }
 
     // ─── Helpers ─────────────────────────────────────────

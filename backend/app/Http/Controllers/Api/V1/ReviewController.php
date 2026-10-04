@@ -3,18 +3,30 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\UserReview;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Str;
 
 class ReviewController extends Controller
 {
     public function __construct(private NotificationService $notif) {}
-    public function sellerReviews(User $user): JsonResponse
+    public function sellerReviews(Request $request, User $user): JsonResponse
     {
-        $reviews = UserReview::where('seller_id', $user->id)
+        // ?product_id=… : avis de CE produit uniquement (détail produit / feed vidéo).
+        // Sans paramètre : tous les avis du vendeur (profil vendeur).
+        $productId = $request->query('product_id');
+        if ($productId !== null && !Str::isUuid((string) $productId)) {
+            return response()->json(['message' => 'Produit invalide.'], 422);
+        }
+        $scope = fn ($q) => $q->where('seller_id', $user->id)
+            ->when($productId, fn ($w) => $w->where('product_id', $productId));
+
+        $reviews = $scope(UserReview::query())
             ->with('reviewer:id,full_name,username,avatar_url')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
@@ -22,11 +34,11 @@ class ReviewController extends Controller
         // Une seule requête d'agrégat. IMPORTANT : avg() renvoie une CHAÎNE avec
         // PostgreSQL ("4.5000000000000000") ; le frontend appelait .toFixed() dessus
         // et plantait (page Avis du profil vendeur). On renvoie de vrais nombres.
-        $agg = UserReview::where('seller_id', $user->id)
+        $agg = $scope(UserReview::query())
             ->selectRaw('COUNT(*) as total, AVG(rating) as avg_rating, AVG(delivery_rating) as avg_delivery, AVG(communication_rating) as avg_communication, AVG(accuracy_rating) as avg_accuracy')
             ->first();
 
-        $counts = UserReview::where('seller_id', $user->id)
+        $counts = $scope(UserReview::query())
             ->selectRaw('rating, COUNT(*) as c')
             ->groupBy('rating')
             ->pluck('c', 'rating');
@@ -53,6 +65,7 @@ class ReviewController extends Controller
     {
         $validated = $request->validate([
             'seller_id' => 'required|exists:users,id',
+            'product_id' => 'nullable|uuid|exists:products,id',
             'transaction_id' => 'nullable|exists:transactions,id',
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',
@@ -65,16 +78,36 @@ class ReviewController extends Controller
             return response()->json(['message' => 'Vous ne pouvez pas vous évaluer vous-même.'], 422);
         }
 
-        // Prevent duplicate reviews: one review per reviewer per seller
-        $existing = UserReview::where('reviewer_id', $request->user()->id)
-            ->where('seller_id', $validated['seller_id'])
-            ->first();
-
-        if ($existing) {
-            return response()->json(['message' => 'Vous avez déjà évalué ce vendeur.'], 422);
+        // Le produit doit appartenir au vendeur évalué.
+        if (!empty($validated['product_id'])) {
+            $owns = Product::where('id', $validated['product_id'])
+                ->where('user_id', $validated['seller_id'])
+                ->exists();
+            if (!$owns) {
+                return response()->json(['message' => 'Ce produit n\'appartient pas à ce vendeur.'], 422);
+            }
         }
 
-        $review = UserReview::create([...$validated, 'reviewer_id' => $request->user()->id]);
+        // Un avis par personne et par produit (ou par vendeur si aucun produit n'est précisé).
+        $existing = UserReview::where('reviewer_id', $request->user()->id)
+            ->where('seller_id', $validated['seller_id'])
+            ->when(
+                !empty($validated['product_id']),
+                fn ($q) => $q->where('product_id', $validated['product_id']),
+                fn ($q) => $q->whereNull('product_id')
+            )
+            ->exists();
+
+        if ($existing) {
+            return response()->json(['message' => 'Vous avez déjà donné votre avis sur cette annonce.'], 422);
+        }
+
+        try {
+            $review = UserReview::create([...$validated, 'reviewer_id' => $request->user()->id]);
+        } catch (QueryException $e) {
+            // Double envoi simultané : l'index unique de la base l'arrête.
+            return response()->json(['message' => 'Vous avez déjà donné votre avis sur cette annonce.'], 422);
+        }
 
         // Notify seller
         $this->notif->notifyReview(

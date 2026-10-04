@@ -12,7 +12,7 @@ class UserReview extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'reviewer_id', 'seller_id', 'transaction_id', 'rating', 'comment',
+        'reviewer_id', 'seller_id', 'product_id', 'transaction_id', 'rating', 'comment',
         'delivery_rating', 'communication_rating', 'accuracy_rating',
         'seller_response', 'seller_responded_at',
     ];
@@ -30,5 +30,6 @@ class UserReview extends Model
 
     public function reviewer() { return $this->belongsTo(User::class, 'reviewer_id'); }
     public function seller() { return $this->belongsTo(User::class, 'seller_id'); }
+    public function product() { return $this->belongsTo(Product::class); }
     public function transaction() { return $this->belongsTo(Transaction::class); }
 }

@@ -115,6 +115,11 @@ class Product extends Model
         return $this->belongsToMany(User::class, 'product_likes')->withTimestamps();
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(UserReview::class, 'product_id');
+    }
+
     public function savedByUsers()
     {
         return $this->belongsToMany(User::class, 'product_saves')->withTimestamps();
@@ -165,7 +170,8 @@ public function scopeTieredRank($query)
 {
     return $query
         ->leftJoin('users', 'products.user_id', '=', 'users.id')
-        ->select('products.*')
+        // Ne pas écraser les colonnes déjà ajoutées (withCount : compteur de favoris, d'avis…).
+        ->when(empty($query->getQuery()->columns), fn ($q) => $q->select('products.*'))
         ->selectRaw('FLOOR(GREATEST(EXTRACT(EPOCH FROM (NOW() - products.created_at)), 0) / 86400 / 5) AS age_tier')
         ->selectRaw("(CASE WHEN users.is_premium = true AND users.premium_expires_at > NOW() THEN 1 ELSE 0 END) AS is_premium_active")
         ->orderBy('products.is_pinned', 'desc')   // épinglés par l'admin : toujours en tête

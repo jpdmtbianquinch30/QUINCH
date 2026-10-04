@@ -56,13 +56,12 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   // ─── Bannière et message défilant pilotés par l'admin ───────────────────
   private api = inject(ApiService);
-  private defaultTicker: string[] = ['Ne te sous-estime jamais : ton talent peut devenir une opportunité sur QUINCH.', 'Achète avec confiance : découvre des produits utiles, proposés par des vendeurs de la communauté.', 'Vends ce que tu sais faire : une idée, un produit ou un talent peut trouver son public.', 'Tu proposes un service ? Présente ton savoir-faire et développe ton activité avec QUINCH.', "Chaque annonce est une nouvelle chance de te faire connaître, de créer des contacts et d'avancer.", "Crois en ton potentiel : QUINCH est là pour t'aider à transformer tes idées en opportunités."];
   banners = signal<{ id: string; title: string; image_url: string; link_url: string | null }[]>([]);
   bannerIndex = signal(0);
   currentBanner = computed(() => this.banners()[this.bannerIndex() % Math.max(1, this.banners().length)] ?? null);
   tickerEnabled = signal(true);
   tickerLabel = signal('QUINCH • INFO');
-  tickerMessages = signal<string[]>(this.defaultTicker);
+  tickerMessages = signal<string[]>([]);
   private bannerTimer: any;
 
   private loadFeedConfig() {
@@ -71,14 +70,14 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.banners.set(cfg.banners ?? []);
         this.tickerEnabled.set(cfg.ticker?.enabled !== false);
         if (cfg.ticker?.label) this.tickerLabel.set(cfg.ticker.label);
-        // Aucun message configuré : on garde les messages d'origine.
-        if (cfg.ticker?.messages?.length) this.tickerMessages.set(cfg.ticker.messages);
+        // Seuls les messages configurés par l'admin sont affichés (aucun par défaut).
+        this.tickerMessages.set(cfg.ticker?.messages ?? []);
         clearInterval(this.bannerTimer);
         if ((cfg.banners?.length ?? 0) > 1) {
           this.bannerTimer = setInterval(() => this.bannerIndex.update(i => i + 1), 6000);
         }
       },
-      error: () => {}, // config indisponible : le feed garde l'affichage d'origine
+      error: () => {}, // config indisponible : ni bannière ni bandeau
     });
   }
 

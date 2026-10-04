@@ -114,12 +114,17 @@ videoPaused = signal(false);
   private progressInterval: any;
 
   private initialized = false;
+  private lastTab: 'following' | 'foryou' | 'friends' = 'foryou';
 
   constructor() {
     // React to tab changes — only after init
     effect(() => {
       const tab = this.activeTab();
       if (!this.initialized) return;
+      // Ne recharge que si l'onglet a réellement changé (sinon on écraserait
+      // la vidéo cliquée dans le feed, transmise via l'état de navigation).
+      if (tab === this.lastTab) return;
+      this.lastTab = tab;
       this.products.set([]);
       this.currentIndex.set(0);
       this.playingIndex.set(0);
@@ -137,8 +142,27 @@ videoPaused = signal(false);
   }
 
   ngOnInit() {
-    // Load initial feed
-    this.loadFeed();
+    // Vidéo cliquée dans le feed : on démarre sur celle-ci (état de navigation),
+    // au lieu de toujours ouvrir la 1re vidéo du « Pour toi ».
+    const nav = (typeof history !== 'undefined' ? history.state : null) as
+      { videos?: any[]; initialIndex?: number } | null;
+    const startVideos = Array.isArray(nav?.videos) ? nav!.videos!.filter((v: any) => !!v?.video) : [];
+    if (startVideos.length > 0) {
+      const wanted = nav?.videos?.[nav?.initialIndex ?? 0];
+      const idx = Math.max(0, startVideos.findIndex((v: any) => v.id === wanted?.id));
+      this.products.set(startVideos);
+      this.currentIndex.set(idx);
+      this.playingIndex.set(idx);
+      this.loading.set(false);
+      const map: Record<string, boolean> = {};
+      startVideos.forEach((p: any) => { if (p.seller?.id) map[p.seller.id] = p.seller.is_following || false; });
+      this.followingMap.set(map);
+      // Les pages suivantes se chargent au scroll (loadMore).
+      this.hasMorePages = true;
+      this.nextPage = Math.floor(startVideos.length / 10) + 1;
+    } else {
+      this.loadFeed();
+    }
     this.initialized = true;
 
     // Search
@@ -200,6 +224,7 @@ videoPaused = signal(false);
     if (tab === this.activeTab()) return;
     this.hasMorePages = true;
     this.loadingMore = false;
+    this.nextPage = 2;
     this.activeTab.set(tab);
   }
 
@@ -256,13 +281,15 @@ videoPaused = signal(false);
   }
 
   private loadingMore = false;
+  private nextPage = 2; // prochaine page à charger (suit les pages réellement demandées)
   private hasMorePages = true;
 
   loadMore() {
     if (this.loadingMore || !this.hasMorePages) return;
     this.loadingMore = true;
 
-    const page = Math.floor(this.products().length / 10) + 1;
+    const page = this.nextPage;
+    const known = new Set(this.products().map(p => p.id));
 
     let obs;
     switch (this.activeTab()) {
@@ -273,7 +300,10 @@ videoPaused = signal(false);
 
     obs.subscribe({
       next: (res: any) => {
-        const newProducts = res.data || res.products || [];
+        this.nextPage = page + 1;
+        const all = res.data || res.products || [];
+        // Évite les doublons avec les vidéos déjà affichées.
+        const newProducts = all.filter((p: any) => !known.has(p.id));
         if (newProducts.length) {
           this.products.update(p => [...p, ...newProducts]);
           const map = { ...this.followingMap() };
@@ -283,7 +313,7 @@ videoPaused = signal(false);
           this.followingMap.set(map);
         }
         // No more pages if we got fewer items than per_page
-        if (newProducts.length < 10) this.hasMorePages = false;
+        if (all.length < 10) this.hasMorePages = false;
         this.loadingMore = false;
       },
       error: () => { this.loadingMore = false; },
@@ -878,7 +908,7 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
     const sid = product.seller?.id;
     if (sid) {
       this.dpLoadingReviews.set(true);
-      this.reviewService.getSellerReviews(sid).subscribe({
+      this.reviewService.getSellerReviews(sid, product.id).subscribe({
         next: (r: any) => {
           const reviewsList = r.reviews?.data || r.reviews || [];
           this.dpReviews.set(reviewsList);
@@ -1168,8 +1198,16 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
   dpSubmitReview() {
     const p = this.dp(); if (!p?.seller?.id || !this.dpNewRating()) return;
     this.dpSubmitting.set(true);
-    this.reviewService.createReview({ seller_id: p.seller.id, rating: this.dpNewRating(), comment: this.dpNewComment || undefined }).subscribe({
-      next: () => { this.dpSubmitting.set(false); this.dpSubmitted.set(true); this.notify.success('Avis publie!'); },
+    this.reviewService.createReview({ seller_id: p.seller.id, product_id: p.id, rating: this.dpNewRating(), comment: this.dpNewComment || undefined }).subscribe({
+      next: () => {
+        this.dpSubmitting.set(false); this.dpSubmitted.set(true); this.notify.success('Avis publie!');
+        this.dpNewComment = ''; this.dpNewRating.set(0);
+        // Rafraîchit la liste et le compteur de CETTE annonce.
+        this.reviewService.getSellerReviews(p.seller.id, p.id).subscribe({
+          next: (r: any) => { this.dpReviews.set(r.reviews?.data || r.reviews || []); this.dpStats.set(r.stats || null); },
+        });
+        this.products.update(list => list.map(x => x.id === p.id ? { ...x, review_count: (x.review_count || 0) + 1 } : x));
+      },
       error: (err: any) => { this.dpSubmitting.set(false); this.notify.error(err?.error?.message || 'Erreur lors de la publication.'); },
     });
   }

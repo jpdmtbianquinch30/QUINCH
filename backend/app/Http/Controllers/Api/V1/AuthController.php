@@ -41,6 +41,9 @@ class AuthController extends Controller
             'device_fingerprint' => $request->header('X-Device-Fingerprint'),
         ]);
 
+        // Message de bienvenue de l'équipe QUINCH dès l'inscription (et non à la 1re connexion).
+        app(NotificationService::class)->notifyWelcome($user);
+
         // Code de vérification envoyé par SMS (en arrière-plan).
         $otpService = app(\App\Services\OtpService::class);
         $wait = $otpService->throttle($user->phone_number);

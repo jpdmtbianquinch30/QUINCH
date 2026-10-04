@@ -458,7 +458,7 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
     const sellerId = p?.seller?.id || p?.user?.id;
     if (!sellerId) return;
     this.loadingReviews.set(true);
-    this.reviewService.getSellerReviews(sellerId).subscribe({
+    this.reviewService.getSellerReviews(sellerId, p.id).subscribe({
       next: (res: any) => {
         const reviewsList = res.reviews?.data || res.reviews || [];
         this.reviews.set(reviewsList);
@@ -493,6 +493,7 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
     this.submittingReview.set(true);
     this.reviewService.createReview({
       seller_id: sellerId,
+      product_id: p.id,
       rating: this.newReviewRating(),
       comment: this.newReviewComment.trim() || undefined,
     }).subscribe({
