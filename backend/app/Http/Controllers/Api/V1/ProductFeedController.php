@@ -504,6 +504,9 @@ class ProductFeedController extends Controller
             ->withSum(['products as total_views' => function ($q) {
                 $q->where('status', 'active');
             }], 'view_count')
+            // Borne la charge : on ne score que les 60 vendeurs les plus actifs (au lieu de toute la table).
+            ->orderByDesc('active_products_count')
+            ->limit(60)
             ->get()
             ->map(function ($u) {
                 $premiumBoost = $u->isPremiumActive() ? config('quinch.premium.feed_boost', 30) : 0;
@@ -515,8 +518,12 @@ class ProductFeedController extends Controller
             })
             ->sortByDesc('engagement_score')
             ->take(15)
-            ->values()
-            ->map(function ($u) {
+            ->values();
+
+        $sellerBadges = \App\Models\UserBadge::summaryForMany($sellers->pluck('id')->all());
+
+        $sellers = $sellers
+            ->map(function ($u) use ($sellerBadges) {
                 $avatar = $u->avatar_url;
                 if ($avatar && !str_starts_with($avatar, 'http')) {
                     $avatar = url('storage/' . $avatar);
@@ -531,6 +538,7 @@ class ProductFeedController extends Controller
                     'products_count' => $u->active_products_count,
                     'total_likes'    => (int) ($u->total_likes ?? 0),
                     'is_premium'     => $u->isPremiumActive(),
+                    'badges'         => $sellerBadges[$u->id] ?? [],
                 ];
             });
 

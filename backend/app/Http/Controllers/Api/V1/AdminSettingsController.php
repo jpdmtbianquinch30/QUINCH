@@ -311,7 +311,7 @@ class AdminSettingsController extends Controller
             'body' => ['required', 'string', 'max:1000'],
             'audience' => ['required', 'in:all,premium,sellers,city'],
             'city' => ['required_if:audience,city', 'nullable', 'string', 'max:100'],
-            'action_url' => ['nullable', 'string', 'max:300', 'regex:#^/(?!/)#'],
+            'action_url' => ['nullable', 'string', 'max:300', 'regex:/^\/(?![\/\\])/'],
         ]);
 
         $count = $this->audienceQuery($validated['audience'], $validated['city'] ?? null)->count();

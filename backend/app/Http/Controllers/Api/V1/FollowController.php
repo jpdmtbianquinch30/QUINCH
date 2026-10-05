@@ -35,9 +35,6 @@ class FollowController extends Controller
             ->exists();
 
         if ($isMutual) {
-            // Notify BOTH users they are now friends
-            $this->notif->notifyFriendship($user->id, $me);
-            $this->notif->notifyFriendship($me->id, $user);
 
             // Réutilise la conversation existante quel que soit son product_id —
 // avant, whereNull('product_id') ignorait une conversation déjà liée à
@@ -70,6 +67,10 @@ if (!$conversation) {
         }
     }
 }
+
+            // Notify BOTH users they are now friends (après création : le lien ouvre ce chat)
+            $this->notif->notifyFriendship($user->id, $me);
+            $this->notif->notifyFriendship($me->id, $user);
 
             // Send system message
             Message::create([

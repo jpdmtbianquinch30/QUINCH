@@ -15,7 +15,7 @@ class MarketplaceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Product::with(['user:id,full_name,username,avatar_url,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
+        $query = Product::with(['user:id,full_name,username,avatar_url,city,trust_score,is_premium,premium_expires_at', 'category:id,name,slug', 'video'])
             // Tous les produits et services actifs, avec ou sans vidéo / photo.
             ->where('products.status', 'active');
 
@@ -82,9 +82,7 @@ match ($sortBy) {
         }
 
         // Badges des vendeurs en UNE requête pour toute la page (pas de N+1).
-        $sellerBadges = \App\Models\UserBadge::summaryForMany(
-            $products->getCollection()->pluck('user_id')->filter()->unique()->values()->all()
-        );
+        $sellerBadges = \App\Models\UserBadge::summaryForMany($products->pluck('user_id')->unique()->all());
 
         $items = $products->getCollection()->map(function ($product) use ($likedIds, $savedIds, $sellerBadges) {
             $thumbnail = $product->poster_full_url
@@ -104,15 +102,23 @@ match ($sortBy) {
                 'images'       => $product->images ?? [],
                 'like_count'   => $product->like_count ?? 0,
                 'view_count'   => $product->view_count ?? 0,
+                'condition'    => $product->condition,
+                'is_negotiable' => (bool) $product->is_negotiable,
+                'video'        => $product->video ? [
+                    'id'        => $product->video->id,
+                    'url'       => '/api/v1/videos/' . $product->video->id . '/stream',
+                    'thumbnail' => $product->video->thumbnail_path ? '/api/v1/videos/' . $product->video->id . '/thumbnail' : null,
+                ] : null,
                 'category'     => $product->category?->name,
                 'category_id'  => $product->category_id,
                 'seller'       => [
                     'id'          => $product->user?->id,
-                    'username'    => $product->user?->username,
                     'full_name'   => $product->user?->full_name,
+                    'username'    => $product->user?->username,
+                    'city'        => $product->user?->city,
                     'avatar'      => $product->user?->avatar_url,
                     'avatar_url'  => $product->user?->avatar_url,
-                    'badges'      => $sellerBadges[$product->user?->id] ?? [],
+                    'badges'      => $sellerBadges[$product->user_id] ?? [],
                     'trust_score' => $product->user?->trust_score,
                     'is_premium'  => $product->user?->isPremiumActive() ?? false,
                 ],

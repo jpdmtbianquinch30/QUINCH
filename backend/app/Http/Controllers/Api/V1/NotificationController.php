@@ -21,16 +21,19 @@ class NotificationController extends Controller
 
         $notifications = UserNotification::where('user_id', $userId)
             ->forTab($tab)
-            ->with('sender:id,full_name,avatar_url,username')
+            ->with('sender:id,full_name,avatar_url,username,is_premium,premium_expires_at')
             ->orderBy('created_at', 'desc')
             ->paginate(30);
 
-        // Badges des expéditeurs en UNE requête pour la page (pas de N+1).
-        $senderIds = collect($notifications->items())->pluck('sender.id')->filter()->unique()->values()->all();
-        $badgesBySender = $senderIds ? \App\Models\UserBadge::summaryForMany($senderIds) : [];
-        foreach ($notifications->items() as $n) {
-            if ($n->sender) {
-                $n->sender->setAttribute('badges', $badgesBySender[$n->sender->id] ?? []);
+        // Badges + statut premium de l'expéditeur (une seule requête pour la page).
+        $senderIds = $notifications->getCollection()->pluck('sender_id')->filter()->unique()->values()->all();
+        if ($senderIds) {
+            $badges = \App\Models\UserBadge::summaryForMany($senderIds);
+            foreach ($notifications->getCollection() as $n) {
+                if ($n->sender) {
+                    $n->sender->setAttribute('badges', $badges[$n->sender->id] ?? []);
+                    $n->sender->setAttribute('is_premium', $n->sender->isPremiumActive());
+                }
             }
         }
 
@@ -54,23 +57,6 @@ class NotificationController extends Controller
     }
 
     /**
-     * Messages de l'équipe QUINCH non lus (annonces, « problème corrigé »…),
-     * affichés en haut du feed dès l'entrée sur le site.
-     */
-    public function adminFeed(Request $request): JsonResponse
-    {
-        $items = UserNotification::where('user_id', $request->user()->id)
-            ->where('type', 'admin')
-            ->unread()
-            ->where('created_at', '>=', now()->subDays(14))
-            ->orderBy('created_at', 'desc')
-            ->limit(3)
-            ->get(['id', 'title', 'body', 'icon', 'action_url', 'created_at']);
-
-        return response()->json(['data' => $items]);
-    }
-
-    /**
      * Get unread count (overall + per tab).
      */
     public function unreadCount(Request $request): JsonResponse
@@ -85,6 +71,25 @@ class NotificationController extends Controller
                 'system'       => UserNotification::where('user_id', $userId)->forTab('system')->unread()->count(),
             ],
         ]);
+    }
+
+    /**
+     * Annonces à afficher en haut du feed dès l'arrivée de l'utilisateur :
+     * message de bienvenue (objectif 80 % de confiance), messages de l'équipe
+     * (corrections effectuées, informations…). Non lues uniquement, 30 jours max.
+     */
+    public function announcements(Request $request): JsonResponse
+    {
+        $items = UserNotification::where('user_id', $request->user()->id)
+            ->whereIn('type', ['admin', 'admin_message', 'welcome'])
+            ->unread()
+            ->where('created_at', '>=', now()->subDays(30))
+            ->orderByRaw("CASE WHEN type = 'welcome' THEN 0 ELSE 1 END")
+            ->orderByDesc('created_at')
+            ->limit(3)
+            ->get(['id', 'type', 'title', 'body', 'icon', 'action_url', 'data', 'created_at']);
+
+        return response()->json(['data' => $items]);
     }
 
     /**

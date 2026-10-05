@@ -12,12 +12,9 @@ class ProductVideoController extends Controller
 {
         public function upload(Request $request): JsonResponse
     {
-        if (!$request->user()->isPremiumActive()) {
-            return response()->json([
-                'message' => 'Passez en mode Premium pour pouvoir charger une video de votre produit, pour plus de visibilite.',
-                'code'    => 'premium_required',
-            ], 403);
-        }
+        // Les comptes gratuits peuvent charger une vidéo : la publication d'une annonce
+        // AVEC vidéo leur coûte 150 F (voir ProductController::store / startListingPayment),
+        // le premium est exempté. Le throttle de la route (5/min) limite les abus d'upload.
 
         $request->validate([
             'video' => [

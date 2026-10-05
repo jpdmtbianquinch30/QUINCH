@@ -215,7 +215,7 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
     Route::prefix('notifications')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::get('unread-count', [NotificationController::class, 'unreadCount']);
-        Route::get('admin-feed', [NotificationController::class, 'adminFeed']);
+        Route::get('announcements', [NotificationController::class, 'announcements']);
         Route::post('{notification}/read', [NotificationController::class, 'markRead']);
         Route::post('read-all', [NotificationController::class, 'markAllRead']);
         Route::delete('{notification}', [NotificationController::class, 'destroy']);

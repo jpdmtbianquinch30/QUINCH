@@ -29,18 +29,18 @@ class ConversationController extends Controller
             ->orderBy('last_message_at', 'desc')
             ->paginate(20);
 
-        // Amis = abonnement mutuel (une seule requête pour toute la page).
-        $friendIds = \App\Models\UserFollow::where('follower_id', $userId)
-            ->whereIn('following_id', function ($q) use ($userId) {
-                $q->select('follower_id')->from('user_follows')->where('following_id', $userId);
-            })
-            ->pluck('following_id')
-            ->flip();
+        // Amis = abonnement réciproque. Deux requêtes pour toute la page (pas de N+1).
+        $otherIds = $conversations->getCollection()
+            ->map(fn ($c) => $c->buyer_id === $userId ? $c->seller_id : $c->buyer_id)
+            ->unique()->values()->all();
+        $iFollow = \App\Models\UserFollow::where('follower_id', $userId)->whereIn('following_id', $otherIds)->pluck('following_id')->all();
+        $followMe = \App\Models\UserFollow::where('following_id', $userId)->whereIn('follower_id', $otherIds)->pluck('follower_id')->all();
+        $friendIds = array_flip(array_intersect($iFollow, $followMe));
 
         $conversations->getCollection()->transform(function ($conv) use ($userId, $friendIds) {
             $conv->unread_count = $conv->unreadCountFor($userId);
             $conv->other_user = $conv->buyer_id === $userId ? $conv->seller : $conv->buyer;
-            $conv->other_user->is_friend = $friendIds->has($conv->other_user->id);
+            $conv->other_user->is_friend = isset($friendIds[$conv->other_user->id]);
             $conv->other_user->is_premium = $conv->other_user->isPremiumActive();
             $conv->other_user->badges = \App\Models\UserBadge::summaryFor($conv->other_user->id);
             return $conv;

@@ -123,7 +123,8 @@ class NotificationService
     {
         return $this->send($userId, 'message', 'Nouveau message', $sender->full_name . ': ' . mb_substr($preview, 0, 80), [
             'icon'       => 'chat',
-            'action_url' => '/messages',
+            // Ouvre directement LE chat de cet expéditeur (et non la liste des conversations).
+            'action_url' => '/messages?conversation=' . $conversationId,
             'priority'   => self::PRIORITY_NORMAL,
             'sender_id'  => $sender->id,
             'image_url'  => $sender->avatar_url,
@@ -154,7 +155,8 @@ class NotificationService
     {
         return $this->send($userId, 'follow', 'Nouvel ami !', 'Vous et ' . $friend->full_name . ' êtes maintenant amis. Vous pouvez discuter !', [
             'icon'       => 'people',
-            'action_url' => '/messages',
+            // ?user= : le front ouvre (ou crée) la conversation avec cet ami.
+            'action_url' => '/messages?user=' . $friend->id,
             'priority'   => self::PRIORITY_NORMAL,
             'sender_id'  => $friend->id,
             'image_url'  => $friend->avatar_url,
@@ -275,7 +277,8 @@ class NotificationService
     {
         return $this->send($userId, 'admin', $title, $body, [
             'icon'       => 'admin_panel_settings',
-            'action_url' => $actionUrl ?? '/profile',
+            // « Voir le détail » : par défaut, le guide complet de QUINCH (public/guide/index.html).
+            'action_url' => $actionUrl ?? '/guide/index.html',
             'priority'   => self::PRIORITY_CRITICAL,
         ]);
     }
@@ -321,7 +324,8 @@ class NotificationService
             [
                 'icon'       => 'waving_hand',
                 'action_url' => '/profile/edit',
-                'priority'   => self::PRIORITY_NORMAL,
+                'priority'   => self::PRIORITY_CRITICAL,
+                'data'       => ['kind' => 'welcome', 'target_trust_score' => 80],
             ]
         );
     }

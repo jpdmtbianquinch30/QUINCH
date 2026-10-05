@@ -307,9 +307,10 @@ class AdminUserController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'max:1000'],
+            'action_url' => ['nullable', 'string', 'max:300', 'regex:/^\/(?![\/\\])/'],
         ]);
 
-        $this->notif->notifyAdmin($user->id, $validated['title'], $validated['body']);
+        $this->notif->notifyAdmin($user->id, $validated['title'], $validated['body'], $validated['action_url'] ?? null);
 
         AdminLogger::log($request->user(), 'notification_sent', 'User', $user->id, ['title' => $validated['title']]);
 

@@ -59,7 +59,11 @@ class ProductController extends Controller
         // cette limite : jusqu'à 5 photos supplémentaires pour un compte
         // non-premium (6 au total), jusqu'à 10 pour un compte premium (11
         // au total).
-        $additionalCount = count($request->file('image_files', []));
+        // Les chemins texte du champ « images » comptent aussi (sinon la limite se contourne),
+        // et ils ne peuvent pas pointer vers une URL externe.
+        $textImages = array_values(array_filter((array) ($validated['images'] ?? []), fn ($i) => is_string($i) && !preg_match('#^(https?:)?//#i', $i)));
+        $validated['images'] = $textImages;
+        $additionalCount = count($request->file('image_files', [])) + count($textImages);
         $maxAdditional = $isPremium
             ? config('quinch.premium.premium_additional_photos_max')
             : config('quinch.premium.free_additional_photos_max');
