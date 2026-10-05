@@ -218,14 +218,10 @@ $radius-sm: 8px;
 
 .vid-progress-bar {
   flex: 1;
-  height: 6px;
-  background: rgba(255,255,255,0.25);
-  border-radius: 3px;
+  height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
   overflow: hidden;
-  cursor: pointer;
-  // zone de clic confortable au doigt sans épaissir la barre
-  position: relative;
-  &::after { content: ''; position: absolute; inset: -10px 0; }
 }
 
 .vid-progress-fill {
@@ -1991,50 +1987,82 @@ $radius-sm: 8px;
   background: transparent;
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════
-//  BARRE DU HAUT (retour • type • actions) — mobile adaptatif
-//  Reste collée en haut, translucide, ne déborde jamais, boutons alignés.
-// ═══════════════════════════════════════════════════════════════════════
-@media (max-width: 900px) {
-  .detail-topbar {
-    gap: 8px;
-    padding: calc(10px + env(safe-area-inset-top, 0px)) 0 10px;
-    margin: 0 -20px;                 // pleine largeur malgré le padding de page
-    padding-left: 20px;
-    padding-right: 20px;
-    background: var(--q-bg-glass, rgba(15, 15, 26, 0.85));
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--q-border, rgba(255, 255, 255, 0.06));
-  }
-
-  .topbar-btn { width: 38px; height: 38px; flex: 0 0 auto; }
-
-  .topbar-type-badge {
-    flex: 0 1 auto;
-    min-width: 0;
-    max-width: 38vw;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 0 0 auto;
-  }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .topbar-btn .active-fav {
+    color: #9c7616 !important
 }
-
-@media (max-width: 500px) {
-  .detail-topbar { margin: 0 -12px; padding-left: 12px; padding-right: 12px; gap: 6px; }
-  .topbar-btn { width: 36px; height: 36px; .material-icons { font-size: 19px; } }
-  .topbar-actions { gap: 4px; }
+:host-context(body.quinch-light) .media-video {
+    background: #f4f6fb
 }
-
-@media (max-width: 340px) {
-  // très petits écrans : on garde l'essentiel (le badge de type passe en icône seule)
-  .topbar-type-badge { max-width: 30px; padding: 6px; font-size: 0; gap: 0; }
+:host-context(body.quinch-light) .media-image {
+    background: #ffffff
 }
+:host-context(body.quinch-light) .thumb-item.video-thumb {
+    background: rgba(15, 23, 42, 0.028)
+}
+:host-context(body.quinch-light) .thumb-item.video-thumb > .material-icons {
+    color: rgba(23, 32, 57, 0.55)
+}
+:host-context(body.quinch-light) .stock-info {
+    color: #2e8a4f
+}
+:host-context(body.quinch-light) .section-text ::ng-deep .hashtag {
+    color: #50579a
+}
+:host-context(body.quinch-light) .section-text ::ng-deep .mention {
+    color: #20835f
+}
+:host-context(body.quinch-light) .delivery-banner.fixed > .material-icons {
+    color: #986207
+}
+:host-context(body.quinch-light) .delivery-banner.fixed strong {
+    color: #986207
+}
+:host-context(body.quinch-light) .no-payment-methods .material-icons {
+    color: #986207
+}
+:host-context(body.quinch-light) .premium-badge .material-icons {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .trust-score.high {
+    color: #157a3a
+}
+:host-context(body.quinch-light) .trust-score.mid {
+    color: #986207
+}
+:host-context(body.quinch-light) .qty-selector {
+    background: rgba(15, 23, 42, 0.014);
+    border: 1px solid rgba(15, 23, 42, 0.055)
+}
+:host-context(body.quinch-light) .qty-selector label {
+    color: rgba(23, 32, 57, 0.75)
+}
+:host-context(body.quinch-light) .qty-controls button {
+    background: rgba(15, 23, 42, 0.035);
+    border: 1px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .reviews-section .section-title .material-icons {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .rating-label {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .lightbox-overlay {
+    background: rgba(255, 255, 255, 0.92)
+}
+:host-context(body.quinch-light) .lightbox-close {
+    background: rgba(15, 23, 42, 0.084)
+}
+:host-context(body.quinch-light) .lightbox-close:hover {
+    background: rgba(15, 23, 42, 0.1)
+}
+:host-context(body.quinch-light) .lightbox-video {
+    background: #f4f6fb
+}
+:host-context(body.quinch-light) .lightbox-nav {
+    background: rgba(15, 23, 42, 0.07)
+}
+:host-context(body.quinch-light) .lightbox-nav:hover {
+    background: rgba(15, 23, 42, 0.1)
+}
+/* LIGHT-AUTO:END */

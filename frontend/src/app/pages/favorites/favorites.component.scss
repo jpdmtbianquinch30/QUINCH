@@ -1055,3 +1055,39 @@
     transform: none;
   }
 }
+
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .header-icon .material-icons {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .results-count {
+    background: rgba(15, 23, 42, 0.025);
+    border: 1px solid rgba(15, 23, 42, 0.064)
+}
+:host-context(body.quinch-light) .fav-card {
+    border: 1px solid rgba(15, 23, 42, 0.06)
+}
+:host-context(body.quinch-light) .fav-placeholder .material-icons {
+    color: rgba(23, 32, 57, 0.43)
+}
+:host-context(body.quinch-light) .favorite-badge {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.118)
+}
+:host-context(body.quinch-light) .favorite-badge .material-icons {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .fav-remove {
+    border: 1px solid rgba(15, 23, 42, 0.118);
+    background: rgba(255, 255, 255, 0.72)
+}
+:host-context(body.quinch-light) .fav-remove:hover {
+    border-color: rgba(15, 23, 42, 0.14)
+}
+:host-context(body.quinch-light) .loader {
+    border: 3px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .empty-icon .material-icons {
+    color: rgba(156, 118, 22, 0.75)
+}
+/* LIGHT-AUTO:END */

@@ -6,12 +6,13 @@ import { ChatService } from './core/services/chat.service';
 import { FavoriteService } from './core/services/favorite.service';
 import { ThemeService } from './core/services/theme.service';
 import { ToastComponent } from './shared/toast/toast.component';
+import { PushPopupComponent } from './shared/announcements/push-popup.component';
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, PushPopupComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -55,6 +56,9 @@ export class App implements OnInit, OnDestroy {
   showSidebar = computed(() => {
     const url = this.currentUrl();
     const hiddenRoutes = ['/auth/', '/onboarding', '/videos'];
+    // /admin a sa propre barre latérale ; startsWith (et non includes) pour ne pas
+    // masquer le menu sur des routes comme /seller/admin_pro.
+    if (url.split('?')[0] === '/admin' || url.startsWith('/admin/')) return false;
     return !hiddenRoutes.some(r => url.includes(r));
   });
 

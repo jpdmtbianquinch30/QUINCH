@@ -17,7 +17,18 @@ export interface AppNotification {
   priority?: string;
   image_url?: string;
   sender_id?: string;
-  sender?: { id: string; full_name: string; avatar_url?: string; username?: string; badges?: { type: string; name: string; icon: string; color: string }[] };
+  sender?: { id: string; full_name: string; avatar_url?: string; username?: string; is_premium?: boolean; badges?: { type: string; name: string; icon: string; color: string }[] };
+}
+
+export interface Announcement {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  icon?: string;
+  action_url?: string | null;
+  data?: any;
+  created_at: string;
 }
 
 export interface NotifCounts {
@@ -44,6 +55,24 @@ export class NotificationService {
   tabCounts = signal<NotifCounts>({ all: 0, interactions: 0, messages: 0, system: 0 });
   preferences = signal<NotifPreference[]>([]);
 
+  // Annonces de l'équipe QUINCH (bienvenue, corrections effectuées…) affichées sur le feed
+  announcements = signal<Announcement[]>([]);
+
+  loadAnnouncements(): Observable<any> {
+    return this.api.get<any>('notifications/announcements').pipe(
+      tap(res => this.announcements.set(res?.data ?? []))
+    );
+  }
+
+  /** Ferme une annonce : marquée lue côté serveur, le compteur de la cloche suit. */
+  dismissAnnouncement(id: string): void {
+    this.announcements.update(list => list.filter(a => a.id !== id));
+    this.api.post<any>(`notifications/${id}/read`).subscribe({
+      next: () => this.getUnreadCount().subscribe({ error: () => {} }),
+      error: () => {},
+    });
+  }
+
   // Toast notifications (client-side)
   toasts = signal<Toast[]>([]);
 
@@ -60,11 +89,6 @@ export class NotificationService {
         }
       })
     );
-  }
-
-  /** Messages admin non lus à afficher en haut du feed. */
-  getAdminFeed(): Observable<any> {
-    return this.api.get<any>('notifications/admin-feed');
   }
 
   /**

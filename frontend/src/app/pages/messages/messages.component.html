@@ -42,25 +42,29 @@
         }
       </div>
 
-      <div class="conv-filter" role="tablist" aria-label="Filtrer les conversations">
-        <button type="button" role="tab" [class.active]="convFilter() === 'all'" [attr.aria-selected]="convFilter() === 'all'" (click)="convFilter.set('all')">Tous</button>
-        <button type="button" role="tab" [class.active]="convFilter() === 'friends'" [attr.aria-selected]="convFilter() === 'friends'" (click)="convFilter.set('friends')">Mes amis</button>
+      <div class="conv-filter" role="tablist" aria-label="Filtrer le répertoire">
+        <button type="button" role="tab" [class.active]="listFilter() === 'all'" (click)="setListFilter('all')">
+          Tous <span class="cf-count">{{ chat.conversations().length }}</span>
+        </button>
+        <button type="button" role="tab" [class.active]="listFilter() === 'friends'" (click)="setListFilter('friends')">
+          <span class="material-icons">people</span> Mes amis <span class="cf-count">{{ friendsCount() }}</span>
+        </button>
       </div>
 
       @if (loading()) {
         <div class="conv-loading">
           <div class="loader"></div>
-          <p class="loading-text">Veuillez patienter, chargement des messages…</p>
+          <p class="conv-loading-text">Veuillez patienter, chargement des messages…</p>
         </div>
       } @else if (filteredConversations().length === 0) {
         <div class="conv-empty">
           <span class="material-icons">chat_bubble_outline</span>
-          @if (convFilter() === 'friends' && !searchQuery()) {
-            <p>Aucun ami pour le moment</p>
-            <p class="hint">Un ami = un utilisateur que vous suivez et qui vous suit</p>
-          } @else if (searchQuery()) {
+          @if (searchQuery()) {
             <p>Aucun résultat pour "{{ searchQuery() }}"</p>
             <p class="hint">Essayez un autre terme de recherche</p>
+          } @else if (listFilter() === 'friends') {
+            <p>Aucun ami pour le moment</p>
+            <p class="hint">Vous devenez amis quand vous vous abonnez mutuellement.</p>
           } @else {
             <p>Aucune conversation</p>
             <p class="hint">Contactez un vendeur pour commencer</p>
@@ -205,12 +209,6 @@
         </div>
 
         <!-- Messages -->
-        @if (!messagesReady()) {
-          <div class="chat-loading" role="status">
-            <div class="loader"></div>
-            <p class="loading-text">Veuillez patienter, chargement des messages…</p>
-          </div>
-        }
         <div class="chat-messages" #messagesContainer [class.messages-hidden]="!messagesReady()">
           <!-- Product/Service Context Card -->
           @if (selectedConv()?.product) {
@@ -249,34 +247,25 @@
                     <span class="material-icons">delete</span>
                   </button>
                 }
-                <div class="message-bubble audio-bubble">
-                  <div class="audio-player">
-                    <button class="audio-play-btn" (click)="toggleAudioPlay(msg)">
-                      <span class="material-icons">
-                        {{ isAudioPlaying(msg.id) ? 'pause' : 'play_arrow' }}
-                      </span>
+                <div class="message-bubble audio-bubble" [class.is-playing]="isAudioPlaying(msg.id)">
+                  <div class="vm">
+                    <button class="vm-play" type="button" (click)="toggleAudioPlay(msg)" [attr.aria-label]="isAudioPlaying(msg.id) ? 'Pause' : 'Lire le message vocal'">
+                      <span class="material-icons">{{ isAudioPlaying(msg.id) ? 'pause' : 'play_arrow' }}</span>
                     </button>
-                    <div class="audio-content">
-                      <div class="audio-waveform" (click)="seekAudio(msg, $event)">
-                        <div class="audio-wave-bg">
-                          @for (bar of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; track bar) {
-                            <div class="wave-bar"></div>
-                          }
-                        </div>
-                        <div class="audio-wave-progress" [style.width.%]="getAudioProgress(msg.id)">
-                          @for (bar of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; track bar) {
-                            <div class="wave-bar active"></div>
-                          }
-                        </div>
-                      </div>
-                      <div class="audio-time">
-                        @if (getAudioCurrentTime(msg.id) > 0) {
-                          {{ formatAudioDuration(getAudioCurrentTime(msg.id)) }}
-                        } @else {
-                          {{ formatAudioDuration(msg.metadata?.duration) }}
+                    <div class="vm-body">
+                      <div class="vm-wave" (click)="seekAudio(msg, $event)" role="slider" aria-label="Position dans le message vocal">
+                        @for (h of waveBars(msg); track $index) {
+                          <span class="vm-bar" [class.done]="($index + 1) / 28 * 100 <= getAudioProgress(msg.id)" [style.height.%]="h"></span>
                         }
                       </div>
+                      <div class="vm-meta">
+                        <span class="vm-time">
+                          @if (getAudioCurrentTime(msg.id) > 0) { {{ formatAudioDuration(getAudioCurrentTime(msg.id)) }} } @else { {{ formatAudioDuration(msg.metadata?.duration) }} }
+                        </span>
+                        <span class="vm-tag"><span class="material-icons">mic</span> Vocal</span>
+                      </div>
                     </div>
+                    <button class="vm-rate" type="button" (click)="cycleAudioRate($event)" title="Vitesse de lecture">{{ audioRate() }}×</button>
                   </div>
                   <div class="message-footer">
                     <span class="message-time">{{ formatTime(msg.created_at) }}</span>

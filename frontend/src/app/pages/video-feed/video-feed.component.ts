@@ -2,7 +2,7 @@ import {
   Component, inject, OnInit, signal, effect, OnDestroy,
   HostListener, ViewChildren, ViewChild, QueryList, ElementRef, AfterViewInit
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../core/services/product.service';
@@ -15,12 +15,13 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ReviewService, ReviewStats } from '../../core/services/review.service';
+import { ReportModalComponent, ReportKind } from '../../shared/report-modal/report-modal.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [DecimalPipe, FormsModule],
+  imports: [DecimalPipe, FormsModule, ReportModalComponent],
   templateUrl: './video-feed.component.html',
   styleUrl: './video-feed.component.scss',
 })
@@ -37,8 +38,18 @@ export class VideoFeedComponent implements OnInit, OnDestroy, AfterViewInit {
   private analytics = inject(AnalyticsService);
   auth = inject(AuthService);
   private reviewService = inject(ReviewService);
-  private router = inject(Router);
+  router = inject(Router);
   private location = inject(Location);
+  private route = inject(ActivatedRoute);
+
+  /** Compteur de notifications non lues (même source que la barre de navigation). */
+  unreadCount = this.notify.unreadCount;
+
+  // Signalement (branché sur l'admin via ReportModalComponent)
+  reportTarget = signal<{ kind: ReportKind; id: string; subject: string } | null>(null);
+
+  /** État de navigation lu AU PLUS TÔT : getCurrentNavigation() n'est valide que pendant la navigation. */
+  private navState: { videos?: any[]; initialIndex?: number } | null = null;
 
   products = signal<any[]>([]);
   loading = signal(false);
@@ -86,10 +97,6 @@ videoPaused = signal(false);
   dpNewHover = signal(0);
   dpNewComment = '';
   dpSubmitting = signal(false);
-  showReport = signal(false);
-  reportReason = '';
-  reportDescription = '';
-  reportSending = signal(false);
   dpSubmitted = signal(false);
   dpShowContact = signal(false);
   dpShowNego = signal(false);
@@ -121,6 +128,13 @@ videoPaused = signal(false);
   private lastTab: 'following' | 'foryou' | 'friends' = 'foryou';
 
   constructor() {
+    // Vidéo cliquée dans le feed : getCurrentNavigation() est la seule source
+    // fiable dans le constructeur ; history.state sert de secours (rechargement).
+    const fromNav = this.router.getCurrentNavigation()?.extras?.state as any;
+    this.navState = (fromNav && Array.isArray(fromNav.videos))
+      ? fromNav
+      : ((typeof history !== 'undefined' ? history.state : null) as any);
+
     // React to tab changes — only after init
     effect(() => {
       const tab = this.activeTab();
@@ -146,13 +160,13 @@ videoPaused = signal(false);
   }
 
   ngOnInit() {
-    // Vidéo cliquée dans le feed : on démarre sur celle-ci (état de navigation),
-    // au lieu de toujours ouvrir la 1re vidéo du « Pour toi ».
-    const nav = (typeof history !== 'undefined' ? history.state : null) as
-      { videos?: any[]; initialIndex?: number } | null;
+    const nav = this.navState;
+    const startId = this.route.snapshot.queryParamMap.get('v');
     const startVideos = Array.isArray(nav?.videos) ? nav!.videos!.filter((v: any) => !!v?.video) : [];
     if (startVideos.length > 0) {
-      const wanted = nav?.videos?.[nav?.initialIndex ?? 0];
+      const wanted = startId
+        ? { id: startId }
+        : nav?.videos?.[nav?.initialIndex ?? 0];
       const idx = Math.max(0, startVideos.findIndex((v: any) => v.id === wanted?.id));
       this.products.set(startVideos);
       this.currentIndex.set(idx);
@@ -560,10 +574,19 @@ videoPaused = signal(false);
   }
 
   // ─── Report ────────────────────────────────────────────
-  reportProduct(product: any, event: Event) {
-    event.stopPropagation();
+  reportProduct(product: any, event?: Event) {
+    event?.stopPropagation();
     if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    this.notify.success('Signalement envoye. Merci!');
+    if (!product?.id) return;
+    this.reportTarget.set({ kind: 'product', id: product.id, subject: product.title || '' });
+  }
+
+  reportSeller(product: any, event?: Event) {
+    event?.stopPropagation();
+    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
+    const id = product?.seller?.id;
+    if (!id) return;
+    this.reportTarget.set({ kind: 'user', id, subject: '@' + (product.seller?.username || '') });
   }
 
   // ─── Navigation ────────────────────────────────────────
@@ -890,8 +913,11 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
     this.detailMode.set(true);
     // Video continues playing — user controls pause themselves
     // Load full product + reviews
+    this.dpReviews.set([]);
+    this.dpStats.set(null);
     this.productService.getProduct(product.slug).subscribe({
       next: (res: any) => {
+        if (this.dp()?.id !== product.id) return; // l'utilisateur est passé à une autre annonce
         const full = res.product || res.data || res;
         const sellerData = res.seller || {};
         // Merge: keep feed's seller data, enrich with show endpoint's seller data + full product
@@ -914,6 +940,7 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
       this.dpLoadingReviews.set(true);
       this.reviewService.getSellerReviews(sid, product.id).subscribe({
         next: (r: any) => {
+          if (this.dp()?.id !== product.id) return; // évite d'afficher les avis d'une autre annonce
           const reviewsList = r.reviews?.data || r.reviews || [];
           this.dpReviews.set(reviewsList);
           this.dpStats.set(r.stats || null);
@@ -1317,31 +1344,7 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
     p.is_saved = !p.is_saved; this.dp.set({ ...p }); this.productService.toggleSave(p.id).subscribe({ error: () => { p.is_saved = !p.is_saved; this.dp.set({ ...p }); } });
   }
   dpShare() { const p = this.dp(); if (p) { this.shareService.shareProduct(p); this.productService.shareProduct(p.id).subscribe(); } }
-  // Signalement réel : enregistré en base puis traité dans l'admin (Modération > Signalements).
-  dpReport() {
-    if (!this.auth.isAuthenticated()) { this.router.navigate(['/auth/login']); return; }
-    this.reportReason = '';
-    this.reportDescription = '';
-    this.showReport.set(true);
-  }
-  submitReport() {
-    const p = this.dp();
-    if (!p?.id || !this.reportReason || this.reportSending()) return;
-    this.reportSending.set(true);
-    this.productService.reportProduct(p.id, this.reportReason, this.reportDescription || undefined).subscribe({
-      next: () => {
-        this.reportSending.set(false);
-        this.showReport.set(false);
-        this.notify.success('Signalement envoyé. Notre équipe va examiner ce contenu. Merci !');
-      },
-      error: (err: any) => {
-        this.reportSending.set(false);
-        this.showReport.set(false);
-        if (err?.status === 409) this.notify.success(err?.error?.message || 'Vous avez déjà signalé ce contenu.');
-        else this.notify.error('Erreur lors de l\'envoi du signalement.');
-      },
-    });
-  }
+  dpReport() { this.reportProduct(this.dp()); }
   dpGoFull() { const s = this.dp()?.slug; if (s) { this.closeDetail(); this.router.navigate(['/product', s]); } }
 
   onImgError(event: Event): void {

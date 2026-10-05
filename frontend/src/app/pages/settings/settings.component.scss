@@ -1224,3 +1224,7 @@
     }
   }
 }
+
+/* ═══ AUTO-LIGHT (phase 3) ═══ */
+:host-context(body.quinch-light) .form-btn-cancel:hover { background: rgba(15, 23, 42, 0.017); }
+:host-context(body.quinch-light) .notif-pref-row { border-bottom-color: rgba(15, 23, 42, 0.070); }

@@ -4,12 +4,9 @@ import { NotificationService, AppNotification } from '../../core/services/notifi
 
 type NotifTab = 'all' | 'interactions' | 'messages' | 'system';
 
-import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
-
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [UserBadgesComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
@@ -50,9 +47,9 @@ export class NotificationsComponent implements OnInit {
 
     // Build the best redirect URL and navigate
     const url = this.resolveUrl(notif);
-    if (url && (url === '/docs' || url.startsWith('/docs/'))) {
-      // Page statique (hors routeur Angular) : navigation complète.
-      window.location.assign(url.endsWith('.html') || url.endsWith('/') ? url : url + '/');
+    if (url && url.startsWith('/guide')) {
+      // Guide complet (page statique hors Angular) : navigation navigateur.
+      window.location.assign(url);
       return;
     }
     if (url) {
@@ -67,10 +64,17 @@ export class NotificationsComponent implements OnInit {
    * Resolve the best URL for a notification based on type, action_url and data.
    */
   private resolveUrl(notif: AppNotification): string | null {
-    // For message notifications, always build URL with conversation_id
+    // Message d'un utilisateur précis → SON chat (jamais le répertoire).
     if (notif.type === 'message') {
       const convId = notif.data?.conversation_id;
-      return convId ? '/messages?conversation=' + convId : '/messages';
+      if (convId) return '/messages?conversation=' + convId;
+      if (notif.sender_id || notif.sender?.id) return '/messages?user=' + (notif.sender_id || notif.sender!.id);
+      return '/messages';
+    }
+
+    // Nouvel ami / négociation d'un utilisateur identifié → chat avec cet utilisateur.
+    if ((notif.type === 'friend' || notif.type === 'negotiation') && (notif.sender_id || notif.sender?.id)) {
+      return '/messages?user=' + (notif.sender_id || notif.sender!.id);
     }
 
     // action_url envoyé par le serveur : utilisé seulement s'il pointe vers une
@@ -118,7 +122,8 @@ export class NotificationsComponent implements OnInit {
       case 'system':
       case 'admin':
       case 'admin_message':
-        return '/notifications';
+        // « Voir le détail » d'un message de l'équipe → documentation complète.
+        return '/guide/index.html';
 
       case 'badge':
         return '/profile';
@@ -150,13 +155,12 @@ export class NotificationsComponent implements OnInit {
   private readonly VALID_PREFIXES = [
     '/feed', '/videos', '/marketplace', '/search', '/product', '/seller', '/messages',
     '/profile', '/settings', '/notifications', '/premium', '/rankings', '/sell',
-    '/favorites', '/onboarding', '/admin',
+    '/favorites', '/onboarding', '/admin', '/guide',
   ];
 
   /** Jamais de lien externe ; les pages supprimées renvoient vers les messages. */
   private sanitizeUrl(raw: string): string | null {
     if (!raw.startsWith('/') || raw.startsWith('//')) return null;
-    if (raw === '/docs' || raw.startsWith('/docs/') || raw.startsWith('/docs#')) return raw.startsWith('/docs#') ? '/docs/' + raw.slice(5) : raw;
     if (raw.startsWith('/transactions') || raw.startsWith('/cart')) return '/messages';
 
     const path = raw.split('?')[0].split('#')[0];
@@ -238,8 +242,9 @@ export class NotificationsComponent implements OnInit {
       negotiation: 'Voir la negociation',
       review: 'Voir mon profil',
       welcome: 'Completer mon profil',
-      system: 'En savoir plus',
-      admin: 'En savoir plus',
+      system: 'Voir le détail',
+      admin: 'Voir le détail',
+      admin_message: 'Voir le détail',
       badge: 'Voir mon profil',
       kyc: 'Voir les parametres',
       account: 'Voir les parametres',

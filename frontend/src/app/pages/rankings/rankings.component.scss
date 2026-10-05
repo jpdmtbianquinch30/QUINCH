@@ -1098,36 +1098,54 @@
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODE CLAIR — Classement
-   (les couleurs de base viennent des variables globales --q-*, on ne corrige
-   ici que les fonds translucides blancs et les ombres trop lourdes)
-   ═══════════════════════════════════════════════════════════════════════════ */
-:host-context(body.quinch-light) {
-  .rankings-header {
-    border-color: rgba(15, 23, 42, .10);
-    box-shadow: 0 12px 34px rgba(15, 23, 42, .08);
-  }
-  .rankings-tabs {
-    background: rgba(15, 23, 42, .04);
-    border-color: rgba(15, 23, 42, .08);
-    box-shadow: none;
-  }
-  .rankings-tab:hover { background: rgba(15, 23, 42, .06); }
-  .rankings-criteria,
-  .lock-preview-chip,
-  .join-modal-toggle { background: rgba(15, 23, 42, .04); border-color: rgba(15, 23, 42, .08); }
-
-  .ranking-row {
-    border-color: rgba(15, 23, 42, .10);
-    box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
-  }
-  .ranking-row:hover { box-shadow: 0 12px 28px rgba(15, 23, 42, .12); }
-  .row-avatar { border-color: rgba(15, 23, 42, .10); }
-
-  .rankings-lock-card { box-shadow: 0 24px 60px rgba(15, 23, 42, .18); }
-  .join-modal { box-shadow: 0 30px 70px rgba(15, 23, 42, .25); }
-  .join-modal-backdrop { background: rgba(15, 23, 42, .45); }
-  .participation-card { box-shadow: 0 10px 28px rgba(15, 23, 42, .08); }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .rankings-lock-kicker {
+    color: #986207
 }
+:host-context(body.quinch-light) .lock-preview-chip {
+    background: rgba(15, 23, 42, 0.035)
+}
+:host-context(body.quinch-light) .lock-preview-chip .material-icons {
+    color: #986207
+}
+:host-context(body.quinch-light) .rankings-header-title > .material-icons {
+    color: #986207
+}
+:host-context(body.quinch-light) .participation-card .participation-check {
+    color: #157a3a
+}
+:host-context(body.quinch-light) .rankings-criteria {
+    background: rgba(15, 23, 42, 0.021)
+}
+:host-context(body.quinch-light) .rankings-criteria .text-premium {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .join-modal-toggle {
+    background: rgba(15, 23, 42, 0.028)
+}
+:host-context(body.quinch-light) .rankings-header {
+    border: 1px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .rankings-tabs {
+    border: 1px solid rgba(15, 23, 42, 0.073)
+}
+:host-context(body.quinch-light) .rankings-tab:hover {
+    background: rgba(15, 23, 42, 0.035)
+}
+:host-context(body.quinch-light) .rankings-criteria {
+    border: 1px solid rgba(15, 23, 42, 0.064);
+    background: rgba(15, 23, 42, 0.017)
+}
+:host-context(body.quinch-light) .ranking-row {
+    border: 1px solid rgba(15, 23, 42, 0.069)
+}
+:host-context(body.quinch-light) .row-avatar {
+    border: 2px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .lock-preview-chip {
+    background: rgba(15, 23, 42, 0.032)
+}
+:host-context(body.quinch-light) .join-modal-backdrop {
+    background: rgba(255, 255, 255, 0.72)
+}
+/* LIGHT-AUTO:END */

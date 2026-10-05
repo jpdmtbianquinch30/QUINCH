@@ -2303,81 +2303,142 @@ $card-border: 1px solid var(--q-border);
   font: inherit;
 }
 
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODE CLAIR — Profil vendeur
-   Les surfaces sombres (dégradés) sont remplacées par des surfaces claires ;
-   les accents de marque (bleu/violet) sont conservés.
-   ═══════════════════════════════════════════════════════════════════════════ */
-:host-context(body.quinch-light) {
-  .sp-page {
-    --sp-surface: #ffffff;
-    --sp-surface-2: #f3f5fa;
-    --sp-line: rgba(15, 23, 42, 0.10);
-    --sp-glow: rgba(79, 99, 230, 0.14);
-    background:
-      radial-gradient(circle at 78% 8%, rgba(79, 99, 230, 0.08), transparent 28%),
-      #f4f6fb;
-  }
-
-  .sp-sidebar { background: #f7f8fc; }
-
-  .sp-profile-card,
-  .sp-stats-card,
-  .sp-trust-card,
-  .sp-certs-card,
-  .sp-tab-panel {
-    background: #ffffff;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
-  }
-
-  .sp-profile-card { border-color: rgba(15, 23, 42, 0.10); }
-  .sp-profile-card::after { background: none; }
-  .sp-avatar-fallback { border-color: #ffffff; }
-  .sp-verified { background: #ffffff; border-color: #ffffff; }
-  .sp-username { color: #6b7488; }
-  .sp-name { color: #111827; }
-
-  .sp-tag,
-  .sp-btn-follow,
-  .sp-icon-btn,
-  .sp-sort { background: rgba(15, 23, 42, 0.04); border-color: rgba(15, 23, 42, 0.10); }
-  .sp-trust-bar { background: rgba(15, 23, 42, 0.08); }
-
-  .sp-tabs {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(15, 23, 42, 0.08);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-  }
-  .sp-tab-badge { background: rgba(15, 23, 42, 0.07); }
-
-  .sp-product {
-    background: #ffffff;
-    border-color: rgba(15, 23, 42, 0.09);
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
-  }
-  .sp-product:hover { box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14); }
-  .sp-product-img { background: #eef1f8; }
-  .sp-product-img::after { background: none; }
-  .sp-product-price { color: #3b4cc4; }
-  .sp-product-meta { border-top-color: rgba(15, 23, 42, 0.07); }
-
-  .sp-policy {
-    background: #ffffff;
-    border-color: rgba(15, 23, 42, 0.09);
-  }
-  .sp-review-summary { border-color: rgba(15, 23, 42, 0.09); }
-  .sp-score-num {
-    background: linear-gradient(135deg, #1f2a6b, #4f63e6);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .sp-modal-bg { background: rgba(15, 23, 42, 0.45); }
-  .sp-modal {
-    background: #ffffff;
-    border-color: rgba(15, 23, 42, 0.10);
-    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
-  }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .sp-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.056)
 }
+:host-context(body.quinch-light) .sp-tab-badge {
+    background: rgba(15, 23, 42, 0.1)
+}
+:host-context(body.quinch-light) .active .sp-tab-badge {
+    background: rgba(15, 23, 42, 0.1)
+}
+:host-context(body.quinch-light) .sp-score-stars .material-icons.filled {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .sp-bar-label .tiny {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .sp-review-stars .material-icons.filled {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .sp-page {
+    background: radial-gradient(circle at 78% 8%, rgba(91, 124, 255, 0.13), transparent 28%), radial-gradient(circle at 18% 45%, rgba(124, 92, 255, 0.08), transparent 24%), var(--q-bg-page, #ffffff)
+}
+:host-context(body.quinch-light) .sp-sidebar {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.94))
+}
+:host-context(body.quinch-light) .sp-verified .material-icons {
+    color: #384d9e
+}
+:host-context(body.quinch-light) .sp-tag {
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .sp-btn-follow {
+    background: rgba(15, 23, 42, 0.025);
+    border-color: rgba(15, 23, 42, 0.091)
+}
+:host-context(body.quinch-light) .sp-icon-btn {
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .sp-trust-bar {
+    background: rgba(15, 23, 42, 0.042)
+}
+:host-context(body.quinch-light) .sp-cover-overlay {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 20%, rgba(255, 255, 255, 0.7) 45%, rgba(255, 255, 255, 0.82) 100%), linear-gradient(90deg, rgba(255, 255, 255, 0.7), transparent 45%, rgba(255, 255, 255, 0.7))
+}
+:host-context(body.quinch-light) .sp-tabs {
+    border: 1px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .sp-tab-badge {
+    background: rgba(15, 23, 42, 0.056)
+}
+:host-context(body.quinch-light) .sp-sort {
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .sp-product {
+    border: 1px solid rgba(15, 23, 42, 0.069)
+}
+:host-context(body.quinch-light) .sp-product-img::after {
+    background: linear-gradient(180deg, transparent 55%, rgba(255, 255, 255, 0.7))
+}
+:host-context(body.quinch-light) .sp-product-video-badge {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(15, 23, 42, 0.118)
+}
+:host-context(body.quinch-light) .sp-product-price {
+    color: #4f5f9e
+}
+:host-context(body.quinch-light) .sp-product-meta {
+    border-top: 1px solid rgba(15, 23, 42, 0.051)
+}
+:host-context(body.quinch-light) .sp-review-summary, :host-context(body.quinch-light) .sp-review, :host-context(body.quinch-light) .sp-card, :host-context(body.quinch-light) .sp-policy {
+    border-color: rgba(15, 23, 42, 0.064)
+}
+:host-context(body.quinch-light) .sp-review-summary {
+    border: 1px solid rgba(15, 23, 42, 0.064)
+}
+:host-context(body.quinch-light) .sp-modal-bg {
+    background: rgba(255, 255, 255, 0.72)
+}
+:host-context(body.quinch-light) .sp-modal {
+    border: 1px solid rgba(15, 23, 42, 0.082)
+}
+@media (max-width: 860px) {
+    :host-context(body.quinch-light) .sp-page {
+        background: radial-gradient(circle at 50% 0%, rgba(91, 124, 255, 0.12), transparent 30%), var(--q-bg-page, #ffffff)
+    }
+}
+:host-context(body.quinch-light) .sp-profile-card {
+    border: 1px solid rgba(15, 23, 42, 0.087)
+}
+:host-context(body.quinch-light) .sp-profile-card::after {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.025), transparent 28%)
+}
+:host-context(body.quinch-light) .sp-verified .material-icons {
+    color: #172039
+}
+:host-context(body.quinch-light) .sp-name {
+    color: #172039
+}
+:host-context(body.quinch-light) .sp-username {
+    color: rgba(23, 32, 57, 0.87)
+}
+:host-context(body.quinch-light) .sp-tag {
+    border: 1px solid rgba(15, 23, 42, 0.069);
+    background: rgba(15, 23, 42, 0.032);
+    color: rgba(23, 32, 57, 0.93)
+}
+:host-context(body.quinch-light) .sp-tag .material-icons {
+    color: #4f5b9e
+}
+:host-context(body.quinch-light) .sp-btn-follow {
+    background: rgba(15, 23, 42, 0.025);
+    border: 1px solid rgba(15, 23, 42, 0.091);
+    color: #172039
+}
+:host-context(body.quinch-light) .sp-icon-btn {
+    border: 1px solid rgba(15, 23, 42, 0.082);
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .sp-icon-btn .material-icons {
+    color: rgba(23, 32, 57, 0.9)
+}
+:host-context(body.quinch-light) .sp-dropdown {
+    border: 1px solid rgba(15, 23, 42, 0.1)
+}
+:host-context(body.quinch-light) .sp-dropdown::after {
+    border-right: 1px solid rgba(15, 23, 42, 0.1);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.1)
+}
+:host-context(body.quinch-light) .sp-dropdown button {
+    color: #172039
+}
+:host-context(body.quinch-light) .sp-dropdown button .material-icons {
+    color: #5a649e
+}
+:host-context(body.quinch-light) .sp-report-select {
+    border: 1px solid rgba(15, 23, 42, 0.118);
+    background: rgba(15, 23, 42, 0.028)
+}
+/* LIGHT-AUTO:END */

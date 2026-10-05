@@ -1347,59 +1347,78 @@
   }
 }
 
+.n-badge { font-size: 15px; vertical-align: -3px; margin-left: 4px; }
+.n-premium { color: #f59e0b; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODE CLAIR — Notifications
-   ═══════════════════════════════════════════════════════════════════════════ */
-:host-context(body.quinch-light) {
-  --q-bg: #f4f6fb;
-  --q-bg-soft: #eef1f8;
-
-  --q-card: rgba(255, 255, 255, 0.92);
-  --q-card-hover: #ffffff;
-
-  --q-text: #111827;
-  --q-text-soft: #374151;
-  --q-text-muted: #6b7488;
-
-  --q-blue: #4f63e6;
-  --q-blue-light: #4f63e6;
-
-  --q-border: rgba(15, 23, 42, 0.10);
-  --q-border-soft: rgba(15, 23, 42, 0.06);
-
-  .notif-header > h1 { color: #111827; }
-
-  .mark-all-btn { color: #4b5563; }
-  .mark-all-btn:hover { color: #111827; }
-
-  .notif-tabs { border-color: rgba(15, 23, 42, 0.08); }
-  .notif-tab { color: #6b7488; }
-  .notif-tab:hover { color: #111827; background: rgba(15, 23, 42, 0.04); }
-  .notif-tab.active { color: #1d2a6b; }
-  .tab-icon { color: #8a93a6; }
-  .tab-badge { border-color: rgba(15, 23, 42, 0.10); }
-
-  .loader { border-color: rgba(15, 23, 42, 0.10); }
-
-  .notif-empty > h3 { color: #111827; }
-  .notif-empty > p,
-  .section-label { color: #6b7488; }
-  .empty-icon-wrap::before { border-color: rgba(15, 23, 42, 0.06); }
-
-  .notif-item:hover { border-color: rgba(15, 23, 42, 0.10); }
-  .notif-item.unread .notif-title { color: #0b1020; }
-  .notif-item.unread .notif-body { color: #374151; }
-
-  .notif-type-badge { border-color: #ffffff; }
-  .notif-icon { border-color: rgba(15, 23, 42, 0.08); }
-  .notif-title { color: #374151; }
-  .notif-body { color: #5b6478; }
-  .notif-time { color: #7a8398; }
-  .group-badge { color: #3b4cc4; }
-  .notif-action-label { color: #4f63e6; }
-  .notif-delete { color: #8a93a6; }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .notif-page {
+    background: radial-gradient(circle at 5% 0%, rgba(99, 120, 255, 0.13), transparent 28%), radial-gradient(circle at 95% 15%, rgba(155, 108, 255, 0.11), transparent 27%), radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.055), transparent 32%), linear-gradient(145deg, #ffffff 0%, #ffffff 45%, #ffffff 100%)
 }
-
-// Badges de l'expéditeur à côté du titre
-.notif-text app-user-badges { margin-left: 6px; }
+:host-context(body.quinch-light) .notif-header h1 {
+    color: #172039
+}
+:host-context(body.quinch-light) .mark-all-btn {
+    background: linear-gradient(135deg, rgba(99, 120, 255, 0.09), rgba(15, 23, 42, 0.017))
+}
+:host-context(body.quinch-light) .mark-all-btn .material-icons {
+    color: #50599e
+}
+:host-context(body.quinch-light) .notif-tabs {
+    border: 1px solid rgba(15, 23, 42, 0.064);
+    background: rgba(255, 255, 255, 0.78)
+}
+:host-context(body.quinch-light) .notif-tab:hover {
+    color: #172039;
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .notif-tab.active .tab-icon {
+    color: #50599e
+}
+:host-context(body.quinch-light) .tab-badge {
+    border: 1px solid rgba(15, 23, 42, 0.082);
+    color: #172039
+}
+:host-context(body.quinch-light) .loader {
+    border: 2px solid rgba(15, 23, 42, 0.073)
+}
+:host-context(body.quinch-light) .notif-empty h3 {
+    color: #172039
+}
+:host-context(body.quinch-light) .empty-icon-wrap::before {
+    border: 1px solid rgba(15, 23, 42, 0.042)
+}
+:host-context(body.quinch-light) .empty-icon-wrap .material-icons {
+    color: #485196
+}
+:host-context(body.quinch-light) .notif-item:hover {
+    border-color: rgba(15, 23, 42, 0.06);
+    background: linear-gradient(110deg, rgba(15, 23, 42, 0.032), rgba(99, 120, 255, 0.035))
+}
+:host-context(body.quinch-light) .notif-item.unread .notif-title {
+    color: #172039
+}
+:host-context(body.quinch-light) .notif-item.unread .notif-body {
+    color: #172039
+}
+:host-context(body.quinch-light) .notif-avatar {
+    background: linear-gradient(135deg, var(--q-blue), var(--q-violet), rgba(15, 23, 42, 0.07))
+}
+:host-context(body.quinch-light) .notif-type-badge {
+    border: 2px solid #e3e7f0
+}
+:host-context(body.quinch-light) .notif-icon {
+    border: 1px solid rgba(15, 23, 42, 0.06)
+}
+:host-context(body.quinch-light) .notif-title {
+    color: #334155
+}
+:host-context(body.quinch-light) .notif-action-label {
+    color: #4a549e
+}
+:host-context(body.quinch-light) .notif-item:hover .notif-action-label {
+    color: #5f679e
+}
+:host-context(body.quinch-light) .n-premium {
+    color: #986207
+}
+/* LIGHT-AUTO:END */

@@ -2327,7 +2327,7 @@ button {
    LIGHT MODE
    ========================================================= */
 
-:host-context(.light-theme) {
+:host-context(body.quinch-light) {
   --q-bg: #f4f6fb;
   --q-panel: #ffffff;
   --q-panel-2: #f8f9fd;
@@ -2341,7 +2341,7 @@ button {
   --q-muted-2: #59657e;
 }
 
-:host-context(.light-theme) .messages-page {
+:host-context(body.quinch-light) .messages-page {
   background:
     radial-gradient(
       circle at 75% 5%,
@@ -2351,36 +2351,36 @@ button {
     #f4f6fb;
 }
 
-:host-context(.light-theme) .conv-list {
+:host-context(body.quinch-light) .conv-list {
   background: rgba(255, 255, 255, .94);
 }
 
-:host-context(.light-theme) .chat-area {
+:host-context(body.quinch-light) .chat-area {
   background: #f5f7fc;
 }
 
-:host-context(.light-theme) .chat-header,
-:host-context(.light-theme) .chat-input {
+:host-context(body.quinch-light) .chat-header,
+:host-context(body.quinch-light) .chat-input {
   background: rgba(255, 255, 255, .92);
 }
 
-:host-context(.light-theme) .message.mine .message-bubble {
+:host-context(body.quinch-light) .message.mine .message-bubble {
   background: rgba(255, 255, 255, .55) !important;
 
   color: #172039 !important;
 }
 
-:host-context(.light-theme) .message.mine .message-bubble > p {
+:host-context(body.quinch-light) .message.mine .message-bubble > p {
   color: #172039 !important;
 }
 
-:host-context(.light-theme) .message.theirs .message-bubble {
+:host-context(body.quinch-light) .message.theirs .message-bubble {
   background: #ffffff;
 
   color: #172039;
 }
 
-:host-context(.light-theme) .chat-input > .q-input {
+:host-context(body.quinch-light) .chat-input > .q-input {
   background: #f5f7fb;
 }
 
@@ -2759,107 +2759,264 @@ button {
 }
 
 
-// ─── Filtre Tous / Mes amis + messages de chargement ─────
+/* =========================================================
+   RÉPERTOIRE : filtre Tous / Mes amis + message de chargement
+   ========================================================= */
+
 .conv-filter {
-  display: flex; gap: 6px; padding: 6px 12px 10px;
-  button {
-    flex: 1; padding: 8px 10px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.82rem;
-    background: transparent; color: inherit; opacity: 0.75;
-    border: 1px solid rgba(128, 128, 128, 0.35);
-    &.active { opacity: 1; background: #6366f1; border-color: #6366f1; color: #fff; font-weight: 600; }
-  }
+  display: flex;
+  gap: 8px;
+  padding: 2px 16px 10px;
 }
-.conv-loading, .chat-loading {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 16px;
+
+.conv-filter button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--q-border);
+  background: transparent;
+  color: var(--q-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .18s, color .18s, border-color .18s;
 }
-.chat-loading { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-.loading-text { margin: 0; font-size: 0.85rem; opacity: 0.75; text-align: center; }
 
+.conv-filter button .material-icons { font-size: 16px; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODE CLAIR — Messages
-   Les variables --q-* de :host sont redéfinies, puis les quelques couleurs
-   codées en dur (fonds translucides blancs, gris foncés) sont corrigées.
-   ═══════════════════════════════════════════════════════════════════════════ */
-:host-context(body.quinch-light) {
-  --q-bg: #f4f6fb;
-  --q-bg-2: #eef1f8;
-  --q-panel: #ffffff;
-  --q-panel-2: #f3f5fa;
-  --q-panel-3: #e8ecf5;
-
-  --q-border: rgba(15, 23, 42, .10);
-  --q-border-soft: rgba(15, 23, 42, .06);
-
-  --q-text: #111827;
-  --q-muted: #5b6478;
-  --q-muted-2: #8a93a6;
-
-  --q-blue-light: #4f63e6;
-
-  background: var(--q-bg);
-
-  .msg-delete-btn { background: rgba(255, 255, 255, .95); }
-  .conv-selection-bar { background: rgba(99, 102, 241, .10); }
-
-  .q-btn { background: rgba(15, 23, 42, .04); }
-  .conv-search { background: rgba(15, 23, 42, .045); }
-  .q-input::placeholder { color: #8a93a6; }
-
-  .chat-messages::-webkit-scrollbar-thumb { background: rgba(15, 23, 42, .18); }
-
-  .conv-item:hover { background: rgba(15, 23, 42, .04); }
-  .chat-avatar { border-color: rgba(15, 23, 42, .10); }
-  .chat-avatar > .material-icons { color: #8a93a6; }
-  .online-dot,
-  .online-dot.offline { background: #b6bdcc; }
-
-  .conv-time,
-  .status-offline,
-  .chat-product,
-  .message-time,
-  .read-indicator { color: #7a8398; }
-  .read-check { color: #8a93a6; }
-
-  .conv-empty .material-icons,
-  .chat-empty .material-icons { color: #b6bdcc; }
-  .conv-empty .hint { color: #8a93a6; }
-
-  .chat-header { background: rgba(255, 255, 255, .92); }
-  .chat-input { background: rgba(255, 255, 255, .94); }
-  .chat-input > .q-input { background: rgba(15, 23, 42, .04); }
-  .back-btn { background: rgba(15, 23, 42, .05); }
-
-  .attach-menu { background: #ffffff; box-shadow: 0 18px 50px rgba(15, 23, 42, .18); }
-  .dropdown-item:hover,
-  .attach-option:hover,
-  .attach-menu-header button:hover,
-  .input-action:hover { background: rgba(15, 23, 42, .05); }
-  .dropdown-item .material-icons,
-  .attach-menu-header button,
-  .input-action { color: #6b7488; }
-  .input-action:hover { color: #111827; }
-  .attach-hint { color: #8a93a6; }
-
-  .pcc-label,
-  .pcc-arrow,
-  .msg-file-size,
-  .msg-file-dl,
-  .tag-product-label,
-  .tag-product-price.quote,
-  .system-bubble,
-  .recording-timer { color: #6b7488; }
-
-  .message.theirs .message-bubble { background: #eaeef7; color: #111827; }
-
-  .tag-product-card { background: rgba(15, 23, 42, .04); }
-  .system-bubble { background: rgba(15, 23, 42, .05); }
-  .typing-indicator span { background: #8a93a6; }
-  .rec-label { color: #1f2937; }
-  .pcc-price,
-  .tag-product-price,
-  .tag-product-btn,
-  .pcc-icon,
-  .msg-file-icon { color: #4f63e6; }
-  .quote-tag { color: #6d5be6; }
+.conv-filter button.active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--q-blue), var(--q-blue-2));
 }
+
+.conv-filter .cf-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 16px;
+  background: rgba(127, 127, 160, .22);
+}
+
+.conv-loading { gap: 14px; }
+.conv-loading .conv-loading-text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--q-muted);
+  animation: vm-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes vm-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+
+/* =========================================================
+   MESSAGES VOCAUX — lecteur « capsule » avec forme d'onde
+   ========================================================= */
+
+.audio-bubble { min-width: min(300px, 78vw); padding: 10px 12px 6px !important; }
+
+.vm {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vm-play {
+  position: relative;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--q-blue), var(--q-blue-2));
+  box-shadow: 0 6px 18px rgba(97, 120, 255, .38);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.vm-play .material-icons { font-size: 26px; }
+.vm-play:hover { transform: scale(1.06); }
+.vm-play:active { transform: scale(.94); }
+
+.audio-bubble.is-playing .vm-play::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid rgba(130, 148, 255, .55);
+  animation: vm-ring 1.4s ease-out infinite;
+}
+
+@keyframes vm-ring { from { transform: scale(.9); opacity: .9; } to { transform: scale(1.25); opacity: 0; } }
+
+.vm-body { flex: 1; min-width: 0; }
+
+.vm-wave {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.vm-bar {
+  flex: 1 1 0;
+  min-width: 2px;
+  max-width: 4px;
+  border-radius: 3px;
+  background: rgba(150, 160, 195, .42);
+  transition: background .12s linear, transform .12s ease;
+}
+
+.vm-bar.done { background: linear-gradient(180deg, #a5b4ff, var(--q-blue)); }
+
+.audio-bubble.is-playing .vm-bar.done { transform: scaleY(1.08); }
+
+.vm-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--q-muted);
+}
+
+.vm-tag { display: inline-flex; align-items: center; gap: 3px; opacity: .8; }
+.vm-tag .material-icons { font-size: 12px; }
+
+.vm-rate {
+  flex: 0 0 auto;
+  min-width: 38px;
+  padding: 5px 7px;
+  border: 1px solid var(--q-border);
+  border-radius: 999px;
+  background: rgba(127, 127, 160, .14);
+  color: var(--q-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.vm-rate:hover { color: var(--q-text); }
+
+/* Les anciens styles .audio-* ne sont plus utilisés : neutralisés. */
+.audio-player, .audio-waveform { display: none; }
+
+:host-context(body.quinch-light) .message.mine .audio-bubble .vm-meta,
+:host-context(body.quinch-light) .message.mine .audio-bubble .vm-rate { color: #5b6784; }
+:host-context(body.quinch-light) .vm-bar { background: rgba(23, 32, 57, .22); }
+:host-context(body.quinch-light) .vm-bar.done { background: linear-gradient(180deg, #7b8cff, #4f6ef7); }
+
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .msg-delete-btn:hover {
+    color: #9e3939
+}
+:host-context(body.quinch-light) .conv-selection-delete {
+    color: #9e3939
+}
+:host-context(body.quinch-light) .tag-availability-status.available {
+    color: var(--q-success, #0e652e)
+}
+:host-context(body.quinch-light) .header-action, :host-context(body.quinch-light) .q-btn {
+    background: rgba(15, 23, 42, 0.032)
+}
+:host-context(body.quinch-light) .conv-search {
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .conv-items::-webkit-scrollbar-thumb, :host-context(body.quinch-light) .chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.084)
+}
+:host-context(body.quinch-light) .conv-item:hover {
+    background: rgba(15, 23, 42, 0.025)
+}
+:host-context(body.quinch-light) .conv-avatar, :host-context(body.quinch-light) .chat-avatar {
+    border: 1px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .online-dot {
+    background: #e6eaf3
+}
+:host-context(body.quinch-light) .online-dot.offline {
+    background: #e6eaf3
+}
+:host-context(body.quinch-light) .back-btn {
+    background: rgba(15, 23, 42, 0.032)
+}
+:host-context(body.quinch-light) .dropdown-item:hover {
+    background: rgba(15, 23, 42, 0.038)
+}
+:host-context(body.quinch-light) .pcc-link {
+    background: linear-gradient(135deg, rgba(97, 120, 255, 0.08), rgba(15, 23, 42, 0.017))
+}
+:host-context(body.quinch-light) .pcc-price {
+    color: #58609e
+}
+:host-context(body.quinch-light) .pcc-price.quote {
+    color: #70699e
+}
+:host-context(body.quinch-light) .message.mine .audio-bubble, :host-context(body.quinch-light) .message.mine .image-bubble, :host-context(body.quinch-light) .message.mine .video-bubble, :host-context(body.quinch-light) .message.mine .file-bubble, :host-context(body.quinch-light) .message.mine .product-tag-bubble, :host-context(body.quinch-light) .message.mine .quote-bubble {
+    background: rgba(255, 255, 255, 0.7) !important
+}
+:host-context(body.quinch-light) .message.mine .read-indicator {
+    color: #444d66 !important
+}
+:host-context(body.quinch-light) .message.mine .read-indicator.read {
+    color: #4a599e !important
+}
+:host-context(body.quinch-light) .msg-video {
+    background: #f4f6fb
+}
+:host-context(body.quinch-light) .img-lightbox-overlay {
+    background: rgba(255, 255, 255, 0.88)
+}
+:host-context(body.quinch-light) .lightbox-close-btn {
+    background: rgba(15, 23, 42, 0.063);
+    border: 1px solid rgba(15, 23, 42, 0.127)
+}
+:host-context(body.quinch-light) .tag-product-card {
+    background: rgba(15, 23, 42, 0.028)
+}
+:host-context(body.quinch-light) .tag-product-price {
+    color: #5a639e
+}
+:host-context(body.quinch-light) .quote-tag {
+    color: #68629e
+}
+:host-context(body.quinch-light) .system-bubble {
+    background: rgba(15, 23, 42, 0.017)
+}
+:host-context(body.quinch-light) .attach-menu-header button:hover {
+    background: rgba(15, 23, 42, 0.042)
+}
+:host-context(body.quinch-light) .attach-option:hover {
+    background: rgba(15, 23, 42, 0.035)
+}
+:host-context(body.quinch-light) .input-action:hover {
+    background: rgba(15, 23, 42, 0.038)
+}
+:host-context(body.quinch-light) .rec-label {
+    color: #172039
+}
+:host-context(body.quinch-light) .rec-cancel {
+    background: rgba(15, 23, 42, 0.038)
+}
+:host-context(body.quinch-light) .conv-filter button.active {
+    color: #172039
+}
+:host-context(body.quinch-light) .vm-play {
+    color: #172039
+}
+/* LIGHT-AUTO:END */

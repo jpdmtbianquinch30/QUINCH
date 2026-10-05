@@ -25,6 +25,7 @@ export interface Conversation {
     username?: string;
     is_online?: boolean;
     is_premium?: boolean;
+    is_friend?: boolean;
     badges?: import('./badge.service').Badge[];
   };
   product?: { id: string; title: string; slug: string; price: number };

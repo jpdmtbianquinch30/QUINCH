@@ -37,8 +37,6 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Mobile: show chat area instead of list
   mobileShowChat = signal(false);
   messagesReady = signal(false);
-  // Répertoire : « Tous » par défaut, ou « Mes amis » (abonnement mutuel).
-  convFilter = signal<'all' | 'friends'>('all');
 
   // Dropdown menu (more_vert)
   showDropdown = signal(false);
@@ -66,11 +64,17 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
   audioCurrentTime = signal<Record<string, number>>({});
   private audioElements = new Map<string, HTMLAudioElement>();
 
+  // Répertoire : « Tous » (par défaut) ou « Mes amis » (abonnement réciproque)
+  listFilter = signal<'all' | 'friends'>('all');
+  friendsCount = computed(() => this.chat.conversations().filter(c => c.other_user?.is_friend).length);
+
+  setListFilter(f: 'all' | 'friends') { this.listFilter.set(f); }
+
   // Filtered conversations based on search
   filteredConversations = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    const all = this.chat.conversations();
-    const convs = this.convFilter() === 'friends' ? all.filter(c => !!(c.other_user as any)?.is_friend) : all;
+    let convs = this.chat.conversations();
+    if (this.listFilter() === 'friends') convs = convs.filter(c => !!c.other_user?.is_friend);
     if (!q) return convs;
     return convs.filter(c => {
       const name = (c.other_user?.full_name || '').toLowerCase();
@@ -86,22 +90,7 @@ export class MessagesComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.listPollInterval) clearInterval(this.listPollInterval);
     this.loading.set(true);
     this.chat.getConversations().subscribe({
-      next: () => {
-        const convId = this.route.snapshot.queryParamMap.get('conversation');
-        if (convId) {
-          const match = this.chat.conversations().find(c => c.id === convId);
-          if (match) {
-            this.selectConversation(match);
-          } else {
-            // Conversation absente de la 1re page de la liste (pagination) :
-            // on l'ouvre directement pour toujours arriver sur le bon chat.
-            this.chat.getConversation(convId).subscribe({
-              next: (res: any) => { if (res?.conversation) this.selectConversation(res.conversation); },
-              error: () => this.notify.error('Conversation introuvable.'),
-            });
-          }
-        }
-      },
+      next: () => this.openFromQueryParams(),
       error: () => {
         this.loading.set(false);
         this.notify.error('Impossible de charger les conversations.');
@@ -127,6 +116,73 @@ this.pollInterval = setInterval(() => {
 this.listPollInterval = setInterval(() => {
   this.chat.getConversations().subscribe();
 }, 20000);
+  }
+
+  /**
+   * Ouvre directement le bon chat quand on arrive depuis une notification :
+   *  - ?conversation=<id> : conversation précise (même hors des 20 premières de la liste) ;
+   *  - ?user=<id>         : chat avec cet utilisateur (créé s'il n'existe pas encore).
+   * Dans les deux cas on évite d'atterrir sur le répertoire.
+   */
+  private openFromQueryParams() {
+    const convId = this.route.snapshot.queryParamMap.get('conversation');
+    const userId = this.route.snapshot.queryParamMap.get('user');
+
+    if (convId) {
+      const match = this.chat.conversations().find(c => c.id === convId);
+      if (match) { this.selectConversation(match); return; }
+      this.chat.getConversation(convId).subscribe({
+        next: () => {
+          const conv = this.chat.currentConversation();
+          if (conv) this.selectConversation(conv);
+        },
+        error: () => this.notify.warning('Cette conversation n\'est plus disponible.'),
+      });
+      return;
+    }
+
+    if (userId) {
+      const existing = this.chat.conversations().find(c => String(c.other_user?.id) === String(userId));
+      if (existing) { this.selectConversation(existing); return; }
+      if (String(userId) === String(this.auth.user()?.id)) return;
+      this.chat.startConversation(userId, '').subscribe({
+        next: (res: any) => {
+          this.chat.getConversations().subscribe(() => {
+            const conv = this.chat.conversations().find(c => c.id === res?.conversation?.id);
+            if (conv) this.selectConversation(conv);
+          });
+        },
+        error: () => this.notify.warning('Impossible d\'ouvrir cette discussion.'),
+      });
+    }
+  }
+
+  // Forme d'onde déterministe (même message = même motif), 28 barres de 18 à 100 %.
+  private waveCache = new Map<string, number[]>();
+  waveBars(msg: Message): number[] {
+    const key = String(msg.id);
+    let bars = this.waveCache.get(key);
+    if (!bars) {
+      let h = 2166136261;
+      for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+      bars = Array.from({ length: 28 }, (_, i) => {
+        h ^= h << 13; h ^= h >>> 17; h ^= h << 5;
+        const r = ((h >>> 0) % 1000) / 1000;
+        const envelope = 0.55 + 0.45 * Math.sin((i / 27) * Math.PI);
+        return Math.round(18 + r * 82 * envelope);
+      });
+      this.waveCache.set(key, bars);
+    }
+    return bars;
+  }
+
+  // Vitesse de lecture des vocaux (1× / 1.5× / 2×)
+  audioRate = signal(1);
+  cycleAudioRate(event: Event) {
+    event.stopPropagation();
+    const next = this.audioRate() === 1 ? 1.5 : this.audioRate() === 1.5 ? 2 : 1;
+    this.audioRate.set(next);
+    this.audioElements.forEach(a => a.playbackRate = next);
   }
 
   ngOnDestroy() {
@@ -373,6 +429,7 @@ closeLightbox() {
       this.audioElements.set(msg.id, audio);
     }
 
+    audio.playbackRate = this.audioRate();
     audio.play().then(() => {
       this.playingAudioId.set(msg.id);
     }).catch(() => {

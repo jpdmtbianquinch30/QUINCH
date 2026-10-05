@@ -292,14 +292,12 @@ export class SellComponent implements OnInit, OnDestroy {
 }
 
   // ═══════ POSTER IMAGE (required) ═══════
-  onPosterSelected(event: Event) {
+  async onPosterSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
-      const file = input.files[0];
-      if (file.size > 5 * 1024 * 1024) {
-        this.notify.error('L\'image ne doit pas depasser 5 Mo.');
-        return;
-      }
+      const file = await this.prepareImage(input.files[0]);
+      input.value = '';
+      if (!file) return;
       this.posterFile = file;
       const reader = new FileReader();
       reader.onload = () => this.posterPreview.set(reader.result as string);
@@ -314,10 +312,6 @@ export class SellComponent implements OnInit, OnDestroy {
 
   // ═══════ VIDEO UPLOAD ═══════
   onVideoSelected(event: Event) {
-    if (!this.isPremiumActive()) {
-      this.notify.error('Passez en mode Premium pour pouvoir charger une video de votre produit.');
-      return;
-    }
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
       this.videoFile = input.files[0];
@@ -586,10 +580,6 @@ export class SellComponent implements OnInit, OnDestroy {
 
   // ═══════ CAMERA ═══════
   async openCamera() {
-    if (!this.isPremiumActive()) {
-      this.notify.error('Passez en mode Premium pour pouvoir filmer une video de votre produit.');
-      return;
-    }
     try {
       const q = this.qualityOptions.find(o => o.value === this.videoQuality())!;
       this.cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -656,11 +646,43 @@ export class SellComponent implements OnInit, OnDestroy {
   // éviter à l'utilisateur de sélectionner des photos rejetées ensuite.
   maxAdditionalImages = computed(() => (this.isPremiumActive() ? 10 : 5));
 
+  /**
+   * Le serveur refuse toute image > 5 Mo (validation `max:5120`). Avant, le front
+   * en acceptait jusqu'à 10 Mo : la publication échouait à la toute fin. On
+   * réduit donc automatiquement (2000 px max, JPEG) toute photo trop lourde.
+   */
+  private static readonly MAX_IMAGE_BYTES = 4.8 * 1024 * 1024;
+
+  private async prepareImage(file: File): Promise<File | null> {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      this.notify.error(`${file.name} : format non supporté (JPG, PNG ou WebP).`);
+      return null;
+    }
+    if (file.size <= SellComponent.MAX_IMAGE_BYTES) return file;
+    try {
+      const bmp = await createImageBitmap(file);
+      let scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const c = document.createElement('canvas');
+        c.width = Math.round(bmp.width * scale);
+        c.height = Math.round(bmp.height * scale);
+        c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+        const blob: Blob | null = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.85 - attempt * 0.1));
+        if (blob && blob.size <= SellComponent.MAX_IMAGE_BYTES) {
+          return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+        }
+        scale *= 0.75;
+      }
+    } catch { /* tombe sur le message ci-dessous */ }
+    this.notify.error(`${file.name} est trop lourde (max 5 Mo).`);
+    return null;
+  }
+
   // ═══════ IMAGES ═══════
-  onImagesSelected(event: Event) {
+  async onImagesSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files) {
-      const files = Array.from(input.files).slice(0, this.maxAdditionalImages() - this.imageFiles.length);
+      const files = Array.from(input.files).slice(0, Math.max(0, this.maxAdditionalImages() - this.imageFiles.length));
       if (input.files.length > files.length) {
         this.notify.error(
           this.isPremiumActive()
@@ -668,11 +690,16 @@ export class SellComponent implements OnInit, OnDestroy {
             : `Compte gratuit : maximum ${this.maxAdditionalImages()} photos supplémentaires (en plus de la couverture). Passez Premium pour aller jusqu'à 10.`
         );
       }
-      for (const file of files) {
-        if (file.size > 10 * 1024 * 1024) { this.notify.error(`Image ${file.name} trop lourde (max 10 Mo)`); continue; }
+      const picked = Array.from(files);
+      input.value = '';
+      for (const raw of picked) {
+        if (this.imageFiles.length >= this.maxAdditionalImages()) break;
+        const file = await this.prepareImage(raw);
+        if (!file) continue;
         this.imageFiles.push(file);
         this.imagePreviews.update(p => [...p, URL.createObjectURL(file)]);
       }
+      return;
     }
     input.value = '';
   }

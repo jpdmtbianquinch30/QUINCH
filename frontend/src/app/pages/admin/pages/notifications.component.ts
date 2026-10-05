@@ -56,7 +56,16 @@ export class AdminNotificationsPage implements OnInit {
   confirm = signal(false); busy = signal(false); error = signal('');
 
   ngOnInit() {
-    this.admin.getSettings().subscribe(r => this.templates.set(r.settings['notifications.templates']?.value ?? []));
+    // Modèles par défaut (les modèles enregistrés dans Réglages passent en premier).
+    // Un envoi « Tous » apparaît en haut du feed de chaque utilisateur à sa prochaine visite.
+    const defaults = [
+      { name: 'Correction effectuée', title: 'Nous avons corrigé un problème 🛠️', body: 'Bonne nouvelle : le problème que vous nous avez signalé est corrigé. Merci pour votre patience !' },
+      { name: 'Nouveauté', title: 'Nouveauté sur QUINCH ✨', body: 'Découvrez ce qui change dans l\'application. Touchez « Voir le détail » pour tout savoir.' },
+    ];
+    this.admin.getSettings().subscribe(r => {
+      const saved = r.settings['notifications.templates']?.value ?? [];
+      this.templates.set([...saved, ...defaults.filter(d => !saved.some((t: any) => t.name === d.name))]);
+    });
     this.loadHistory();
   }
 

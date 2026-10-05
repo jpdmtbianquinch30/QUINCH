@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +21,7 @@ import { Product } from '../../core/models/product.model';
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })
-export class ProductDetailComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ProductDetailComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('detailVideo') detailVideoRef!: ElementRef<HTMLVideoElement>;
 
   private route = inject(ActivatedRoute);
@@ -94,11 +95,46 @@ export class ProductDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     return this.sellerPaymentMethods.length > 0;
   }
 
+  private paramSub?: Subscription;
+  private loadedSlug: string | null = null;
+
   ngOnInit() {
-    const slug = this.route.snapshot.params['slug'];
+    // Angular réutilise le composant quand on passe de /product/a à /product/b :
+    // sans cet abonnement, l'état de la 1re annonce (avis déjà publié, avis,
+    // note…) restait affiché sur la 2e — c'est ce qui faisait « apparaître » un
+    // commentaire sur une autre annonce du même vendeur.
+    this.paramSub = this.route.paramMap.subscribe(params => {
+      const slug = params.get('slug');
+      if (slug && slug !== this.loadedSlug) {
+        this.loadedSlug = slug;
+        this.resetPerProductState();
+        this.loadProductBySlug(slug);
+      }
+    });
+  }
+
+  ngOnDestroy() { this.paramSub?.unsubscribe(); }
+
+  private resetPerProductState() {
+    this.product.set(null);
+    this.loading.set(true);
+    this.reviews.set([]);
+    this.reviewStats.set(null);
+    this.loadingReviews.set(false);
+    this.newReviewRating.set(0);
+    this.newReviewHover.set(0);
+    this.newReviewComment = '';
+    this.submittingReview.set(false);
+    this.reviewSubmitted.set(false);
+    this.currentImgIdx.set(0);
+    this.showReportModal.set(false);
+  }
+
+  private loadProductBySlug(slug: string) {
     if (slug) {
       this.productService.getProduct(slug).subscribe({
         next: (res: any) => {
+          if (this.loadedSlug !== slug) return; // réponse périmée
           const p = res.product || res.data || res;
           // Ensure type defaults
           if (!p.type) p.type = 'product';
@@ -152,7 +188,7 @@ export class ProductDetailComponent implements OnInit, AfterViewInit, OnDestroy 
             setTimeout(() => this.openContact(), 300);
           }
         },
-        error: () => this.loading.set(false),
+        error: () => { if (this.loadedSlug === slug) this.loading.set(false); },
       });
     }
   }
@@ -432,30 +468,11 @@ export class ProductDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     if (videoEl) videoEl.muted = this.videoMuted();
   }
 
-  ngOnDestroy(): void {
-    if (this.progressInterval) {
-      clearInterval(this.progressInterval);
-      this.progressInterval = null;
-    }
-  }
-
-  /** Clic sur la barre de progression : se déplace dans la vidéo. */
-  seekVideo(event: MouseEvent): void {
-    const videoEl = this.detailVideoRef?.nativeElement;
-    const bar = event.currentTarget as HTMLElement | null;
-    if (!videoEl || !bar || !videoEl.duration || !isFinite(videoEl.duration)) return;
-    const rect = bar.getBoundingClientRect();
-    if (rect.width <= 0) return;
-    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-    videoEl.currentTime = ratio * videoEl.duration;
-    this.videoProgress.set(ratio * 100);
-  }
-
   toggleVideoPlay(): void {
     const videoEl = this.detailVideoRef?.nativeElement;
     if (!videoEl) return;
     if (videoEl.paused) {
-      videoEl.muted = this.videoMuted();
+      videoEl.muted = true;
       // If video hasn't loaded yet, try loading first
       if (videoEl.readyState === 0) {
         videoEl.load();
@@ -479,6 +496,7 @@ export class ProductDetailComponent implements OnInit, AfterViewInit, OnDestroy 
     this.loadingReviews.set(true);
     this.reviewService.getSellerReviews(sellerId, p.id).subscribe({
       next: (res: any) => {
+        if (this.product()?.id !== p.id) return; // réponse d'une annonce déjà quittée
         const reviewsList = res.reviews?.data || res.reviews || [];
         this.reviews.set(reviewsList);
         this.reviewStats.set(res.stats || null);

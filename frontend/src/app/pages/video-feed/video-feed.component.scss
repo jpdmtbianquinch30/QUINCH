@@ -3317,78 +3317,230 @@ $r-sm: 8px;
   display: none;
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Cloche de notifications (en-tête) + signalement (panneau détail)
+// ═══════════════════════════════════════════════════════════════════
+.header-right { display: flex; align-items: center; gap: 8px; }
 
-// ─── Modale de signalement ───────────────────────────────
-.vf-report-overlay {
-  position: fixed; inset: 0; z-index: 1200;
-  display: flex; align-items: center; justify-content: center;
-  padding: 16px; background: rgba(0, 0, 0, 0.6);
-}
-.vf-report-modal {
-  width: min(420px, 100%);
-  display: flex; flex-direction: column; gap: 12px;
-  padding: 20px; border-radius: 16px;
-  background: var(--surface, #14141f); color: var(--text, #fff);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  h3 { margin: 0; font-size: 1.05rem; }
-  select, textarea {
-    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06); color: inherit;
-    border: 1px solid rgba(255, 255, 255, 0.15); font: inherit;
-  }
-  .vf-report-actions {
-    display: flex; justify-content: flex-end; gap: 8px;
-    button { padding: 9px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: transparent; color: inherit; cursor: pointer; }
-    .primary { background: #6366f1; border-color: #6366f1; color: #fff; }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-  }
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════
-//  ACTIONS DU FEED VIDÉO — alignement uniforme (like • avis • partage • sauvegarde)
-//  Dernière règle du fichier : consolide les anciennes définitions.
-// ═══════════════════════════════════════════════════════════════════════
-.info-actions-row {
+.header-btn.bell-btn { position: relative; }
+.bell-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: stretch;
-  justify-items: center;
-  gap: 4px;
-  width: 100%;
-}
-
-.h-action {
-  // chaque bouton : icône centrée, compteur dessous, même hauteur partout
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  width: 100%;
-  min-width: 0;
-  min-height: 48px;           // cible tactile confortable
-  padding: 4px 2px;
+  place-items: center;
+  font-size: 0.6rem;
+  font-weight: 800;
   line-height: 1;
-  text-align: center;
+  color: #fff;
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  box-shadow: 0 0 0 2px rgba(10, 10, 20, 0.9);
+}
 
-  .material-icons {
-    font-size: 24px;
-    width: 24px;
-    height: 24px;
-    display: flex;
+.report-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  .report-btn { flex: 1 1 180px; justify-content: center; margin-top: 0; }
+}
+
+// ─── En-tête mobile : grille stable (retour · onglets · recherche + cloche) ───
+@media (max-width: 768px) {
+  .feed-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
   }
-
-  span:last-child {
-    font-size: 0.7rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    min-height: 1em;          // réserve la place même à 0 → pas de décalage
+  .feed-header .header-left,
+  .feed-header .header-right {
+    position: static;
+    top: auto;
+    transform: none;
   }
+  .feed-header .header-left { justify-self: start; }
+  .feed-header .header-right { justify-self: end; gap: 6px; }
+  .feed-header .feed-tabs { justify-self: center; min-width: 0; max-width: 100%; }
+  .feed-header .header-btn { width: 40px; height: 40px; }
+  .feed-header .feed-tabs { height: 40px; }
+  .feed-header .feed-tabs .tab { padding-left: 12px; padding-right: 12px; font-size: 0.78rem; }
 }
 
-@media (max-width: 380px) {
-  .h-action { min-height: 44px; .material-icons { font-size: 22px; width: 22px; height: 22px; } }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .verified-icon {
+    color: #316199
 }
+:host-context(body.quinch-light) .info-desc ::ng-deep .hashtag {
+    color: #50579a
+}
+:host-context(body.quinch-light) .info-desc ::ng-deep .mention {
+    color: #20835f
+}
+:host-context(body.quinch-light) .h-action .material-icons.saved {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .search-clear-all {
+    color: #50579a
+}
+:host-context(body.quinch-light) .suggestion-card .suggestion-price {
+    color: #50579a
+}
+:host-context(body.quinch-light) .feed-detail-panel .fd-actions button .active-fav {
+    color: #9c7616 !important
+}
+:host-context(body.quinch-light) .feed-detail-panel .price-quote {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .stock-info {
+    color: #2e8a4f
+}
+:host-context(body.quinch-light) .feed-detail-panel .stock-info.out {
+    color: #9a4646
+}
+:host-context(body.quinch-light) .feed-detail-panel .availability-info {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .trust-score {
+    color: #50579a
+}
+:host-context(body.quinch-light) .is-service .feed-detail-panel .trust-score {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .spec-icon {
+    color: #50579a
+}
+:host-context(body.quinch-light) .is-service .feed-detail-panel .spec-icon {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .service-specs .section-title .material-icons {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .spec-item.service-spec .spec-icon {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .price-prefix {
+    color: #20835f
+}
+:host-context(body.quinch-light) .feed-detail-panel .premium-icon-sm {
+    color: #986207
+}
+:host-context(body.quinch-light) .feed-detail-panel .dp-gallery-main {
+    background: rgba(15, 23, 42, 0.021)
+}
+:host-context(body.quinch-light) .feed-detail-panel .dp-gallery-thumb {
+    background: rgba(15, 23, 42, 0.021)
+}
+:host-context(body.quinch-light) .feed-detail-panel .reviews-section .section-title .material-icons {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .feed-detail-panel .score-stars .star-icon.filled {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .feed-detail-panel .star-pick .material-icons {
+    color: #9c7616
+}
+:host-context(body.quinch-light) .feed-detail-panel .review-stars-row .star-sm.filled {
+    color: #9c7616
+}
+@media (max-width: 768px) {
+    :host-context(body.quinch-light) .slide-inner.split-mode .fd-resize-handle::after {
+        background: rgba(15, 23, 42, 0.1)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .fd-resize-handle:hover::after, :host-context(body.quinch-light) .slide-inner.split-mode .fd-resize-handle.dragging::after {
+        background: rgba(15, 23, 42, 0.1)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel {
+        border-top: 1px solid rgba(15, 23, 42, 0.1)
+    }
+}
+:host-context(body.quinch-light) .fd-modal {
+    background: #eef1f8;
+    border: 1px solid rgba(15, 23, 42, 0.073)
+}
+:host-context(body.quinch-light) .fd-modal-header {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.073)
+}
+:host-context(body.quinch-light) .fd-modal-header h3 {
+    color: #172039
+}
+:host-context(body.quinch-light) .fd-modal-close {
+    background: rgba(15, 23, 42, 0.035);
+    color: rgba(23, 32, 57, 0.8)
+}
+:host-context(body.quinch-light) .fd-modal-close:hover {
+    background: rgba(15, 23, 42, 0.07);
+    color: #172039
+}
+:host-context(body.quinch-light) .fd-modal-product {
+    background: rgba(15, 23, 42, 0.021);
+    color: rgba(23, 32, 57, 0.9)
+}
+:host-context(body.quinch-light) .fd-modal-body label {
+    color: rgba(23, 32, 57, 0.95)
+}
+:host-context(body.quinch-light) .fd-modal-body textarea, :host-context(body.quinch-light) .fd-modal-body .fd-modal-input {
+    background: rgba(15, 23, 42, 0.028);
+    border: 1px solid rgba(15, 23, 42, 0.091);
+    color: #172039
+}
+:host-context(body.quinch-light) .fd-modal-body textarea::placeholder, :host-context(body.quinch-light) .fd-modal-body .fd-modal-input::placeholder {
+    color: rgba(23, 32, 57, 0.5)
+}
+@media (min-width: 769px) {
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel > .fd-resize-handle::after {
+        background: rgba(15, 23, 42, 0.098)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-close {
+        background: rgba(255, 255, 255, 0.88)
+    }
+}
+@media (max-width: 768px) {
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel {
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        background: rgba(255, 255, 255, 0.96)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-resize-handle {
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.7))
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-resize-handle::after {
+        background: rgba(15, 23, 42, 0.1)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-resize-handle.dragging::after {
+        background: rgba(15, 23, 42, 0.1)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-close {
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid rgba(15, 23, 42, 0.118)
+    }
+}
+@media (max-width: 768px) {
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel {
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        background: rgba(255, 255, 255, 0.96)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel > .fd-resize-handle {
+        background: linear-gradient(to bottom, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82), transparent)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel > .fd-resize-handle::after {
+        background: rgba(15, 23, 42, 0.1)
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-close {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(15, 23, 42, 0.118)
+    }
+}
+@media (max-width: 768px) {
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-resize-handle::after {
+        background: rgba(15, 23, 42, 0.1) !important
+    }
+    :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-resize-handle.dragging::after, :host-context(body.quinch-light) .slide-inner.split-mode .feed-detail-panel .fd-resize-handle:hover::after {
+        background: rgba(15, 23, 42, 0.1) !important
+    }
+}
+/* LIGHT-AUTO:END */

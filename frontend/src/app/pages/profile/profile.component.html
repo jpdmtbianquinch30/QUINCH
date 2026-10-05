@@ -431,7 +431,7 @@
       <div class="pm-header">
         <div class="pm-header-info">
           <span class="material-icons">settings</span>
-          <h3>Gestion du produit</h3>
+          <h3>Gestion du {{ managingProduct().type === 'service' ? 'service' : 'produit' }}</h3>
         </div>
         <button class="pm-close" (click)="closeManageModal()">
           <span class="material-icons">close</span>
@@ -486,59 +486,35 @@
         <div class="pm-section">
           <h4><span class="material-icons">flash_on</span> Actions rapides</h4>
           <div class="pm-actions-grid">
-            @if (managingProduct().type === 'service') {
-              <!-- Service : Activer / Désactiver (Supprimer plus bas) -->
-              @if (managingProduct().status === 'active') {
-                <button class="pm-action-card pm-action-disable" (click)="showDeactivateConfirm.set(true); deactivateType.set('paused')">
-                  <span class="material-icons">toggle_off</span>
-                  <span class="pm-action-title">Désactiver</span>
-                  <span class="pm-action-desc">Masquer le service (réversible)</span>
-                </button>
-              } @else {
-                <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
-                  <span class="material-icons">toggle_on</span>
-                  <span class="pm-action-title">Activer</span>
-                  <span class="pm-action-desc">Remettre le service en ligne</span>
-                </button>
-              }
-            } @else if (managingProduct().status === 'active') {
-              <button class="pm-action-card pm-action-outofstock" (click)="markOutOfStock()">
-                <span class="material-icons">remove_shopping_cart</span>
-                <span class="pm-action-title">Produit epuise</span>
-                <span class="pm-action-desc">Stock a 0 et desactiver</span>
-              </button>
-              <button class="pm-action-card pm-action-pause" (click)="showDeactivateConfirm.set(true); deactivateType.set('paused')">
-                <span class="material-icons">pause_circle</span>
-                <span class="pm-action-title">Pause temporaire</span>
-                <span class="pm-action-desc">Masquer temporairement</span>
-              </button>
-              <button class="pm-action-card pm-action-disable" (click)="showDeactivateConfirm.set(true); deactivateType.set('disabled')">
-                <span class="material-icons">block</span>
-                <span class="pm-action-title">Desactiver</span>
-                <span class="pm-action-desc">Retirer definitivement</span>
-              </button>
-            } @else if (managingProduct().status === 'paused') {
-              <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
-                <span class="material-icons">play_circle</span>
-                <span class="pm-action-title">Reactiver</span>
-                <span class="pm-action-desc">Remettre en vente</span>
-              </button>
-              <button class="pm-action-card pm-action-disable" (click)="showDeactivateConfirm.set(true); deactivateType.set('disabled')">
-                <span class="material-icons">block</span>
-                <span class="pm-action-title">Desactiver</span>
-                <span class="pm-action-desc">Retirer definitivement</span>
-              </button>
-            } @else if (managingProduct().status === 'disabled') {
-              <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
-                <span class="material-icons">play_circle</span>
-                <span class="pm-action-title">Reactiver</span>
-                <span class="pm-action-desc">Remettre en vente</span>
-              </button>
-            } @else if (managingProduct().status === 'draft') {
+            @if (managingProduct().status === 'draft') {
               <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
                 <span class="material-icons">publish</span>
                 <span class="pm-action-title">Publier</span>
-                <span class="pm-action-desc">Mettre en vente</span>
+                <span class="pm-action-desc">Mettre en ligne</span>
+              </button>
+            } @else if (managingProduct().status === 'disabled') {
+              <div class="pm-moderation-note">
+                <span class="material-icons">gpp_maybe</span>
+                <span>Cette annonce a été retirée par la modération. Contestez la décision depuis vos notifications ou contactez le support.</span>
+              </div>
+            } @else if (managingProduct().status === 'active' || managingProduct().status === 'reserved') {
+              @if (managingProduct().type !== 'service') {
+                <button class="pm-action-card pm-action-outofstock" (click)="markOutOfStock()">
+                  <span class="material-icons">remove_shopping_cart</span>
+                  <span class="pm-action-title">Produit epuise</span>
+                  <span class="pm-action-desc">Stock a 0 et desactiver</span>
+                </button>
+              }
+              <button class="pm-action-card pm-action-pause" (click)="deactivateNow()" [disabled]="manageUpdating()">
+                <span class="material-icons">pause_circle</span>
+                <span class="pm-action-title">Desactiver</span>
+                <span class="pm-action-desc">Masquer, reactivable a tout moment</span>
+              </button>
+            } @else {
+              <button class="pm-action-card pm-action-reactivate" (click)="reactivateProduct()" [disabled]="manageUpdating()">
+                <span class="material-icons">play_circle</span>
+                <span class="pm-action-title">Activer</span>
+                <span class="pm-action-desc">Remettre en ligne</span>
               </button>
             }
           </div>

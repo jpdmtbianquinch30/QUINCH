@@ -1534,3 +1534,31 @@
   .q-btn-secondary { flex: 1; min-width: 160px; }
   .q-btn-primary { flex: 1; min-width: 200px; }
 }
+
+/* ═══ AUTO-LIGHT (phase 3) ═══ */
+:host-context(body.quinch-light) .poster-action { background: rgba(15, 23, 42, 0.083); border-color: rgba(15, 23, 42, 0.160); }
+:host-context(body.quinch-light) .poster-action:hover { background: rgba(15, 23, 42, 0.120); }
+:host-context(body.quinch-light) .video-actions-bar { border-top-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .video-action-btn + .video-action-btn { border-left-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .editor-content { border-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .editor-actions { border-top-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .summary-row { border-bottom-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .ve-topbar { border-bottom-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .ve-tabs { border-bottom-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .ve-text-overlay.selected::before { border-color: rgba(15, 23, 42, 0.160); }
+:host-context(body.quinch-light) .ve-play-overlay { border-color: rgba(15, 23, 42, 0.156); }
+:host-context(body.quinch-light) .ve-speed-badge { border-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .ve-info-badge { border-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .ve-filter-card { border-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .ve-text-input { border-color: rgba(15, 23, 42, 0.104); }
+:host-context(body.quinch-light) .ve-font-btn { border-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .ve-toggle { border-color: rgba(15, 23, 42, 0.078); }
+:host-context(body.quinch-light) .ve-text-list { border-top-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .ve-aspect-btn { border-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .ve-transform-btn { border-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .ve-setting-row { border-color: rgba(15, 23, 42, 0.070); }
+:host-context(body.quinch-light) .ve-quality-card { border-color: rgba(15, 23, 42, 0.070); }
+@media (max-width: 900px) {
+  :host-context(body.quinch-light) .ve-controls { border-top-color: rgba(15, 23, 42, 0.078); }
+}
+:host-context(body.quinch-light) .expect-notice span { color: rgba(17, 24, 39, 0.75); }

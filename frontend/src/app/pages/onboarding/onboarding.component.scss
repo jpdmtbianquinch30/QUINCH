@@ -1187,3 +1187,9 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ═══ AUTO-LIGHT (phase 3) ═══ */
+:host-context(body.quinch-light) .chip:hover:not(.selected) { border-color: rgba(15, 23, 42, 0.160); }
+:host-context(body.quinch-light) .field-select:hover { border-color: rgba(15, 23, 42, 0.160); }
+:host-context(body.quinch-light) .nav-btn.ghost { background: rgba(15, 23, 42, 0.019); }
+:host-context(body.quinch-light) .nav-btn.ghost:hover { background: rgba(15, 23, 42, 0.036); border-color: rgba(15, 23, 42, 0.160); }

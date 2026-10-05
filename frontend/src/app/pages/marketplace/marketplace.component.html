@@ -490,6 +490,13 @@
 
           }
 
+          @if (product.seller?.is_premium) {
+            <span class="cbadge cbadge-premium" title="Vendeur Premium">
+              <span class="material-icons">workspace_premium</span>
+              Premium
+            </span>
+          }
+
           @if (hasVideo(product)) {
 
             <span class="cbadge cbadge-video">
@@ -588,8 +595,10 @@
               {{ product.seller?.full_name
                 || product.seller?.name
                 || product.user?.full_name }}
+              @for (b of product.seller?.badges; track b.type) {
+                <span class="material-icons seller-badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
+              }
             </span>
-            <app-user-badges [badges]="product.seller?.badges" [premium]="!!product.seller?.is_premium" />
 
             @if (product.seller?.city || product.user?.city) {
 

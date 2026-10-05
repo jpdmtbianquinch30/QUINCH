@@ -46,8 +46,13 @@ export class ProductService {
     return this.api.get(`products/${slug}`);
   }
 
+  /**
+   * Explorer : TOUS les produits/services actifs (avec ou sans vidéo),
+   * premium mis en avant côté serveur. (Avant : appelait products/feed,
+   * réservé aux annonces avec vidéo, d'où l'absence des autres.)
+   */
   getProducts(params?: Record<string, any>): Observable<any> {
-    return this.api.get('products/feed', params);
+    return this.api.get('products', params);
   }
 
   createProduct(data: any, imageFiles?: File[]): Observable<any> {

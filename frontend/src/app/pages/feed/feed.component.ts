@@ -7,15 +7,14 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
 import { Product, Category } from '../../core/models/product.model';
+import { AnnouncementsComponent } from '../../shared/announcements/announcements.component';
 
 export type FeedSort = 'foryou' | 'recent' | 'popular' | 'day' | 'following';
-
-import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, UserBadgesComponent],
+  imports: [RouterLink, DecimalPipe, AnnouncementsComponent],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
 })
@@ -85,37 +84,9 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() { clearInterval(this.bannerTimer); }
 
-  adminMessages = signal<any[]>([]);
-
   ngOnInit() {
     this.loadData();
     this.loadFeedConfig();
-    this.loadAdminMessages();
-  }
-
-  private loadAdminMessages() {
-    if (!this.auth.isAuthenticated()) return;
-    this.notify.getAdminFeed().subscribe({
-      next: (res: any) => this.adminMessages.set(res?.data ?? []),
-      error: () => {}, // le feed fonctionne sans
-    });
-  }
-
-  dismissAdminMessage(m: any) {
-    this.adminMessages.update(list => list.filter(x => x.id !== m.id));
-    this.notify.markRead(m.id).subscribe({ error: () => {} });
-  }
-
-  openAdminMessage(m: any) {
-    this.dismissAdminMessage(m);
-    const url: string | undefined = m.action_url;
-    if (!url || !url.startsWith('/') || url.startsWith('//')) return;
-    if (url === '/docs' || url.startsWith('/docs/') || url.startsWith('/docs#')) {
-      // Page statique (documentation) : navigation complète, hors routeur.
-      window.location.assign(url.startsWith('/docs#') ? '/docs/' + url.slice(5) : (url.endsWith('/') || url.endsWith('.html') ? url : url + '/'));
-      return;
-    }
-    this.router.navigateByUrl(url);
   }
 
   private loadCounts() {

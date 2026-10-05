@@ -1058,43 +1058,40 @@
   color: #1a1200;
 }
 
-
-// ─── Messages de l'équipe QUINCH ─────────────────────────
-.admin-msgs { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px 0; }
-.admin-msg {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 12px; border-radius: 14px;
-  background: rgba(99, 102, 241, 0.14);
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  color: var(--text, #fff);
-  .admin-msg-icon { color: #818cf8; font-size: 22px; flex: none; margin-top: 2px; }
-  .admin-msg-body {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
-    background: none; border: none; padding: 0; color: inherit; font: inherit;
-    text-align: left; cursor: pointer;
-    strong { font-size: 0.9rem; }
-    span { font-size: 0.8rem; opacity: 0.85; overflow-wrap: anywhere; }
-  }
-  .admin-msg-close {
-    flex: none; background: none; border: none; color: inherit; opacity: 0.7; cursor: pointer; padding: 0;
-    .material-icons { font-size: 18px; }
-  }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .quinch-hero {
+    background: #ffffff
 }
-
-
-// Ligne vendeur sous le titre (nom + badges)
-.card-seller {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  min-width: 0;
-  font-size: 0.72rem;
-  color: #9ca3af;
+:host-context(body.quinch-light) .quinch-hero::after {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), transparent 45%, rgba(255, 255, 255, 0.7)), linear-gradient(180deg, transparent 55%, rgba(255, 255, 255, 0.7))
 }
-.card-seller-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+:host-context(body.quinch-light) .news-ticker-msg {
+    color: #172039
 }
+:host-context(body.quinch-light) .news-ticker-msg::before {
+    color: #3c669b
+}
+:host-context(body.quinch-light) .search-bar::after {
+    background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.084), transparent)
+}
+:host-context(body.quinch-light) .type-segment-vertical button::after, :host-context(body.quinch-light) .type-segment button::after {
+    background: linear-gradient(110deg, transparent 25%, rgba(15, 23, 42, 0.091), transparent 75%)
+}
+:host-context(body.quinch-light) .category-chips .chip:hover {
+    color: #5b7a9d
+}
+:host-context(body.quinch-light) .product-card:hover .card-title {
+    color: #172039
+}
+:host-context(body.quinch-light) .sort-list-vertical button {
+    color: rgba(23, 32, 57, 0.85)
+}
+:host-context(body.quinch-light) .sort-list-vertical button:hover {
+    background: rgba(15, 23, 42, 0.028)
+}
+:host-context(body.quinch-light) .sort-chips button {
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: rgba(15, 23, 42, 0.028);
+    color: rgba(23, 32, 57, 0.9)
+}
+/* LIGHT-AUTO:END */

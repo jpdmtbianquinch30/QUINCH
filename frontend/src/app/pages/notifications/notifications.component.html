@@ -108,8 +108,11 @@
               <div class="notif-content">
                 <div class="notif-text">
                   <span class="notif-title">{{ notif.title }}</span>
-                  @if (notif.sender?.badges?.length) {
-                    <app-user-badges [badges]="notif.sender?.badges" [max]="2" />
+                  @if (notif.sender?.is_premium) {
+                    <span class="material-icons n-badge n-premium" title="Premium">workspace_premium</span>
+                  }
+                  @for (b of notif.sender?.badges; track b.type) {
+                    <span class="material-icons n-badge" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
                   }
                   @if (getGroupedLabel(notif)) {
                     <span class="group-badge">{{ getGroupedLabel(notif) }}</span>

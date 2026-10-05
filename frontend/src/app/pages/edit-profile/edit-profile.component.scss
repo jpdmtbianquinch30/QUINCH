@@ -1792,71 +1792,56 @@ select.q-input {
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DURCISSEMENT MOBILE — modale « Changer de numéro » + ligne téléphone
-   Objectif : plus aucun débordement horizontal, quelle que soit la largeur.
+   MODALE « CHANGER DE NUMÉRO » — mobile
+   Avant : largeur 450 px fixe + champs sans min-width:0 → la modale (et le
+   champ « +221 … ») débordait de l'écran sur téléphone. Désormais : feuille
+   plein-largeur ancrée en bas, champs et boutons qui rétrécissent, clavier
+   et encoche (safe-area) pris en compte.
    ═══════════════════════════════════════════════════════════════════════════ */
-
 .report-modal,
-.report-modal * {
-  box-sizing: border-box;
-  min-width: 0;
-}
+.report-modal * { box-sizing: border-box; min-width: 0; }
 
-.report-modal {
-  max-width: 100%;
-  overflow-x: hidden;
-  overflow-wrap: anywhere;
+.report-modal .input-prefix-wrap { display: flex; width: 100%; max-width: 100%; overflow: hidden; }
+.report-modal .input-prefix-wrap .prefix-input { flex: 1 1 auto; width: 100%; min-width: 0; }
+.report-modal .prefix-label { flex: 0 0 auto; }
+.report-modal .q-input { width: 100%; max-width: 100%; }
+.report-modal .report-sub,
+.report-modal .demo-otp-banner { overflow-wrap: anywhere; word-break: break-word; }
 
-  .form-group { width: 100%; }
-
-  .q-input,
-  .input-prefix-wrap {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .otp-input {
-    letter-spacing: 0.35em;
-    text-align: center;
-  }
-
-  .demo-otp-banner {
-    flex-wrap: wrap;
-    max-width: 100%;
-    word-break: break-word;
-  }
-
-  .report-actions {
-    flex-wrap: wrap;
-
-    .q-btn { flex: 1 1 120px; }
-  }
-}
-
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .report-backdrop {
     align-items: flex-end;
     padding: 0;
+    overflow: hidden;
   }
 
   .report-modal {
     width: 100%;
-    max-height: calc(100dvh - 12px);
+    max-width: 100%;
+    max-height: 92dvh;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
     border-radius: 22px 22px 0 0;
-    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+    animation: phoneSheetIn 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  // numéro + bouton « Modifier » : empilés pour ne jamais déborder
-  .phone-row {
-    grid-template-columns: minmax(0, 1fr);
-
-    .q-btn { width: 100%; min-width: 0; }
+  .report-modal .report-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
+  .report-modal .report-actions .q-btn { width: 100%; min-height: 46px; padding-left: 10px; padding-right: 10px; }
 
-  .report-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-
-    .q-btn { width: 100%; flex: none; }
-  }
+  .report-modal .otp-input { letter-spacing: 0.35em; font-size: 1.15rem; text-align: center; }
+  /* 16 px minimum : évite le zoom automatique d'iOS au focus d'un champ. */
+  .report-modal .q-input { font-size: 16px; }
 }
+
+@keyframes phoneSheetIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Ligne « Téléphone » de la page : champ + bouton Modifier sans débordement. */
+.phone-row { min-width: 0; }
+.phone-row .q-input { min-width: 0; width: 100%; text-overflow: ellipsis; }

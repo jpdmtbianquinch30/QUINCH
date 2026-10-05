@@ -1199,47 +1199,72 @@
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODE CLAIR — Recherche
-   ═══════════════════════════════════════════════════════════════════════════ */
-:host-context(body.quinch-light) {
-  --q-bg: #f4f6fb;
-  --q-bg-2: #eef1f8;
-  --q-panel: rgba(255, 255, 255, 0.95);
-  --q-panel-strong: #ffffff;
-
-  --q-text: #111827;
-  --q-text-soft: #374151;
-  --q-text-muted: #6b7488;
-
-  --q-blue: #4f63e6;
-  --q-blue-2: #6a5be6;
-
-  --q-border: rgba(15, 23, 42, 0.10);
-  --q-border-hover: rgba(79, 99, 230, 0.40);
-
-  .search-topbar {
-    background: rgba(255, 255, 255, 0.88);
-    border-bottom-color: rgba(15, 23, 42, 0.08);
-  }
-  .back-btn { background: rgba(15, 23, 42, 0.04); border-color: rgba(15, 23, 42, 0.10); }
-  .search-input-wrap { border-color: rgba(15, 23, 42, 0.10); }
-  .search-input-wrap input::placeholder { color: #8a93a6; }
-  .search-hint p { color: #6b7488; }
-  .loader { border-color: rgba(15, 23, 42, 0.10); }
-
-  .result-section h3 { color: #111827; }
-  .result-subheading { color: #6b7488; }
-  .user-row { color: #111827; }
-  .user-avatar-placeholder { border-color: rgba(15, 23, 42, 0.10); color: #8a93a6; }
-  .user-info strong { color: #111827; }
-  .user-info span:not(.user-name-row) { color: #6b7488; }
-
-  .result-card { border-color: rgba(15, 23, 42, 0.10); }
-  .result-card:hover .result-title { color: #0b1020; }
-  .result-card .result-placeholder .material-icons { color: #b6bdcc; }
-  .result-info { color: #111827; }
-  .result-info .result-title { color: #1f2937; }
-  .result-price { color: #4f63e6; }
+/* LIGHT-AUTO:BEGIN — généré (tools/lightgen.js) : thème clair body.quinch-light. Ne pas éditer à la main, régénérer. */
+:host-context(body.quinch-light) .search-page {
+    background: radial-gradient(circle at 10% 0%, rgba(99, 102, 241, 0.13), transparent 28%), radial-gradient(circle at 90% 12%, rgba(124, 92, 255, 0.11), transparent 25%), radial-gradient(circle at 50% 100%, rgba(56, 189, 248, 0.055), transparent 30%), linear-gradient(145deg, #ffffff 0%, #ffffff 45%, #ffffff 100%)
 }
+:host-context(body.quinch-light) .search-topbar {
+    background: rgba(255, 255, 255, 0.76);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.069)
+}
+:host-context(body.quinch-light) .back-btn {
+    border: 1px solid rgba(15, 23, 42, 0.077);
+    background: rgba(15, 23, 42, 0.032)
+}
+:host-context(body.quinch-light) .search-input-wrap {
+    border: 1px solid rgba(15, 23, 42, 0.077);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.045), rgba(15, 23, 42, 0.017))
+}
+:host-context(body.quinch-light) .search-input-wrap:focus-within {
+    background: linear-gradient(135deg, rgba(99, 120, 255, 0.085), rgba(15, 23, 42, 0.017))
+}
+:host-context(body.quinch-light) .search-input-wrap > .material-icons {
+    color: #575e9e
+}
+:host-context(body.quinch-light) .search-input-wrap:focus-within > .material-icons {
+    color: #666d9e
+}
+:host-context(body.quinch-light) .loader {
+    border: 2px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .result-section h3 {
+    color: #172039
+}
+:host-context(body.quinch-light) .user-avatar {
+    background: linear-gradient(135deg, #6678ff, #916cff, rgba(15, 23, 42, 0.084))
+}
+:host-context(body.quinch-light) .user-avatar-placeholder {
+    border: 1px solid rgba(15, 23, 42, 0.082)
+}
+:host-context(body.quinch-light) .user-info strong {
+    color: #172039
+}
+:host-context(body.quinch-light) .premium-icon-sm {
+    color: #987226
+}
+:host-context(body.quinch-light) .verified-icon-sm {
+    color: #404c9e
+}
+:host-context(body.quinch-light) .result-card {
+    border: 1px solid rgba(15, 23, 42, 0.069);
+    background: linear-gradient(145deg, rgba(18, 24, 43, 0.88), rgba(255, 255, 255, 0.82))
+}
+:host-context(body.quinch-light) .result-card img, :host-context(body.quinch-light) .result-card .result-placeholder {
+    background: linear-gradient(135deg, #10162a, #f8f9fd)
+}
+:host-context(body.quinch-light) .result-card::after {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.7), transparent)
+}
+:host-context(body.quinch-light) .result-card:hover .result-title {
+    color: #172039
+}
+:host-context(body.quinch-light) .result-info {
+    background: linear-gradient(180deg, rgba(14, 19, 34, 0.94), rgba(255, 255, 255, 0.96))
+}
+:host-context(body.quinch-light) .result-info .result-title {
+    color: #172039
+}
+:host-context(body.quinch-light) .result-info .result-price {
+    color: #4a549e
+}
+/* LIGHT-AUTO:END */

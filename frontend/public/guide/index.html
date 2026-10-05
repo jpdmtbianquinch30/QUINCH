@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guide complet de QUINCH — vendre, acheter, rester en sécurité</title>
+<meta name="description" content="Documentation complète de QUINCH : compte, score de confiance, publication, feed vidéo, explorer, messages, premium, classement, signalement et sécurité.">
+<link rel="icon" href="/logoquinch.png">
+<style>
+:root{--bg:#0b0d16;--card:#141827;--card2:#1a2033;--txt:#eef1fb;--mut:#9aa3bd;--line:rgba(255,255,255,.09);--acc:#6366f1;--acc2:#8b5cf6;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--r:16px}
+@media (prefers-color-scheme:light){:root{--bg:#f4f6fb;--card:#fff;--card2:#f0f2f8;--txt:#171d33;--mut:#5b647d;--line:rgba(15,23,42,.1)}}
+:root[data-theme=dark]{--bg:#0b0d16;--card:#141827;--card2:#1a2033;--txt:#eef1fb;--mut:#9aa3bd;--line:rgba(255,255,255,.09)}
+:root[data-theme=light]{--bg:#f4f6fb;--card:#fff;--card2:#f0f2f8;--txt:#171d33;--mut:#5b647d;--line:rgba(15,23,42,.1)}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);padding-bottom:env(safe-area-inset-bottom)}
+a{color:var(--acc)}h1,h2,h3{line-height:1.25;margin:0 0 .5em}
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.bar{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em;text-decoration:none;color:var(--txt)}
+.brand img{width:30px;height:30px;border-radius:8px}
+.bar .sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;font:inherit;font-weight:700;font-size:.9rem;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));padding:9px 16px;border-radius:999px}
+.btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px}
+nav.toc{position:sticky;top:76px;align-self:start;max-height:calc(100dvh - 96px);overflow:auto;padding:20px 0}
+nav.toc a{display:block;padding:7px 12px;border-radius:10px;text-decoration:none;color:var(--mut);font-size:.92rem;font-weight:600}
+nav.toc a:hover,nav.toc a.on{background:var(--card);color:var(--txt)}
+.hero{padding:48px 0 24px}.hero h1{font-size:clamp(1.8rem,4.5vw,2.8rem);font-weight:900}
+.hero p{color:var(--mut);max-width:62ch;font-size:1.05rem}
+.search{width:100%;max-width:520px;margin-top:14px;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit}
+section{padding:28px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+h2{font-size:1.5rem;font-weight:850}h3{font-size:1.08rem;margin-top:1.4em}
+p,li{color:var(--mut)}li{margin:.3em 0}strong{color:var(--txt)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card h4{margin:0 0 6px;font-size:1rem;color:var(--txt)}.card p{margin:0;font-size:.92rem}
+.note{border-left:4px solid var(--acc);background:var(--card);padding:12px 14px;border-radius:0 12px 12px 0;margin:14px 0;color:var(--mut)}
+.note.warn{border-color:var(--warn)}.note.ok{border-color:var(--ok)}.note.bad{border-color:var(--bad)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.93rem;display:block;overflow-x:auto}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--txt);background:var(--card)}td{color:var(--mut)}
+td:first-child{color:var(--txt);font-weight:600;white-space:normal}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding:12px 14px 12px 54px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2))}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:10px 0;padding:0 16px}
+summary{cursor:pointer;font-weight:700;padding:14px 0;color:var(--txt)}details[open] summary{border-bottom:1px solid var(--line);margin-bottom:10px}
+.pill{display:inline-block;font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.pill.g{background:rgba(245,158,11,.15);color:#d99100}
+footer{max-width:1180px;margin:24px auto 0;padding:24px 16px 40px;color:var(--mut);border-top:1px solid var(--line);font-size:.9rem}
+.hide{display:none!important}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}nav.toc{position:static;max-height:none;display:flex;gap:6px;overflow-x:auto;padding:10px 0}nav.toc a{white-space:nowrap;background:var(--card)}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <a class="brand" href="/feed"><img src="/logoquinch.png" alt="" onerror="this.style.display='none'">QUINCH</a>
+  <span class="sp"></span>
+  <button class="btn ghost" id="theme" type="button" aria-label="Changer de thème">◐ Thème</button>
+  <a class="btn" href="/feed">Ouvrir l'application</a>
+</div></header>
+
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="Sommaire">
+  <a href="#demarrer">1. Démarrer</a>
+  <a href="#confiance">2. Score de confiance</a>
+  <a href="#publier">3. Publier</a>
+  <a href="#feed">4. Le feed vidéo</a>
+  <a href="#explorer">5. Explorer &amp; recherche</a>
+  <a href="#messages">6. Messages</a>
+  <a href="#notifications">7. Notifications</a>
+  <a href="#profil">8. Profil &amp; badges</a>
+  <a href="#premium">9. Premium</a>
+  <a href="#classement">10. Classement</a>
+  <a href="#avis">11. Avis &amp; favoris</a>
+  <a href="#signaler">12. Signaler &amp; modération</a>
+  <a href="#securite">13. Sécurité</a>
+  <a href="#faq">14. FAQ</a>
+</nav>
+
+<main id="main">
+<div class="hero">
+  <h1>Le guide complet de QUINCH</h1>
+  <p>QUINCH met en relation acheteurs et vendeurs (produits et services) grâce à la vidéo. Ici : tout ce qu'il faut savoir, de l'inscription à la sécurité de votre compte.</p>
+  <input class="search" id="q" type="search" placeholder="Rechercher dans le guide (ex. vidéo, 150 F, vocal, signaler)…" aria-label="Rechercher dans le guide">
+  <p id="nores" class="hide">Aucune section ne correspond à votre recherche.</p>
+</div>
+
+<section id="demarrer"><h2>1. Démarrer</h2>
+<ol class="steps">
+ <li><strong>Inscrivez-vous</strong> avec votre numéro sénégalais (+221), un nom, un pseudo (lettres, chiffres, _) et un mot de passe d'au moins 8 caractères avec 1 majuscule et 1 chiffre. Vous pouvez aussi utiliser Google.</li>
+ <li><strong>Vérifiez votre téléphone</strong> : un code à 6 chiffres vous est envoyé par SMS (valable 10 minutes, 5 essais, renvoi possible après 60 secondes).</li>
+ <li><strong>Configurez votre profil</strong> : photo, couverture, ville, région, bio, e-mail, site et politiques vendeur.</li>
+ <li><strong>Publiez</strong> votre première annonce ou parcourez le feed.</li>
+</ol>
+<div class="note ok">À l'arrivée, un message de bienvenue de l'équipe QUINCH s'affiche en haut du feed et dans vos notifications : il vous guide vers les <strong>80 % de score de confiance</strong>.</div>
+<p>On peut consulter le feed et l'Explorer sans compte ; publier, écrire, aimer, enregistrer ou signaler demande de se connecter.</p>
+</section>
+
+<section id="confiance"><h2>2. Le score de confiance (objectif 80 %)</h2>
+<p>Chaque compte a un score de confiance visible par les acheteurs. Il rassure et améliore votre crédibilité.</p>
+<table><tr><th>Ce qui compte</th><th>Effet</th></tr>
+<tr><td>Point de départ</td><td>30 %</td></tr>
+<tr><td>Téléphone vérifié</td><td>+10 %</td></tr>
+<tr><td>Profil complet : nom, e-mail, pseudo, photo, couverture, ville, région, bio, site</td><td>jusqu'à +30 %</td></tr>
+<tr><td>Politiques vendeur configurées (retours, livraison…)</td><td>+10 %</td></tr>
+<tr><td>Ancienneté du compte</td><td>jusqu'à +15 % sur un an</td></tr>
+<tr><td>Identité (KYC) vérifiée par l'équipe</td><td>+20 %</td></tr>
+<tr><td>Transactions réussies</td><td>+2 % chacune, jusqu'à +20 %</td></tr>
+<tr><td>Paiements échoués / activité suspecte</td><td>baisse du score</td></tr></table>
+<div class="note">Un profil entièrement rempli avec ses politiques vendeur atteint environ 80 % sans attendre d'historique de ventes.</div>
+</section>
+
+<section id="publier"><h2>3. Publier un produit ou un service</h2>
+<ol class="steps">
+ <li>Touchez <strong>Publier</strong> et choisissez <strong>Produit</strong> ou <strong>Service</strong>.</li>
+ <li>Ajoutez une <strong>couverture</strong> (image principale) et, si vous voulez, des photos supplémentaires.</li>
+ <li>Ajoutez une <strong>vidéo</strong> (importée ou filmée) pour apparaître dans le feed vidéo.</li>
+ <li>Renseignez titre, description (vous pouvez utiliser #hashtags et @mentions), catégorie, prix, négociable, stock, livraison et modes de paiement.</li>
+ <li>Publiez. Si des frais s'appliquent, le paiement Wave se lance avant la mise en ligne.</li>
+</ol>
+<table><tr><th></th><th>Compte gratuit</th><th>Compte Premium <span class="pill g">★</span></th></tr>
+<tr><td>Photos</td><td>6 (1 couverture + 5)</td><td>11 (1 couverture + 10)</td></tr>
+<tr><td>Annonce sans vidéo</td><td>Gratuite</td><td>Gratuite</td></tr>
+<tr><td>Annonce avec vidéo</td><td><strong>150 F CFA</strong> par annonce (Wave)</td><td>Incluse, sans frais</td></tr>
+<tr><td>Visibilité</td><td>Standard</td><td>Mise en avant à ancienneté égale</td></tr></table>
+<p>Les images sont limitées à 5 Mo (JPG, PNG, WebP) : une photo trop lourde est automatiquement réduite avant l'envoi.</p>
+<h3>Gérer vos annonces</h3>
+<p>Dans <strong>Profil</strong>, ouvrez le menu <strong>⋯</strong> d'une annonce ou d'un service : <strong>Activer</strong>, <strong>Désactiver</strong> (masquée mais réactivable) ou <strong>Supprimer</strong> (définitif).</p>
+<div class="note warn">Une annonce retirée par la modération ne peut pas être réactivée par son propriétaire : vous pouvez la contester depuis vos notifications.</div>
+</section>
+
+<section id="feed"><h2>4. Le feed vidéo</h2>
+<p>L'accueil affiche les annonces récentes ; le bouton <strong>Vidéos</strong> ouvre le feed plein écran, onglets <strong>Abonnements</strong> et <strong>Pour toi</strong>.</p>
+<div class="grid">
+<div class="card"><h4>Naviguer</h4><p>Glissez vers le haut/bas, molette ou flèches ↑ ↓. La vidéo sur laquelle vous avez cliqué est celle qui démarre.</p></div>
+<div class="card"><h4>Interagir</h4><p>♥ aimer (double-touchez la vidéo), 💬 avis, ↪ partager, 🔖 enregistrer. Les compteurs affichent aimés, avis, partages et enregistrements.</p></div>
+<div class="card"><h4>Détails</h4><p>« Voir détails » ouvre un panneau ajustable : glissez la poignée pour agrandir ou réduire la fiche.</p></div>
+<div class="card"><h4>Son</h4><p>Touchez la vidéo pour pause/lecture et l'icône haut-parleur pour couper le son.</p></div>
+</div>
+<p>Les vidéos de <strong>tous</strong> les vendeurs (gratuits et premium) apparaissent dans le feed ; l'ordre favorise les contenus récents, puis les comptes premium à ancienneté égale.</p>
+<div class="note">La cloche en haut du feed affiche le même nombre de notifications non lues que le menu.</div>
+</section>
+
+<section id="explorer"><h2>5. Explorer &amp; recherche</h2>
+<p><strong>Explorer</strong> liste <em>toutes</em> les annonces actives, <strong>avec ou sans vidéo</strong>, pour les comptes gratuits comme premium (les premium sont mis en avant). Filtrez par <strong>Produits / Services</strong>, catégorie, prix, état et tri.</p>
+<p>La <strong>recherche</strong> propose des suggestions instantanées, garde vos recherches récentes et trouve aussi les vendeurs par nom ou pseudo.</p>
+</section>
+
+<section id="messages"><h2>6. Messages</h2>
+<ul>
+<li>Contactez un vendeur depuis sa fiche ; la conversation garde le produit concerné.</li>
+<li><strong>Répertoire</strong> : filtre <strong>Tous</strong> (par défaut) ou <strong>Mes amis</strong>. On devient ami en s'abonnant mutuellement.</li>
+<li><strong>Messages vocaux</strong> avec forme d'onde, barre de progression cliquable et vitesse 1× / 1,5× / 2×.</li>
+<li>Envoi de photos et fichiers, suppression d'un message ou d'une conversation.</li>
+<li>Un message « Veuillez patienter, chargement des messages… » s'affiche pendant le chargement.</li>
+</ul>
+<div class="note warn">Pour votre sécurité, ne communiquez jamais votre mot de passe ni un code SMS, et évitez de payer à l'avance un inconnu.</div>
+</section>
+
+<section id="notifications"><h2>7. Notifications</h2>
+<p>Quatre onglets : <strong>Tout, Interactions, Messages, Système</strong>. Chaque notification vous amène au bon endroit :</p>
+<table><tr><th>Notification</th><th>Destination</th></tr>
+<tr><td>Message d'une personne précise</td><td>Directement son chat</td></tr>
+<tr><td>Nouvel ami / négociation</td><td>Chat avec cette personne</td></tr>
+<tr><td>J'aime, commentaire, mention</td><td>L'annonce concernée</td></tr>
+<tr><td>Nouvel abonné</td><td>Son profil</td></tr>
+<tr><td>Message de l'équipe « Voir le détail »</td><td>Ce guide</td></tr>
+<tr><td>Bienvenue</td><td>Modifier mon profil</td></tr></table>
+<p>Les messages importants de l'équipe (par exemple « nous avons corrigé… ») s'affichent aussi en haut du feed dès votre arrivée ; vous pouvez les fermer.</p>
+<p>Réglez les types de notifications dans <strong>Paramètres</strong>.</p>
+</section>
+
+<section id="profil"><h2>8. Profil, badges &amp; changement de numéro</h2>
+<p>Votre <strong>profil vendeur</strong> public montre vos annonces, avis, abonnés, politiques et score de confiance. Vos <strong>badges</strong> (fidélité, vérification, premium…) s'affichent partout : profil, recherche, feed, messages, notifications, fiches, classement.</p>
+<h3>Changer de numéro</h3>
+<ol class="steps"><li>Profil → Modifier → Téléphone → <strong>Modifier</strong>.</li><li>Saisissez votre mot de passe et le nouveau numéro.</li><li>Entrez le code reçu par SMS sur le nouveau numéro.</li></ol>
+</section>
+
+<section id="premium"><h2>9. Premium <span class="pill g">★</span></h2>
+<table><tr><th>Formule</th><th>Prix</th></tr><tr><td>Mensuel</td><td>2 000 F CFA</td></tr><tr><td>Annuel</td><td>20 000 F CFA</td></tr></table>
+<ul><li>11 photos par annonce au lieu de 6.</li><li>Annonces avec vidéo sans les 150 F.</li><li>Mise en avant dans le feed et l'Explorer à ancienneté égale.</li><li>Accès au <strong>Classement</strong>.</li><li>Badge Premium visible partout.</li></ul>
+<p>Paiement par Wave. L'abonnement expire automatiquement ; vous pouvez le renouveler à tout moment.</p>
+</section>
+
+<section id="classement"><h2>10. Classement</h2>
+<p>Réservé aux comptes Premium : meilleurs vendeurs, produits, profils et abonnés. Activez ou masquez votre présence dans vos préférences de classement.</p>
+</section>
+
+<section id="avis"><h2>11. Avis &amp; favoris</h2>
+<ul><li>Un avis (1 à 5 étoiles + commentaire) est lié à <strong>l'annonce</strong> concernée : il n'apparaît pas sur les autres annonces du même vendeur. Il est visible aussi dans l'onglet Avis du profil vendeur.</li>
+<li>Un seul avis par personne et par annonce ; le vendeur peut répondre.</li>
+<li>🔖 <strong>Favoris</strong> : retrouvez vos annonces enregistrées et organisez-les en collections.</li></ul>
+</section>
+
+<section id="signaler"><h2>12. Signaler &amp; modération</h2>
+<p>Un contenu ou un profil vous paraît frauduleux ou inapproprié ? Utilisez <strong>Signaler</strong> : dans la fiche d'une annonce, dans les détails du feed vidéo, ou dans le menu ⋯ d'un profil vendeur.</p>
+<table><tr><th>Cible</th><th>Motifs</th></tr>
+<tr><td>Annonce / vidéo</td><td>Fraude, contrefaçon, contenu inapproprié, spam, autre</td></tr>
+<tr><td>Profil</td><td>Fraude, harcèlement, usurpation, contenu inapproprié, spam, autre</td></tr></table>
+<p>Chaque signalement arrive dans l'espace d'administration, est examiné par l'équipe et peut mener à un avertissement, un retrait ou une suspension. Un doublon est refusé tant que le premier est en cours. Les signalements abusifs peuvent être sanctionnés.</p>
+<p>Votre annonce a été retirée ? Contestez-la depuis la notification correspondante.</p>
+<p>Un bug ou une suggestion ? Utilisez <strong>Paramètres → Signaler un problème</strong>.</p>
+</section>
+
+<section id="securite"><h2>13. Sécurité</h2>
+<ul>
+<li>Ne donnez jamais votre mot de passe ni vos codes SMS, même à quelqu'un qui se dit de l'équipe.</li>
+<li>Privilégiez le paiement à la remise, après vérification du produit ; méfiez-vous des prix trop bas.</li>
+<li>Rencontrez-vous dans un lieu public ; gardez la discussion dans QUINCH pour qu'elle serve de preuve en cas de litige.</li>
+<li>Les liens vers des sites externes ne sont jamais ouverts automatiquement depuis les notifications.</li>
+<li>Les tentatives de connexion sont limitées et les comptes suspects peuvent être bloqués temporairement.</li>
+<li>Vous pouvez bloquer un utilisateur, exporter vos données ou supprimer votre compte dans les Paramètres.</li>
+</ul>
+</section>
+
+<section id="faq"><h2>14. FAQ</h2>
+<details><summary>Pourquoi ma vidéo ne s'affiche-t-elle pas tout de suite ?</summary><p>Une vidéo est publiée immédiatement puis contrôlée. Si elle est refusée ou mise en vérification, elle disparaît du feed et vous êtes notifié.</p></details>
+<details><summary>Une annonce sans vidéo apparaît-elle dans le feed vidéo ?</summary><p>Non, le feed vidéo ne montre que les vidéos. Elle est en revanche visible dans Explorer, la recherche et le profil du vendeur.</p></details>
+<details><summary>Je n'ai pas reçu le code SMS.</summary><p>Patientez 60 secondes puis demandez un nouveau code (5 envois maximum par heure).</p></details>
+<details><summary>Comment atteindre 80 % de confiance ?</summary><p>Vérifiez votre téléphone, complétez tous les champs du profil et configurez vos politiques vendeur (section 2).</p></details>
+<details><summary>Combien coûte la publication d'une vidéo ?</summary><p>150 F CFA par annonce avec vidéo pour un compte gratuit, 0 F pour un compte Premium.</p></details>
+<details><summary>Comment désactiver temporairement un service ?</summary><p>Profil → ⋯ sur le service → Désactiver. Vous pourrez le réactiver quand vous voulez.</p></details>
+<details><summary>Comment contacter l'équipe ?</summary><p>Paramètres → Signaler un problème. Les réponses importantes arrivent dans vos notifications.</p></details>
+</section>
+</main>
+</div>
+<footer>© QUINCH — Guide mis à jour avec l'application. <a href="/feed">Retour à l'application</a></footer>
+
+<script>
+(function(){
+  var root=document.documentElement,k='quinch_guide_theme';
+  try{var s=localStorage.getItem(k);if(s)root.setAttribute('data-theme',s)}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');
+    var nx=cur==='light'?'dark':'light';root.setAttribute('data-theme',nx);try{localStorage.setItem(k,nx)}catch(e){}
+  });
+  var secs=[].slice.call(document.querySelectorAll('main section')),links=[].slice.call(document.querySelectorAll('#toc a'));
+  document.getElementById('q').addEventListener('input',function(e){
+    var q=e.target.value.trim().toLowerCase(),n=0;
+    secs.forEach(function(s){var ok=!q||s.textContent.toLowerCase().indexOf(q)>-1;s.classList.toggle('hide',!ok);if(ok)n++});
+    links.forEach(function(a,i){a.classList.toggle('hide',secs[i].classList.contains('hide'))});
+    document.getElementById('nores').classList.toggle('hide',n>0);
+  });
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-30% 0px -60% 0px'});
+    secs.forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
