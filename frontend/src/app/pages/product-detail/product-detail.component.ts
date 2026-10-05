@@ -462,6 +462,19 @@ export class ProductDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     }, 200);
   }
 
+  /** Clic sur la barre de progression : se place à la position cliquée. */
+  seekVideo(event: MouseEvent): void {
+    event.stopPropagation();
+    const videoEl = this.detailVideoRef?.nativeElement;
+    const bar = event.currentTarget as HTMLElement | null;
+    if (!videoEl || !bar || !isFinite(videoEl.duration) || videoEl.duration <= 0) return;
+    const rect = bar.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    videoEl.currentTime = ratio * videoEl.duration;
+    this.videoProgress.set(ratio * 100);
+  }
+
   toggleVideoMute(): void {
     this.videoMuted.update(m => !m);
     const videoEl = this.detailVideoRef?.nativeElement;
