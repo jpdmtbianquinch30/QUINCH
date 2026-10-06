@@ -25,7 +25,7 @@ RUN apk add --no-cache libpq ffmpeg \
 COPY docker/php/production.ini /usr/local/etc/php/conf.d/zz-quinch.ini
 
 # Pool PHP-FPM dimensionné par variables d'environnement.
-COPY docker/php/zz-quinch-fpm.conf /usr/local/etc/php-fpm.d/zz-quinch-fpm.conf
+COPY backend/docker/php/zz-quinch-fpm.conf /usr/local/etc/php-fpm.d/zz-quinch-fpm.conf
 ENV PHP_FPM_MAX_CHILDREN=30 \
     PHP_FPM_START_SERVERS=6 \
     PHP_FPM_MIN_SPARE=4 \
@@ -45,10 +45,17 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 # dépendances dev comme laravel/pail) ne fasse planter l'app en prod avec une
 # erreur "Class ... not found".
 RUN composer dump-autoload --optimize --no-dev \
-    && php artisan package:discover --ansi || true
+    && (php artisan package:discover --ansi || true)
 
 # Ne jamais committer/copier un .env réel dans l'image : il est injecté au
 # lancement du conteneur via env_file dans docker-compose.yml.
 
+# Entrypoint : contrôle de configuration (quinch:preflight), mise en cache
+# config/routes/vues, migrations optionnelles (RUN_MIGRATIONS=true), puis
+# exécution de la commande du conteneur (php-fpm, queue:work, schedule:work).
+COPY backend/docker/entrypoint.sh /usr/local/bin/quinch-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/quinch-entrypoint && chmod +x /usr/local/bin/quinch-entrypoint
+
 EXPOSE 9000
+ENTRYPOINT ["quinch-entrypoint"]
 CMD ["php-fpm"]

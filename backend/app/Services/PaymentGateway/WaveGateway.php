@@ -7,21 +7,17 @@ use Illuminate\Support\Facades\Log;
 
 class WaveGateway implements PaymentGatewayInterface
 {
-        public function initiatePayment(array $request): array
+    public function initiatePayment(array $request): array
     {
         $apiKey = config('services.wave.api_key');
         $baseUrl = config('services.wave.base_url', 'https://api.wave.com/v1');
 
         if (!$apiKey) {
-            if (app()->environment('production')) {
-                Log::error('Wave: WAVE_API_KEY manquante en production.');
-                return ['success' => false, 'message' => "Wave n'est pas configuré."];
-            }
-
-            // Aucune clé Wave configurée hors production : on simule le
-            // paiement au lieu d'appeler la vraie API. Ne se déclenche
-            // jamais en production, même si la clé y est oubliée par erreur.
-            return $this->simulatePayment($request);
+            // Aucune clé Wave : on refuse, quel que soit l'environnement.
+            // Il n'existe plus de mode simulation (supprimé avant la mise en
+            // production) ; les tests utilisent Http::fake().
+            Log::error('Wave: WAVE_API_KEY manquante.');
+            return ['success' => false, 'message' => "Wave n'est pas configuré."];
         }
 
         // Le XOF n'accepte pas de décimales côté Wave.
@@ -61,27 +57,6 @@ class WaveGateway implements PaymentGatewayInterface
             'payment_url' => $data['wave_launch_url'] ?? null,
             'gateway_reference' => $data['id'] ?? null,
             'gateway' => 'wave',
-        ];
-    }
-
-        private function simulatePayment(array $request): array
-    {
-        $reference = $request['transaction_id'];
-
-        $url = url('/dev/simulate-payment') . '?' . http_build_query([
-            'reference' => $reference,
-            'amount' => $request['amount'],
-            'success_url' => $request['success_url'],
-            'error_url' => $request['error_url'],
-        ]);
-
-        Log::info('Wave (mode simulation) : paiement simulé', ['reference' => $reference]);
-
-        return [
-            'success' => true,
-            'payment_url' => $url,
-            'gateway_reference' => 'sim_' . \Illuminate\Support\Str::random(12),
-            'gateway' => 'wave_simulated',
         ];
     }
 

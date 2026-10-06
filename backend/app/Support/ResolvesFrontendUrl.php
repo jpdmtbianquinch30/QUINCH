@@ -16,7 +16,7 @@ trait ResolvesFrontendUrl
      * navigateur, donc deux localStorage complètement séparés). Si
      * FRONTEND_URL vaut "http://localhost:4200" mais que l'utilisateur
      * navigue habituellement via "127.0.0.1:4200", chaque redirection
-     * post-paiement (Wave réel ou simulateur dev) renvoie vers une origine
+     * post-paiement (Wave) renvoie vers une origine
      * où le token de connexion n'existe pas → l'app semble déconnectée et
      * renvoie vers /auth/login juste après avoir payé, alors que la session
      * d'origine était parfaitement valide.

@@ -12,7 +12,8 @@
 - [Variables d'environnement](#variables-denvironnement)
 - [Connexion Google](#connexion-google)
 - [Sécurité — correctifs de septembre 2026](#sécurité--correctifs-de-septembre-2026)
-- [Paiement — mode simulation](#paiement--mode-simulation-développement)
+- [Paiement — Wave et Orange Money](#paiement--wave-et-orange-money)
+- [Déploiement Docker](#déploiement-docker)
 - [Feature flags](#feature-flags)
 - [Rôles, modérateurs et admins](#rôles-modérateurs-et-admins)
 - [Badges — la logique complète](#badges--la-logique-complète)
@@ -40,7 +41,7 @@ Application web complète en développement actif, pré-production. Le backend e
 | Frontend web (public) | Angular (standalone components, signals, sans NgModules) |
 | Backend API | Laravel 12 + Sanctum (`api/v1/*`) |
 | Base de données | PostgreSQL 16 (clés primaires UUID partout) |
-| Paiement | Wave (intégration réelle + mode simulation dev) ; Orange Money (code prêt, en attente des identifiants marchand Sonatel) |
+| Paiement | Wave (intégration réelle, aucune simulation) ; Orange Money (code prêt, en attente des identifiants marchand Sonatel) |
 | Stockage médias | Disque local (`storage/app/public`) en dev ; à migrer vers un stockage objet en prod |
 | Infra | Docker Compose (app, queue, scheduler, nginx, postgres, pgadmin) |
 | Tests | PHPUnit (backend), Karma/Jasmine (frontend, ciblé) |
@@ -98,7 +99,7 @@ Les plus importantes (voir `backend/.env.example` pour la liste complète) :
 | Variable | Rôle |
 |---|---|
 | `FRONTEND_URL` | Doit pointer vers `http://localhost:4200` en dev, jamais vers le domaine de prod tant qu'on teste en local — sinon les redirections de paiement échouent (`ERR_NAME_NOT_RESOLVED`). |
-| `WAVE_API_KEY`, `WAVE_WEBHOOK_SECRET` | Absents → mode simulation automatique (voir plus bas). |
+| `WAVE_API_KEY`, `WAVE_WEBHOOK_SECRET` | Obligatoires dès que `wave` est activé. Absents : les paiements échouent proprement et tous les webhooks sont rejetés. Aucun mode simulation n'existe. |
 | `QUINCH_PAYMENT_METHODS` | Liste des passerelles activées, séparées par virgules (`wave` seul actuellement — Orange Money pas encore prêt). |
 | `QUINCH_FEATURE_*` | Un booléen par fonctionnalité optionnelle (voir section Feature flags). |
 | `QUINCH_PREMIUM_PRICE_MONTHLY` / `_ANNUAL` | Prix Premium en XOF (2000 / 20000 par défaut). |
@@ -108,13 +109,47 @@ Les plus importantes (voir `backend/.env.example` pour la liste complète) :
 
 ---
 
-## Paiement — mode simulation (développement)
+## Paiement — Wave et Orange Money
 
-Tant que `WAVE_API_KEY` est absent du `.env` (et que `APP_ENV` n'est pas `production`), toute tentative de paiement (achat produit, abonnement Premium, frais de publication) redirige automatiquement vers une page de simulation locale (`/dev/simulate-payment`) au lieu d'appeler la vraie API Wave. Cette page permet de simuler un paiement réussi ou échoué, en rejouant **en interne** le même webhook signé que Wave enverrait réellement (`app()->handle()`, sans appel réseau) — donc sans jamais désynchroniser la logique testée en dev de celle utilisée en prod.
+Il n'existe **plus aucun mode simulation** (le simulateur `/dev/simulate-payment` et le secret
+`dev-simulation-secret` ont été supprimés avant la mise en production).
 
-**Ce mode ne s'active jamais en production**, même si la clé est oubliée par erreur (double vérification dans `WaveGateway::initiatePayment()` et `SimulatePaymentController`).
+- Sans `WAVE_API_KEY`, `WaveGateway::initiatePayment()` renvoie un échec propre, dans tous les environnements.
+- Sans `WAVE_WEBHOOK_SECRET`, tous les webhooks Wave sont rejetés (aucune valeur par défaut).
+- Les tests utilisent `Http::fake()` et définissent eux-mêmes la clé et le secret.
+- Pour essayer Wave en local, renseignez de vraies valeurs dans `backend/.env` (webhooks : tunnel HTTPS type ngrok).
+- Orange Money : à activer (`QUINCH_PAYMENT_METHODS=wave,orange_money`) uniquement une fois le compte marchand Sonatel obtenu.
 
-Pour du vrai Wave en local : renseignez `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET` dans `.env`.
+> Le driver SMS `log` (codes OTP dans les logs et `demo_otp`) reste réservé au développement local et aux
+> tests. En production il est **refusé au démarrage** par `quinch:preflight`.
+
+---
+
+## Déploiement Docker
+
+```bash
+cp .env.example .env                              # variables de docker-compose (mots de passe Postgres/Redis)
+cp backend/.env.docker.example backend/.env.docker # configuration Laravel de production
+# remplir TOUTES les valeurs CHANGE_ME / vides, puis :
+docker compose build
+docker compose up -d
+```
+
+Au démarrage de chaque conteneur, `backend/docker/entrypoint.sh` :
+
+1. lance `php artisan quinch:preflight` — **le conteneur refuse de démarrer** si la configuration est dangereuse
+   (`SMS_DRIVER=log`, CORS localhost, `APP_DEBUG=true`, secret Wave vide, `QUEUE_CONNECTION=sync`, Redis sans mot de passe…) ;
+2. met en cache config, routes, événements et vues ;
+3. applique les migrations (uniquement le service `app`, `RUN_MIGRATIONS=true`) ;
+4. n'ouvre `nginx` et les workers qu'une fois `app` prêt (healthcheck).
+
+Créer le premier super admin (jamais de seeder en production) :
+
+```bash
+docker compose exec app php artisan quinch:set-role +221XXXXXXXXX super_admin
+```
+
+Vérifier la configuration à la main : `docker compose exec app php artisan quinch:preflight`.
 
 ---
 
@@ -229,7 +264,7 @@ Une route désactivée répond `404` (`EnsureFeatureEnabled` middleware) plutôt
 - Récupération de mot de passe par deux chemins au choix : OTP par SMS, ou téléphone + email combinés (double facteur, sans envoi d'email réel — l'email doit être configuré au préalable dans `edit-profile`)
 
 **Achat / vente**
-- Achat produit : paiement Wave réel ou simulé, réservation de stock avec libération automatique après 20 min si le paiement n'aboutit pas
+- Achat produit : paiement Wave réel, réservation de stock avec libération automatique après 20 min si le paiement n'aboutit pas
 - Panier repensé en liste d'envies : pas de checkout multi-vendeurs, chaque achat se fait individuellement (achat direct ou depuis le panier, dans une modale sans quitter la page)
 - Publication d'annonce en 3 étapes (médias → détails → paiement/récapitulatif), avec deux issues possibles : **Brouillon** (sauvegarde privée, aucun paiement tenté, permanent) ou **Payer et publier** (frais selon présence de vidéo, gratuit pour Premium)
 - Limite de photos : 3 pour un compte gratuit, 10 pour un compte Premium
@@ -346,7 +381,7 @@ Nécessitent `php artisan schedule:work` **et** `php artisan queue:work` actifs 
 
 ```bash
 cd backend
-php artisan test          # ~92 tests
+php artisan test
 ```
 
 ```bash
@@ -360,12 +395,10 @@ ng test --watch=false --browsers=ChromeHeadless
 
 ### Bloquants avant toute mise en production
 
-- **Aucun envoi de SMS réel.** `AuthController::forgotPassword()` contient un `// TODO`. L'OTP est généré et
-  stocké haché, mais transmis nulle part : il n'apparaît dans la réponse HTTP qu'en `local`/`testing`
-  (`demo_otp`). **En production, personne ne peut récupérer son mot de passe.** Prévoir Orange SMS API
-  (Sonatel) ou Twilio.
-- **Identifiants marchand Wave.** Sans `WAVE_API_KEY` valide, le mode simulation ne s'active pas en
-  production (garde-fou volontaire) : tous les paiements échouent, proprement mais intégralement.
+- **SMS OTP réels.** Les passerelles Orange SMS et Twilio sont codées (`SMS_DRIVER=orange|twilio`) ; il reste à
+  renseigner les identifiants de production et à valider l'envoi réel de bout en bout (phase suivante).
+- **Identifiants marchand Wave.** Sans `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET`, tous les paiements échouent
+  proprement et le démarrage de production est refusé (`quinch:preflight`).
 - **Stockage des médias sur disque local.** `storage/app/public` ne survit pas à un redéploiement
   conteneurisé. Migration vers un stockage objet nécessaire.
 (SEC-05 et SEC-06, listés dans la section Sécurité ci-dessus, sont désormais corrigés.)
@@ -383,12 +416,13 @@ ng test --watch=false --browsers=ChromeHeadless
 
 - [ ] `APP_ENV=production` et `APP_DEBUG=false`
 - [ ] `FRONTEND_URL` pointant vers le vrai domaine (jamais `localhost`)
-- [ ] `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET` réels renseignés (sinon le mode simulation... ne s'activera pas non plus en prod, et les paiements échoueront proprement avec un message d'erreur, par sécurité)
+- [ ] `WAVE_API_KEY` et `WAVE_WEBHOOK_SECRET` réels renseignés (sinon `quinch:preflight` refuse le démarrage)
 - [ ] Services `scheduler` et `queue` de `docker-compose.yml` bien démarrés
 - [ ] Sauvegardes PostgreSQL configurées
 - [ ] `php artisan config:cache` + `route:cache` après tout déploiement
 - [ ] `CORS_ALLOWED_ORIGINS` renseigné avec le vrai domaine (sinon le frontend est bloqué par le navigateur)
-- [ ] Passerelle SMS branchée dans `forgotPassword()` — sans quoi la récupération de mot de passe est impossible
+- [ ] `SMS_DRIVER=orange` (ou `twilio`) avec identifiants réels — `log` est refusé au démarrage
+- [ ] `QUEUE_CONNECTION=redis` et `REDIS_PASSWORD` identique dans `.env` et `backend/.env.docker`
 - [ ] `GOOGLE_CLIENT_ID` renseigné côté backend **et** frontend, origines déclarées dans la console Google
 - [ ] Médias migrés vers un stockage objet (le disque local ne survit pas au redéploiement)
 - [ ] `composer audit` et `npm audit` passés

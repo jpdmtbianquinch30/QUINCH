@@ -49,14 +49,10 @@ return [
 'wave' => [
     'base_url' => env('WAVE_BASE_URL', 'https://api.wave.com/v1'),
     'api_key' => env('WAVE_API_KEY'),
-    // Le fallback "dev-simulation-secret" n'est utilisé que si
-    // app()->environment('production') est faux — cette vérification vit
-    // dans WaveGateway (voir simulatePayment()), jamais ici : un fichier de
-    // config peut être mis en cache, et un appel à app() ici figerait le
-    // résultat au moment du cache plutôt que de le réévaluer à chaque
-    // requête (risque réel : cache fait en local, déployé tel quel en
-    // production sans recache -> secret par défaut resterait actif).
-    'webhook_secret' => env('WAVE_WEBHOOK_SECRET', 'dev-simulation-secret'),
+    // AUCUNE valeur par défaut : sans WAVE_WEBHOOK_SECRET, tous les webhooks
+    // Wave sont rejetés (voir VerifiesWaveWebhook). Un secret par défaut
+    // public permettrait à n'importe qui de forger un paiement « réussi ».
+    'webhook_secret' => env('WAVE_WEBHOOK_SECRET'),
 ],
 
 
