@@ -64,6 +64,17 @@ class ProductionPreflight
             if ($this->blank(config('mail.mailers.smtp.username')) || $this->blank(config('mail.mailers.smtp.password'))) {
                 $errors[] = 'MAIL_USERNAME / MAIL_PASSWORD sont vides.';
             }
+
+            // Laravel 12 / Symfony Mailer : seuls « smtp » (port 587, STARTTLS) et
+            // « smtps » (port 465, TLS direct) existent. Toute autre valeur (tls, ssl...)
+            // est hors documentation et peut casser l'envoi selon la version.
+            $scheme = strtolower(trim((string) config('mail.mailers.smtp.scheme')));
+            if (!$this->blank($scheme) && !in_array($scheme, ['smtp', 'smtps'], true)) {
+                $errors[] = "MAIL_SCHEME={$scheme} : valeurs possibles smtp (port 587) ou smtps (port 465), ou vide.";
+            }
+            if ((int) config('mail.mailers.smtp.port') === 465 && $scheme === 'smtp') {
+                $errors[] = 'MAIL_PORT=465 exige MAIL_SCHEME=smtps (TLS direct) ; avec smtp la connexion échoue.';
+            }
         }
         $from = (string) config('mail.from.address');
         if ($this->blank($from) || preg_match('#@(example\.(com|org|net)|localhost)$#i', $from)) {

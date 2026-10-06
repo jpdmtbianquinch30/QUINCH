@@ -136,4 +136,31 @@ class ProductionPreflightTest extends TestCase
 
         $this->assertStringContainsString('QUEUE_CONNECTION=database', implode(' ', $this->errors()));
     }
+
+    public function test_non_standard_mail_scheme_is_refused(): void
+    {
+        $this->validProductionConfig();
+        config(['mail.mailers.smtp.scheme' => 'tls']);
+
+        $this->assertStringContainsString('MAIL_SCHEME', implode(' ', $this->errors()));
+    }
+
+    public function test_port_465_requires_the_smtps_scheme(): void
+    {
+        $this->validProductionConfig();
+        config(['mail.mailers.smtp.port' => 465, 'mail.mailers.smtp.scheme' => 'smtp']);
+        $this->assertStringContainsString('MAIL_PORT=465', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['mail.mailers.smtp.port' => 465, 'mail.mailers.smtp.scheme' => 'smtps']);
+        $this->assertSame([], $this->errors());
+    }
+
+    public function test_standard_starttls_setup_is_accepted(): void
+    {
+        $this->validProductionConfig();
+        config(['mail.mailers.smtp.port' => 587, 'mail.mailers.smtp.scheme' => 'smtp']);
+
+        $this->assertSame([], $this->errors());
+    }
 }
