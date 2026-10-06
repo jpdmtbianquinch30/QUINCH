@@ -128,7 +128,7 @@ class GoogleAuthController extends Controller
             'token'          => $token,
             'is_new_user'    => $isNewUser,
             'needs_username' => !$user->username || str_starts_with($user->username, 'user_'),
-        ]);
+        ], $isNewUser ? 201 : 200); // 201 Created quand le compte vient d'être créé
     }
 
     /**

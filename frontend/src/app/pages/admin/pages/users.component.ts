@@ -18,7 +18,7 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
   template: `
   <div class="adm-page">
     <div class="adm-inline-form" style="margin-bottom:12px">
-      <input class="adm-input" placeholder="Nom, téléphone, @username, email, id…" [(ngModel)]="f.search" (keyup.enter)="load(1)" />
+      <input class="adm-input" placeholder="E-mail, nom, @username, téléphone, id…" [(ngModel)]="f.search" (keyup.enter)="load(1)" />
       <select class="adm-input" [(ngModel)]="f.status" (change)="load(1)"><option value="">Tous statuts</option><option value="active">Actifs</option><option value="suspended">Suspendus</option><option value="banned">Bannis</option><option value="deactivated">Désactivés</option></select>
       <select class="adm-input" [(ngModel)]="f.role" (change)="load(1)"><option value="">Tous rôles</option><option value="user">Utilisateurs</option><option value="moderator">Modérateurs</option><option value="admin">Admins</option><option value="super_admin">Super admins</option></select>
       <select class="adm-input" [(ngModel)]="f.kyc" (change)="load(1)"><option value="">KYC : tous</option><option value="pending">En attente</option><option value="verified">Vérifiés</option><option value="rejected">Rejetés</option></select>
@@ -28,11 +28,11 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
     </div>
 
     <div class="adm-table-wrap"><table class="adm-table">
-      <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Statut</th><th>Confiance</th><th>Annonces</th><th>Avert.</th><th>Inscrit</th></tr></thead>
+      <thead><tr><th>E-mail / utilisateur</th><th>Rôle</th><th>Statut</th><th>Confiance</th><th>Annonces</th><th>Avert.</th><th>Inscrit</th></tr></thead>
       <tbody>
         @for (u of items(); track u.id) {
           <tr class="clickable" (click)="open(u.id)">
-            <td><strong>{{ u.full_name }}</strong><div class="adm-email">{{ u.email || '—' }}</div><div class="adm-sub">@if (u.username) { &#64;{{ u.username }} }@if (u.phone_number) { · {{ u.phone_number }} }</div></td>
+            <td><strong>{{ u.email || '—' }}</strong><div class="adm-sub">{{ u.full_name }}@if (u.username) { · &#64;{{ u.username }} }@if (u.phone_number) { · {{ u.phone_number }} }</div></td>
             <td><span class="adm-chip" [class.info]="u.role !== 'user'">{{ roles[u.role] }}</span></td>
             <td><span class="adm-chip" [class]="'adm-chip ' + sc(u.account_status)">{{ u.account_status }}</span>@if (u.suspended_until) { <div class="adm-sub">jusqu'au {{ u.suspended_until | date:'dd/MM HH:mm' }}</div> }</td>
             <td>{{ u.trust_score }}</td><td>{{ u.products_count }}</td>
