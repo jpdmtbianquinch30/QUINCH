@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Services\Sms\LogSmsGateway;
 use App\Services\Sms\OrangeSmsGateway;
+use App\Services\Sms\ResilientSmsGateway;
 use App\Services\Sms\SmsGateway;
 use App\Services\Sms\TwilioSmsGateway;
 use Illuminate\Http\Client\Request;
@@ -26,13 +27,26 @@ class SmsGatewayTest extends TestCase
 
     public function test_driver_is_selected_from_config(): void
     {
+        config(['services.sms.fallback_driver' => null]);
+
         config(['services.sms.driver' => 'orange']);
-        $this->assertInstanceOf(OrangeSmsGateway::class, app(SmsGateway::class));
+        $gateway = app(SmsGateway::class);
+        $this->assertInstanceOf(ResilientSmsGateway::class, $gateway);
+        $this->assertSame(['orange'], $gateway->providerNames());
 
         config(['services.sms.driver' => 'twilio']);
-        $this->assertInstanceOf(TwilioSmsGateway::class, app(SmsGateway::class));
+        $this->assertSame(['twilio'], app(SmsGateway::class)->providerNames());
 
-        config(['services.sms.driver' => 'log']);
+        // Secours configuré : principal d'abord, puis secours.
+        config(['services.sms.driver' => 'orange', 'services.sms.fallback_driver' => 'twilio']);
+        $this->assertSame(['orange', 'twilio'], app(SmsGateway::class)->providerNames());
+
+        // Le secours identique au principal est ignoré.
+        config(['services.sms.driver' => 'orange', 'services.sms.fallback_driver' => 'orange']);
+        $this->assertSame(['orange'], app(SmsGateway::class)->providerNames());
+
+        // « log » reste le simulateur de développement, sans suivi.
+        config(['services.sms.driver' => 'log', 'services.sms.fallback_driver' => null]);
         $this->assertInstanceOf(LogSmsGateway::class, app(SmsGateway::class));
     }
 

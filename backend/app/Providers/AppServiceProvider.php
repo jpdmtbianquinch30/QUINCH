@@ -8,10 +8,8 @@ use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\Admin\ContentScreeningService;
 use App\Services\Admin\ReportAutomationService;
-use App\Services\Sms\LogSmsGateway;
-use App\Services\Sms\OrangeSmsGateway;
 use App\Services\Sms\SmsGateway;
-use App\Services\Sms\TwilioSmsGateway;
+use App\Services\Sms\SmsGatewayFactory;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -23,14 +21,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Fournisseur SMS choisi par SMS_DRIVER : log (dev) | orange | twilio
-        $this->app->bind(SmsGateway::class, function () {
-            return match (config('services.sms.driver', 'log')) {
-                'orange' => new OrangeSmsGateway(),
-                'twilio' => new TwilioSmsGateway(),
-                default  => new LogSmsGateway(),
-            };
-        });
+        // SMS : SMS_DRIVER = fournisseur principal (log | orange | twilio) et
+        // SMS_FALLBACK_DRIVER = secours facultatif (orange | twilio). Avec un
+        // vrai fournisseur, l'envoi est suivi (sms_logs) et bascule seul.
+        $this->app->bind(SmsGateway::class, fn () => SmsGatewayFactory::fromConfig());
     }
 
     public function boot(): void

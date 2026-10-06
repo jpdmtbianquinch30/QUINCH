@@ -32,3 +32,6 @@ Schedule::job(new PurgeExpiredAdminData)->daily()->withoutOverlapping()->onOneSe
 
 // Badges automatiques (Premium, KYC, ventes, ancienneté, score de confiance).
 Schedule::command('quinch:sync-badges')->hourly()->withoutOverlapping()->onOneServer();
+
+// Journal des envois SMS : purge au-delà de 90 jours (voir SmsLog::prunable).
+Schedule::command('model:prune', ['--model' => [\App\Models\SmsLog::class]])->daily()->onOneServer();

@@ -40,12 +40,10 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Regénère bootstrap/cache/packages.php à partir du vendor/ réellement présent
-# dans l'image (--no-dev) : évite qu'un cache généré en local (avec des
-# dépendances dev comme laravel/pail) ne fasse planter l'app en prod avec une
-# erreur "Class ... not found".
-RUN composer dump-autoload --optimize --no-dev \
-    && (php artisan package:discover --ansi || true)
+# L'autoload optimisé est déjà généré dans l'étape « vendor » ;
+# Composer n'est volontairement pas dans l'image finale.
+RUN (php artisan package:discover --ansi || true) \
+    && chown -R www-data:www-data bootstrap/cache storage
 
 # Ne jamais committer/copier un .env réel dans l'image : il est injecté au
 # lancement du conteneur via env_file dans docker-compose.yml.

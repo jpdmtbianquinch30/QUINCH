@@ -153,6 +153,24 @@ Vérifier la configuration à la main : `docker compose exec app php artisan qui
 
 ---
 
+### OTP par SMS (inscription, mot de passe oublié, changement de numéro)
+
+Tout compte doit vérifier son numéro par un code reçu par SMS avant d'utiliser l'application.
+
+- `SMS_DRIVER=orange|twilio` : fournisseur principal ; `SMS_FALLBACK_DRIVER=twilio|orange` : secours automatique.
+- Si le principal échoue, le message part par le secours ; un disjoncteur évite d'attendre le timeout du fournisseur
+  en panne à chaque SMS (`SMS_BREAKER_SECONDS`). Si tous échouent, le job réessaie (5 s puis 30 s).
+- Chaque tentative est enregistrée dans `sms_logs` (fournisseur, succès/échec, durée, numéro masqué), **jamais le
+  code ni le texte du SMS**. Purge automatique après 90 jours.
+
+```bash
+docker compose exec app php artisan quinch:sms-test +221XXXXXXXXX --provider=orange   # test d'UN fournisseur
+docker compose exec app php artisan quinch:sms-test +221XXXXXXXXX                      # chaîne complète
+docker compose exec app php artisan quinch:sms-stats --hours=24                        # santé des envois
+```
+
+---
+
 ## Connexion Google
 
 ### Mise en service

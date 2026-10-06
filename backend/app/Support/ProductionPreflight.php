@@ -56,31 +56,26 @@ class ProductionPreflight
         $driver = (string) config('services.sms.driver', 'log');
         if (!in_array($driver, ['orange', 'twilio'], true)) {
             $errors[] = "SMS_DRIVER={$driver} : en production il faut 'orange' ou 'twilio' (sinon aucun OTP n'est envoyé).";
+        } else {
+            array_push($errors, ...$this->smsCredentialErrors($driver));
         }
-        if ($driver === 'orange') {
-            foreach (['client_id', 'client_secret', 'sender'] as $key) {
-                if ($this->blank(config("services.sms.orange.{$key}"))) {
-                    $errors[] = 'ORANGE_SMS_' . strtoupper($key) . ' est vide.';
-                }
-            }
-            $sender = (string) config('services.sms.orange.sender');
-            if ($sender !== '' && !preg_match('/^\+\d{8,15}$/', $sender)) {
-                $errors[] = "ORANGE_SMS_SENDER invalide (format +221XXXXXXXXX) : {$sender}";
-            }
-        }
-        if ($driver === 'twilio') {
-            if ($this->blank(config('services.sms.twilio.sid')) || $this->blank(config('services.sms.twilio.token'))) {
-                $errors[] = 'TWILIO_SID / TWILIO_TOKEN sont vides.';
-            }
-            if ($this->blank(config('services.sms.twilio.from')) && $this->blank(config('services.sms.twilio.messaging_service_sid'))) {
-                $errors[] = 'TWILIO_FROM (ou TWILIO_MESSAGING_SERVICE_SID) est vide.';
+
+        $fallback = config('services.sms.fallback_driver');
+        if (!$this->blank($fallback)) {
+            $fallback = (string) $fallback;
+            if (!in_array($fallback, ['orange', 'twilio'], true)) {
+                $errors[] = "SMS_FALLBACK_DRIVER={$fallback} : valeurs possibles orange ou twilio.";
+            } elseif ($fallback === $driver) {
+                $errors[] = 'SMS_FALLBACK_DRIVER doit différer de SMS_DRIVER (sinon pas de vrai secours).';
+            } else {
+                array_push($errors, ...$this->smsCredentialErrors($fallback));
             }
         }
 
         // ── File d'attente, cache, base ──
         $queue = (string) config('queue.default');
-        if (in_array($queue, ['sync', 'null'], true)) {
-            $errors[] = "QUEUE_CONNECTION={$queue} : les SMS et les jobs ne partiraient pas en arrière-plan.";
+        if ($queue !== 'redis') {
+            $errors[] = "QUEUE_CONNECTION={$queue} : doit valoir redis en production (les workers Docker lisent la file Redis ; sinon les SMS OTP ne partiraient jamais).";
         }
         $cache = (string) config('cache.default');
         if (in_array($cache, ['array', 'null'], true)) {
@@ -119,6 +114,35 @@ class ProductionPreflight
         }
         if (in_array('cash', $methods, true)) {
             $errors[] = "QUINCH_PAYMENT_METHODS ne doit pas contenir « cash » en production.";
+        }
+
+        return $errors;
+    }
+
+    /** @return array<int, string> */
+    private function smsCredentialErrors(string $driver): array
+    {
+        $errors = [];
+
+        if ($driver === 'orange') {
+            foreach (['client_id', 'client_secret', 'sender'] as $key) {
+                if ($this->blank(config("services.sms.orange.{$key}"))) {
+                    $errors[] = 'ORANGE_SMS_' . strtoupper($key) . ' est vide.';
+                }
+            }
+            $sender = (string) config('services.sms.orange.sender');
+            if ($sender !== '' && !preg_match('/^\+\d{8,15}$/', $sender)) {
+                $errors[] = "ORANGE_SMS_SENDER invalide (format +221XXXXXXXXX) : {$sender}";
+            }
+        }
+
+        if ($driver === 'twilio') {
+            if ($this->blank(config('services.sms.twilio.sid')) || $this->blank(config('services.sms.twilio.token'))) {
+                $errors[] = 'TWILIO_SID / TWILIO_TOKEN sont vides.';
+            }
+            if ($this->blank(config('services.sms.twilio.from')) && $this->blank(config('services.sms.twilio.messaging_service_sid'))) {
+                $errors[] = 'TWILIO_FROM (ou TWILIO_MESSAGING_SERVICE_SID) est vide.';
+            }
         }
 
         return $errors;

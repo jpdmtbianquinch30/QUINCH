@@ -72,6 +72,12 @@ return [
     // log (développement) | orange | twilio
     'driver' => env('SMS_DRIVER', 'log'),
 
+    // Fournisseur de secours (orange | twilio), facultatif : utilisé si le principal échoue.
+    'fallback_driver' => env('SMS_FALLBACK_DRIVER') ?: null,
+
+    // Durée (secondes) pendant laquelle un fournisseur en échec est mis de côté.
+    'breaker_seconds' => (int) env('SMS_BREAKER_SECONDS', 120),
+
     'orange' => [
         'base_url'      => env('ORANGE_SMS_BASE_URL', 'https://api.orange.com/smsmessaging/v1'),
         'auth_url'      => env('ORANGE_SMS_AUTH_URL', 'https://api.orange.com/oauth/v3/token'),

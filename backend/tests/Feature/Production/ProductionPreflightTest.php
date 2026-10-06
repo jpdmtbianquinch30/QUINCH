@@ -107,4 +107,40 @@ class ProductionPreflightTest extends TestCase
 
         $this->artisan('quinch:preflight', ['--as' => 'production'])->assertExitCode(0);
     }
+
+    public function test_database_queue_is_refused_because_docker_workers_read_redis(): void
+    {
+        $this->validProductionConfig();
+        config(['queue.default' => 'database']);
+
+        $this->assertStringContainsString('QUEUE_CONNECTION=database', implode(' ', $this->errors()));
+    }
+
+    public function test_a_valid_fallback_provider_is_accepted(): void
+    {
+        $this->validProductionConfig();
+        config([
+            'services.sms.fallback_driver' => 'twilio',
+            'services.sms.twilio.sid' => 'AC123',
+            'services.sms.twilio.token' => 'tok',
+            'services.sms.twilio.from' => '+15005550006',
+        ]);
+
+        $this->assertSame([], $this->errors());
+    }
+
+    public function test_a_fallback_without_credentials_or_equal_to_the_primary_is_refused(): void
+    {
+        $this->validProductionConfig();
+
+        config(['services.sms.fallback_driver' => 'twilio', 'services.sms.twilio.sid' => '', 'services.sms.twilio.token' => '']);
+        $this->assertStringContainsString('TWILIO_SID', implode(' ', $this->errors()));
+
+        config(['services.sms.fallback_driver' => 'orange']);
+        $this->assertStringContainsString('SMS_FALLBACK_DRIVER doit différer', implode(' ', $this->errors()));
+
+        config(['services.sms.fallback_driver' => 'nexmo']);
+        $this->assertStringContainsString('SMS_FALLBACK_DRIVER=nexmo', implode(' ', $this->errors()));
+    }
 }
+
