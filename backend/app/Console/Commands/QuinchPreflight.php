@@ -14,7 +14,7 @@ class QuinchPreflight extends Command
 {
     protected $signature = 'quinch:preflight {--as= : Forcer l\'environnement évalué (ex. production)}';
 
-    protected $description = 'Contrôle la configuration de production (SMS, paiements, CORS, Redis...)';
+    protected $description = 'Contrôle la configuration de production (e-mail, paiements, CORS, Redis...)';
 
     public function handle(ProductionPreflight $preflight): int
     {

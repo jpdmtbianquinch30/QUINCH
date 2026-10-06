@@ -14,7 +14,7 @@ export interface AdminMetrics {
 }
 
 export interface AdminUser {
-  id: string; full_name: string; username: string; email: string; phone_number: string; avatar_url: string;
+  id: string; full_name: string; username: string; email: string; email_verified_at?: string | null; phone_number?: string | null; avatar_url: string;
   role: string; account_status: string; kyc_status: string; trust_score: number; city: string; region: string;
   created_at: string; last_seen_at?: string; suspended_until?: string; ban_reason?: string;
   products_count?: number; purchased_transactions_count?: number; sold_transactions_count?: number;

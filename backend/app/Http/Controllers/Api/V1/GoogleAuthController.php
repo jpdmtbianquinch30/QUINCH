@@ -47,9 +47,11 @@ class GoogleAuthController extends Controller
         $emailVerified = filter_var($googleUser['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $user = User::where('google_id', $googleId)->first();
+        $linkedByEmail = false;
 
         if (!$user && $email && $emailVerified) {
-            $user = User::where('email', $email)->first();
+            $user = User::where('email', strtolower($email))->first();
+            $linkedByEmail = $user !== null;
         }
 
         if (!$user && $email && !$emailVerified) {
@@ -76,14 +78,25 @@ class GoogleAuthController extends Controller
                 'password'     => bcrypt(Str::random(32)), // random unusable password
                 'is_seller'    => true,
                 'is_buyer'     => true,
-                'phone_verified' => false,
             ]);
-            $user->forceFill(['google_id' => $googleId])->save();
+            // Adresse confirmée par Google (email_verified contrôlé plus haut).
+            $user->forceFill(['google_id' => $googleId, 'email_verified_at' => now()])->save();
 
             app(NotificationService::class)->notifyWelcome($user);
         } else {
+            // Anti « pré-piratage » : l'inscription par e-mail ne vérifie pas
+            // l'adresse. Quelqu'un a pu créer un compte avec l'e-mail d'une
+            // victime et SON mot de passe. Quand la vraie propriétaire se
+            // connecte avec Google, on rattache le compte mais on invalide ce
+            // mot de passe et toutes les sessions existantes.
+            if ($linkedByEmail && !$user->email_verified_at) {
+                $user->forceFill(['password' => Str::random(40)])->save();
+                $user->tokens()->delete();
+            }
+
             // Existing user — update google_id and avatar if needed
             $updates = [];
+            if (!$user->email_verified_at && $email && $emailVerified) $updates['email_verified_at'] = now();
             if (!$user->google_id) $updates['google_id'] = $googleId;
             if (!$user->avatar_url && $avatar) $updates['avatar_url'] = $avatar;
             if (!empty($updates)) $user->forceFill($updates)->save();
@@ -114,66 +127,8 @@ class GoogleAuthController extends Controller
             'user'           => $this->formatUser($user),
             'token'          => $token,
             'is_new_user'    => $isNewUser,
-            'needs_phone'    => !$user->phone_number,
             'needs_username' => !$user->username || str_starts_with($user->username, 'user_'),
         ]);
-    }
-
-    /**
-     * Add or update phone number after Google login.
-     */
-    public function addPhone(Request $request): JsonResponse
-    {
-        $user = $request->user();
-
-        // Cette route sert à RENSEIGNER un numéro (compte Google sans numéro,
-        // ou numéro d'inscription saisi avec une faute avant toute vérification).
-        // Un compte dont le numéro est déjà vérifié doit passer par
-        // user/phone/request-change (mot de passe + code SMS) : sinon un simple
-        // jeton volé suffirait à rediriger le compte vers le numéro d'un attaquant.
-        if ($user->phone_verified) {
-            return response()->json([
-                'message' => 'Votre numéro est déjà vérifié. Utilisez « Changer de numéro » dans votre profil.',
-                'error'   => 'phone_already_verified',
-            ], 403);
-        }
-
-        $validated = $request->validate([
-            'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number,' . $user->id],
-        ], [
-            'phone_number.regex'  => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
-            'phone_number.unique' => 'Ce numéro est déjà utilisé par un autre compte.',
-        ]);
-
-        $otpService = app(\App\Services\OtpService::class);
-
-        $wait = $otpService->throttle($validated['phone_number']);
-        if ($wait !== null) {
-            return $otpService->tooManyResponse($wait);
-        }
-
-        // Changer de numéro invalide la vérification : sinon un compte déjà
-        // vérifié pourrait s'attribuer n'importe quel numéro sans preuve.
-        if ($user->phone_number !== $validated['phone_number']) {
-            $user->update([
-                'phone_number'   => $validated['phone_number'],
-                'phone_verified' => false,
-            ]);
-        }
-
-        $otp = $otpService->issue($user);
-
-        $response = [
-            'message'  => 'Numéro ajouté. Vérifiez votre téléphone.',
-            'user'     => $this->formatUser($user->fresh()),
-            'otp_sent' => true,
-        ];
-
-        if ($otpService->shouldExposeDemoCode()) {
-            $response['demo_otp'] = $otp;
-        }
-
-        return response()->json($response);
     }
 
     /**

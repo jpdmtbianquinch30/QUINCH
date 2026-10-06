@@ -27,7 +27,7 @@ import { ROLE_LABELS, errMsg, fmtMoney } from '../shared/admin-utils';
       </div>
       <p class="adm-muted">Vous pouvez aussi nommer un compte existant : fiche dans <strong>Utilisateurs</strong> → « Changer le rôle ». Un super admin ne se crée que par la commande serveur <code>php artisan quinch:set-role</code>.</p>
       <div class="adm-table-wrap"><table class="adm-table"><thead><tr><th>Membre</th><th>Rôle</th><th>Statut</th><th>Actions (30 j)</th><th>Dossiers assignés</th><th>Dernière activité</th><th></th></tr></thead><tbody>
-        @for (s of staff(); track s.id) { <tr><td><strong>{{ s.full_name }}</strong><div class="adm-sub">{{ s.phone_number }}</div></td><td><span class="adm-chip info">{{ roles[s.role] }}</span></td>
+        @for (s of staff(); track s.id) { <tr><td><strong>{{ s.full_name }}</strong><div class="adm-email">{{ s.email }}</div></td><td><span class="adm-chip info">{{ roles[s.role] }}</span></td>
           <td><span class="adm-chip" [class.ok]="s.account_status === 'active'" [class.bad]="s.account_status !== 'active'">{{ s.account_status }}</span></td>
           <td>{{ s.actions_30d }}</td><td>{{ s.open_assigned }}</td><td class="adm-sub">{{ s.last_seen_at ? (s.last_seen_at | date:'dd/MM HH:mm') : '—' }}</td>
           <td>@if (s.role !== 'super_admin') { <button class="adm-btn sm" (click)="openReset(s)">Nouveau mot de passe</button> }</td></tr>
@@ -61,11 +61,11 @@ import { ROLE_LABELS, errMsg, fmtMoney } from '../shared/admin-utils';
   @if (createRole()) {
     <adm-modal [title]="createRole() === 'admin' ? 'Créer un administrateur' : 'Créer un modérateur'" [needReason]="false" [needPassword]="true" confirmLabel="Créer le compte"
       [busy]="busy()" [error]="error()" (cancel)="createRole.set(null)" (confirm)="doCreate($event)"
-      message="Le compte est actif tout de suite (aucun SMS). Transmettez le numéro et le mot de passe à la personne par un canal sûr ; elle pourra le changer dans Paramètres.">
+      message="Le compte est actif tout de suite. Transmettez l'e-mail et le mot de passe à la personne par un canal sûr ; elle pourra le changer dans Paramètres.">
       <label class="adm-label">Nom complet</label><input class="adm-input" maxlength="100" [(ngModel)]="nf.full_name" />
       <label class="adm-label">Nom d'utilisateur</label><input class="adm-input" maxlength="30" [(ngModel)]="nf.username" />
-      <label class="adm-label">Téléphone (connexion) — format +221XXXXXXXXX</label><input class="adm-input" inputmode="tel" placeholder="+221770000000" [(ngModel)]="nf.phone_number" />
-      <label class="adm-label">E-mail (facultatif)</label><input class="adm-input" type="email" [(ngModel)]="nf.email" />
+      <label class="adm-label">E-mail (identifiant de connexion)</label><input class="adm-input" type="email" autocomplete="off" placeholder="prenom.nom@quinch.sn" [(ngModel)]="nf.email" />
+      <label class="adm-label">Téléphone (facultatif) — format +221XXXXXXXXX</label><input class="adm-input" inputmode="tel" placeholder="+221770000000" [(ngModel)]="nf.phone_number" />
       <label class="adm-label">Mot de passe (10 caractères min., majuscule + minuscule + chiffre)</label>
       <div class="adm-row" style="gap:8px"><input class="adm-input" [type]="showPw() ? 'text' : 'password'" autocomplete="new-password" [(ngModel)]="nf.password" />
         <button type="button" class="adm-btn sm" (click)="genPw()">Générer</button><button type="button" class="adm-btn sm" (click)="showPw.set(!showPw())">{{ showPw() ? 'Masquer' : 'Voir' }}</button></div>
@@ -93,10 +93,10 @@ export class AdminTeamPage implements OnInit {
   pf = ''; expiring = false; rs = ''; rr = '';
   target: any = null; busy = signal(false); error = signal('');
   createRole = signal<'moderator' | 'admin' | null>(null); showPw = signal(false);
-  nf = { full_name: '', username: '', phone_number: '+221', email: '', password: '' };
+  nf = { full_name: '', username: '', phone_number: '', email: '', password: '' };
   resetTarget: any = null; resetPw = '';
 
-  openCreate(role: 'moderator' | 'admin') { this.error.set(''); this.nf = { full_name: '', username: '', phone_number: '+221', email: '', password: '' }; this.showPw.set(false); this.createRole.set(role); }
+  openCreate(role: 'moderator' | 'admin') { this.error.set(''); this.nf = { full_name: '', username: '', phone_number: '', email: '', password: '' }; this.showPw.set(false); this.createRole.set(role); }
   openReset(s: any) { this.error.set(''); this.resetPw = ''; this.showPw.set(false); this.resetTarget = s; }
   genPw() { this.nf.password = this.randomPw(); this.showPw.set(true); }
   randomPw(): string {
@@ -109,7 +109,7 @@ export class AdminTeamPage implements OnInit {
   doCreate(res: ModalResult) {
     this.busy.set(true); this.error.set('');
     const body: any = { ...this.nf, role: this.createRole() };
-    if (!body.email) delete body.email;
+    if (!body.phone_number || body.phone_number === '+221') delete body.phone_number;
     this.admin.createStaff(body, res.password).subscribe({
       next: () => { this.busy.set(false); this.createRole.set(null); this.notif.success('Compte créé'); this.setTab('staff'); },
       error: e => { this.busy.set(false); this.error.set(errMsg(e)); },

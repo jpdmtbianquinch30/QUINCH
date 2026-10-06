@@ -98,7 +98,7 @@ class AdminController extends Controller
     {
         $status = $request->get('status', 'pending_review');
 
-        $query = FraudDetection::with(['user:id,full_name,username,phone_number,trust_score,account_status,role', 'reviewer:id,full_name']);
+        $query = FraudDetection::with(['user:id,full_name,username,email,phone_number,trust_score,account_status,role', 'reviewer:id,full_name']);
 
         if ($status !== 'all') {
             $query->where('status', $status);

@@ -26,7 +26,6 @@ export interface GoogleAuthResult {
   user: any;
   token: string;
   is_new_user: boolean;
-  needs_phone: boolean;
   needs_username: boolean;
 }
 
@@ -109,13 +108,6 @@ export class GoogleAuthService {
       tap((res) => this.auth.applyGoogleSession(res.token, res.user))
     );
   }
-
-/** Numéro de téléphone obligatoire après une première connexion Google. */
-addPhone(phoneNumber: string): Observable<any> {
-  return this.api.post('auth/google/add-phone', { phone_number: phoneNumber }).pipe(
-    tap((res: any) => this.auth.lastDemoOtp.set(res.demo_otp ?? null))
-  );
-}
 
   updateUsername(username: string): Observable<any> {
     return this.api.post('auth/google/update-username', { username });

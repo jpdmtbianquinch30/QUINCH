@@ -35,8 +35,8 @@ class AdminTransactionController extends Controller
     public function show(Transaction $transaction): JsonResponse
     {
         $transaction->load([
-            'buyer:id,full_name,username,phone_number,trust_score,account_status',
-            'seller:id,full_name,username,phone_number,trust_score,account_status',
+            'buyer:id,full_name,username,email,phone_number,trust_score,account_status',
+            'seller:id,full_name,username,email,phone_number,trust_score,account_status',
             'product' => fn ($q) => $q->withTrashed()->select('id', 'title', 'slug', 'price', 'user_id', 'poster_url', 'images', 'deleted_at'),
         ]);
 

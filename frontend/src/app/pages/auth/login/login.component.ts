@@ -20,18 +20,13 @@ export class LoginComponent implements AfterViewInit {
 
   googleAvailable = this.googleAuth.isConfigured;
 
-  /** Un compte Google tout neuf n'a pas de numéro sénégalais : on le demande
-   *  ici même, sans quitter l'écran (le backend renvoie `needs_phone`). */
-  needsPhone = signal(false);
-  googlePhone = '';
-
-  phoneNumber = '';
+  email = '';
   password = '';
   loading = signal(false);
   error = signal('');
 
   login() {
-    if (!this.phoneNumber || !this.password) {
+    if (!this.email.trim() || !this.password) {
       this.error.set('Veuillez remplir tous les champs.');
       return;
     }
@@ -39,13 +34,8 @@ export class LoginComponent implements AfterViewInit {
     this.loading.set(true);
     this.error.set('');
 
-    // Prepend +221 prefix if not already present
-    const phone = this.phoneNumber.startsWith('+221')
-      ? this.phoneNumber
-      : '+221' + this.phoneNumber.replace(/\s/g, '');
-
     this.auth.login({
-      phone_number: phone,
+      email: this.email.trim(),
       password: this.password,
     }).subscribe({
       next: (res) => {
@@ -93,13 +83,6 @@ export class LoginComponent implements AfterViewInit {
       next: (res) => {
         this.loading.set(false);
 
-        // Un compte Google n'a ni numéro sénégalais ni pseudo QUINCH :
-        // on complète le profil avant de laisser entrer dans l'app.
-        if (res.needs_phone) {
-          this.needsPhone.set(true);
-          return;
-        }
-
         this.redirectAfterLogin();
       },
       error: (err) => {
@@ -119,49 +102,11 @@ export class LoginComponent implements AfterViewInit {
     }
 
     const user = this.auth.user();
-    if (user && !user.phone_verified) {
-      this.router.navigate(['/auth/verify-otp']);
-      return;
-    }
     if (user && !user.onboarding_completed) {
       this.router.navigate(['/onboarding']);
       return;
     }
 
     this.router.navigate(['/feed']);
-  }
-
-  /**
-   * Étape 2 d'une première connexion Google : enregistrer le numéro de
-   * téléphone. Le backend génère l'OTP dans la foulée, l'écran de
-   * vérification prend ensuite le relais normalement.
-   */
-  submitGooglePhone(): void {
-    const raw = this.googlePhone.replace(/\s/g, '');
-    if (!raw) {
-      this.error.set('Veuillez saisir votre numéro de téléphone.');
-      return;
-    }
-
-    const phone = raw.startsWith('+221') ? raw : '+221' + raw;
-
-    this.loading.set(true);
-    this.error.set('');
-
-    this.googleAuth.addPhone(phone).subscribe({
-      next: (res: any) => {
-        this.loading.set(false);
-        if (res.user) this.auth.updateUser(res.user);
-        this.router.navigate(['/auth/verify-otp']);
-      },
-      error: (err: any) => {
-        this.loading.set(false);
-        const errors = err.error?.errors;
-        this.error.set(
-          errors ? Object.values(errors).flat().join(' ')
-                 : (err.error?.message || 'Numéro invalide.')
-        );
-      },
-    });
   }
 }

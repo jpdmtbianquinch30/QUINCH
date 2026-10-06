@@ -2,8 +2,10 @@ import { Badge } from "../services/badge.service";
 
 export interface User {
   id: string;
-  phone_number: string;
-  email?: string;
+  email: string;
+  email_verified?: boolean;
+  /** Facultatif : information de profil, plus un identifiant. */
+  phone_number?: string | null;
   username?: string;
   full_name: string;
   avatar_url?: string;
@@ -46,28 +48,17 @@ export interface AuthResponse {
   message: string;
   user: User;
   token: string;
-  demo_otp?: string;
 }
 
 export interface LoginRequest {
-  phone_number: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterRequest {
-  phone_number: string;
+  email: string;
   full_name: string;
   username: string;
   password: string;
   password_confirmation: string;
-}
-
-export interface VerifyOtpRequest {
-  phone_number: string;
-  otp: string;
-}
-
-export interface ResendOtpResponse {
-  message: string;
-  demo_otp?: string;
 }

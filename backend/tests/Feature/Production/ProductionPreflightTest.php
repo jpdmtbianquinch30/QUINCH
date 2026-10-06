@@ -16,10 +16,11 @@ class ProductionPreflightTest extends TestCase
             'app.url' => 'https://api.quinch.sn',
             'quinch.frontend_url' => 'https://quinch.sn',
             'cors.allowed_origins' => ['https://quinch.sn'],
-            'services.sms.driver' => 'orange',
-            'services.sms.orange.client_id' => 'id',
-            'services.sms.orange.client_secret' => 'secret',
-            'services.sms.orange.sender' => '+221770000000',
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => 'smtp.brevo.com',
+            'mail.mailers.smtp.username' => 'smtp-user',
+            'mail.mailers.smtp.password' => 'smtp-secret',
+            'mail.from.address' => 'no-reply@quinch.sn',
             'queue.default' => 'redis',
             'cache.default' => 'redis',
             'database.redis.default.password' => 'redis-secret',
@@ -45,17 +46,37 @@ class ProductionPreflightTest extends TestCase
 
     public function test_nothing_is_checked_outside_production(): void
     {
-        config(['services.sms.driver' => 'log']);
+        config(['mail.default' => 'log']);
 
         $this->assertSame([], (new ProductionPreflight())->errors('local'));
     }
 
-    public function test_log_sms_driver_is_refused_in_production(): void
+    public function test_log_mailer_is_refused_in_production(): void
     {
         $this->validProductionConfig();
-        config(['services.sms.driver' => 'log']);
+        config(['mail.default' => 'log']);
 
-        $this->assertStringContainsString('SMS_DRIVER', implode(' ', $this->errors()));
+        $this->assertStringContainsString('MAIL_MAILER', implode(' ', $this->errors()));
+    }
+
+    public function test_smtp_without_real_host_or_credentials_is_refused(): void
+    {
+        $this->validProductionConfig();
+
+        config(['mail.mailers.smtp.host' => '127.0.0.1']);
+        $this->assertStringContainsString('MAIL_HOST', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['mail.mailers.smtp.password' => '']);
+        $this->assertStringContainsString('MAIL_USERNAME / MAIL_PASSWORD', implode(' ', $this->errors()));
+    }
+
+    public function test_placeholder_sender_address_is_refused(): void
+    {
+        $this->validProductionConfig();
+        config(['mail.from.address' => 'hello@example.com']);
+
+        $this->assertStringContainsString('MAIL_FROM_ADDRESS', implode(' ', $this->errors()));
     }
 
     public function test_missing_wave_secret_is_refused(): void
@@ -96,7 +117,7 @@ class ProductionPreflightTest extends TestCase
     public function test_preflight_command_fails_with_bad_production_config(): void
     {
         $this->validProductionConfig();
-        config(['services.sms.driver' => 'log']);
+        config(['mail.default' => 'log']);
 
         $this->artisan('quinch:preflight', ['--as' => 'production'])->assertExitCode(1);
     }
@@ -115,32 +136,4 @@ class ProductionPreflightTest extends TestCase
 
         $this->assertStringContainsString('QUEUE_CONNECTION=database', implode(' ', $this->errors()));
     }
-
-    public function test_a_valid_fallback_provider_is_accepted(): void
-    {
-        $this->validProductionConfig();
-        config([
-            'services.sms.fallback_driver' => 'twilio',
-            'services.sms.twilio.sid' => 'AC123',
-            'services.sms.twilio.token' => 'tok',
-            'services.sms.twilio.from' => '+15005550006',
-        ]);
-
-        $this->assertSame([], $this->errors());
-    }
-
-    public function test_a_fallback_without_credentials_or_equal_to_the_primary_is_refused(): void
-    {
-        $this->validProductionConfig();
-
-        config(['services.sms.fallback_driver' => 'twilio', 'services.sms.twilio.sid' => '', 'services.sms.twilio.token' => '']);
-        $this->assertStringContainsString('TWILIO_SID', implode(' ', $this->errors()));
-
-        config(['services.sms.fallback_driver' => 'orange']);
-        $this->assertStringContainsString('SMS_FALLBACK_DRIVER doit différer', implode(' ', $this->errors()));
-
-        config(['services.sms.fallback_driver' => 'nexmo']);
-        $this->assertStringContainsString('SMS_FALLBACK_DRIVER=nexmo', implode(' ', $this->errors()));
-    }
 }
-

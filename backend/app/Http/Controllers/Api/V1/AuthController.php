@@ -13,26 +13,29 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Register a new user with phone number (Senegal format).
+     * Inscription par e-mail. Le numéro de téléphone n'est plus demandé : il
+     * devient une information facultative du profil.
      */
     public function register(Request $request): JsonResponse
     {
-            $validated = $request->validate([
-        'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users'],
-        'full_name'    => ['required', 'string', 'max:100'],
-        'username'     => ['required', 'string', 'min:3', 'max:30', 'unique:users', 'regex:/^[a-zA-Z0-9_]+$/'],
-        'password'     => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*[0-9]).+$/'],
-    ], [
-        'phone_number.regex'  => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
-        'phone_number.unique' => 'Ce numéro est déjà utilisé.',
-        'username.unique'     => "Ce nom d'utilisateur est déjà pris.",
-        'username.regex'      => "Lettres, chiffres et _ uniquement.",
-        'password.regex'      => 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre.',
-        'password.min'        => 'Le mot de passe doit faire au moins 8 caractères.',
-    ]);
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
+
+        $validated = $request->validate([
+            'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'full_name' => ['required', 'string', 'max:100'],
+            'username'  => ['required', 'string', 'min:3', 'max:30', 'unique:users', 'regex:/^[a-zA-Z0-9_]+$/'],
+            'password'  => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*[0-9]).+$/'],
+        ], [
+            'email.email'    => 'Adresse e-mail invalide.',
+            'email.unique'   => 'Cette adresse e-mail est déjà utilisée.',
+            'username.unique' => "Ce nom d'utilisateur est déjà pris.",
+            'username.regex'  => 'Lettres, chiffres et _ uniquement.',
+            'password.regex'  => 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre.',
+            'password.min'    => 'Le mot de passe doit faire au moins 8 caractères.',
+        ]);
 
         $user = User::create([
-            'phone_number' => $validated['phone_number'],
+            'email' => $validated['email'],
             'full_name' => $validated['full_name'],
             'password' => $validated['password'],
             'username' => $validated['username'],
@@ -44,67 +47,50 @@ class AuthController extends Controller
         // Message de bienvenue de l'équipe QUINCH dès l'inscription (et non à la 1re connexion).
         app(NotificationService::class)->notifyWelcome($user);
 
-        // Code de vérification envoyé par SMS (en arrière-plan).
-        $otpService = app(\App\Services\OtpService::class);
-        $wait = $otpService->throttle($user->phone_number);
-        $otp = $wait === null ? $otpService->issue($user) : null;
-
         $token = $user->createToken('quinch-app')->plainTextToken;
 
-        $response = [
-            'message' => 'Inscription réussie. Vérifiez votre téléphone.',
+        return response()->json([
+            'message' => 'Inscription réussie.',
             'user' => $this->formatUser($user),
             'token' => $token,
-            'otp_sent' => $otp !== null,
-        ];
-
-        if ($wait !== null) {
-            $response['retry_after'] = $wait;
-        }
-
-        // Le code n'est renvoyé dans la réponse qu'en local/testing, jamais en production.
-        if ($otp !== null && $otpService->shouldExposeDemoCode()) {
-            $response['demo_otp'] = $otp;
-        }
-
-        return response()->json($response, 201);
+        ], 201);
     }
 
     /**
-     * Login with phone number and password.
+     * Connexion par e-mail et mot de passe.
      */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone_number' => ['required', 'string'],
-            'password'     => ['required', 'string'],
+            'email'    => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
-        $phone = $validated['phone_number'];
+        $email = strtolower(trim($validated['email']));
 
-        // Deux compteurs : strict par (numéro + IP), large par numéro seul
-        // (attaque répartie sur plusieurs IP). Un numéro inconnu est compté
+        // Deux compteurs : strict par (e-mail + IP), large par e-mail seul
+        // (attaque répartie sur plusieurs IP). Un e-mail inconnu est compté
         // exactement pareil : aucune énumération de comptes possible.
-        $pairKey  = 'login:pair:' . sha1($phone . '|' . $request->ip());
-        $phoneKey = 'login:phone:' . sha1($phone);
+        $pairKey  = 'login:pair:' . sha1($email . '|' . $request->ip());
+        $phoneKey = 'login:email:' . sha1($email);
 
         foreach ([[$pairKey, 5], [$phoneKey, 20]] as [$key, $max]) {
             if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, $max)) {
                 $minutes = (int) ceil(\Illuminate\Support\Facades\RateLimiter::availableIn($key) / 60);
 
                 throw ValidationException::withMessages([
-                    'phone_number' => ["Trop de tentatives. Réessayez dans {$minutes} minute(s)."],
+                    'email' => ["Trop de tentatives. Réessayez dans {$minutes} minute(s)."],
                 ])->status(429);
             }
         }
 
-        $user = User::where('phone_number', $phone)->first();
+        $user = User::where('email', $email)->first();
 
         if ($user) {
             $passwordOk = Hash::check($validated['password'], $user->password);
         } else {
             // Même durée de calcul qu'un vrai compte : on ne révèle pas
-            // l'existence d'un numéro par le temps de réponse.
+            // l'existence d'un e-mail par le temps de réponse.
             Hash::make($validated['password']);
             $passwordOk = false;
         }
@@ -114,7 +100,7 @@ class AuthController extends Controller
             \Illuminate\Support\Facades\RateLimiter::hit($phoneKey, 3600);
 
             throw ValidationException::withMessages([
-                'phone_number' => ['Les identifiants sont incorrects.'],
+                'email' => ['Les identifiants sont incorrects.'],
             ]);
         }
 
@@ -159,101 +145,29 @@ class AuthController extends Controller
     }
 
     /**
-     * Verify OTP code.
-     */
-    public function verifyOtp(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'phone_number' => ['required', 'string'],
-            'otp' => ['required', 'string', 'size:6'],
-        ]);
-
-        $user = User::where('phone_number', $validated['phone_number'])->first();
-
-        if (!$user || !$user->verifyOtp($validated['otp'])) {
-            return response()->json([
-                'message' => 'Code OTP invalide ou expiré.',
-                'error' => 'invalid_otp',
-            ], 422);
-        }
-
-        // phone_verified est fillable, mais otp_code/otp_expires_at ne le
-        // sont plus (champs sensibles) : forceFill nécessaire pour les
-        // effacer après vérification réussie.
-        $user->forceFill([
-            'phone_verified' => true,
-            'otp_code' => null,
-            'otp_expires_at' => null,
-        ])->save();
-
-        return response()->json([
-            'message' => 'Téléphone vérifié avec succès.',
-            'user' => $this->formatUser($user->fresh()),
-        ]);
-    }
-
-        /**
-     * Re-generate and re-send an OTP code (used when the previous one has
-     * expired — generateOtp() reset otp_expires_at à 10 min, voir User.php).
-     * On répond 200 générique même si le numéro n'existe pas ou si le
-     * téléphone est déjà vérifié, pour ne pas laisser deviner quels numéros
-     * sont inscrits (énumération de comptes).
-     */
-    public function resendOtp(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'phone_number' => ['required', 'string'],
-        ]);
-
-        $otpService = app(\App\Services\OtpService::class);
-
-        // Limite comptée AVANT de chercher le compte : numéro connu ou non,
-        // la réponse est identique (pas d'énumération).
-        $wait = $otpService->throttle($validated['phone_number']);
-        if ($wait !== null) {
-            return $otpService->tooManyResponse($wait);
-        }
-
-        $user = User::where('phone_number', $validated['phone_number'])->first();
-
-        $response = [
-            'message' => 'Si ce numéro est inscrit et non vérifié, un nouveau code a été envoyé.',
-        ];
-
-        if ($user && !$user->phone_verified) {
-            $otp = $otpService->issue($user);
-
-            if ($otpService->shouldExposeDemoCode()) {
-                $response['demo_otp'] = $otp;
-            }
-        }
-
-        return response()->json($response);
-    }
-
-    /**
-     * Demande de réinitialisation de mot de passe : génère un OTP envoyé par
-     * SMS (comme à l'inscription). Ne révèle jamais si le numéro existe ou
-     * non (même message dans les deux cas), pour ne pas permettre à un tiers
-     * de vérifier quels numéros sont inscrits sur la plateforme.
+     * Demande de réinitialisation de mot de passe : un code à 6 chiffres est
+     * envoyé PAR E-MAIL. Ne révèle jamais si l'adresse existe (même réponse
+     * dans les deux cas) pour ne pas permettre d'énumérer les comptes.
      */
     public function forgotPassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/'],
+            'email' => ['required', 'string', 'email', 'max:255'],
         ]);
+
+        $email = strtolower(trim($validated['email']));
 
         $otpService = app(\App\Services\OtpService::class);
 
-        $wait = $otpService->throttle($validated['phone_number']);
+        $wait = $otpService->throttle($email);
         if ($wait !== null) {
             return $otpService->tooManyResponse($wait);
         }
 
-        $user = User::where('phone_number', $validated['phone_number'])->first();
+        $user = User::where('email', $email)->first();
 
         $response = [
-            'message' => 'Si ce numéro est associé à un compte, un code a été envoyé par SMS.',
+            'message' => 'Si cette adresse est associée à un compte, un code a été envoyé par e-mail.',
         ];
 
         if ($user) {
@@ -268,99 +182,39 @@ class AuthController extends Controller
     }
 
     /**
-     * Réinitialise le mot de passe après vérification de l'OTP. Révoque
-     * tous les tokens existants par sécurité (déconnexion de tous les
-     * appareils), au cas où le compte aurait été compromis.
+     * Réinitialise le mot de passe après vérification du code reçu par e-mail.
+     * Révoque tous les jetons existants (déconnexion de tous les appareils),
+     * au cas où le compte aurait été compromis.
      */
     public function resetPassword(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'phone_number' => ['required', 'string'],
+            'email' => ['required', 'string', 'email'],
             'otp' => ['required', 'string', 'size:6'],
             'password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
         ], [
             'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
         ]);
 
-        $user = User::where('phone_number', $validated['phone_number'])->first();
+        $user = User::where('email', strtolower(trim($validated['email'])))->first();
 
         if (!$user || !$user->verifyOtp($validated['otp'])) {
             return response()->json([
-                'message' => 'Code OTP invalide ou expiré.',
+                'message' => 'Code invalide ou expiré.',
                 'error' => 'invalid_otp',
             ], 422);
         }
 
-        // password est fillable, mais otp_code/otp_expires_at ne le sont
-        // plus (champs sensibles) : forceFill nécessaire pour les effacer.
+        // otp_code/otp_expires_at ne sont pas fillable : forceFill nécessaire.
+        // Avoir reçu le code prouve la possession de l'adresse : on la marque vérifiée.
         $user->forceFill([
             'password' => $validated['password'],
             'otp_code' => null,
             'otp_expires_at' => null,
+            'email_verified_at' => $user->email_verified_at ?? now(),
         ])->save();
 
-        // Sécurité : un mot de passe oublié/réinitialisé peut indiquer un
-        // compte compromis -> on déconnecte tous les appareils.
-        $user->tokens()->delete();
-
-        return response()->json([
-            'message' => 'Mot de passe réinitialisé avec succès. Merci de vous reconnecter.',
-        ]);
-    }
-
-        /**
-     * Réinitialisation par email — nécessite téléphone ET email
-     * correspondant au même compte (double facteur), pas d'OTP. L'email
-     * est optionnel sur un compte : si l'utilisateur n'en a jamais
-     * configuré, ce chemin échoue simplement (message générique, sans
-     * révéler pourquoi — même posture que resetPassword()).
-     */
-    public function resetPasswordByEmail(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'phone_number' => ['required', 'string'],
-            'email' => ['required', 'email'],
-            'otp' => ['required', 'string'],
-            'password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
-        ], [
-            'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
-            'otp.required'   => 'Le code reçu par SMS est obligatoire.',
-        ]);
-
-        $user = User::where('phone_number', $validated['phone_number'])->first();
-
-        // ATTENTION — correctif de sécurité critique.
-        //
-        // Cette route acceptait auparavant `téléphone + e-mail` comme seule
-        // preuve d'identité. Or ces deux éléments sont des IDENTIFIANTS, pas
-        // des SECRETS : le numéro est communiqué à l'autre partie de chaque
-        // transaction, et l'e-mail est devinable. N'importe qui connaissant
-        // ces deux informations pouvait réinitialiser le mot de passe d'un
-        // vendeur et prendre le contrôle de son compte.
-        //
-        // On exige désormais en plus un OTP envoyé par SMS (preuve de
-        // possession du téléphone), exactement comme le parcours
-        // `forgot-password` → `reset-password`. L'e-mail reste vérifié :
-        // il constitue alors un second facteur réel, et non le seul.
-        $emailMatches = $user
-            && $user->email
-            && strcasecmp($user->email, $validated['email']) === 0;
-
-        $otpValid = $user && $user->verifyOtp($validated['otp']);
-
-        if (!$emailMatches || !$otpValid) {
-            return response()->json([
-                'message' => 'Les informations fournies ne correspondent à aucun compte.',
-                'error' => 'invalid_credentials',
-            ], 422);
-        }
-
-        $user->forceFill([
-            'password' => $validated['password'],
-            'otp_code' => null,
-            'otp_expires_at' => null,
-        ])->save();
-
+        // Un mot de passe oublié/réinitialisé peut indiquer un compte compromis.
         $user->tokens()->delete();
 
         return response()->json([
@@ -492,6 +346,7 @@ class AuthController extends Controller
             'is_seller' => $user->is_seller,
             'is_buyer' => $user->is_buyer,
             'phone_verified' => $user->phone_verified,
+            'email_verified' => $user->email_verified_at !== null,
             'onboarding_completed' => $user->onboarding_completed,
             'preferences' => $user->preferences,
             'created_at' => $user->created_at,

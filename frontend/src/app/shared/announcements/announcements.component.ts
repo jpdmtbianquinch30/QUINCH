@@ -58,7 +58,7 @@ export class AnnouncementsComponent implements OnInit {
   private router = inject(Router);
 
   ngOnInit() {
-    if (this.auth.isAuthenticated() && this.auth.user()?.phone_verified) {
+    if (this.auth.isAuthenticated()) {
       this.notif.loadAnnouncements().subscribe({ error: () => {} });
     } else {
       this.notif.announcements.set([]);

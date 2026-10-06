@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Jobs\SendSmsJob;
+use App\Mail\PasswordResetCodeMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
-use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class OtpSecurityTest extends TestCase
@@ -62,68 +62,58 @@ class OtpSecurityTest extends TestCase
         $this->assertTrue($user->fresh()->verifyOtp($newOtp));
     }
 
-    public function test_verify_endpoint_refuses_the_correct_code_after_five_failures(): void
+    public function test_otp_routes_removed_from_registration_are_gone(): void
     {
-        $this->withoutMiddleware(ThrottleRequests::class);
+        $this->postJson('/api/v1/auth/verify-otp', ['email' => 'a@example.com', 'otp' => '123456'])
+            ->assertNotFound();
 
-        $user = User::factory()->unverified()->create();
-        $otp = $user->generateOtp();
-        $wrong = $this->wrongCodeFor($otp);
-
-        for ($i = 0; $i < 5; $i++) {
-            $this->postJson('/api/v1/auth/verify-otp', [
-                'phone_number' => $user->phone_number,
-                'otp' => $wrong,
-            ])->assertStatus(422);
-        }
-
-        $this->postJson('/api/v1/auth/verify-otp', [
-            'phone_number' => $user->phone_number,
-            'otp' => $otp,
-        ])->assertStatus(422);
-
-        $this->assertFalse((bool) $user->fresh()->phone_verified);
+        $this->postJson('/api/v1/auth/resend-otp', ['email' => 'a@example.com'])
+            ->assertNotFound();
     }
 
-    public function test_resend_is_throttled_per_phone_for_known_and_unknown_numbers(): void
+    public function test_forgot_password_is_throttled_per_email_for_known_and_unknown_addresses(): void
     {
         $this->withoutMiddleware(ThrottleRequests::class);
 
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->create();
 
-        foreach ([$user->phone_number, '+221700000001'] as $phone) {
-            $this->postJson('/api/v1/auth/resend-otp', ['phone_number' => $phone])->assertOk();
+        foreach ([$user->email, 'inconnu@example.com'] as $email) {
+            $this->postJson('/api/v1/auth/forgot-password', ['email' => $email])->assertOk();
 
-            $this->postJson('/api/v1/auth/resend-otp', ['phone_number' => $phone])
+            $this->postJson('/api/v1/auth/forgot-password', ['email' => $email])
                 ->assertStatus(429)
                 ->assertJsonPath('error', 'otp_rate_limited');
         }
     }
 
-    public function test_forgot_password_queues_an_sms_with_the_code(): void
+    public function test_the_code_is_hashed_in_database(): void
     {
-        Queue::fake();
+        $user = User::factory()->create();
+        $otp = $user->generateOtp();
+
+        $this->assertNotSame($otp, $user->fresh()->otp_code);
+    }
+
+    public function test_demo_code_is_only_exposed_in_the_testing_environment(): void
+    {
+        $otp = app(\App\Services\OtpService::class);
+
+        $this->assertTrue($otp->shouldExposeDemoCode());
+
+        foreach (['local', 'production', 'staging'] as $env) {
+            $this->app['env'] = $env;
+            $this->assertFalse($otp->shouldExposeDemoCode(), "Le code ne doit jamais être exposé en {$env}.");
+        }
+    }
+
+    public function test_a_mail_failure_does_not_change_the_response(): void
+    {
+        // Même réponse que le compte existe ou non : une panne de file ne doit
+        // pas transformer la réponse en 500 (qui révélerait l'existence du compte).
+        Mail::shouldReceive('to')->andThrow(new \RuntimeException('file indisponible'));
 
         $user = User::factory()->create();
 
-        $response = $this->postJson('/api/v1/auth/forgot-password', [
-            'phone_number' => $user->phone_number,
-        ])->assertOk();
-
-        $code = (string) $response->json('demo_otp');
-
-        Queue::assertPushed(SendSmsJob::class, function (SendSmsJob $job) use ($user, $code) {
-            return $job->to === $user->phone_number && str_contains($job->message, $code);
-        });
-    }
-
-    public function test_unknown_number_gets_no_sms(): void
-    {
-        Queue::fake();
-
-        $this->postJson('/api/v1/auth/forgot-password', ['phone_number' => '+221700000002'])
-            ->assertOk();
-
-        Queue::assertNothingPushed();
+        $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->email])->assertOk();
     }
 }

@@ -3,7 +3,7 @@
 
     <!-- ═══════ TOP BAR ═══════ -->
     <div class="profile-top-bar">
-      <h1 class="username">&#64;{{ user()!.username || user()!.phone_number }}</h1>
+      <h1 class="username">&#64;{{ user()!.username || user()!.full_name }}</h1>
       <div class="top-actions">
         <button class="q-btn q-btn-icon" (click)="openSettings()"><span class="material-icons">settings</span></button>
         <button class="q-btn q-btn-icon" (click)="shareProfile()"><span class="material-icons">share</span></button>
@@ -54,7 +54,7 @@
               <span class="material-icons verified-badge">verified</span>
             }
           </h2>
-          <p class="hero-handle">&#64;{{ user()!.username || user()!.phone_number }}</p>
+          <p class="hero-handle">&#64;{{ user()!.username || user()!.full_name }}</p>
           @if (user()!.bio) {
             <p class="profile-bio">{{ user()!.bio }}</p>
           }

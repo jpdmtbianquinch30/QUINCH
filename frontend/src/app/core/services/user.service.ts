@@ -26,19 +26,11 @@ export class UserService {
     return this.api.upload('user/upload-cover', fd);
   }
 
-    // ─── Changement de numéro de téléphone ────────────────────────────────
-  // Deux étapes : mot de passe requis pour demander le changement, puis
-  // OTP envoyé au NOUVEAU numéro pour confirmer qu'il appartient bien à
-  // l'utilisateur avant que phone_number ne change réellement en base.
-  requestPhoneChange(newPhoneNumber: string, currentPassword: string): Observable<any> {
-    return this.api.post('user/phone/request-change', {
-      new_phone_number: newPhoneNumber,
-      current_password: currentPassword,
-    });
-  }
-
-  confirmPhoneChange(otp: string): Observable<any> {
-    return this.api.post('user/phone/confirm-change', { otp });
+  // ─── Numéro de téléphone FACULTATIF ───────────────────────────────────
+  // Information de profil uniquement : ni connexion ni récupération de compte
+  // (c'est l'e-mail). `null` supprime le numéro.
+  updatePhone(phoneNumber: string | null): Observable<any> {
+    return this.api.put('user/phone', { phone_number: phoneNumber });
   }
 }
 

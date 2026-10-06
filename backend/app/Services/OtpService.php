@@ -2,23 +2,25 @@
 
 namespace App\Services;
 
-use App\Jobs\SendSmsJob;
+use App\Mail\PasswordResetCodeMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 
 class OtpService
 {
     /**
-     * Vérifie les limites d'envoi pour ce numéro ET les compte.
-     * À appeler AVANT de savoir si le compte existe : un numéro inconnu est
-     * limité exactement comme un numéro connu (pas d'énumération de comptes).
+     * Vérifie les limites d'envoi pour cet identifiant (e-mail) ET les compte.
+     * À appeler AVANT de savoir si le compte existe : une adresse inconnue est
+     * limitée exactement comme une adresse connue (pas d'énumération de comptes).
      *
      * @return int|null  null = envoi autorisé ; sinon secondes à attendre.
      */
-    public function throttle(string $phone): ?int
+    public function throttle(string $identifier): ?int
     {
-        $id          = sha1($phone);
+        $id          = sha1($identifier);
         $cooldownKey = "otp:cooldown:{$id}";
         $hourKey     = "otp:hour:{$id}";
         $globalKey   = 'otp:global';
@@ -42,55 +44,46 @@ class OtpService
     }
 
     /**
-     * Génère un nouveau code pour l'utilisateur et l'envoie par SMS.
-     * $phone = numéro destinataire (par défaut le numéro du compte ; pour un
-     * changement de numéro, passer le NOUVEAU numéro).
+     * Génère un nouveau code pour l'utilisateur et l'envoie PAR E-MAIL (file Redis).
      *
-     * @return string le code en clair (à n'exposer qu'en local/testing : demo_otp)
+     * Un échec d'envoi (file indisponible...) est journalisé mais ne remonte pas :
+     * la réponse de l'API doit rester identique que le compte existe ou non,
+     * sinon une erreur 500 révélerait quelles adresses sont inscrites.
+     *
+     * @return string le code en clair (à n'exposer qu'en test : demo_otp)
      */
-    public function issue(User $user, ?string $phone = null): string
+    public function issue(User $user): string
     {
-        // Code envoyé au numéro du COMPTE (inscription, mot de passe oublié,
-        // renvoi) : un éventuel changement de numéro resté en attente est annulé.
-        // Sans ça, le code reçu sur l'ancien numéro pouvait valider un changement
-        // de numéro que le propriétaire n'avait jamais confirmé.
-        if ($phone === null && $user->pending_phone_number) {
-            $user->forceFill(['pending_phone_number' => null]);
-        }
-
-        $phone ??= $user->phone_number;
-
         $otp = $user->generateOtp();
 
         // Le plafond global ne compte que les vrais envois.
         RateLimiter::hit('otp:global', 3600);
 
-        $minutes = (int) config('quinch.otp.ttl_minutes', 10);
-
-        SendSmsJob::dispatch(
-            $phone,
-            "QUINCH : votre code est {$otp}. Valable {$minutes} min. Ne le partagez avec personne."
-        );
+        try {
+            Mail::to($user->email)->queue(
+                new PasswordResetCodeMail($otp, (int) config('quinch.otp.ttl_minutes', 10))
+            );
+        } catch (\Throwable $e) {
+            Log::error('Envoi du code de réinitialisation impossible.', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         return $otp;
     }
 
     /**
-     * Le code OTP peut-il être renvoyé dans la réponse API (champ demo_otp) ?
+     * Le code peut-il être renvoyé dans la réponse API (champ demo_otp) ?
      *
-     * Oui UNIQUEMENT quand aucun vrai SMS ne part : environnement de test, ou
-     * environnement local avec SMS_DRIVER=log (simulation). Dès que
-     * SMS_DRIVER=orange|twilio, le code n'est plus jamais exposé : il n'arrive
-     * que par SMS, comme en production.
+     * Oui UNIQUEMENT en environnement de test. Jamais en local ni en production :
+     * un code exposé dans la réponse permettrait à n'importe qui de réinitialiser
+     * le mot de passe d'un compte. En développement, lire le code dans le journal
+     * (MAIL_MAILER=log) ou dans l'outil de capture d'e-mails.
      */
     public function shouldExposeDemoCode(): bool
     {
-        if (app()->environment('testing')) {
-            return true;
-        }
-
-        return app()->environment('local')
-            && config('services.sms.driver', 'log') === 'log';
+        return app()->environment('testing');
     }
 
     public function tooManyResponse(int $retryAfter): JsonResponse

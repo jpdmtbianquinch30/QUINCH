@@ -87,7 +87,7 @@ type Dlg = { kind: 'product_report' | 'user_report' | 'ticket' | 'appeal' | 'fra
       @for (t of tickets(); track t.id) {
         <div class="adm-card" style="margin-bottom:10px">
           <div class="adm-row"><span class="adm-chip info">{{ t.category }}</span><span class="adm-sub" style="margin-left:auto">{{ t.created_at | date:'dd/MM HH:mm' }}</span></div>
-          <p><strong>{{ t.user?.full_name }}</strong> <span class="adm-sub">{{ t.user?.phone_number }}</span></p>
+          <p><strong>{{ t.user?.full_name }}</strong> <span class="adm-email">{{ t.user?.email }}</span></p>
           <p class="adm-muted">{{ t.description }}</p>
           <div class="adm-row"><button class="adm-btn sm primary" (click)="open('ticket', t)">Répondre / clôturer</button>
             <button class="adm-btn sm" (click)="assignMe('ticket', t)">{{ t.assignee ? 'Assigné : ' + t.assignee.full_name : "M'assigner" }}</button></div>

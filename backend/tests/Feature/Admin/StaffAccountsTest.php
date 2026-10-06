@@ -22,7 +22,7 @@ class StaffAccountsTest extends TestCase
         return array_merge([
             'full_name' => 'Awa Ndiaye',
             'username' => 'awa_mod',
-            'phone_number' => '+221771112233',
+            'email' => 'awa.mod@quinch.sn',
             'role' => 'moderator',
             'password' => 'Moderat0rPass',
             'admin_password' => 'StaffPass1',
@@ -39,7 +39,7 @@ class StaffAccountsTest extends TestCase
         $this->assertSame('moderator', $mod->role);
         $this->assertTrue($mod->phone_verified);
 
-        $this->postJson('/api/v1/auth/login', ['phone_number' => '+221771112233', 'password' => 'Moderat0rPass'])
+        $this->postJson('/api/v1/auth/login', ['email' => 'awa.mod@quinch.sn', 'password' => 'Moderat0rPass'])
             ->assertOk();
         $this->actingAs($mod, 'sanctum')->getJson('/api/v1/admin/me')->assertOk();
     }
@@ -49,7 +49,7 @@ class StaffAccountsTest extends TestCase
         $super = $this->make('super_admin');
 
         $this->actingAs($super, 'sanctum')
-            ->postJson('/api/v1/admin/staff', $this->payload(['role' => 'admin', 'username' => 'chef_admin', 'phone_number' => '+221772223344']))
+            ->postJson('/api/v1/admin/staff', $this->payload(['role' => 'admin', 'username' => 'chef_admin', 'email' => 'chef.admin@quinch.sn']))
             ->assertCreated();
 
         $this->assertSame('admin', User::where('username', 'chef_admin')->value('role'));
@@ -86,10 +86,10 @@ class StaffAccountsTest extends TestCase
         $this->assertDatabaseMissing('users', ['username' => 'awa_mod']);
     }
 
-    public function test_duplicate_phone_is_rejected(): void
+    public function test_duplicate_email_is_rejected(): void
     {
         $super = $this->make('super_admin');
-        User::factory()->create(['phone_number' => '+221771112233']);
+        User::factory()->create(['email' => 'awa.mod@quinch.sn']);
 
         $this->actingAs($super, 'sanctum')->postJson('/api/v1/admin/staff', $this->payload())->assertStatus(422);
     }

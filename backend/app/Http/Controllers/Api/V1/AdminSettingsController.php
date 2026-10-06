@@ -341,7 +341,7 @@ class AdminSettingsController extends Controller
 
     public static function audienceQuery(string $audience, ?string $city)
     {
-        $q = User::query()->where('account_status', 'active')->whereNull('anonymized_at')->where('phone_verified', true);
+        $q = User::query()->where('account_status', 'active')->whereNull('anonymized_at')->whereNotNull('email');
 
         return match ($audience) {
             'premium' => $q->where('is_premium', true)->where('premium_expires_at', '>', now()),

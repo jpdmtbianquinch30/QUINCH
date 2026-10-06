@@ -1,8 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
+
+/** Délai avant de pouvoir redemander un code (le backend impose 60 s). */
+const RESEND_DELAY_SECONDS = 60;
 
 @Component({
   selector: 'app-forgot-password',
@@ -11,46 +14,70 @@ import { NotificationService } from '../../../core/services/notification.service
   templateUrl: './forgot-password.component.html',
   styleUrl: './forgot-password.component.scss',
 })
-export class ForgotPasswordComponent {
+export class ForgotPasswordComponent implements OnDestroy {
   private auth = inject(AuthService);
   private notify = inject(NotificationService);
   private router = inject(Router);
 
-  method = signal<'sms' | 'email'>('sms');
   step = signal<'request' | 'reset'>('request');
   loading = signal(false);
+  /** Secondes restantes avant de pouvoir renvoyer le code (0 = possible). */
+  cooldown = signal(0);
 
-  phoneNumber = '';
   email = '';
   otp = '';
   password = '';
   passwordConfirmation = '';
 
-  /** Même format que la connexion : le backend exige +221XXXXXXXXX (sans espaces). */
-  private normalizedPhone(): string {
-    const raw = this.phoneNumber.replace(/\s/g, '');
-    return raw.startsWith('+221') ? raw : '+221' + raw;
+  private timer: ReturnType<typeof setInterval> | null = null;
+
+  ngOnDestroy(): void {
+    this.stopTimer();
   }
 
-  /** Envoie le code SMS (utilisé par les deux méthodes : SMS et e-mail). */
-  requestOtp() {
-    if (!this.phoneNumber.trim()) {
-      this.notify.error('Veuillez saisir votre numéro de téléphone.');
+  private startCooldown(seconds: number = RESEND_DELAY_SECONDS): void {
+    this.stopTimer();
+    this.cooldown.set(seconds);
+    this.timer = setInterval(() => {
+      const next = this.cooldown() - 1;
+      this.cooldown.set(Math.max(0, next));
+      if (next <= 0) this.stopTimer();
+    }, 1000);
+  }
+
+  private stopTimer(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  /** Envoie (ou renvoie) le code par e-mail. */
+  requestCode(): void {
+    const email = this.email.trim();
+    if (!email) {
+      this.notify.error('Veuillez saisir votre adresse e-mail.');
       return;
     }
+
     this.loading.set(true);
-    this.auth.forgotPassword(this.normalizedPhone()).subscribe({
+    this.auth.forgotPassword(email).subscribe({
       next: (res: any) => {
         this.loading.set(false);
         this.notify.success(res.message);
         this.step.set('reset');
         this.otp = '';
+        this.startCooldown();
         if (res.demo_otp) {
-          this.notify.info(`Code de démonstration (local) : ${res.demo_otp}`);
+          this.notify.info(`Code de démonstration (test) : ${res.demo_otp}`);
         }
       },
       error: (err: any) => {
         this.loading.set(false);
+        if (err.status === 429) {
+          this.step.set('reset');
+          this.startCooldown(err.error?.retry_after ?? RESEND_DELAY_SECONDS);
+        }
         const errors = err.error?.errors;
         this.notify.error(
           errors ? Object.values(errors).flat().join(' ') : (err.error?.message || 'Erreur lors de la demande.')
@@ -59,13 +86,14 @@ export class ForgotPasswordComponent {
     });
   }
 
-  /** Revenir saisir un autre numéro (faute de frappe). */
-  changeNumber() {
+  /** Revenir saisir une autre adresse (faute de frappe). */
+  changeEmail(): void {
     this.step.set('request');
     this.otp = '';
+    this.stopTimer();
+    this.cooldown.set(0);
   }
 
-  /** Validation commune avant d'envoyer le nouveau mot de passe. */
   private passwordsValid(): boolean {
     if (this.password.length < 8 || !/[a-z]/.test(this.password) || !/[A-Z]/.test(this.password) || !/\d/.test(this.password)) {
       this.notify.error('Le mot de passe doit faire 8 caractères minimum, avec une majuscule, une minuscule et un chiffre.');
@@ -78,39 +106,15 @@ export class ForgotPasswordComponent {
     return true;
   }
 
-  resetWithOtp() {
+  resetPassword(): void {
     if (this.otp.length !== 6) {
       this.notify.error('Le code doit contenir 6 chiffres.');
       return;
     }
     if (!this.passwordsValid()) return;
-    this.loading.set(true);
-    this.auth.resetPassword(this.normalizedPhone(), this.otp, this.password, this.passwordConfirmation).subscribe({
-      next: (res: any) => {
-        this.loading.set(false);
-        this.notify.success(res.message);
-        this.router.navigate(['/auth/login']);
-      },
-      error: (err: any) => {
-        this.loading.set(false);
-        this.notify.error(err.error?.message || 'Code invalide ou expiré.');
-      },
-    });
-  }
 
-  /** Par e-mail : le code SMS reste obligatoire (l'e-mail est un 2ᵉ facteur, pas le seul). */
-  resetWithEmail() {
-    if (!this.email.trim()) {
-      this.notify.error("Veuillez saisir l'e-mail associé au compte.");
-      return;
-    }
-    if (this.otp.length !== 6) {
-      this.notify.error('Le code doit contenir 6 chiffres.');
-      return;
-    }
-    if (!this.passwordsValid()) return;
     this.loading.set(true);
-    this.auth.resetPasswordByEmail(this.normalizedPhone(), this.email.trim(), this.otp, this.password, this.passwordConfirmation).subscribe({
+    this.auth.resetPassword(this.email.trim(), this.otp, this.password, this.passwordConfirmation).subscribe({
       next: (res: any) => {
         this.loading.set(false);
         this.notify.success(res.message);
@@ -118,7 +122,10 @@ export class ForgotPasswordComponent {
       },
       error: (err: any) => {
         this.loading.set(false);
-        this.notify.error(err.error?.message || 'Les informations fournies ne correspondent à aucun compte.');
+        const errors = err.error?.errors;
+        this.notify.error(
+          errors ? Object.values(errors).flat().join(' ') : (err.error?.message || 'Code invalide ou expiré.')
+        );
       },
     });
   }

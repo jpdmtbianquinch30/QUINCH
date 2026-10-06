@@ -102,6 +102,7 @@ class DatabaseSeeder extends Seeder
         foreach ($senegalNames as $i => $name) {
             $location = $senegalCities[$i % count($senegalCities)];
             $users[] = User::create([
+                'email' => Str::slug(explode(' ', $name)[0]) . ($i + 1) . '@demo.quinch.sn',
                 'phone_number' => '+22177' . str_pad($i + 10, 7, '0', STR_PAD_LEFT),
                 'username' => Str::slug(explode(' ', $name)[0]) . ($i + 1),
                 'full_name' => $name,

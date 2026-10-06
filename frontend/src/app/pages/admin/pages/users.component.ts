@@ -32,7 +32,7 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
       <tbody>
         @for (u of items(); track u.id) {
           <tr class="clickable" (click)="open(u.id)">
-            <td><strong>{{ u.full_name }}</strong><div class="adm-sub">{{ u.phone_number }}@if (u.username) { · &#64;{{ u.username }} }</div></td>
+            <td><strong>{{ u.full_name }}</strong><div class="adm-email">{{ u.email || '—' }}</div><div class="adm-sub">@if (u.username) { &#64;{{ u.username }} }@if (u.phone_number) { · {{ u.phone_number }} }</div></td>
             <td><span class="adm-chip" [class.info]="u.role !== 'user'">{{ roles[u.role] }}</span></td>
             <td><span class="adm-chip" [class]="'adm-chip ' + sc(u.account_status)">{{ u.account_status }}</span>@if (u.suspended_until) { <div class="adm-sub">jusqu'au {{ u.suspended_until | date:'dd/MM HH:mm' }}</div> }</td>
             <td>{{ u.trust_score }}</td><td>{{ u.products_count }}</td>
@@ -51,7 +51,7 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
       <div class="adm-row"><span class="adm-chip info">{{ roles[d.user.role] }}</span><span class="adm-chip" [class]="'adm-chip ' + sc(d.user.account_status)">{{ d.user.account_status }}</span>
         @if (d.user.is_premium) { <span class="adm-chip ok">Premium</span> }<span class="adm-chip">KYC {{ d.user.kyc_status }}</span><span class="adm-chip" [class.warn]="d.active_strikes > 0">{{ d.active_strikes }} avertissement(s)</span></div>
       <dl class="adm-kv" style="margin-top:12px">
-        <dt>Téléphone</dt><dd>{{ d.user.phone_number }}</dd><dt>Email</dt><dd>{{ d.user.email || '—' }}</dd>
+        <dt>E-mail</dt><dd><strong>{{ d.user.email || '—' }}</strong> <span class="adm-chip" [class.ok]="d.user.email_verified_at" [class.warn]="!d.user.email_verified_at">{{ d.user.email_verified_at ? 'vérifié' : 'non vérifié' }}</span></dd><dt>Téléphone (facultatif)</dt><dd>{{ d.user.phone_number || '—' }}</dd>
         <dt>Ville</dt><dd>{{ d.user.city || '—' }}</dd><dt>Confiance</dt><dd>{{ d.user.trust_score }}</dd>
         <dt>Inscrit</dt><dd>{{ d.user.created_at | date:'dd/MM/yyyy HH:mm' }}</dd><dt>Dernière activité</dt><dd>{{ d.user.last_seen_at ? (d.user.last_seen_at | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
         @if (d.user.suspended_until) { <dt>Suspendu jusqu'au</dt><dd>{{ d.user.suspended_until | date:'dd/MM/yyyy HH:mm' }} — {{ d.user.suspension_reason }}</dd> }

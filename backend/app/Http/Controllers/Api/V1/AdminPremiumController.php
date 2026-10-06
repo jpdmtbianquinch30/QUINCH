@@ -19,7 +19,7 @@ class AdminPremiumController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = PremiumSubscription::with('user:id,full_name,username,phone_number,premium_expires_at,is_premium');
+        $query = PremiumSubscription::with('user:id,full_name,username,email,phone_number,premium_expires_at,is_premium');
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);

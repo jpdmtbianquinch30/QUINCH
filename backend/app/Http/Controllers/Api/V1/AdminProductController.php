@@ -101,7 +101,7 @@ class AdminProductController extends Controller
     {
         $p = Product::withTrashed()->findOrFail($product);
         $p->load([
-            'user:id,full_name,username,avatar_url,trust_score,account_status,role,created_at,phone_number',
+            'user:id,full_name,username,avatar_url,trust_score,account_status,role,created_at,email,phone_number',
             'category:id,name',
             'video',
             'moderator:id,full_name',

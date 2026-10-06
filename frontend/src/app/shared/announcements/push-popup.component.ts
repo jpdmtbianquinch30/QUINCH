@@ -52,7 +52,7 @@ export class PushPopupComponent {
 
   constructor() {
     effect(() => {
-      const ready = this.auth.isAuthenticated() && !!this.auth.user()?.phone_verified;
+      const ready = this.auth.isAuthenticated();
       if (!ready) { this.checked = false; this.current.set(null); return; }
       if (this.checked) return;
       this.checked = true;

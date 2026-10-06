@@ -91,6 +91,7 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'suspended_until' => 'datetime',
             'anonymized_at' => 'datetime',
+            'email_verified_at' => 'datetime',
             'false_reports_count' => 'integer',
     ];
 }
@@ -284,6 +285,15 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
     public function scopeStaff($query)
     {
         return $query->whereIn('role', ['moderator', 'admin', 'super_admin']);
+    }
+
+    /**
+     * L'e-mail est l'identifiant de connexion : toujours stocké en minuscules
+     * (index unique exact, comparaison sans fonction SQL donc indexable).
+     */
+    public function setEmailAttribute($value): void
+    {
+        $this->attributes['email'] = $value === null ? null : strtolower(trim((string) $value));
     }
 
     public function isBanned(): bool

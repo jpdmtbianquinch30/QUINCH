@@ -32,12 +32,7 @@ export class App implements OnInit, OnDestroy {
     // normal) laissait panier/notifs/messages a 0 jusqu'au prochain F5, et rien
     // ne rafraichissait plus ces compteurs ensuite tant qu'on restait sur l'app.
     effect(() => {
-      // Un compte dont le téléphone n'est pas encore vérifié (ex. 1ère connexion
-      // Google) n'a accès à aucune de ces routes : l'API répond 403
-      // phone_not_verified et l'intercepteur renvoyait aussitôt vers l'écran OTP,
-      // avant même que l'utilisateur ait pu saisir son numéro. On attend donc la
-      // vérification (l'effet se relance quand `user` change).
-      if (this.auth.isAuthenticated() && this.auth.user()?.phone_verified) {
+      if (this.auth.isAuthenticated()) {
         this.refreshCounts();
         this.startCountsPolling();
       } else {

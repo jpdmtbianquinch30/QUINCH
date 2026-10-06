@@ -24,43 +24,10 @@
           <div class="error-message">{{ error() }}</div>
         }
 
-        @if (needsPhone()) {
-          <!-- 1ère connexion Google : on ne montre plus que ce qu'il faut
-               pour terminer CETTE étape (numéro de téléphone). Le
-               formulaire mot de passe, le séparateur "ou", le bouton
-               Google et les liens création de compte / mot de passe
-               oublié n'ont plus lieu d'être ici et rendaient l'écran
-               confus. -->
-          <div class="google-phone-step">
-            <p class="step-hint">
-              Dernière étape : votre numéro de téléphone sénégalais, pour
-              sécuriser le compte et recevoir les alertes de commande.
-            </p>
-            <div class="form-group">
-              <label>Numero de telephone</label>
-              <div class="input-with-prefix">
-                <span class="prefix">+221</span>
-                <input type="tel" class="q-input" [(ngModel)]="googlePhone"
-                       name="googlePhone" placeholder="77 123 45 67" maxlength="15" />
-              </div>
-            </div>
-            <button type="button" class="q-btn q-btn-primary q-btn-full q-btn-lg"
-                    [disabled]="loading()" (click)="submitGooglePhone()">
-              @if (loading()) {
-                <span class="spinner"></span> Envoi du code...
-              } @else {
-                Continuer
-              }
-            </button>
-          </div>
-        } @else {
           <form (ngSubmit)="login()">
             <div class="form-group">
-              <label>Numero de telephone</label>
-              <div class="input-with-prefix">
-                <span class="prefix">+221</span>
-                <input type="tel" class="q-input" [(ngModel)]="phoneNumber" name="phone" placeholder="77 123 45 67" maxlength="15" />
-              </div>
+              <label>Adresse e-mail</label>
+              <input type="email" class="q-input" [(ngModel)]="email" name="email" autocomplete="email" placeholder="vous@exemple.com" />
             </div>
 
             <div class="form-group">
@@ -91,7 +58,6 @@
             <a routerLink="/auth/register" class="q-btn q-btn-secondary q-btn-full">Creer un compte</a>
             <a routerLink="/auth/forgot-password" class="forgot-link">Mot de passe oublié ?</a>
           </div>
-        }
       </div>
     </div>
   </div>

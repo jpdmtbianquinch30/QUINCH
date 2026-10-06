@@ -8,7 +8,7 @@ namespace App\Support;
  * Appelé par `php artisan quinch:preflight` (lancé par docker/entrypoint.sh au
  * démarrage de CHAQUE conteneur) : si une seule erreur est trouvée, le
  * conteneur refuse de démarrer plutôt que de tourner avec une configuration
- * dangereuse (SMS non envoyés, CORS ouvert, secret de paiement vide...).
+ * dangereuse (e-mails non envoyés, CORS ouvert, secret de paiement vide...).
  *
  * Ne contrôle rien hors production.
  */
@@ -52,30 +52,28 @@ class ProductionPreflight
             }
         }
 
-        // ── SMS / OTP ──
-        $driver = (string) config('services.sms.driver', 'log');
-        if (!in_array($driver, ['orange', 'twilio'], true)) {
-            $errors[] = "SMS_DRIVER={$driver} : en production il faut 'orange' ou 'twilio' (sinon aucun OTP n'est envoyé).";
-        } else {
-            array_push($errors, ...$this->smsCredentialErrors($driver));
-        }
-
-        $fallback = config('services.sms.fallback_driver');
-        if (!$this->blank($fallback)) {
-            $fallback = (string) $fallback;
-            if (!in_array($fallback, ['orange', 'twilio'], true)) {
-                $errors[] = "SMS_FALLBACK_DRIVER={$fallback} : valeurs possibles orange ou twilio.";
-            } elseif ($fallback === $driver) {
-                $errors[] = 'SMS_FALLBACK_DRIVER doit différer de SMS_DRIVER (sinon pas de vrai secours).';
-            } else {
-                array_push($errors, ...$this->smsCredentialErrors($fallback));
+        // ── E-mail (identifiant de connexion + code « mot de passe oublié ») ──
+        $mailer = (string) config('mail.default', 'log');
+        if (in_array($mailer, ['log', 'array'], true)) {
+            $errors[] = "MAIL_MAILER={$mailer} : en production il faut un vrai transport (smtp, ses, postmark, resend...), sinon personne ne reçoit son code de réinitialisation.";
+        } elseif ($mailer === 'smtp') {
+            $host = (string) config('mail.mailers.smtp.host');
+            if ($this->blank($host) || preg_match('#^(127\.0\.0\.1|localhost|smtp\.example\.com)$#i', $host)) {
+                $errors[] = "MAIL_HOST={$host} : renseigner le serveur SMTP du fournisseur d'e-mails.";
             }
+            if ($this->blank(config('mail.mailers.smtp.username')) || $this->blank(config('mail.mailers.smtp.password'))) {
+                $errors[] = 'MAIL_USERNAME / MAIL_PASSWORD sont vides.';
+            }
+        }
+        $from = (string) config('mail.from.address');
+        if ($this->blank($from) || preg_match('#@(example\.(com|org|net)|localhost)$#i', $from)) {
+            $errors[] = "MAIL_FROM_ADDRESS={$from} : utiliser une adresse de votre domaine (ex. no-reply@quinch.sn).";
         }
 
         // ── File d'attente, cache, base ──
         $queue = (string) config('queue.default');
         if ($queue !== 'redis') {
-            $errors[] = "QUEUE_CONNECTION={$queue} : doit valoir redis en production (les workers Docker lisent la file Redis ; sinon les SMS OTP ne partiraient jamais).";
+            $errors[] = "QUEUE_CONNECTION={$queue} : doit valoir redis en production (les workers Docker lisent la file Redis ; sinon les e-mails de réinitialisation ne partiraient jamais).";
         }
         $cache = (string) config('cache.default');
         if (in_array($cache, ['array', 'null'], true)) {
@@ -114,35 +112,6 @@ class ProductionPreflight
         }
         if (in_array('cash', $methods, true)) {
             $errors[] = "QUINCH_PAYMENT_METHODS ne doit pas contenir « cash » en production.";
-        }
-
-        return $errors;
-    }
-
-    /** @return array<int, string> */
-    private function smsCredentialErrors(string $driver): array
-    {
-        $errors = [];
-
-        if ($driver === 'orange') {
-            foreach (['client_id', 'client_secret', 'sender'] as $key) {
-                if ($this->blank(config("services.sms.orange.{$key}"))) {
-                    $errors[] = 'ORANGE_SMS_' . strtoupper($key) . ' est vide.';
-                }
-            }
-            $sender = (string) config('services.sms.orange.sender');
-            if ($sender !== '' && !preg_match('/^\+\d{8,15}$/', $sender)) {
-                $errors[] = "ORANGE_SMS_SENDER invalide (format +221XXXXXXXXX) : {$sender}";
-            }
-        }
-
-        if ($driver === 'twilio') {
-            if ($this->blank(config('services.sms.twilio.sid')) || $this->blank(config('services.sms.twilio.token'))) {
-                $errors[] = 'TWILIO_SID / TWILIO_TOKEN sont vides.';
-            }
-            if ($this->blank(config('services.sms.twilio.from')) && $this->blank(config('services.sms.twilio.messaging_service_sid'))) {
-                $errors[] = 'TWILIO_FROM (ou TWILIO_MESSAGING_SERVICE_SID) est vide.';
-            }
         }
 
         return $errors;

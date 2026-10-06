@@ -16,15 +16,19 @@ export class RegisterComponent {
 
   fullName = '';
   username = '';
-  phoneNumber = '';
+  email = '';
   password = '';
   passwordConfirm = '';
   loading = signal(false);
   error = signal('');
 
   register() {
-    if (!this.fullName || !this.username || !this.phoneNumber || !this.password) {
+    if (!this.fullName || !this.username || !this.email.trim() || !this.password) {
       this.error.set('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+      this.error.set('Adresse e-mail invalide.');
       return;
     }
     if (!/^[a-zA-Z0-9_]{3,30}$/.test(this.username)) {
@@ -43,23 +47,17 @@ export class RegisterComponent {
     this.loading.set(true);
     this.error.set('');
 
-    const phone = this.phoneNumber.startsWith('+221')
-      ? this.phoneNumber
-      : '+221' + this.phoneNumber.replace(/\s/g, '');
-
     this.auth.register({
       full_name: this.fullName,
       username: this.username,
-      phone_number: phone,
+      email: this.email.trim(),
       password: this.password,
       password_confirmation: this.passwordConfirm,
     }).subscribe({
       next: () => {
         this.loading.set(false);
-        // Le telephone n'est pas encore verifie a ce stade (OTP envoye par
-        // register() cote backend) : on passe par l'ecran de verification
-        // avant l'onboarding, sinon phone_verified reste false a vie.
-        this.router.navigate(['/auth/verify-otp']);
+        // L'e-mail est l'identifiant : pas de code a la creation du compte.
+        this.router.navigate(['/onboarding']);
       },
       error: (err) => {
         this.loading.set(false);

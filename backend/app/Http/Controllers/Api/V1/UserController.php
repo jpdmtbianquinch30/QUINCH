@@ -58,98 +58,38 @@ class UserController extends Controller
     }
 
     /**
-     * Demande de changement de numéro de téléphone : vérifie le mot de passe
-     * actuel (empêche qu'une session déjà ouverte suffise à détourner le
-     * compte), puis envoie un OTP au NOUVEAU numéro pour prouver qu'on le
-     * possède bien. Le numéro réel n'est jamais modifié à cette étape.
+     * Numéro de téléphone FACULTATIF (information de profil / contact).
+     * Il ne sert plus ni à la connexion ni à la récupération du compte : c'est
+     * l'e-mail. Il n'est donc pas vérifié (phone_verified reste false) ;
+     * `phone_number: null` le supprime.
      */
-    public function requestPhoneChange(Request $request): JsonResponse
+    public function updatePhone(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'new_phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number'],
-            'current_password' => ['required', 'string'],
+            'phone_number' => ['nullable', 'string', 'regex:/^\+221[0-9]{9}$/'],
         ], [
-            'new_phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
-            'new_phone_number.unique' => 'Ce numéro est déjà utilisé par un autre compte.',
+            'phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
         ]);
 
-        $user = $request->user();
+        $user  = $request->user();
+        $phone = $validated['phone_number'] ?? null;
 
-        if (!\Illuminate\Support\Facades\Hash::check($validated['current_password'], $user->password)) {
-            return response()->json([
-                'message' => 'Mot de passe incorrect.',
-                'error' => 'invalid_password',
-            ], 422);
-        }
-
-        $otpService = app(\App\Services\OtpService::class);
-
-        // Limite par NOUVEAU numéro : empêche d'inonder un numéro tiers de SMS.
-        $wait = $otpService->throttle($validated['new_phone_number']);
-        if ($wait !== null) {
-            return $otpService->tooManyResponse($wait);
-        }
-
-        $user->pending_phone_number = $validated['new_phone_number'];
-        $user->save();
-
-        // Le code part vers le NOUVEAU numéro (preuve qu'on le possède).
-        $otp = $otpService->issue($user, $validated['new_phone_number']);
-
-        $response = ['message' => 'Un code de vérification a été envoyé au nouveau numéro.'];
-        if ($otpService->shouldExposeDemoCode()) {
-            $response['demo_otp'] = $otp;
-        }
-
-        return response()->json($response);
-    }
-
-    /**
-     * Confirme le changement de numéro avec l'OTP reçu sur le NOUVEAU
-     * numéro. C'est seulement ici que "phone_number" change réellement.
-     */
-    public function confirmPhoneChange(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'otp' => ['required', 'string', 'size:6'],
-        ]);
-
-        $user = $request->user();
-
-        if (!$user->pending_phone_number || !$user->verifyOtp($validated['otp'])) {
-            return response()->json([
-                'message' => 'Code invalide ou expiré.',
-                'error' => 'invalid_otp',
-            ], 422);
-        }
-
-        // Le numéro a pu être pris par un autre compte entre la demande et la
-        // confirmation (la règle `unique` n'est vérifiée qu'à la demande) :
-        // sans ce contrôle, la base lèverait une erreur 500 sur l'index unique.
-        $taken = \App\Models\User::where('phone_number', $user->pending_phone_number)
-            ->where('id', '!=', $user->id)
-            ->exists();
-        if ($taken) {
-            $user->forceFill(['pending_phone_number' => null])->save();
-
+        if ($phone !== null && User::where('phone_number', $phone)->where('id', '!=', $user->id)->exists()) {
             return response()->json([
                 'message' => 'Ce numéro est déjà utilisé par un autre compte.',
-                'error' => 'phone_taken',
+                'error'   => 'phone_taken',
             ], 422);
         }
 
-        // forceFill : otp_code / otp_expires_at ne sont pas dans $fillable, donc
-        // update() les ignorait en silence et le code restait valable 10 minutes.
         $user->forceFill([
-            'phone_number' => $user->pending_phone_number,
+            'phone_number'         => $phone,
+            'phone_verified'       => false,
             'pending_phone_number' => null,
-            'otp_code' => null,
-            'otp_expires_at' => null,
         ])->save();
 
         return response()->json([
-            'message' => 'Numéro de téléphone mis à jour avec succès.',
-            'user' => $user->fresh(),
+            'message' => $phone ? 'Numéro de téléphone enregistré.' : 'Numéro de téléphone supprimé.',
+            'user'    => $user->fresh(),
         ]);
     }
 

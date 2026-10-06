@@ -50,22 +50,25 @@ class AdminStaffController extends Controller
 
     /**
      * Création directe d'un compte moderator ou admin par le super admin.
-     * Le compte est immédiatement actif et vérifié (aucun SMS) ; le mot de passe
+     * Le compte est immédiatement actif (l'e-mail est l'identifiant de connexion) ; le mot de passe
      * est choisi par le super admin et transmis hors application. Le rôle
      * super_admin ne se crée JAMAIS ici (commande Artisan uniquement).
      */
     public function store(Request $request): JsonResponse
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
+
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'min:3', 'max:100'],
             'username' => ['required', 'string', 'min:3', 'max:30', 'unique:users,username', 'regex:/^[a-zA-Z0-9_]+$/'],
-            'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number'],
-            'email' => ['nullable', 'email', 'max:150', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:150', 'unique:users,email'],
+            'phone_number' => ['nullable', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number'],
             'role' => ['required', 'in:moderator,admin'],
             'password' => ['required', 'string', 'min:10', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
         ], [
             'phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
             'phone_number.unique' => 'Ce numéro est déjà utilisé.',
+            'email.unique' => 'Cette adresse e-mail est déjà utilisée.',
             'username.unique' => "Ce nom d'utilisateur est déjà pris.",
             'username.regex' => 'Lettres, chiffres et _ uniquement.',
             'password.regex' => 'Le mot de passe doit contenir une majuscule, une minuscule et un chiffre.',
@@ -74,10 +77,10 @@ class AdminStaffController extends Controller
 
         $user = new User();
         $user->fill([
-            'phone_number' => $validated['phone_number'],
+            'phone_number' => $validated['phone_number'] ?? null,
             'full_name' => $validated['full_name'],
             'username' => $validated['username'],
-            'email' => $validated['email'] ?? null,
+            'email' => $validated['email'],
             'password' => $validated['password'],
             'is_seller' => false,
             'is_buyer' => false,
@@ -85,7 +88,11 @@ class AdminStaffController extends Controller
             'onboarding_completed' => true,
         ]);
         // Champs privilégiés hors $fillable : posés explicitement.
-        $user->forceFill(['role' => $validated['role'], 'account_status' => 'active'])->save();
+        $user->forceFill([
+            'role' => $validated['role'],
+            'account_status' => 'active',
+            'email_verified_at' => now(), // créé par le super admin : adresse de confiance
+        ])->save();
 
         AdminLogger::log($request->user(), 'staff_created', 'User', $user->id, [
             'role' => $validated['role'], 'username' => $validated['username'],

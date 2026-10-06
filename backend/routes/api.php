@@ -46,11 +46,8 @@ use App\Http\Controllers\Api\V1\AdminBadgeController;
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:3,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
-    Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:5,1');
-    Route::post('resend-otp', [AuthController::class, 'resendOtp'])->middleware('throttle:3,1');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
-    Route::post('reset-password-email', [AuthController::class, 'resetPasswordByEmail'])->middleware('throttle:5,1');
 
     // Connexion / inscription via Google : route PUBLIQUE par définition.
     // (Avant ce correctif elle était déclarée à l'intérieur du groupe
@@ -118,19 +115,13 @@ Route::middleware('feature:follow')->group(function () {
     Route::get('users/{user}/follow-counts', [FollowController::class, 'counts']);
 });
 
-// Google auth — étapes post-connexion. Volontairement hors du groupe
-// "phone.verified" ci-dessous : ce sont justement les routes qui SERVENT à
-// sortir de l'état "non vérifié" (voir EnsurePhoneVerified pour le détail).
+// Google auth — choix du pseudo après la première connexion.
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('auth/google/add-phone', [GoogleAuthController::class, 'addPhone'])->middleware('throttle:5,1');
     Route::post('auth/google/update-username', [GoogleAuthController::class, 'updateUsername'])->middleware('throttle:10,1');
 });
 
-// ─── Authenticated + téléphone vérifié ────────────────────────────────────────
-// SEC-06 : avant ce correctif, seul le routeur Angular (authGuard) empêchait
-// un compte non vérifié d'atteindre ces routes — contournable par tout appel
-// direct à l'API. Voir EnsurePhoneVerified pour le détail et les exceptions.
-Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
+// ─── Authenticated ────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum'])->group(function () {
 
     // User profile
     Route::prefix('user')->group(function () {
@@ -140,8 +131,7 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::post('policies', [UserController::class, 'savePolicies']);
         Route::post('upload-avatar', [UserController::class, 'uploadAvatar']);
         Route::post('upload-cover', [UserController::class, 'uploadCover']);
-        Route::post('phone/request-change', [UserController::class, 'requestPhoneChange'])->middleware('throttle:5,1');
-        Route::post('phone/confirm-change', [UserController::class, 'confirmPhoneChange'])->middleware('throttle:5,1');
+        Route::put('phone', [UserController::class, 'updatePhone'])->middleware('throttle:10,1');
     });
 
     // Blocked users management

@@ -296,6 +296,14 @@
    SOUS-TEXTE
    ============================================================ */
 
+/* E-mail : identifiant principal des comptes, affiché en avant dans le back-office. */
+.adm-email {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--adm-text, inherit);
+  overflow-wrap: anywhere;
+}
+
 .adm-sub {
   position: relative;
   z-index: 2;

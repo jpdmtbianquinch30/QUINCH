@@ -47,8 +47,8 @@ import { errMsg, fmtMoney, statusClass } from '../shared/admin-utils';
         <dt>Montant</dt><dd>{{ money(d.transaction.amount) }} (commission {{ money(d.transaction.transaction_fee) }})</dd>
         <dt>Moyen</dt><dd>{{ d.transaction.payment_method }} · réf. {{ d.transaction.payment_gateway_id || '—' }}</dd>
         <dt>Produit</dt><dd>{{ d.transaction.product?.title }}</dd>
-        <dt>Acheteur</dt><dd><a [routerLink]="['../users']" [queryParams]="{ open: d.transaction.buyer_id }">{{ d.transaction.buyer?.full_name }}</a> · {{ d.transaction.buyer?.phone_number }}</dd>
-        <dt>Vendeur</dt><dd><a [routerLink]="['../users']" [queryParams]="{ open: d.transaction.seller_id }">{{ d.transaction.seller?.full_name }}</a> · {{ d.transaction.seller?.phone_number }}</dd>
+        <dt>Acheteur</dt><dd><a [routerLink]="['../users']" [queryParams]="{ open: d.transaction.buyer_id }">{{ d.transaction.buyer?.full_name }}</a> · {{ d.transaction.buyer?.email }}</dd>
+        <dt>Vendeur</dt><dd><a [routerLink]="['../users']" [queryParams]="{ open: d.transaction.seller_id }">{{ d.transaction.seller?.full_name }}</a> · {{ d.transaction.seller?.email }}</dd>
         <dt>Créée</dt><dd>{{ d.transaction.created_at | date:'dd/MM/yyyy HH:mm' }}</dd>
       </dl>
       @if (d.transaction.order_status === 'disputed') {

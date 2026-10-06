@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { HttpErrorResponse } from '@angular/common/http';
-import { User, AuthResponse, LoginRequest, RegisterRequest, ResendOtpResponse, VerifyOtpRequest } from '../models/user.model';
+import { User, AuthResponse, LoginRequest, RegisterRequest } from '../models/user.model';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -17,12 +17,6 @@ const TOKEN_ISSUED_AT_KEY = 'quinch_token_issued_at';
 export class AuthService {
   private currentUser = signal<User | null>(null);
   private token = signal<string | null>(null);
-  // Code OTP de démo (environnements local/testing uniquement, voir
-  // AuthController::register/resendOtp) : transite ici en mémoire le temps
-  // que l'écran /auth/verify-otp puisse l'afficher directement, sans quoi
-  // l'utilisateur n'a aucun moyen de voir son code sans cliquer "Renvoyer".
-  lastDemoOtp = signal<string | null>(null);
-
   user = this.currentUser.asReadonly();
   isAuthenticated = computed(() => !!this.token());
   // « Staff » = modérateur, admin ou super admin : tous accèdent au panneau (menus filtrés par permissions).
@@ -46,10 +40,7 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<AuthResponse> {
     return this.api.post<AuthResponse>('auth/register', data).pipe(
-      tap(res => {
-        this.handleAuth(res);
-        this.lastDemoOtp.set(res.demo_otp ?? null);
-      })
+      tap(res => this.handleAuth(res))
     );
   }
 
@@ -86,47 +77,19 @@ export class AuthService {
     this.router.navigate(['/auth/login']);
   }
 
-    /** Verify the OTP sent by SMS at registration. Does not issue a new
-   *  token (already set by register()) — just refreshes phone_verified. */
-  verifyOtp(data: VerifyOtpRequest): Observable<{ message: string; user: User }> {
-    return this.api.post<{ message: string; user: User }>('auth/verify-otp', data).pipe(
-      tap(res => {
-        this.currentUser.set(res.user);
-        localStorage.setItem(USER_KEY, JSON.stringify(res.user));
-        this.lastDemoOtp.set(null);
-      })
-    );
-  }
-
-  /** Ask the backend for a fresh OTP (the previous one expires after 10 min). */
-  resendOtp(phoneNumber: string): Observable<ResendOtpResponse> {
-    return this.api.post<ResendOtpResponse>('auth/resend-otp', { phone_number: phoneNumber }).pipe(
-      tap(res => this.lastDemoOtp.set(res.demo_otp ?? null))
-    );
-  }
-
   /** Force-clear auth state (used by error interceptor on 401) — no API call */
   forceLogout(): void {
     this.clearAuth();
     sessionStorage.removeItem('quinch_welcomed');
   }
 
-    forgotPassword(phoneNumber: string): Observable<any> {
-    return this.api.post('auth/forgot-password', { phone_number: phoneNumber });
+  /** Envoie un code de réinitialisation à l'adresse e-mail (réponse identique si elle est inconnue). */
+  forgotPassword(email: string): Observable<any> {
+    return this.api.post('auth/forgot-password', { email });
   }
 
-  resetPassword(phoneNumber: string, otp: string, password: string, passwordConfirmation: string): Observable<any> {
+  resetPassword(email: string, otp: string, password: string, passwordConfirmation: string): Observable<any> {
     return this.api.post('auth/reset-password', {
-      phone_number: phoneNumber,
-      otp,
-      password,
-      password_confirmation: passwordConfirmation,
-    });
-  }
-
-  resetPasswordByEmail(phoneNumber: string, email: string, otp: string, password: string, passwordConfirmation: string): Observable<any> {
-    return this.api.post('auth/reset-password-email', {
-      phone_number: phoneNumber,
       email,
       otp,
       password,
@@ -160,7 +123,7 @@ export class AuthService {
    * Installe la session issue d'une connexion Google.
    *
    * La réponse de `auth/google` n'a pas la même forme que `AuthResponse`
-   * (elle porte en plus `needs_phone` / `needs_username`), d'où ce point
+   * (elle porte en plus `needs_username`), d'où ce point
    * d'entrée dédié plutôt qu'un cast forcé vers `handleAuth`.
    */
   applyGoogleSession(token: string, user: User): void {
