@@ -12,6 +12,9 @@ export interface Badge {
   reason: string | null;
   awarded_at: string;
   expires_at: string | null;
+  zones?: string[];
+  description?: string;
+  source?: string;
 }
 
 @Injectable({ providedIn: 'root' })

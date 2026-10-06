@@ -99,10 +99,10 @@ type Dlg = { kind: 'product_report' | 'user_report' | 'ticket' | 'appeal' | 'fra
     @if (!loading() && tab() === 'appeals') {
       @for (a of appeals(); track a.id) {
         <div class="adm-card" style="margin-bottom:10px">
-          <div class="adm-row"><span class="adm-chip warn">Contestation {{ a.target_type === 'video' ? 'vidéo' : 'annonce' }}</span><span class="adm-sub" style="margin-left:auto">{{ a.created_at | date:'dd/MM HH:mm' }}</span></div>
+          <div class="adm-row"><span class="adm-chip warn">{{ appealLabel(a.target_type) }}</span><span class="adm-sub" style="margin-left:auto">{{ a.created_at | date:'dd/MM HH:mm' }}</span></div>
           <p><strong>{{ a.user?.full_name }}</strong> <span class="adm-sub">confiance {{ a.user?.trust_score }}</span></p>
           <p class="adm-muted">« {{ a.message }} »</p>
-          <p class="adm-sub">Motif du retrait : {{ a.target?.moderation_reason || '—' }}</p>
+          <p class="adm-sub">{{ appealContext(a) }}@if (a.concerned_admin) { · Décision prise par {{ a.concerned_admin.full_name }} }</p>
           <div class="adm-row"><button class="adm-btn sm primary" (click)="open('appeal', a)">Décider</button></div>
         </div>
       } @empty { <div class="adm-empty">Aucune contestation en attente.</div> }
@@ -160,8 +160,8 @@ type Dlg = { kind: 'product_report' | 'user_report' | 'ticket' | 'appeal' | 'fra
         }
         @case ('appeal') {
           <label class="adm-label">Décision</label>
-          <select class="adm-input" [(ngModel)]="status"><option value="accepted">Accepter (rétablir le contenu)</option><option value="rejected">Refuser</option></select>
-          <p class="adm-sub">Le texte ci-dessous est envoyé au vendeur.</p>
+          <select class="adm-input" [(ngModel)]="status"><option value="accepted">Accepter (rétablir / annuler la décision)</option><option value="rejected">Refuser</option></select>
+          <p class="adm-sub">Le texte ci-dessous est envoyé à l'utilisateur dans sa notification.</p>
         }
         @case ('fraud') {
           <label class="adm-label">Décision</label>
@@ -288,6 +288,16 @@ export class AdminInboxPage implements OnInit {
 
   reason = (r: string) => REASON_LABELS[r] ?? r;
   evidence = (f: any) => JSON.stringify(f.evidence, null, 1);
+  appealLabel(t: string) { return ({ video: 'Contestation vidéo', product: 'Contestation annonce', strike: 'Contestation avertissement', account: 'Contestation suspension', message: 'Réponse à un message' } as any)[t] ?? 'Contestation'; }
+  appealContext(a: any): string {
+    const t = a.target;
+    switch (a.target_type) {
+      case 'strike': return 'Motif de l\'avertissement : ' + (t?.reason || '—') + (t?.revoked_at ? ' (déjà retiré)' : '');
+      case 'account': return 'Compte : ' + (t?.account_status || '—') + (t?.suspension_reason ? ' · ' + t.suspension_reason : '');
+      case 'message': return 'Réponse à votre message envoyé à l\'utilisateur.';
+      default: return 'Motif du retrait : ' + (t?.moderation_reason || '—');
+    }
+  }
   typeLabel(t: string) { return ({ product_report: 'Annonce', user_report: 'Utilisateur', ticket: 'Ticket', dispute: 'Litige', fraud: 'Fraude', appeal: 'Contestation' } as any)[t] ?? t; }
   dialogTitle(k: string) { return ({ product_report: 'Traiter le signalement', user_report: 'Traiter le signalement', ticket: 'Répondre au ticket', appeal: 'Décision sur la contestation', fraud: "Décision sur l'alerte" } as any)[k]; }
   money = fmtMoney;

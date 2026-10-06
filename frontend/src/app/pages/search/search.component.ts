@@ -1,4 +1,5 @@
 import { Component, inject, signal, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Router } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +11,7 @@ import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-search',
   standalone: true,
-  imports: [FormsModule, DecimalPipe],
+  imports: [UserBadgesComponent, FormsModule, DecimalPipe],
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })

@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DecimalPipe, Location } from '@angular/common';
@@ -17,7 +18,7 @@ import { Product } from '../../core/models/product.model';
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [UserBadgesComponent, DecimalPipe, FormsModule, RouterLink],
   templateUrl: './product-detail.component.html',
   styleUrl: './product-detail.component.scss',
 })

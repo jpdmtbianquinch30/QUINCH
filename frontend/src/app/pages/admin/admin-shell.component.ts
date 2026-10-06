@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { Location } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { AdminService } from '../../core/services/admin.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ConfirmService } from '../../shared/confirm/confirm.service';
 import { ROLE_LABELS } from './shared/admin-utils';
 
 interface NavItem { path: string; label: string; icon: string; perms: string[]; badge?: () => number; }
@@ -47,10 +48,15 @@ interface NavGroup { title: string; items: NavItem[]; }
           <div class="ad-me"><span class="material-icons">account_circle</span>
             <div><strong>{{ me.user.full_name }}</strong><small>{{ roleLabel() }}</small></div></div>
         }
+        <a class="ad-switch" routerLink="/feed" title="Quitter l'administration et ouvrir le site comme un utilisateur">
+          <span class="material-icons">storefront</span>
+          <span><strong>Voir le site</strong><small>Mode utilisateur (votre compte reste connecté)</small></span>
+          <span class="material-icons">arrow_forward</span>
+        </a>
         <div class="ad-foot-btns">
           <button type="button" (click)="theme.toggle()" [attr.aria-label]="theme.lightMode() ? 'Mode sombre' : 'Mode clair'">
             <span class="material-icons">{{ theme.lightMode() ? 'dark_mode' : 'light_mode' }}</span></button>
-          <button type="button" (click)="goApp()"><span class="material-icons">storefront</span> Retour au site</button>
+          <button type="button" class="logout" (click)="logout()"><span class="material-icons">logout</span> Se déconnecter</button>
         </div>
       </div>
     </aside>
@@ -61,6 +67,7 @@ interface NavGroup { title: string; items: NavItem[]; }
       <header class="ad-top">
         <button class="ad-burger" type="button" (click)="drawer.set(!drawer())" aria-label="Menu"><span class="material-icons">menu</span></button>
         <h1>{{ title() }}</h1>
+        <a class="ad-site-btn" routerLink="/feed" aria-label="Voir le site comme un utilisateur"><span class="material-icons">storefront</span><span class="ad-site-lbl">Site</span></a>
         <span class="ad-pending" [class.zero]="pendingTotal() === 0"><i></i>{{ pendingTotal() }} à traiter</span>
       </header>
 
@@ -98,6 +105,13 @@ interface NavGroup { title: string; items: NavItem[]; }
       .material-icons { font-size: 32px; color: var(--q-text-muted); }
       strong { display: block; font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       small { color: var(--q-text-muted); font-size: .72rem; } div { min-width: 0; } }
+    .ad-switch { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 13px; text-decoration: none; color: var(--q-text-primary);
+      border: 1px dashed color-mix(in srgb, var(--q-accent) 60%, transparent); background: color-mix(in srgb, var(--q-accent) 9%, transparent);
+      > span:nth-child(2) { flex: 1; min-width: 0; } strong { display: block; font-size: .84rem; } small { display: block; color: var(--q-text-muted); font-size: .68rem; line-height: 1.25; }
+      .material-icons { font-size: 20px; color: var(--q-accent); } &:hover { background: color-mix(in srgb, var(--q-accent) 16%, transparent); } }
+    .ad-site-btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; text-decoration: none; font-size: .76rem; font-weight: 800;
+      color: var(--q-text-primary); background: var(--q-bg-card); border: 1px solid var(--q-border); .material-icons { font-size: 18px; color: var(--q-accent); } &:hover { border-color: var(--q-accent); } }
+    @media (max-width: 480px) { .ad-site-lbl { display: none; } .ad-site-btn { padding: 0 9px; } }
     .ad-foot-btns { display: flex; gap: 8px;
       button { display: flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 11px; cursor: pointer;
         background: var(--q-bg-card); border: 1px solid var(--q-border); color: var(--q-text-secondary); font: inherit; font-size: .78rem; font-weight: 700;
@@ -138,7 +152,8 @@ export class AdminShellComponent implements OnInit, OnDestroy {
   admin = inject(AdminService);
   theme = inject(ThemeService);
   private router = inject(Router);
-  private location = inject(Location);
+  private confirm = inject(ConfirmService);
+  private auth = inject(AuthService);
 
   counts = signal({ inbox: 0, moderation: 0 });
   drawer = signal(false);
@@ -162,6 +177,7 @@ export class AdminShellComponent implements OnInit, OnDestroy {
       { path: 'categories', label: 'Catégories', icon: 'category', perms: ['categories.manage'] },
     ] },
     { title: 'Communauté', items: [
+      { path: 'badges', label: 'Badges', icon: 'military_tech', perms: ['badges.manage'] },
       { path: 'users', label: 'Utilisateurs', icon: 'group', perms: ['users.view'] },
       { path: 'notifications', label: 'Annonces & push', icon: 'campaign', perms: ['notifications.broadcast'] },
       { path: 'team', label: 'Équipe & Premium', icon: 'badge', perms: ['staff.manage', 'premium.manage', 'reviews.moderate'] },
@@ -206,7 +222,13 @@ export class AdminShellComponent implements OnInit, OnDestroy {
     });
   }
 
-  goApp() {
-    if (window.history.length > 1) this.location.back(); else this.router.navigate(['/feed']);
+  async logout() {
+    const r = await this.confirm.ask({
+      title: 'Se déconnecter ?',
+      message: "Vous quitterez l'administration et devrez vous reconnecter avec votre mot de passe.",
+      confirmLabel: 'Se déconnecter',
+      icon: 'logout',
+    });
+    if (r.confirmed) this.auth.logout();
   }
 }

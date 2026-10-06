@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\AdminStaffController;
 use App\Http\Controllers\Api\V1\AdminPremiumController;
 use App\Http\Controllers\Api\V1\AdminReviewController;
 use App\Http\Controllers\Api\V1\ModerationAppealController;
+use App\Http\Controllers\Api\V1\AdminBadgeController;
 /*
 |--------------------------------------------------------------------------
 | QUINCH API Routes v1 - Complete Architecture
@@ -64,6 +65,7 @@ Route::prefix('auth')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
         Route::put('change-password', [AuthController::class, 'changePassword']);
         Route::delete('delete-account', [AuthController::class, 'deleteAccount']);
+        Route::post('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:5,1');
     });
 });
 
@@ -216,7 +218,10 @@ Route::middleware(['auth:sanctum', 'phone.verified'])->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::get('unread-count', [NotificationController::class, 'unreadCount']);
         Route::get('announcements', [NotificationController::class, 'announcements']);
+        Route::get('{notification}', [NotificationController::class, 'show'])->whereUuid('notification');
         Route::post('{notification}/read', [NotificationController::class, 'markRead']);
+        Route::post('{notification}/unread', [NotificationController::class, 'markUnread'])->whereUuid('notification');
+        Route::post('{notification}/contest', [NotificationController::class, 'contest'])->middleware('throttle:5,1')->whereUuid('notification');
         Route::post('read-all', [NotificationController::class, 'markAllRead']);
         Route::delete('{notification}', [NotificationController::class, 'destroy']);
         Route::get('preferences', [NotificationController::class, 'getPreferences']);
@@ -323,8 +328,18 @@ Route::prefix('admin')
         Route::post('users/{user}/badges', [BadgeController::class, 'award'])->middleware('permission:users.badges');
         Route::delete('users/{user}/badges/{badgeType}', [BadgeController::class, 'revoke'])->middleware('permission:users.badges');
 
+        // Catalogue de badges (création, règles automatiques, zones d'affichage)
+        Route::get('badges', [AdminBadgeController::class, 'index'])->middleware('permission:badges.manage');
+        Route::post('badges', [AdminBadgeController::class, 'store'])->middleware('permission:badges.manage');
+        Route::post('badges/sync', [AdminBadgeController::class, 'sync'])->middleware('permission:badges.manage');
+        Route::put('badges/{badge}', [AdminBadgeController::class, 'update'])->middleware('permission:badges.manage');
+        Route::delete('badges/{badge}', [AdminBadgeController::class, 'destroy'])->middleware('permission:badges.manage');
+        Route::get('badges/{badge}/holders', [AdminBadgeController::class, 'holders'])->middleware('permission:badges.manage');
+
         // Équipe
         Route::get('staff', [AdminStaffController::class, 'index'])->middleware('permission:staff.manage');
+        Route::post('staff', [AdminStaffController::class, 'store'])->middleware(['permission:staff.manage', 'sensitive']);
+        Route::post('staff/{user}/password', [AdminStaffController::class, 'resetPassword'])->middleware(['permission:staff.manage', 'sensitive']);
 
         // ── Produits ──
         Route::get('products', [AdminProductController::class, 'index'])->middleware('permission:products.view');

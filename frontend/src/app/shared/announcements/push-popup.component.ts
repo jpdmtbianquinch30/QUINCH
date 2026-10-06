@@ -1,6 +1,6 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { NotificationService, Announcement } from '../../core/services/notification.service';
+import { NotificationService, Announcement, resolveTeamNotificationUrl } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 
 const SEEN_KEY = 'quinch_pushed_ids';
@@ -82,7 +82,7 @@ export class PushPopupComponent {
   open(a: Announcement) {
     clearTimeout(this.timer);
     this.current.set(null);
-    const url = a.action_url || (a.type === 'welcome' ? '/profile/edit' : '/guide/index.html');
+    const url = resolveTeamNotificationUrl(a) || a.action_url || (a.type === 'welcome' ? '/profile/edit' : '/guide/index.html');
     if (url.startsWith('/guide')) { window.location.assign(url); return; }
     if (url.startsWith('/') && !url.startsWith('//')) this.router.navigateByUrl(url);
   }

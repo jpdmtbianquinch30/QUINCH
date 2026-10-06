@@ -117,7 +117,7 @@ export class AdminService {
   setRole(id: string, role: string, reason: string, admin_password: string) { return this.api.post(`admin/users/${id}/role`, { role, reason, admin_password }); }
   verifyKyc(id: string, status: string, reason?: string) { return this.api.post(`admin/users/${id}/verify-kyc`, { status, reason }); }
   adjustTrust(id: string, score: number, reason: string) { return this.api.post(`admin/users/${id}/adjust-trust`, { score, reason }); }
-  sendNotification(id: string, title: string, body: string) { return this.api.post(`admin/users/${id}/send-notification`, { title, body }); }
+  sendNotification(id: string, title: string, body: string, allow_reply = false) { return this.api.post(`admin/users/${id}/send-notification`, { title, body, allow_reply }); }
   awardBadge(id: string, badge_type: string, reason?: string) { return this.api.post(`admin/users/${id}/badges`, { badge_type, reason }); }
   revokeBadge(id: string, badgeType: string) { return this.api.delete(`admin/users/${id}/badges/${badgeType}`); }
   grantPremium(id: string, days: number, reason: string) { return this.api.post(`admin/users/${id}/premium/grant`, { days, reason }); }
@@ -170,6 +170,16 @@ export class AdminService {
 
   // ── Équipe, Premium, avis ──
   getStaff() { return this.api.get<any>('admin/staff'); }
+  createStaff(body: any, admin_password: string) { return this.api.post<any>('admin/staff', { ...body, admin_password }); }
+  resetStaffPassword(id: string, password: string, admin_password: string) { return this.api.post(`admin/staff/${id}/password`, { password, admin_password }); }
+
+  // ── Badges (catalogue admin) ──
+  getBadgeCatalog() { return this.api.get<any>('admin/badges'); }
+  createBadge(body: any) { return this.api.post<any>('admin/badges', body); }
+  updateBadge(id: string, body: any) { return this.api.put<any>(`admin/badges/${id}`, body); }
+  deleteBadge(id: string) { return this.api.delete(`admin/badges/${id}`); }
+  syncBadges() { return this.api.post<any>('admin/badges/sync'); }
+  getBadgeHolders(id: string, page = 1) { return this.api.get<any>(`admin/badges/${id}/holders`, { page }); }
   getPremium(params: Record<string, any> = {}) { return this.api.get<any>('admin/premium', params); }
   getReviews(params: Record<string, any> = {}) { return this.api.get<any>('admin/reviews', params); }
   deleteReview(id: string, reason: string) { return this.api.post(`admin/reviews/${id}/delete`, { reason }); }

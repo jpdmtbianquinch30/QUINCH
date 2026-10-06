@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\BadgeDefinition;
 use App\Models\UserBadge;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -12,40 +13,40 @@ class BadgeController extends Controller
 {
     public function myBadges(Request $request): JsonResponse
     {
-        $badges = UserBadge::where('user_id', $request->user()->id)->active()
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn ($b) => $this->enrichBadge($b));
+        $badges = $this->visibleBadges($request->user()->id);
 
         return response()->json(['badges' => $badges]);
     }
 
     public function userBadges(User $user): JsonResponse
     {
-        $badges = UserBadge::where('user_id', $user->id)->active()
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn ($b) => $this->enrichBadge($b));
+        $badges = $this->visibleBadges($user->id);
 
         return response()->json(['badges' => $badges]);
     }
 
     public function allBadgeDefinitions(): JsonResponse
     {
-        return response()->json(['badges' => UserBadge::badgeDefinitions()]);
+        // Liste publique des badges ACTIFS (utilisée par le guide) — format stable.
+        $list = collect(BadgeDefinition::allByKey())
+            ->filter(fn ($d) => $d['is_active'] ?? false)
+            ->map(fn ($d) => collect($d)->except(['is_active'])->all())
+            ->values();
+
+        return response()->json(['badges' => $list]);
     }
 
     // Admin: award badge
     public function award(Request $request, User $user): JsonResponse
     {
         $validated = $request->validate([
-            'badge_type' => 'required|string|max:50',
+            'badge_type' => 'required|string|max:50|exists:badge_definitions,key',
             'reason' => 'nullable|string|max:500',
         ]);
 
         $badge = UserBadge::updateOrCreate(
             ['user_id' => $user->id, 'badge_type' => $validated['badge_type']],
-            ['awarded_by' => $request->user()->id, 'reason' => $validated['reason'] ?? null]
+            ['awarded_by' => $request->user()->id, 'reason' => $validated['reason'] ?? null, 'source' => 'manual']
         );
 
         return response()->json(['badge' => $this->enrichBadge($badge), 'message' => 'Badge attribué.']);
@@ -117,9 +118,15 @@ class BadgeController extends Controller
             'reason' => 'nullable|string|max:300',
         ]);
 
+        // Le badge « Client Fidèle » doit exister, être actif et autorisé aux vendeurs (réglage admin).
+        $def = BadgeDefinition::where('key', 'loyal_customer')->where('is_active', true)->where('sellers_can_award', true)->first();
+        if (!$def) {
+            return response()->json(['message' => "Ce badge n'est pas disponible actuellement."], 403);
+        }
+
         $badge = UserBadge::updateOrCreate(
             ['user_id' => $user->id, 'badge_type' => 'loyal_customer'],
-            ['awarded_by' => $seller->id, 'reason' => $validated['reason'] ?? null]
+            ['awarded_by' => $seller->id, 'reason' => $validated['reason'] ?? null, 'source' => 'manual']
         );
 
         return response()->json(['badge' => $this->enrichBadge($badge), 'message' => 'Badge Client Fidèle attribué.']);
@@ -139,10 +146,21 @@ class BadgeController extends Controller
         return response()->json(['message' => 'Badge retiré.']);
     }
 
-    private function enrichBadge(UserBadge $badge): array
+    /** Badges actifs d'un utilisateur, uniquement ceux dont la définition admin est active. */
+    private function visibleBadges(string $userId)
     {
         $defs = UserBadge::badgeDefinitions();
-        $def = $defs[$badge->badge_type] ?? ['name' => $badge->badge_type, 'icon' => 'stars', 'color' => '#666'];
+
+        return UserBadge::where('user_id', $userId)->whereIn('badge_type', array_keys($defs))->active()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn ($b) => $this->enrichBadge($b));
+    }
+
+    private function enrichBadge(UserBadge $badge): array
+    {
+        $def = UserBadge::badgeDefinitions()[$badge->badge_type]
+            ?? (BadgeDefinition::allByKey()[$badge->badge_type] ?? ['name' => $badge->badge_type, 'icon' => 'stars', 'color' => '#666']);
 
         return [
             'id' => $badge->id,
@@ -150,8 +168,11 @@ class BadgeController extends Controller
             'name' => $def['name'],
             'icon' => $def['icon'],
             'color' => $def['color'],
+            'description' => $def['description'] ?? '',
+            'zones' => $def['zones'] ?? [],
             'level' => $badge->badge_level,
             'reason' => $badge->reason,
+            'source' => $badge->source,
             'awarded_at' => $badge->created_at,
             'expires_at' => $badge->expires_at,
         ];

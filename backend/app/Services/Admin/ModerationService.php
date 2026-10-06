@@ -77,7 +77,13 @@ class ModerationService
             $status === 'rejected' ? 'Votre vidéo a été retirée' : 'Votre vidéo est en cours de vérification',
             ($status === 'rejected'
                 ? "Motif : {$reason}. Si vous pensez qu'il s'agit d'une erreur, vous pouvez contester cette décision."
-                : "Elle n'est plus visible le temps de la vérification. Motif : {$reason}")
+                : "Elle n'est plus visible le temps de la vérification. Motif : {$reason}"),
+            null,
+            [
+                'kind' => $status === 'rejected' ? 'video_removed' : 'video_review',
+                'concerned_admin_id' => $by?->id,
+                'contest' => ['target_type' => 'video', 'target_id' => $video->id],
+            ]
         );
     }
 
@@ -117,7 +123,7 @@ class ModerationService
         ]);
 
         if ($wasRemoved) {
-            $this->notifySeller($video->user_id, 'Votre vidéo a été rétablie', 'Après réexamen, votre vidéo est de nouveau visible.');
+            $this->notifySeller($video->user_id, 'Votre vidéo a été rétablie', 'Après réexamen, votre vidéo est de nouveau visible.', null, ['kind' => 'video_restored']);
         }
     }
 
@@ -139,7 +145,9 @@ class ModerationService
             $this->notifySeller(
                 $product->user_id,
                 'Votre annonce a été masquée',
-                "« " . mb_substr((string) $product->title, 0, 50) . " » n'est plus visible. Motif : {$reason}"
+                "« " . mb_substr((string) $product->title, 0, 50) . " » n'est plus visible. Motif : {$reason}",
+                null,
+                ['kind' => 'product_hidden', 'concerned_admin_id' => $by?->id, 'contest' => ['target_type' => 'product', 'target_id' => $product->id]]
             );
         }
     }
@@ -159,7 +167,9 @@ class ModerationService
         $this->notifySeller(
             $product->user_id,
             'Votre annonce est de nouveau en ligne',
-            "« " . mb_substr((string) $product->title, 0, 50) . " » a été réactivée par la modération."
+            "« " . mb_substr((string) $product->title, 0, 50) . " » a été réactivée par la modération.",
+            null,
+            ['kind' => 'product_restored']
         );
     }
 
@@ -180,14 +190,16 @@ class ModerationService
         $this->notifySeller(
             $product->user_id,
             'Votre annonce a été supprimée',
-            "« " . mb_substr((string) $product->title, 0, 50) . " » a été supprimée par la modération. Motif : {$reason}"
+            "« " . mb_substr((string) $product->title, 0, 50) . " » a été supprimée par la modération. Motif : {$reason}",
+            null,
+            ['kind' => 'product_deleted', 'concerned_admin_id' => $by?->id, 'contest' => ['target_type' => 'product', 'target_id' => $product->id]]
         );
     }
 
-    public function notifySeller(string $userId, string $title, string $body, string $url = '/profile'): void
+    public function notifySeller(string $userId, string $title, string $body, ?string $url = null, array $meta = []): void
     {
         try {
-            $this->notif->notifyAdmin($userId, $title, $body, $url);
+            $this->notif->notifyAdmin($userId, $title, $body, $url, $meta);
         } catch (\Throwable $e) {
             logger()->warning('Notification de modération échouée: ' . $e->getMessage());
         }

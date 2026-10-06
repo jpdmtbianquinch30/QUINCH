@@ -94,14 +94,7 @@
                 <div class="conv-top">
                   <span class="conv-name">
                     {{ conv.other_user.full_name || 'Utilisateur' }}
-                    <span class="user-badges-row">
-                      @if (conv.other_user.is_premium) {
-                        <span class="material-icons badge-chip badge-premium" title="Premium">workspace_premium</span>
-                      }
-                      @for (b of conv.other_user.badges; track b.type) {
-                        <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-                      }
-                    </span>
+                    <app-user-badges [badges]="conv.other_user.badges" zone="messages" [max]="4" />
                   </span>
                   <span class="conv-time">{{ formatTime(conv.last_message_at) }}</span>
                 </div>
@@ -140,7 +133,7 @@
             <button class="back-btn" (click)="goBack()">
               <span class="material-icons">arrow_back</span>
             </button>
-            <div class="chat-header-user" (click)="viewProfile()">
+            <div class="chat-header-user" (click)="viewProfile()" (keydown.enter)="viewProfile()" role="link" tabindex="0" [attr.aria-label]="'Voir le profil de ' + (selectedConv()?.other_user?.full_name || 'l\'utilisateur')">
               <div class="chat-avatar">
                 @if (selectedConv()?.other_user?.avatar_url) {
                   <img [src]="selectedConv()?.other_user?.avatar_url" alt="" class="chat-avatar-img" />
@@ -152,14 +145,7 @@
               <div class="chat-user-info">
                 <h3>
                   {{ selectedConv()?.other_user?.full_name }}
-                  <span class="user-badges-row">
-                    @if (selectedConv()?.other_user?.is_premium) {
-                      <span class="material-icons badge-chip badge-premium" title="Premium">workspace_premium</span>
-                    }
-                    @for (b of selectedConv()?.other_user?.badges; track b.type) {
-                      <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-                    }
-                  </span>
+                  <app-user-badges [badges]="selectedConv()?.other_user?.badges" zone="messages" [max]="4" />
                 </h3>
                 <span class="chat-status">
                   @if (selectedConv()?.other_user?.is_online) {

@@ -1422,3 +1422,8 @@
     color: #986207
 }
 /* LIGHT-AUTO:END */
+
+.team-line { display: flex; align-items: center; gap: 6px; margin: 2px 0 3px; font-size: .72rem; font-weight: 700; color: var(--q-blue-light, #8190ff); }
+.team-logo { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
+.team-chip { padding: 1px 8px; border-radius: 999px; font-size: .66rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, .14); border: 1px solid rgba(245, 158, 11, .3); }
+.notif-toggle .material-icons { font-size: 18px; }

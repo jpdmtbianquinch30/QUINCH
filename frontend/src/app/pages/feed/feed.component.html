@@ -179,6 +179,9 @@
                   <span class="card-price">{{ product.formatted_price || (product.price | number:'1.0-0') + ' F' }}</span>
                 </div>
                 <div class="card-title">{{ product.title }}</div>
+                @if (product.seller?.badges?.length) {
+                  <div class="card-seller-badges"><app-user-badges [badges]="product.seller?.badges" zone="feed" [max]="4" /></div>
+                }
               </div>
             }
           </div>

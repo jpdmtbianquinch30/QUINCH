@@ -364,7 +364,9 @@ class AdminProductController extends Controller
         $this->moderation->notifySeller(
             $p->user_id,
             'Un média de votre annonce a été modifié',
-            "« " . mb_substr((string) $p->title, 0, 50) . " » : un visuel a été " . ($action === 'media_removed' ? 'retiré' : 'remplacé') . ". Motif : {$validated['reason']}"
+            "« " . mb_substr((string) $p->title, 0, 50) . " » : un visuel a été " . ($action === 'media_removed' ? 'retiré' : 'remplacé') . ". Motif : {$validated['reason']}",
+            null,
+            ['kind' => 'product_hidden', 'concerned_admin_id' => $request->user()->id, 'contest' => ['target_type' => 'product', 'target_id' => $p->id]]
         );
     }
 }

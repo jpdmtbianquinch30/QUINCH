@@ -33,6 +33,7 @@ $admin = array_merge($moderator, [
     'users.kyc',
     'users.trust',
     'users.badges',
+    'badges.manage',           // créer / configurer les badges, règles automatiques
     'users.notify',
     'users.delete',
     'users.export',

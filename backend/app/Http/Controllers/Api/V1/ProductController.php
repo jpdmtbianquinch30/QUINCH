@@ -398,13 +398,7 @@ class ProductController extends Controller
             $isSaved = \App\Models\FavoriteItem::where('user_id', $authUser->id)->where('product_id', $product->id)->exists();
         }
 
-        $badges = UserBadge::where('user_id', $product->user->id)->active()->get()->map(fn ($b) => [
-            'type' => $b->badge_type,
-            'name' => UserBadge::badgeDefinitions()[$b->badge_type]['name'] ?? $b->badge_type,
-            'icon' => UserBadge::badgeDefinitions()[$b->badge_type]['icon'] ?? 'stars',
-            'color' => UserBadge::badgeDefinitions()[$b->badge_type]['color'] ?? '#666',
-            'description' => UserBadge::badgeDefinitions()[$b->badge_type]['description'] ?? '',
-        ]);
+        $badges = UserBadge::summaryFor($product->user->id);
 
         return response()->json([
             'product' => $product,

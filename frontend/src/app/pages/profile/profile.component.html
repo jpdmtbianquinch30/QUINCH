@@ -65,13 +65,12 @@
             </a>
           }
           <div class="hero-meta">
+            <app-user-badges [badges]="badges().length ? badges() : user()!.badges" zone="profile" [max]="4" />
             @if (user()!.city) {
               <span class="meta-pill"><span class="material-icons">location_on</span> {{ user()!.city }}, {{ user()!.region }}</span>
             }
            @if (auth.isAdmin()) {
               <span class="q-badge q-badge-warning">ADMIN</span>
-            } @else if (user()!.is_premium) {
-              <span class="q-badge q-badge-premium"><span class="material-icons">workspace_premium</span> Premium</span>
             } @else if (user()!.kyc_status === 'verified') {
               <span class="q-badge q-badge-accent">Vérifié</span>
             }
@@ -122,10 +121,12 @@
           <h3><span class="material-icons">military_tech</span> Badges</h3>
           <div class="badges-list">
             @for (badge of badges(); track badge.type) {
+              @if (badge.zones?.includes('profile') ?? true) {
               <div class="badge-item" [style.background]="badge.color + '18'" [style.border-color]="badge.color + '44'">
                 <span class="material-icons" [style.color]="badge.color">{{ badge.icon }}</span>
                 <span>{{ badge.name }}</span>
               </div>
+              }
             }
           </div>
         </div>

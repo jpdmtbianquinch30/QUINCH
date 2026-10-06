@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { ProductService } from '../../core/services/product.service';
@@ -14,7 +15,7 @@ export type FeedSort = 'foryou' | 'recent' | 'popular' | 'day' | 'following';
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, AnnouncementsComponent],
+  imports: [UserBadgesComponent, RouterLink, DecimalPipe, AnnouncementsComponent],
   templateUrl: './feed.component.html',
   styleUrl: './feed.component.scss',
 })

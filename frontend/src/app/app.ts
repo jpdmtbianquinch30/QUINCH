@@ -7,12 +7,13 @@ import { FavoriteService } from './core/services/favorite.service';
 import { ThemeService } from './core/services/theme.service';
 import { ToastComponent } from './shared/toast/toast.component';
 import { PushPopupComponent } from './shared/announcements/push-popup.component';
+import { ConfirmDialogComponent } from './shared/confirm/confirm-dialog.component';
 import { filter, map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, PushPopupComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastComponent, PushPopupComponent, ConfirmDialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -78,6 +79,12 @@ export class App implements OnInit, OnDestroy {
     // navigation visible) — seul /videos reprend le plein écran immersif
     // que /feed avait avant le redesign.
     return url.startsWith('/videos') || url.startsWith('/messages');
+  });
+
+  /** Libellé du rôle sous le nom (sidebar) : modérateur, administrateur, super admin ou membre. */
+  staffRoleLabel = computed(() => {
+    const labels: Record<string, string> = { moderator: 'Modérateur', admin: 'Administrateur', super_admin: 'Super admin' };
+    return labels[this.auth.user()?.role ?? ''] ?? 'Membre';
   });
 
   isPremiumActive = computed(() => {

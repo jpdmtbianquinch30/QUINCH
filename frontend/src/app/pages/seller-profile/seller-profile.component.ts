@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +15,7 @@ type SellerTab = 'products' | 'reviews' | 'about' | 'policies';
 @Component({
   selector: 'app-seller-profile',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, DatePipe, FormsModule],
+  imports: [UserBadgesComponent, RouterLink, DecimalPipe, DatePipe, FormsModule],
   templateUrl: './seller-profile.component.html',
   styleUrl: './seller-profile.component.scss',
 })

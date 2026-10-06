@@ -14,6 +14,9 @@
 - [Sécurité — correctifs de septembre 2026](#sécurité--correctifs-de-septembre-2026)
 - [Paiement — mode simulation](#paiement--mode-simulation-développement)
 - [Feature flags](#feature-flags)
+- [Rôles, modérateurs et admins](#rôles-modérateurs-et-admins)
+- [Badges — la logique complète](#badges--la-logique-complète)
+- [Messages de l'équipe et contestations](#messages-de-léquipe-et-contestations)
 - [Fonctionnalités par domaine](#fonctionnalités-par-domaine)
 - [Décisions d'architecture à connaître](#décisions-darchitecture-à-connaître)
 - [Tâches planifiées (jobs)](#tâches-planifiées-jobs)
@@ -253,6 +256,68 @@ Une route désactivée répond `404` (`EnsureFeatureEnabled` middleware) plutôt
 
 ---
 
+## Rôles, modérateurs et admins
+
+Quatre niveaux (config : `backend/config/permissions.php`) : `user` (0) < `moderator` (1) < `admin` (2) < `super_admin` (3). **On ne peut agir que sur un rôle strictement inférieur au sien**, jamais sur soi-même.
+
+| Rôle | Ce qu'il fait | Ce qu'il ne peut pas faire |
+|---|---|---|
+| **Modérateur** | Traite la boîte « À traiter » : signalements, tickets, contestations ; modère vidéos et annonces (masquer, rétablir, supprimer en « suppression douce », corriger un titre, retirer un visuel) ; avertit un utilisateur ; suspend **7 jours maximum** | Bannir, supprimer un compte, changer un rôle, toucher aux finances, créer des badges, diffuser des annonces de masse |
+| **Admin** | Tout ce que fait un modérateur + suspensions longues, bannissement, KYC, score de confiance, badges (attribution **et création**), notifications individuelles et de masse, catégories, bannières du feed, Premium offert/retiré, modération des avis, journaux d'audit, lecture finances | Changer les rôles, créer des comptes staff, réglages système, bannir une IP, trancher un litige |
+| **Super admin** | Tout (`*`) + **créer les comptes modérateur / admin**, changer les rôles, réinitialiser le mot de passe d'un membre du staff, réglages système (maintenance, interrupteurs), bannir des IP, trancher les litiges | — |
+
+**Créer un compte staff** : Admin → *Communauté → Équipe & Premium* → onglet **Équipe** → « Créer un modérateur » / « Créer un administrateur » (API : `POST /api/v1/admin/staff`, réservé au super admin, mot de passe du super admin exigé). Le compte est actif immédiatement (pas de SMS), il se connecte avec son **numéro +221…** et le mot de passe choisi (10 caractères min., majuscule + minuscule + chiffre). Transmettez-le par un canal sûr. Le rôle `super_admin` ne se crée **jamais** par l'API : uniquement `php artisan quinch:set-role`.
+
+**Passer du site à l'admin** : barre latérale du site → « Administration » (visible pour tout le staff) ; dans l'admin → carte « Voir le site » (ou bouton « Site » en haut) pour ouvrir le site comme un utilisateur sans se déconnecter. Le bouton « Se déconnecter » demande une confirmation.
+
+Sécurité : jeton staff court (8 h), mot de passe de confirmation sur les actions sensibles, journal d'audit de chaque action (`admin_action_logs`).
+
+---
+
+## Badges — la logique complète
+
+**Source unique : les badges créés dans l'admin** (*Communauté → Badges*, table `badge_definitions`). Aucun badge n'est ajouté « en dur » dans le code front : l'ancien badge Premium doré automatique a été supprimé ; Premium est maintenant un badge admin **branché** sur la règle « abonnement Premium actif ».
+
+Un badge, c'est :
+- une **définition** (admin) : nom, identifiant technique, icône (Material Icons), couleur, description, « comment l'obtenir » (affiché dans le guide), ordre, actif / désactivé ;
+- des **zones d'affichage** (cochées par l'admin) : `feed` (accueil), `explorer`, `video_feed`, `product_detail`, `seller_profile`, `messages`, `search`, `notifications`, `rankings`, `profile` ;
+- une **attribution** = une ligne de `user_badges` (utilisateur + badge). Sa colonne `source` vaut `manual` (donné par un humain) ou `auto` (posé par le système).
+
+**Deux façons d'obtenir un badge**
+1. **Manuel** : fiche utilisateur (admin) → *Badge*. Le badge « Client Fidèle » peut en plus être donné par un **vendeur** à un client qui a vraiment acheté chez lui, si l'admin coche « Les vendeurs peuvent l'attribuer ».
+2. **Automatique** (« brancher » le badge) — règles disponibles :
+
+| Règle | Condition pour avoir le badge |
+|---|---|
+| `premium` | Abonnement Premium actif (`is_premium` et date d'expiration future) |
+| `kyc_verified` | Identité vérifiée (KYC) |
+| `sales_completed` + seuil | Au moins N ventes finalisées (paiement `completed`) |
+| `account_age_days` + seuil | Compte créé depuis au moins N jours |
+| `trust_score` + seuil (en %) | Score de confiance ≥ N % |
+
+Le système (`App\Services\BadgeService`) ajoute le badge à ceux qui le méritent et le **retire** à ceux qui ne le méritent plus (uniquement les badges `auto` ; les badges `manual` ne sont jamais retirés). Premium et KYC sont recalculés **immédiatement** quand le compte change ; le reste chaque heure (`quinch:sync-badges`) ou à la demande (bouton « Recalculer »). Changer la règle d'un badge efface ses anciennes attributions automatiques puis recalcule.
+
+**Badges d'origine** (recréés par la migration, désactivables mais non supprimables) : Vérifié (KYC), Premium (Premium actif), Top Vendeur, Livraison Express, Client Fidèle (vendeurs), Reviewer Actif, Première Vente (1 vente), 100 Ventes, Ambassadeur (manuels), 1 an sur QUINCH (365 jours).
+
+**Affichage côté front** : un seul composant `<app-user-badges [badges]="x.badges" zone="messages" />` ; il ne montre que les badges dont les zones contiennent la zone courante. L'API renvoie pour chaque badge `{type, name, icon, color, description, zones}`. Le guide public (`/guide/index.html#badges`) liste les badges **en direct** depuis `GET /api/v1/badges/definitions` (nom, comment l'obtenir, où il s'affiche).
+
+---
+
+## Messages de l'équipe et contestations
+
+Toute décision de l'équipe (avertissement, suspension, vidéo retirée, annonce masquée/supprimée, résultat de contestation, réponse de ticket, litige, avis retiré, Premium retiré/offert, KYC…) crée une notification `type = admin` dont `data` contient :
+`kind` (nature du problème), `detail` (`message` ou `guide`), `guide_anchor` (section du guide), `contest` (cible contestable) et `concerned_admin_id` (membre du staff qui a décidé). Le catalogue est `NotificationService::KINDS`.
+
+Bouton « Voir le détail » :
+- `detail = guide` (information simple : compte réactivé, annonce rétablie…) → ouvre **exactement la zone du guide** (`/guide/index.html#<ancre>`) ;
+- `detail = message` → page **`/notifications/:id`** : message complet de l'« Équipe QUINCH », bouton **Lu / Pas lu**, lien vers la zone du guide qui explique la situation, et formulaire **« Contester cette décision »**.
+
+**Contestation** (`POST /api/v1/notifications/{id}/contest`, 10 à 2000 caractères) : valable pour un avertissement, une suspension, une vidéo retirée, une annonce masquée/supprimée, ou pour répondre à un message libre (case « Autoriser l'utilisateur à répondre » à l'envoi). Elle arrive dans **Admin → À traiter → Contestations** et **prévient directement l'admin concerné** (à défaut, les super admins). L'accepter annule la décision (avertissement retiré, vidéo/annonce rétablie, suspension levée) ; la réponse revient à l'utilisateur dans sa notification. Une seule contestation à la fois par décision ; refusée = réponse finale.
+
+Suppression de compte : mot de passe exigé ; le compte est **anonymisé** (transactions et signalements conservés pour les litiges). Les comptes staff ne peuvent pas se supprimer eux-mêmes.
+
+---
+
 ## Décisions d'architecture à connaître
 
 - **`payment_status` ≠ `order_status`** sur une transaction : le premier ne représente que l'état du paiement côté gateway (`pending/completed/failed/refunded`), le second l'avancement de la commande (`pending_payment/processing/shipped/delivered/completed/cancelled/disputed`). Ne jamais les confondre dans un nouvel écran.
@@ -271,6 +336,7 @@ Une route désactivée répond `404` (`EnsureFeatureEnabled` middleware) plutôt
 | `ReleaseExpiredReservations` | Chaque minute | Libère le stock réservé si le paiement n'a pas abouti sous 20 min |
 | `ExpirePremiumSubscriptions` | Quotidien | Désactive les abonnements Premium expirés |
 | `CleanupAbandonedDraftListings` | Toutes les heures | Supprime les brouillons en attente de paiement abandonnés depuis 24h (+ fichiers) |
+| `quinch:sync-badges` | Toutes les heures | Pose / retire les badges **automatiques** (Premium, KYC, ventes, ancienneté, confiance) |
 
 Nécessitent `php artisan schedule:work` **et** `php artisan queue:work` actifs en permanence (ou les services Docker `scheduler`/`queue` en prod).
 

@@ -69,7 +69,7 @@ class AdminPremiumController extends Controller
             'days' => (int) $validated['days'], 'reason' => $validated['reason'],
         ]);
 
-        $this->notif->notifyAdmin($user->id, 'Premium offert', "Vous bénéficiez de QUINCH Premium pendant {$validated['days']} jours.");
+        $this->notif->notifyAdmin($user->id, 'Premium offert', "Vous bénéficiez de QUINCH Premium pendant {$validated['days']} jours.", null, ['kind' => 'premium_granted']);
 
         return response()->json(['message' => 'Premium accordé.', 'user' => $user->fresh()]);
     }
@@ -82,7 +82,7 @@ class AdminPremiumController extends Controller
         PremiumSubscription::where('user_id', $user->id)->where('status', 'active')->update(['status' => 'cancelled', 'expires_at' => now()]);
 
         AdminLogger::log($request->user(), 'premium_revoked', 'User', $user->id, ['reason' => $validated['reason']], 'warning');
-        $this->notif->notifyAdmin($user->id, 'Premium retiré', 'Votre abonnement Premium a pris fin. Motif : ' . $validated['reason']);
+        $this->notif->notifyAdmin($user->id, 'Premium retiré', 'Votre abonnement Premium a pris fin. Motif : ' . $validated['reason'], null, ['kind' => 'premium_revoked']);
 
         return response()->json(['message' => 'Premium retiré.', 'user' => $user->fresh()]);
     }

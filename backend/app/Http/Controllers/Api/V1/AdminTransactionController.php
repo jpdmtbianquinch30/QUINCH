@@ -153,7 +153,7 @@ class AdminTransactionController extends Controller
             'cancel' => 'Le litige est tranché : la transaction est annulée.',
         ];
         foreach ([$transaction->buyer_id, $transaction->seller_id] as $uid) {
-            $this->notif->notifyAdmin($uid, 'Litige résolu', $labels[$decision] . ' ' . $validated['reason']);
+            $this->notif->notifyAdmin($uid, 'Litige résolu', $labels[$decision] . ' ' . $validated['reason'], null, ['kind' => 'dispute_resolved']);
         }
 
         return response()->json(['message' => 'Litige tranché.', 'transaction' => $transaction->fresh()]);

@@ -31,6 +31,65 @@ export interface Announcement {
   created_at: string;
 }
 
+export type ContestType = 'video' | 'product' | 'strike' | 'account' | 'message';
+
+export interface NotificationAppeal {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  message: string;
+  response?: string | null;
+  created_at: string;
+  handled_at?: string | null;
+}
+
+export interface NotificationContest {
+  type: ContestType;
+  can_contest: boolean;
+  appeal: NotificationAppeal | null;
+}
+
+export interface NotificationDetail {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  icon?: string | null;
+  action_url?: string | null;
+  data?: any;
+  is_read: boolean;
+  read_at?: string | null;
+  created_at: string;
+  priority?: string;
+}
+
+export interface NotificationDetailResponse {
+  notification: NotificationDetail;
+  guide_anchor: string | null;
+  contest: NotificationContest | null;
+}
+
+export interface ContestResponse {
+  message: string;
+  appeal: NotificationAppeal;
+}
+
+const TEAM_TYPES = ['admin', 'admin_message', 'system'];
+
+/**
+ * Résolution UNIQUE de l'URL d'une notification de l'équipe QUINCH.
+ *  - detail === 'guide' + guide_anchor → guide statique (hors Angular) ;
+ *  - sinon notification d'équipe → page de détail /notifications/<id> ;
+ *  - null si ce n'est pas une notification d'équipe (l'appelant garde sa logique).
+ */
+export function resolveTeamNotificationUrl(n: { id: string; type: string; data?: any }): string | null {
+  if (!TEAM_TYPES.includes(n.type) && n.data?.from !== 'team') return null;
+  const d = n.data;
+  if (d?.detail === 'guide' && d?.guide_anchor) {
+    return '/guide/index.html#' + encodeURIComponent(String(d.guide_anchor));
+  }
+  return '/notifications/' + encodeURIComponent(n.id);
+}
+
 export interface NotifCounts {
   all: number;
   interactions: number;
@@ -119,6 +178,25 @@ export class NotificationService {
         this.unreadCount.update(c => Math.max(0, c - 1));
       })
     );
+  }
+
+  markUnread(id: string): Observable<any> {
+    return this.api.post<any>(`notifications/${id}/unread`).pipe(
+      tap(() => {
+        this.notifications.update(list =>
+          list.map(n => n.id === id ? { ...n, is_read: false } : n)
+        );
+        this.unreadCount.update(c => c + 1);
+      })
+    );
+  }
+
+  getOne(id: string): Observable<NotificationDetailResponse> {
+    return this.api.get<NotificationDetailResponse>(`notifications/${id}`);
+  }
+
+  contest(id: string, message: string): Observable<ContestResponse> {
+    return this.api.post<ContestResponse>(`notifications/${id}/contest`, { message });
   }
 
   markAllRead(tab: string = 'all'): Observable<any> {

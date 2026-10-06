@@ -283,7 +283,7 @@
         </div>
 
         <!-- Seller card -->
-        <div class="seller-card" [class.service]="isService()">
+        <div class="seller-card seller-card-link" [class.service]="isService()" [routerLink]="getSellerUsername() ? ['/seller', getSellerUsername()] : null" role="link" tabindex="0" [attr.aria-label]="'Voir le profil de ' + getSellerName()">
           <div class="seller-avatar">
             @if (getSellerAvatar()) {
               <img [src]="getSellerAvatar()" alt="" (error)="onMediaError($event)" />
@@ -297,11 +297,7 @@
               @if (getSellerKycVerified()) {
                 <span class="material-icons verified-tick" title="Identite verifiee">verified</span>
               }
-              @if (p.seller?.is_premium) {
-                <span class="premium-badge" title="Vendeur Premium">
-                  <span class="material-icons">workspace_premium</span>
-                </span>
-              }
+              <app-user-badges [badges]="getSellerBadges()" zone="product_detail" [max]="4" />
             </span>
             <!-- Tout sur une seule ligne : @username, score, ville -->
             <span class="seller-meta-line">
@@ -313,15 +309,6 @@
                 <span class="seller-location"><span class="material-icons">location_on</span>{{ getSellerCity() }}</span>
               }
             </span>
-            @if (getSellerBadges().length > 0) {
-              <div class="seller-badges-row">
-                @for (badge of getSellerBadges(); track badge.type) {
-                  <span class="seller-badge-chip" [style.color]="badge.color" [style.border-color]="badge.color + '55'" [style.background]="badge.color + '14'" [title]="badge.description">
-                    <span class="material-icons">{{ badge.icon }}</span>{{ badge.name }}
-                  </span>
-                }
-              </div>
-            }
           </div>
         </div>
 

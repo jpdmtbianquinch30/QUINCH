@@ -441,16 +441,30 @@ class AuthController extends Controller
         return response()->json(['message' => 'Mot de passe modifié avec succès.']);
     }
 
+    /**
+     * Suppression de SON compte : le mot de passe est exigé (un jeton volé ne
+     * suffit pas). Le compte est ANONYMISÉ (données personnelles effacées, lignes
+     * de transactions / signalements conservées pour les litiges et obligations
+     * légales) — un DELETE réel échouerait dès la première transaction.
+     * Les comptes de l'équipe ne se suppriment pas ici.
+     */
     public function deleteAccount(Request $request): JsonResponse
     {
+        $validated = $request->validate(['password' => ['required', 'string']]);
         $user = $request->user();
 
-        // Revoke all tokens
-        $user->tokens()->delete();
+        if ($user->isStaff()) {
+            return response()->json([
+                'message' => "Un compte de l'équipe ne peut pas être supprimé ici. Contactez un super administrateur.",
+                'error' => 'staff_cannot_self_delete',
+            ], 403);
+        }
 
-        // Soft delete or permanently delete
-        $user->update(['status' => 'deleted']);
-        $user->delete();
+        if (!Hash::check($validated['password'], $user->password)) {
+            throw ValidationException::withMessages(['password' => ['Mot de passe incorrect.']]);
+        }
+
+        app(\App\Services\Admin\SanctionService::class)->anonymize($user, "Suppression à la demande de l'utilisateur", null);
 
         return response()->json(['message' => 'Compte supprimé avec succès.']);
     }

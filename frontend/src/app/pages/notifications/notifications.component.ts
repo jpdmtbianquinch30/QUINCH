@@ -1,12 +1,14 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { NotificationService, AppNotification } from '../../core/services/notification.service';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
+import { NotificationService, AppNotification, resolveTeamNotificationUrl } from '../../core/services/notification.service';
 
 type NotifTab = 'all' | 'interactions' | 'messages' | 'system';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
+  imports: [UserBadgesComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
@@ -38,18 +40,23 @@ export class NotificationsComponent implements OnInit {
   }
 
   openNotification(notif: AppNotification) {
-    // Mark as read
-    if (!notif.is_read) {
+    const url = this.resolveUrl(notif);
+    // La page de détail d'équipe gère elle-même la lecture (pas de double marquage).
+    const detailPage = !!url && url.startsWith('/notifications/');
+
+    if (!notif.is_read && !detailPage) {
       this.notifService.markRead(notif.id).subscribe(() => {
         this.notifService.getUnreadCount().subscribe();
       });
     }
 
-    // Build the best redirect URL and navigate
-    const url = this.resolveUrl(notif);
     if (url && url.startsWith('/guide')) {
       // Guide complet (page statique hors Angular) : navigation navigateur.
       window.location.assign(url);
+      return;
+    }
+    if (detailPage) {
+      this.router.navigateByUrl(url!);
       return;
     }
     if (url) {
@@ -60,10 +67,24 @@ export class NotificationsComponent implements OnInit {
     }
   }
 
+  toggleRead(event: MouseEvent, notif: AppNotification) {
+    event.stopPropagation();
+    const obs = notif.is_read ? this.notifService.markUnread(notif.id) : this.notifService.markRead(notif.id);
+    obs.subscribe({ next: () => this.notifService.getUnreadCount().subscribe({ error: () => {} }), error: () => {} });
+  }
+
+  isTeam(notif: AppNotification): boolean {
+    return notif.data?.from === 'team' || notif.type === 'admin' || notif.type === 'admin_message';
+  }
+
   /**
    * Resolve the best URL for a notification based on type, action_url and data.
    */
   private resolveUrl(notif: AppNotification): string | null {
+    // Équipe QUINCH : guide (ancre) ou page de détail du message.
+    const team = resolveTeamNotificationUrl(notif);
+    if (team) return team;
+
     // Message d'un utilisateur précis → SON chat (jamais le répertoire).
     if (notif.type === 'message') {
       const convId = notif.data?.conversation_id;
@@ -118,12 +139,6 @@ export class NotificationsComponent implements OnInit {
       case 'welcome':
         // Welcome → edit profile
         return '/profile/edit';
-
-      case 'system':
-      case 'admin':
-      case 'admin_message':
-        // « Voir le détail » d'un message de l'équipe → documentation complète.
-        return '/guide/index.html';
 
       case 'badge':
         return '/profile';
@@ -231,6 +246,9 @@ export class NotificationsComponent implements OnInit {
    * Get a descriptive label for where clicking this notification will go.
    */
   getActionLabel(notif: AppNotification): string {
+    if (this.isTeam(notif)) {
+      return notif.data?.detail === 'guide' ? "Voir l'explication" : 'Lire le message';
+    }
     const labels: Record<string, string> = {
       message: 'Voir les messages',
       like: 'Voir le produit',

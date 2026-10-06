@@ -3,250 +3,970 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Guide complet de QUINCH — vendre, acheter, rester en sécurité</title>
-<meta name="description" content="Documentation complète de QUINCH : compte, score de confiance, publication, feed vidéo, explorer, messages, premium, classement, signalement et sécurité.">
+<title>Guide QUINCH</title>
+<meta name="description" content="Guide complet de QUINCH : compte, publication, feed vidéo, messages, Premium, badges, modération, contestation, sécurité et FAQ.">
+<meta name="color-scheme" content="dark light">
 <link rel="icon" href="/logoquinch.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 <style>
-:root{--bg:#0b0d16;--card:#141827;--card2:#1a2033;--txt:#eef1fb;--mut:#9aa3bd;--line:rgba(255,255,255,.09);--acc:#6366f1;--acc2:#8b5cf6;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--r:16px}
-@media (prefers-color-scheme:light){:root{--bg:#f4f6fb;--card:#fff;--card2:#f0f2f8;--txt:#171d33;--mut:#5b647d;--line:rgba(15,23,42,.1)}}
-:root[data-theme=dark]{--bg:#0b0d16;--card:#141827;--card2:#1a2033;--txt:#eef1fb;--mut:#9aa3bd;--line:rgba(255,255,255,.09)}
-:root[data-theme=light]{--bg:#f4f6fb;--card:#fff;--card2:#f0f2f8;--txt:#171d33;--mut:#5b647d;--line:rgba(15,23,42,.1)}
-*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:76px}
-body{margin:0;font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);padding-bottom:env(safe-area-inset-bottom)}
-a{color:var(--acc)}h1,h2,h3{line-height:1.25;margin:0 0 .5em}
-header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
-.bar{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em;text-decoration:none;color:var(--txt)}
-.brand img{width:30px;height:30px;border-radius:8px}
-.bar .sp{flex:1}
-.btn{display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;font:inherit;font-weight:700;font-size:.9rem;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));padding:9px 16px;border-radius:999px}
-.btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
-.wrap{max-width:1180px;margin:0 auto;padding:0 16px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px}
-nav.toc{position:sticky;top:76px;align-self:start;max-height:calc(100dvh - 96px);overflow:auto;padding:20px 0}
-nav.toc a{display:block;padding:7px 12px;border-radius:10px;text-decoration:none;color:var(--mut);font-size:.92rem;font-weight:600}
-nav.toc a:hover,nav.toc a.on{background:var(--card);color:var(--txt)}
-.hero{padding:48px 0 24px}.hero h1{font-size:clamp(1.8rem,4.5vw,2.8rem);font-weight:900}
-.hero p{color:var(--mut);max-width:62ch;font-size:1.05rem}
-.search{width:100%;max-width:520px;margin-top:14px;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit}
-section{padding:28px 0;border-top:1px solid var(--line)}
-section:first-of-type{border-top:0}
-h2{font-size:1.5rem;font-weight:850}h3{font-size:1.08rem;margin-top:1.4em}
-p,li{color:var(--mut)}li{margin:.3em 0}strong{color:var(--txt)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:16px 0}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
-.card h4{margin:0 0 6px;font-size:1rem;color:var(--txt)}.card p{margin:0;font-size:.92rem}
-.note{border-left:4px solid var(--acc);background:var(--card);padding:12px 14px;border-radius:0 12px 12px 0;margin:14px 0;color:var(--mut)}
-.note.warn{border-color:var(--warn)}.note.ok{border-color:var(--ok)}.note.bad{border-color:var(--bad)}
-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.93rem;display:block;overflow-x:auto}
-th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
-th{color:var(--txt);background:var(--card)}td{color:var(--mut)}
-td:first-child{color:var(--txt);font-weight:600;white-space:normal}
-.steps{counter-reset:s;list-style:none;padding:0}
-.steps li{counter-increment:s;position:relative;padding:12px 14px 12px 54px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px}
-.steps li::before{content:counter(s);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2))}
-details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:10px 0;padding:0 16px}
-summary{cursor:pointer;font-weight:700;padding:14px 0;color:var(--txt)}details[open] summary{border-bottom:1px solid var(--line);margin-bottom:10px}
-.pill{display:inline-block;font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--card2);color:var(--txt);border:1px solid var(--line)}
-.pill.g{background:rgba(245,158,11,.15);color:#d99100}
-footer{max-width:1180px;margin:24px auto 0;padding:24px 16px 40px;color:var(--mut);border-top:1px solid var(--line);font-size:.9rem}
+:root{--bg:#0b0d16;--card:#141827;--card2:#1a2033;--txt:#eef1fb;--mut:#a4adc6;--line:rgba(255,255,255,.1);--acc:#7c7fff;--acc2:#8b5cf6;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--r:16px;--hl:rgba(245,158,11,.35);--shadow:0 10px 30px rgba(0,0,0,.35)}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f4f6fb;--card:#fff;--card2:#eef0f7;--txt:#171d33;--mut:#4d566f;--line:rgba(15,23,42,.12);--acc:#4f46e5;--hl:rgba(245,158,11,.4);--shadow:0 10px 30px rgba(15,23,42,.12)}}
+:root[data-theme=dark]{--bg:#0b0d16;--card:#141827;--card2:#1a2033;--txt:#eef1fb;--mut:#a4adc6;--line:rgba(255,255,255,.1);--acc:#7c7fff}
+:root[data-theme=light]{--bg:#f4f6fb;--card:#fff;--card2:#eef0f7;--txt:#171d33;--mut:#4d566f;--line:rgba(15,23,42,.12);--acc:#4f46e5;--hl:rgba(245,158,11,.4);--shadow:0 10px 30px rgba(15,23,42,.12)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:128px;-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.7 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+a{color:var(--acc);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px;border-radius:8px}
+h1,h2,h3,h4{line-height:1.25;margin:0 0 .5em}
+code{background:var(--card2);padding:2px 6px;border-radius:6px;font-size:.9em}
+.skip{position:absolute;left:12px;top:-60px;background:var(--acc);color:#fff;padding:10px 16px;border-radius:10px;z-index:100;font-weight:700;text-decoration:none}
+.skip:focus{top:8px}
 .hide{display:none!important}
-@media(max-width:860px){.wrap{grid-template-columns:1fr}nav.toc{position:static;max-height:none;display:flex;gap:6px;overflow-x:auto;padding:10px 0}nav.toc a{white-space:nowrap;background:var(--card)}}
+.muted{color:var(--mut);font-size:.92rem}
+/* Header */
+header.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.bar{max-width:1240px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em;text-decoration:none;color:var(--txt);min-height:44px}
+.brand img{width:30px;height:30px;border-radius:8px}
+.brand small{color:var(--mut);font-weight:600;letter-spacing:0;display:none}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;cursor:pointer;font:inherit;font-weight:700;font-size:.92rem;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));padding:11px 18px;border-radius:999px;min-height:44px;margin:4px 6px 4px 0}
+.btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.btn:hover{filter:brightness(1.08)}
+.hbtn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer;font:inherit;font-weight:700;padding:0 12px;text-decoration:none}
+.hbtn .l{display:none}
+/* chip bar */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 16px 10px;max-width:1240px;margin:0 auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chips a{flex:0 0 auto;padding:9px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:.88rem;font-weight:600;min-height:40px;display:inline-flex;align-items:center}
+.chips a.on{background:var(--acc);border-color:var(--acc);color:#fff}
+/* layout */
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px;display:block}
+nav.side{display:none}
+main{min-width:0}
+.hero{padding:28px 0 12px}
+.hero h1{font-size:clamp(1.8rem,6vw,2.9rem);font-weight:900;letter-spacing:-.02em}
+.hero h1 span{background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{color:var(--mut);font-size:1.05rem;max-width:62ch}
+.searchbox{position:relative;max-width:560px;margin-top:16px}
+.searchbox input{width:100%;padding:14px 44px 14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:inherit;font-size:1rem;min-height:48px}
+.searchbox button{position:absolute;right:6px;top:6px;width:36px;height:36px;border:0;border-radius:10px;background:var(--card2);color:var(--txt);cursor:pointer;font-size:1.1rem}
+#nores{margin:16px 0;padding:18px;border:1px dashed var(--line);border-radius:14px;color:var(--mut)}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:22px 0 4px}
+.quick a{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;color:var(--txt);font-weight:700;font-size:.95rem;min-height:56px}
+.quick a small{display:block;color:var(--mut);font-weight:500;margin-top:2px}
+.quick a:hover{border-color:var(--acc)}
+.grp{margin:40px 0 0;padding-top:8px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:800}
+section{padding:26px 0;border-top:1px solid var(--line)}
+section.target-flash{animation:flash 2.4s ease-out}
+@keyframes flash{0%,35%{background:var(--hl);box-shadow:0 0 0 12px var(--hl);border-radius:14px}100%{background:transparent;box-shadow:0 0 0 12px transparent}}
+h2{font-size:clamp(1.35rem,4.5vw,1.7rem);font-weight:850}
+h3{font-size:1.08rem;margin-top:1.5em}
+p,li{color:var(--mut)}
+li{margin:.35em 0}
+strong,b{color:var(--txt)}
+.anchor{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:8px;min-width:32px;min-height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer;font-size:.8rem;opacity:.75}
+.anchor:hover,.anchor:focus-visible{opacity:1;color:var(--txt)}
+.anchor.done{background:var(--ok);color:#fff;border-color:var(--ok);opacity:1}
+mark{background:var(--hl);color:inherit;border-radius:4px;padding:0 2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card h4{margin:0 0 6px;font-size:1rem;color:var(--txt)}
+.card p{margin:0;font-size:.93rem}
+.card.okc{border-color:var(--ok)}.card.badc{border-color:var(--bad)}
+.note{border-left:4px solid var(--acc);background:var(--card);padding:12px 14px;border-radius:0 12px 12px 0;margin:16px 0;color:var(--mut)}
+.note.warn{border-color:var(--warn)}.note.ok{border-color:var(--ok)}.note.bad{border-color:var(--bad)}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:.93rem;min-width:480px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{color:var(--txt);background:var(--card2);font-size:.82rem;text-transform:uppercase;letter-spacing:.05em}
+td{color:var(--mut)}
+td:first-child{color:var(--txt);font-weight:600}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding:13px 14px 13px 58px;margin:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;min-height:52px}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:12px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2))}
+ul.check{list-style:none;padding:0}
+ul.check li{position:relative;padding-left:32px}
+ul.check li::before{content:"✓";position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:.8rem;font-weight:800;margin-top:2px}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:10px 0;padding:0 16px}
+summary{cursor:pointer;font-weight:700;padding:14px 0;color:var(--txt);min-height:48px;list-style:none;position:relative;padding-right:28px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:2px;top:12px;font-size:1.3rem;color:var(--acc);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details[open] summary{border-bottom:1px solid var(--line);margin-bottom:10px}
+.dbody{padding-bottom:14px;color:var(--mut)}
+.pill{display:inline-block;font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:999px;background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.pill.auto{background:rgba(16,185,129,.16);color:#0f9f72;border-color:rgba(16,185,129,.4)}
+.pill.man{background:rgba(139,92,246,.16);color:#8b5cf6;border-color:rgba(139,92,246,.4)}
+/* problem cards */
+.pcards{display:grid;grid-template-columns:1fr;gap:12px;margin:16px 0}
+.pc{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;border-top:4px solid var(--acc)}
+.pc h3{margin:0 0 .4em;font-size:.95rem;color:var(--txt)}
+.pc.why{border-top-color:var(--warn)}.pc.todo{border-top-color:var(--ok)}.pc.help{border-top-color:var(--acc2)}
+.pc ul{margin:0;padding-left:1.1em}.pc p{margin:0}
+.cta-row{margin-top:18px}
+/* ladder */
+.ladder{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}
+.ladder div{border-radius:14px;padding:12px 14px;border:1px solid var(--line);background:var(--card);border-left:6px solid var(--ok)}
+.ladder .step2{border-left-color:var(--warn)}.ladder .step3{border-left-color:#f97316}.ladder .step4{border-left-color:var(--bad)}
+.ladder b{display:block}.ladder span{color:var(--mut);font-size:.92rem}
+/* badges */
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:14px 0}
+.bcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px}
+.bhead{display:flex;align-items:center;gap:12px}
+.bi{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:0 0 auto;background:var(--c,#6366f1);overflow:hidden}
+.bi .ico{font-size:26px;width:26px;height:26px;overflow:hidden;line-height:1}
+.bi .ltr{display:none;font-weight:900;font-size:1.2rem}
+html.noicons .bi .ico{display:none}html.noicons .bi .ltr{display:block}
+.bname{font-weight:800;color:var(--txt);font-size:1.02rem}
+.bcard p{margin:0;font-size:.92rem}
+.bhow{font-size:.9rem;color:var(--txt)}
+.bzones{display:flex;flex-wrap:wrap;gap:6px}
+.bzones .pill{font-weight:600}
+.skel{height:150px;border-radius:var(--r);background:linear-gradient(90deg,var(--card),var(--card2),var(--card));background-size:200% 100%;animation:sk 1.3s linear infinite;border:1px solid var(--line)}
+@keyframes sk{to{background-position:-200% 0}}
+/* sidebar content */
+.progress{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin:6px 0 10px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+/* floating */
+.fab{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:40;display:inline-flex;align-items:center;gap:8px;min-height:52px;padding:0 20px;border-radius:999px;border:0;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font:inherit;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
+#totop{position:fixed;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));z-index:40;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:1.2rem;cursor:pointer;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s}
+#totop.show{opacity:1;pointer-events:auto}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet-bg.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--bg);border-radius:22px 22px 0 0;border:1px solid var(--line);max-height:82dvh;display:flex;flex-direction:column;transform:translateY(105%);transition:transform .28s ease;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.open{transform:none}
+.sheet .grab{width:44px;height:5px;border-radius:5px;background:var(--line);margin:10px auto 4px}
+.sheet header{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 10px;font-weight:800}
+.sheet .list{overflow:auto;padding:0 12px 16px;-webkit-overflow-scrolling:touch}
+.sheet .list h4{margin:14px 6px 4px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+.sheet .list a{display:block;padding:12px 12px;border-radius:12px;color:var(--txt);text-decoration:none;font-weight:600;min-height:46px}
+.sheet .list a.on{background:var(--card2);color:var(--acc)}
+footer{max-width:1240px;margin:24px auto 0;padding:24px 16px 90px;color:var(--mut);border-top:1px solid var(--line);font-size:.9rem}
+/* desktop */
+@media (min-width:1024px){
+ .chips,.fab{display:none}
+ .brand small{display:inline}
+ .hbtn .l{display:inline;margin-left:6px}
+ html{scroll-padding-top:84px}
+ .wrap{display:grid;grid-template-columns:280px minmax(0,1fr);gap:48px}
+ nav.side{display:block;position:sticky;top:76px;align-self:start;max-height:calc(100dvh - 96px);overflow:auto;padding:22px 0 24px;scrollbar-width:thin}
+ nav.side h2{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 4px}
+ nav.side h4{margin:16px 0 4px 12px;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+ nav.side a{display:block;padding:6px 12px;border-radius:10px;text-decoration:none;color:var(--mut);font-size:.9rem;font-weight:600;border-left:3px solid transparent}
+ nav.side a:hover{background:var(--card);color:var(--txt)}
+ nav.side a.on{background:var(--card);color:var(--txt);border-left-color:var(--acc)}
+ .pcards{grid-template-columns:1fr 1fr}
+ .ladder{grid-template-columns:repeat(4,1fr)}
+ main{max-width:820px;width:100%}
+ .sheet,.sheet-bg{display:none}
+}
+@media (max-width:420px){.steps li{padding-left:52px}.btn{width:100%;margin-right:0}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}section.target-flash{animation:none;background:var(--hl)}}
+@media print{
+ header.top,nav.side,.chips,.fab,#totop,.sheet,.sheet-bg,.searchbox,.anchor,.quick,.skip,.cta-row{display:none!important}
+ body{background:#fff;color:#000;font-size:11pt}
+ .wrap{display:block}
+ p,li,td{color:#222}strong,b,h2,h3,h4,summary{color:#000}
+ section{break-inside:avoid-page;border-color:#bbb}
+ .card,.pc,.note,details,.bcard,.steps li{border-color:#999;background:#fff}
+ a{color:#000;text-decoration:underline}
+}
 </style>
 </head>
 <body>
-<header><div class="bar">
-  <a class="brand" href="/feed"><img src="/logoquinch.png" alt="" onerror="this.style.display='none'">QUINCH</a>
+<a class="skip" href="#main">Aller au contenu</a>
+<header class="top" role="banner">
+ <div class="bar">
+  <a class="brand" href="/feed" aria-label="QUINCH, retour à l'application"><img src="/logoquinch.png" alt="" width="30" height="30" onerror="this.style.display='none'">QUINCH <small>· Guide</small></a>
   <span class="sp"></span>
-  <button class="btn ghost" id="theme" type="button" aria-label="Changer de thème">◐ Thème</button>
-  <a class="btn" href="/feed">Ouvrir l'application</a>
-</div></header>
+  <button class="hbtn" id="theme" type="button" aria-label="Changer de thème clair ou sombre"><span aria-hidden="true">◐</span><span class="l">Thème</span></button>
+  <a class="hbtn" href="/feed" aria-label="Ouvrir l'application"><span aria-hidden="true">↗</span><span class="l">Application</span></a>
+ </div>
+ <nav class="chips" id="chips" aria-label="Sommaire rapide"><a href="#demarrer">Démarrer sur QUINCH</a><a href="#compte-securise">Compte sécurisé : inscription, code SMS et Google</a><a href="#mot-de-passe-oublie">Mot de passe oublié</a><a href="#connexion-impossible">Je n'arrive pas à me connecter</a><a href="#changer-numero">Changer de numéro de téléphone</a><a href="#score-confiance">Score de confiance et objectif 80 %</a><a href="#publier">Publier un produit ou un service</a><a href="#frais-publication">Frais de publication et paiement</a><a href="#gerer-annonces">Gérer mes annonces</a><a href="#feed-video">Le feed vidéo</a><a href="#explorer">Explorer et recherche</a><a href="#messages">Messages</a><a href="#notifications">Notifications</a><a href="#profil">Profil et profil public vendeur</a><a href="#badges">Badges : comment ils fonctionnent</a><a href="#avis-favoris">Avis, commentaires et favoris</a><a href="#premium">Premium</a><a href="#premium-retire">Premium retiré ou expiré</a><a href="#classement">Classement</a><a href="#signaler">Signaler un utilisateur, une annonce ou un problème</a><a href="#kyc">Vérification d'identité (KYC)</a><a href="#moderation-regles">Les règles et le système de sanctions</a><a href="#avertissement">Avertissement (strike)</a><a href="#suspension">Compte suspendu</a><a href="#bannissement">Compte banni</a><a href="#compte-reactive">Compte réactivé</a><a href="#video-retiree">Vidéo retirée</a><a href="#video-verification">Vidéo en vérification</a><a href="#annonce-masquee">Annonce masquée</a><a href="#annonce-supprimee">Annonce supprimée par la modération</a><a href="#contester">Comment contester une décision</a><a href="#litige">Litige sur une transaction</a><a href="#ticket-support">Réponse à votre demande d'aide (ticket)</a><a href="#avis-retire">Avis retiré</a><a href="#contacter-equipe">Contacter l'équipe QUINCH</a><a href="#supprimer-compte">Supprimer mon compte</a><a href="#securite">Sécurité : se protéger des arnaques</a><a href="#faq">Questions fréquentes (FAQ)</a></nav>
+</header>
 
 <div class="wrap">
-<nav class="toc" id="toc" aria-label="Sommaire">
-  <a href="#demarrer">1. Démarrer</a>
-  <a href="#confiance">2. Score de confiance</a>
-  <a href="#publier">3. Publier</a>
-  <a href="#feed">4. Le feed vidéo</a>
-  <a href="#explorer">5. Explorer &amp; recherche</a>
-  <a href="#messages">6. Messages</a>
-  <a href="#notifications">7. Notifications</a>
-  <a href="#profil">8. Profil &amp; badges</a>
-  <a href="#premium">9. Premium</a>
-  <a href="#classement">10. Classement</a>
-  <a href="#avis">11. Avis &amp; favoris</a>
-  <a href="#signaler">12. Signaler &amp; modération</a>
-  <a href="#securite">13. Sécurité</a>
-  <a href="#faq">14. FAQ</a>
+<nav class="side" id="side" aria-label="Sommaire du guide">
+ <h2>Sur cette page</h2>
+ <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+ <div class="muted" id="cur" aria-live="polite"></div>
+ <h4>Bien démarrer</h4><a href="#demarrer">Démarrer sur QUINCH</a><a href="#compte-securise">Compte sécurisé : inscription, code SMS et Google</a><a href="#mot-de-passe-oublie">Mot de passe oublié</a><a href="#connexion-impossible">Je n'arrive pas à me connecter</a><a href="#changer-numero">Changer de numéro de téléphone</a><a href="#score-confiance">Score de confiance et objectif 80 %</a><h4>Vendre</h4><a href="#publier">Publier un produit ou un service</a><a href="#frais-publication">Frais de publication et paiement</a><a href="#gerer-annonces">Gérer mes annonces</a><h4>Utiliser QUINCH</h4><a href="#feed-video">Le feed vidéo</a><a href="#explorer">Explorer et recherche</a><a href="#messages">Messages</a><a href="#notifications">Notifications</a><a href="#profil">Profil et profil public vendeur</a><a href="#badges">Badges : comment ils fonctionnent</a><a href="#avis-favoris">Avis, commentaires et favoris</a><h4>Premium & classement</h4><a href="#premium">Premium</a><a href="#premium-retire">Premium retiré ou expiré</a><a href="#classement">Classement</a><h4>Modération & décisions</h4><a href="#signaler">Signaler un utilisateur, une annonce ou un problème</a><a href="#kyc">Vérification d'identité (KYC)</a><a href="#moderation-regles">Les règles et le système de sanctions</a><a href="#avertissement">Avertissement (strike)</a><a href="#suspension">Compte suspendu</a><a href="#bannissement">Compte banni</a><a href="#compte-reactive">Compte réactivé</a><a href="#video-retiree">Vidéo retirée</a><a href="#video-verification">Vidéo en vérification</a><a href="#annonce-masquee">Annonce masquée</a><a href="#annonce-supprimee">Annonce supprimée par la modération</a><a href="#contester">Comment contester une décision</a><a href="#litige">Litige sur une transaction</a><a href="#ticket-support">Réponse à votre demande d'aide (ticket)</a><a href="#avis-retire">Avis retiré</a><h4>Aide & sécurité</h4><a href="#contacter-equipe">Contacter l'équipe QUINCH</a><a href="#supprimer-compte">Supprimer mon compte</a><a href="#securite">Sécurité : se protéger des arnaques</a><a href="#faq">Questions fréquentes (FAQ)</a>
 </nav>
 
-<main id="main">
-<div class="hero">
-  <h1>Le guide complet de QUINCH</h1>
-  <p>QUINCH met en relation acheteurs et vendeurs (produits et services) grâce à la vidéo. Ici : tout ce qu'il faut savoir, de l'inscription à la sécurité de votre compte.</p>
-  <input class="search" id="q" type="search" placeholder="Rechercher dans le guide (ex. vidéo, 150 F, vocal, signaler)…" aria-label="Rechercher dans le guide">
-  <p id="nores" class="hide">Aucune section ne correspond à votre recherche.</p>
-</div>
-
-<section id="demarrer"><h2>1. Démarrer</h2>
-<ol class="steps">
- <li><strong>Inscrivez-vous</strong> avec votre numéro sénégalais (+221), un nom, un pseudo (lettres, chiffres, _) et un mot de passe d'au moins 8 caractères avec 1 majuscule et 1 chiffre. Vous pouvez aussi utiliser Google.</li>
- <li><strong>Vérifiez votre téléphone</strong> : un code à 6 chiffres vous est envoyé par SMS (valable 10 minutes, 5 essais, renvoi possible après 60 secondes).</li>
- <li><strong>Configurez votre profil</strong> : photo, couverture, ville, région, bio, e-mail, site et politiques vendeur.</li>
- <li><strong>Publiez</strong> votre première annonce ou parcourez le feed.</li>
-</ol>
-<div class="note ok">À l'arrivée, un message de bienvenue de l'équipe QUINCH s'affiche en haut du feed et dans vos notifications : il vous guide vers les <strong>80 % de score de confiance</strong>.</div>
-<p>On peut consulter le feed et l'Explorer sans compte ; publier, écrire, aimer, enregistrer ou signaler demande de se connecter.</p>
+<main id="main" tabindex="-1">
+ <div class="hero">
+  <h1>Le guide <span>QUINCH</span></h1>
+  <p class="lead">Tout pour acheter, vendre et rester en sécurité sur QUINCH : de la création du compte à la contestation d'une décision, en passant par les badges, le Premium et la sécurité. Réponses simples, étape par étape.</p>
+  <div class="searchbox" role="search">
+   <input id="q" type="search" placeholder="Rechercher (ex. vidéo, code SMS, suspension, 150 F)…" aria-label="Rechercher dans le guide" autocomplete="off" enterkeyhint="search">
+   <button type="button" id="qclear" class="hide" aria-label="Effacer la recherche">✕</button>
+  </div>
+  <p id="nores" class="hide" role="status">Aucun résultat pour cette recherche. Essayez un mot plus simple (« vidéo », « paiement », « compte ») ou <a href="#contacter-equipe">contactez l'équipe</a>.</p>
+  <div class="quick" id="quick">
+   <a href="#connexion-impossible">Je n'arrive pas à me connecter<small>Code SMS, mot de passe, compte bloqué</small></a>
+   <a href="#publier">Je veux vendre<small>Publier, frais, photos, vidéo</small></a>
+   <a href="#video-retiree">Ma vidéo a été retirée<small>Pourquoi et comment contester</small></a>
+   <a href="#suspension">Mon compte est suspendu<small>Durée et réactivation</small></a>
+   <a href="#contester">Contester une décision<small>Pas à pas</small></a>
+   <a href="#securite">Éviter les arnaques<small>Conseils de sécurité</small></a>
+  </div>
+ </div>
+ <div class="grp" role="presentation">Bien démarrer</div>
+<section id="demarrer" aria-labelledby="h-demarrer"><h2 id="h-demarrer">Démarrer sur QUINCH</h2>
+<p>QUINCH est une application de <strong>commerce social</strong> pour le Sénégal : des vendeurs présentent leurs produits et services en <strong>vidéo</strong> (comme dans un fil vidéo) et en photos, et des acheteurs les découvrent, posent leurs questions et contactent directement le vendeur. Vous pouvez être <strong>acheteur</strong>, <strong>vendeur</strong>, ou les deux avec le même compte.</p>
+<div class="note warn"><strong>Important à comprendre dès le début :</strong> QUINCH met en relation. L'application <strong>ne gère pas le paiement entre utilisateurs</strong> : il n'y a ni panier, ni paiement d'un acheteur vers un vendeur dans l'application. Vous vous mettez d'accord par messages sur le prix, le mode de paiement et la remise (livraison ou rencontre). Seuls les <strong>frais de publication</strong> (comptes gratuits) et l'abonnement <strong>Premium</strong> se paient dans QUINCH, via Wave ou Orange Money.</div>
+<h3>Ce que vous pouvez faire sans compte</h3>
+<p>Parcourir l'accueil, regarder le feed vidéo, utiliser Explorer et la recherche, ouvrir une fiche produit et un profil vendeur. Pour <strong>publier, écrire à un vendeur, aimer, enregistrer, commenter ou signaler</strong>, il faut un compte.</p>
+<h3>Créer votre compte en 4 étapes</h3><ol class="steps"><li><strong>Inscrivez-vous</strong> : choisissez « Créer un compte ». Entrez votre nom, un <strong>pseudo</strong> (lettres, chiffres et tiret bas « _ », sans espace), votre numéro de téléphone sénégalais (+221) et un mot de passe.</li><li><strong>Vérifiez votre téléphone</strong> : QUINCH envoie un code à 6 chiffres par SMS. Saisissez-le dans l'écran de vérification (détails dans <a href="#compte-securise">Compte sécurisé</a>).</li><li><strong>Complétez votre profil</strong> : photo, couverture, ville, région, bio… C'est ce qui fait grimper votre <a href="#score-confiance">score de confiance</a> vers 80 %.</li><li><strong>Explorez ou publiez</strong> : regardez le feed vidéo, ou touchez « Publier » pour mettre votre premier produit ou service en ligne.</li></ol>
+<h3>Choisir un bon pseudo</h3>
+<p>Votre pseudo apparaît sur votre profil public (par exemple <code>@boutique_dakar</code>) et dans les mentions. Choisissez-le simple, facile à retenir et sans information privée (pas de numéro de téléphone). Si le pseudo est déjà pris, l'application vous le dit : ajoutez simplement un chiffre ou un mot.</p>
+<h3>Le message de bienvenue</h3>
+<p>Dès votre arrivée, l'équipe QUINCH vous envoie un message de bienvenue : il s'affiche en haut du feed et dans vos <a href="#notifications">notifications</a>. Il vous rappelle l'objectif des <strong>80 % de score de confiance</strong>.</p>
+<div class="cta-row"><a class="btn" href="/auth/register">Créer mon compte</a><a class="btn ghost" href="/feed">Ouvrir l'application</a></div>
 </section>
-
-<section id="confiance"><h2>2. Le score de confiance (objectif 80 %)</h2>
-<p>Chaque compte a un score de confiance visible par les acheteurs. Il rassure et améliore votre crédibilité.</p>
-<table><tr><th>Ce qui compte</th><th>Effet</th></tr>
-<tr><td>Point de départ</td><td>30 %</td></tr>
-<tr><td>Téléphone vérifié</td><td>+10 %</td></tr>
-<tr><td>Profil complet : nom, e-mail, pseudo, photo, couverture, ville, région, bio, site</td><td>jusqu'à +30 %</td></tr>
-<tr><td>Politiques vendeur configurées (retours, livraison…)</td><td>+10 %</td></tr>
-<tr><td>Ancienneté du compte</td><td>jusqu'à +15 % sur un an</td></tr>
-<tr><td>Identité (KYC) vérifiée par l'équipe</td><td>+20 %</td></tr>
-<tr><td>Transactions réussies</td><td>+2 % chacune, jusqu'à +20 %</td></tr>
-<tr><td>Paiements échoués / activité suspecte</td><td>baisse du score</td></tr></table>
-<div class="note">Un profil entièrement rempli avec ses politiques vendeur atteint environ 80 % sans attendre d'historique de ventes.</div>
+<section id="compte-securise" aria-labelledby="h-compte-securise"><h2 id="h-compte-securise">Compte sécurisé : inscription, code SMS et Google</h2>
+<p>QUINCH protège les comptes avec une vérification par téléphone. Voici comment elle fonctionne, et quoi faire à chaque étape.</p>
+<h3>Mot de passe</h3>
+<ul><li>Au moins <strong>8 caractères</strong>, avec <strong>1 majuscule</strong> et <strong>1 chiffre</strong>.</li><li>Évitez votre date de naissance, votre prénom ou un mot de passe déjà utilisé ailleurs.</li><li>Ne le donnez à personne : l'équipe QUINCH ne vous le demandera <strong>jamais</strong>.</li></ul>
+<h3>Le code SMS (OTP)</h3>
+<table><thead><tr><th>Règle</th><th>Valeur</th></tr></thead><tbody>
+<tr><td>Format du code</td><td>6 chiffres</td></tr>
+<tr><td>Durée de validité</td><td>10 minutes</td></tr>
+<tr><td>Essais autorisés par code</td><td>5 essais</td></tr>
+<tr><td>Attente avant de demander un nouveau code</td><td>60 secondes</td></tr>
+<tr><td>Nombre de codes par heure</td><td>5 envois maximum</td></tr></tbody></table>
+<ol class="steps"><li>Après l'inscription, l'écran « Vérification » s'ouvre automatiquement.</li><li>Attendez le SMS (quelques secondes en général). Il vient d'un numéro ou d'un nom d'expéditeur QUINCH.</li><li>Saisissez les 6 chiffres. Si le code est bon, vous êtes connecté et votre téléphone est marqué <strong>vérifié</strong> (+10 % de score de confiance).</li><li>Pas de SMS ? Patientez 60 secondes, puis touchez « Renvoyer le code ».</li></ol>
+<div class="note">Le code n'est valable que <strong>10 minutes</strong> et seul le <strong>dernier</strong> code reçu fonctionne. Si vous en avez demandé plusieurs, utilisez le plus récent.</div>
+<h3>Se connecter avec Google</h3>
+<p>Vous pouvez créer votre compte ou vous connecter avec votre compte Google, sans mot de passe à retenir. Après la connexion Google, il vous est demandé de choisir un <strong>pseudo</strong> et, ensuite, d'ajouter et de vérifier votre <strong>numéro de téléphone</strong> : c'est ce numéro qui permet aux acheteurs et à l'équipe de vous joindre et qui renforce votre score de confiance.</p>
+<div class="note ok">Vous avez créé votre compte avec Google et voulez aussi un mot de passe ? Vous pourrez en définir un dans <strong>Paramètres → Changer mot de passe</strong>, ou utiliser « Mot de passe oublié » (voir <a href="#mot-de-passe-oublie">Mot de passe oublié</a>).</div>
+<h3>Bonnes habitudes</h3>
+<ul><li>Utilisez un numéro que vous contrôlez et qui reçoit les SMS (carte SIM active, réseau disponible).</li><li>Ne partagez jamais un code SMS : même une personne qui dit venir de QUINCH ne doit pas le recevoir. Voir <a href="#securite">Sécurité</a>.</li><li>Vous pouvez changer de numéro plus tard : <a href="#changer-numero">Changer de numéro</a>.</li></ul>
+<div class="cta-row"><a class="btn" href="/auth/login">Me connecter</a><a class="btn ghost" href="/settings">Paramètres</a></div>
 </section>
-
-<section id="publier"><h2>3. Publier un produit ou un service</h2>
-<ol class="steps">
- <li>Touchez <strong>Publier</strong> et choisissez <strong>Produit</strong> ou <strong>Service</strong>.</li>
- <li>Ajoutez une <strong>couverture</strong> (image principale) et, si vous voulez, des photos supplémentaires.</li>
- <li>Ajoutez une <strong>vidéo</strong> (importée ou filmée) pour apparaître dans le feed vidéo.</li>
- <li>Renseignez titre, description (vous pouvez utiliser #hashtags et @mentions), catégorie, prix, négociable, stock, livraison et modes de paiement.</li>
- <li>Publiez. Si des frais s'appliquent, le paiement Wave se lance avant la mise en ligne.</li>
-</ol>
-<table><tr><th></th><th>Compte gratuit</th><th>Compte Premium <span class="pill g">★</span></th></tr>
-<tr><td>Photos</td><td>6 (1 couverture + 5)</td><td>11 (1 couverture + 10)</td></tr>
-<tr><td>Annonce sans vidéo</td><td>Gratuite</td><td>Gratuite</td></tr>
-<tr><td>Annonce avec vidéo</td><td><strong>150 F CFA</strong> par annonce (Wave)</td><td>Incluse, sans frais</td></tr>
-<tr><td>Visibilité</td><td>Standard</td><td>Mise en avant à ancienneté égale</td></tr></table>
-<p>Les images sont limitées à 5 Mo (JPG, PNG, WebP) : une photo trop lourde est automatiquement réduite avant l'envoi.</p>
-<h3>Gérer vos annonces</h3>
-<p>Dans <strong>Profil</strong>, ouvrez le menu <strong>⋯</strong> d'une annonce ou d'un service : <strong>Activer</strong>, <strong>Désactiver</strong> (masquée mais réactivable) ou <strong>Supprimer</strong> (définitif).</p>
-<div class="note warn">Une annonce retirée par la modération ne peut pas être réactivée par son propriétaire : vous pouvez la contester depuis vos notifications.</div>
-</section>
-
-<section id="feed"><h2>4. Le feed vidéo</h2>
-<p>L'accueil affiche les annonces récentes ; le bouton <strong>Vidéos</strong> ouvre le feed plein écran, onglets <strong>Abonnements</strong> et <strong>Pour toi</strong>.</p>
-<div class="grid">
-<div class="card"><h4>Naviguer</h4><p>Glissez vers le haut/bas, molette ou flèches ↑ ↓. La vidéo sur laquelle vous avez cliqué est celle qui démarre.</p></div>
-<div class="card"><h4>Interagir</h4><p>♥ aimer (double-touchez la vidéo), 💬 avis, ↪ partager, 🔖 enregistrer. Les compteurs affichent aimés, avis, partages et enregistrements.</p></div>
-<div class="card"><h4>Détails</h4><p>« Voir détails » ouvre un panneau ajustable : glissez la poignée pour agrandir ou réduire la fiche.</p></div>
-<div class="card"><h4>Son</h4><p>Touchez la vidéo pour pause/lecture et l'icône haut-parleur pour couper le son.</p></div>
-</div>
-<p>Les vidéos de <strong>tous</strong> les vendeurs (gratuits et premium) apparaissent dans le feed ; l'ordre favorise les contenus récents, puis les comptes premium à ancienneté égale.</p>
-<div class="note">La cloche en haut du feed affiche le même nombre de notifications non lues que le menu.</div>
-</section>
-
-<section id="explorer"><h2>5. Explorer &amp; recherche</h2>
-<p><strong>Explorer</strong> liste <em>toutes</em> les annonces actives, <strong>avec ou sans vidéo</strong>, pour les comptes gratuits comme premium (les premium sont mis en avant). Filtrez par <strong>Produits / Services</strong>, catégorie, prix, état et tri.</p>
-<p>La <strong>recherche</strong> propose des suggestions instantanées, garde vos recherches récentes et trouve aussi les vendeurs par nom ou pseudo.</p>
-</section>
-
-<section id="messages"><h2>6. Messages</h2>
+<section id="mot-de-passe-oublie" aria-labelledby="h-mot-de-passe-oublie"><h2 id="h-mot-de-passe-oublie">Mot de passe oublié</h2>
+<p>Pas de panique : vous pouvez retrouver l'accès à votre compte en quelques minutes, à condition de pouvoir recevoir un SMS sur votre numéro.</p>
+<ol class="steps"><li>Sur l'écran de connexion, touchez <strong>« Mot de passe oublié ? »</strong>.</li><li>Entrez le <strong>numéro de téléphone</strong> du compte (celui avec lequel vous vous êtes inscrit).</li><li>Saisissez le <strong>code à 6 chiffres</strong> reçu par SMS (mêmes règles que pour l'inscription : 10 minutes de validité, 5 essais, renvoi après 60 secondes).</li><li>Choisissez un <strong>nouveau mot de passe</strong> (8 caractères minimum, 1 majuscule, 1 chiffre), confirmez-le, puis connectez-vous.</li></ol>
+<h3>Si ça ne marche pas</h3>
 <ul>
-<li>Contactez un vendeur depuis sa fiche ; la conversation garde le produit concerné.</li>
-<li><strong>Répertoire</strong> : filtre <strong>Tous</strong> (par défaut) ou <strong>Mes amis</strong>. On devient ami en s'abonnant mutuellement.</li>
-<li><strong>Messages vocaux</strong> avec forme d'onde, barre de progression cliquable et vitesse 1× / 1,5× / 2×.</li>
-<li>Envoi de photos et fichiers, suppression d'un message ou d'une conversation.</li>
-<li>Un message « Veuillez patienter, chargement des messages… » s'affiche pendant le chargement.</li>
-</ul>
-<div class="note warn">Pour votre sécurité, ne communiquez jamais votre mot de passe ni un code SMS, et évitez de payer à l'avance un inconnu.</div>
+<li><strong>Je ne reçois pas le code</strong> : vérifiez le numéro (format +221…), le réseau et l'espace de stockage de votre téléphone, attendez 60 secondes puis redemandez. Après 5 demandes dans l'heure, patientez avant de réessayer.</li>
+<li><strong>Je n'ai plus accès à mon ancien numéro</strong> : écrivez à l'équipe depuis un autre canal (voir <a href="#contacter-equipe">Contacter l'équipe</a>) en expliquant votre situation et le pseudo de votre compte. L'équipe vous indiquera comment prouver que le compte est le vôtre.</li>
+<li><strong>J'ai créé mon compte avec Google</strong> : utilisez de préférence le bouton Google pour vous reconnecter.</li>
+<li><strong>Un message dit que le compte est suspendu ou banni</strong> : le mot de passe n'est pas en cause, voir <a href="#suspension">Suspension</a> et <a href="#bannissement">Bannissement</a>.</li></ul>
+<div class="note warn">Si vous n'êtes pas à l'origine d'une demande de réinitialisation que vous avez reçue, ne communiquez le code à personne et lisez la section <a href="#securite">Sécurité</a>.</div>
+<div class="cta-row"><a class="btn" href="/auth/forgot-password">Réinitialiser mon mot de passe</a></div>
 </section>
-
-<section id="notifications"><h2>7. Notifications</h2>
-<p>Quatre onglets : <strong>Tout, Interactions, Messages, Système</strong>. Chaque notification vous amène au bon endroit :</p>
-<table><tr><th>Notification</th><th>Destination</th></tr>
-<tr><td>Message d'une personne précise</td><td>Directement son chat</td></tr>
-<tr><td>Nouvel ami / négociation</td><td>Chat avec cette personne</td></tr>
+<section id="connexion-impossible" aria-labelledby="h-connexion-impossible"><h2 id="h-connexion-impossible">Je n'arrive pas à me connecter</h2>
+<p>Voici les situations les plus courantes, du plus fréquent au plus rare. Trouvez le message que vous voyez à l'écran.</p>
+<div class="tablewrap"><table><thead><tr><th>Ce que vous voyez</th><th>Cause probable</th><th>Solution</th></tr></thead><tbody>
+<tr><td>« Identifiants incorrects »</td><td>Mauvais numéro, pseudo ou mot de passe (majuscules, chiffres).</td><td>Vérifiez la saisie (œil pour afficher le mot de passe). Sinon, <a href="#mot-de-passe-oublie">réinitialisez-le</a>.</td></tr>
+<tr><td>Je ne reçois pas le SMS</td><td>Réseau, numéro erroné, trop de demandes.</td><td>Attendez 60 s, redemandez. Maximum 5 codes par heure.</td></tr>
+<tr><td>« Code incorrect »</td><td>Faute de frappe ou ancien code.</td><td>Saisissez le dernier code reçu. 5 essais par code, ensuite demandez-en un nouveau.</td></tr>
+<tr><td>« Code expiré »</td><td>Plus de 10 minutes se sont écoulées.</td><td>Touchez « Renvoyer le code ».</td></tr>
+<tr><td>« Trop de tentatives »</td><td>Trop d'essais de connexion ou de codes.</td><td>Patientez quelques minutes avant de réessayer ; ne tapez pas au hasard.</td></tr>
+<tr><td>« Compte suspendu »</td><td>Décision de modération temporaire.</td><td>Voir <a href="#suspension">Suspension</a> : réactivation automatique à la fin de la durée indiquée.</td></tr>
+<tr><td>« Compte banni »</td><td>Décision définitive.</td><td>Voir <a href="#bannissement">Bannissement</a>.</td></tr>
+<tr><td>Connexion Google refusée</td><td>Mauvais compte Google, navigateur qui bloque les fenêtres.</td><td>Choisissez le bon compte, autorisez les fenêtres, ou connectez-vous avec votre numéro.</td></tr>
+</tbody></table></div>
+<h3>Vérifications rapides</h3>
+<ul><li>Êtes-vous bien connecté à Internet (Wi-Fi ou données mobiles) ?</li><li>L'heure de votre téléphone est-elle correcte (mode automatique) ?</li><li>Avez-vous mis à jour votre navigateur ou l'application ?</li><li>Essayez de fermer puis rouvrir l'application, ou d'ouvrir QUINCH dans un autre navigateur.</li></ul>
+<h3>Suspendu ou banni : que se passe-t-il ?</h3>
+<p>Si votre compte est suspendu ou banni, vous êtes déconnecté et la connexion est refusée avec un message explicatif. Ce n'est <strong>pas</strong> un problème technique. Lisez les sections <a href="#suspension">Suspension</a> et <a href="#bannissement">Bannissement</a>.</p>
+<p>Toujours bloqué ? <a href="#contacter-equipe">Contactez l'équipe</a> en précisant votre pseudo, votre numéro (sans le mot de passe !) et le message exact affiché.</p>
+<div class="cta-row"><a class="btn" href="/auth/login">Réessayer</a><a class="btn ghost" href="/auth/forgot-password">Mot de passe oublié</a></div>
+</section>
+<section id="changer-numero" aria-labelledby="h-changer-numero"><h2 id="h-changer-numero">Changer de numéro de téléphone</h2>
+<p>Vous avez un nouveau numéro ? Vous pouvez le remplacer vous-même, en gardant votre compte, vos annonces, vos abonnés et votre score. Pour votre sécurité, deux preuves sont demandées : votre <strong>mot de passe</strong> et un <strong>code SMS</strong> envoyé sur le <strong>nouveau</strong> numéro.</p>
+<ol class="steps"><li>Allez dans <strong>Profil → Modifier</strong> (ou <strong>Paramètres</strong>), puis dans la ligne <strong>Téléphone</strong> touchez <strong>Modifier</strong>.</li><li>Saisissez votre <strong>mot de passe actuel</strong> et le <strong>nouveau numéro</strong> (format sénégalais +221…).</li><li>Un code à 6 chiffres est envoyé par SMS sur le nouveau numéro. Entrez-le avant 10 minutes.</li><li>C'est terminé : le nouveau numéro est vérifié et remplace l'ancien.</li></ol>
+<h3>Problèmes fréquents</h3>
+<ul><li><strong>« Numéro déjà utilisé »</strong> : ce numéro est lié à un autre compte QUINCH. Utilisez-en un autre ou contactez l'équipe si vous pensez à une erreur.</li>
+<li><strong>Je n'ai pas de mot de passe (compte Google)</strong> : définissez-en un d'abord avec « Mot de passe oublié ».</li>
+<li><strong>Pas de SMS sur le nouveau numéro</strong> : vérifiez qu'il est correct et actif, attendez 60 secondes, puis renvoyez le code.</li>
+<li><strong>Je n'ai plus accès à l'ancien ET au nouveau</strong> : <a href="#contacter-equipe">contactez l'équipe</a>.</li></ul>
+<div class="note ok">Changer de numéro ne fait pas perdre vos badges ni votre historique.</div>
+<div class="cta-row"><a class="btn" href="/profile/edit">Modifier mon profil</a></div>
+</section>
+<section id="score-confiance" aria-labelledby="h-score-confiance"><h2 id="h-score-confiance">Score de confiance et objectif 80 %</h2>
+<p>Chaque compte possède un <strong>score de confiance</strong>, de 0 à 100 %, visible par les acheteurs sur votre profil et vos annonces. Il les rassure : un vendeur avec un score élevé reçoit plus de messages et vend plus facilement. L'objectif conseillé est <strong>80 %</strong>.</p>
+<h3>Comment le score se construit</h3>
+<div class="tablewrap"><table><thead><tr><th>Ce qui compte</th><th>Effet</th></tr></thead><tbody>
+<tr><td>Point de départ à l'inscription</td><td>30 %</td></tr>
+<tr><td>Téléphone vérifié par SMS</td><td>+10 %</td></tr>
+<tr><td>Profil complet : nom, e-mail, pseudo, photo de profil, photo de couverture, ville, région, bio, site web</td><td>jusqu'à +30 %</td></tr>
+<tr><td>Politiques vendeur renseignées (retours, livraison, garanties…)</td><td>+10 %</td></tr>
+<tr><td>Ancienneté du compte</td><td>jusqu'à +15 % sur un an</td></tr>
+<tr><td>Identité vérifiée (<a href="#kyc">KYC</a>)</td><td>+20 %</td></tr>
+<tr><td>Ventes ou transactions réussies</td><td>+2 % chacune, jusqu'à +20 %</td></tr>
+<tr><td>Incidents (paiement échoué, activité suspecte, sanctions)</td><td>le score peut baisser</td></tr></tbody></table></div>
+<h3>Checklist pour atteindre 80 % rapidement</h3>
+<ul class="check">
+<li>Vérifier mon téléphone (code SMS)</li><li>Ajouter une vraie <strong>photo de profil</strong> (visage ou logo net)</li><li>Ajouter une <strong>photo de couverture</strong></li><li>Renseigner ma <strong>ville</strong> et ma <strong>région</strong></li><li>Écrire une <strong>bio</strong> claire : ce que je vends, mes horaires, mes zones de livraison</li><li>Ajouter mon <strong>e-mail</strong></li><li>Ajouter mon <strong>site web</strong> ou ma page de boutique (si j'en ai une)</li><li>Configurer mes <strong>politiques vendeur</strong> (retours, livraison, délais, garanties)</li><li>Faire vérifier mon identité (<a href="#kyc">KYC</a>)</li></ul>
+<div class="note ok">Un profil entièrement rempli, avec ses politiques vendeur, atteint environ <strong>80 %</strong> sans attendre d'historique de ventes. Le reste vient avec le temps et vos ventes.</div>
+<h3>Pourquoi mon score a baissé ?</h3>
+<p>Un score peut diminuer si des informations importantes sont retirées de votre profil, si des incidents sont enregistrés (paiements de frais échoués, activité jugée suspecte) ou après une sanction de modération. Corrigez ce qui est corrigeable : complétez votre profil, respectez les règles, et le score remonte. Si vous pensez qu'il s'agit d'une erreur, <a href="#contacter-equipe">contactez l'équipe</a>.</p>
+<h3>Où le score est-il affiché ?</h3>
+<p>Sur votre profil, sur votre profil public vendeur et sur vos fiches produit. Il peut aussi débloquer un badge automatique (voir <a href="#badges">Badges</a>).</p>
+<div class="cta-row"><a class="btn" href="/profile/edit">Compléter mon profil</a></div>
+</section>
+<div class="grp" role="presentation">Vendre</div>
+<section id="publier" aria-labelledby="h-publier"><h2 id="h-publier">Publier un produit ou un service</h2>
+<p>Publier prend quelques minutes. Plus votre annonce est claire (bonnes photos, vraie description, prix honnête), plus vous recevez de messages.</p>
+<h3>Pas à pas</h3><ol class="steps"><li>Touchez <strong>Publier</strong> (bouton « + ») et choisissez <strong>Produit</strong> ou <strong>Service</strong>.</li><li>Ajoutez une <strong>photo de couverture</strong> : c'est l'image principale, celle qu'on voit dans les listes et le feed. Elle est obligatoire si vous n'ajoutez pas de vidéo.</li><li>Ajoutez des <strong>photos supplémentaires</strong> (voir les limites ci-dessous). Photographiez de face, de dos, les détails et les défauts éventuels, en bonne lumière.</li><li>Ajoutez une <strong>vidéo</strong> (filmée ou importée) pour apparaître dans le feed vidéo. Une courte vidéo qui montre le produit en vrai inspire confiance.</li><li>Remplissez <strong>titre, description, catégorie, prix</strong>, état (neuf, occasion), stock, option négociable, livraison et modes de paiement acceptés. Vous pouvez utiliser des <strong>#hashtags</strong> et des <strong>@mentions</strong> dans la description.</li><li>Touchez <strong>Publier</strong>. Si des frais s'appliquent (voir <a href="#frais-publication">Frais de publication</a>), le paiement se lance avant la mise en ligne.</li></ol>
+<h3>Limites de photos</h3>
+<div class="tablewrap"><table><thead><tr><th></th><th>Compte gratuit</th><th>Compte Premium ★</th></tr></thead><tbody>
+<tr><td>Photo de couverture</td><td>1</td><td>1</td></tr><tr><td>Photos supplémentaires</td><td>5</td><td>10</td></tr><tr><td>Total par annonce</td><td>6</td><td>11</td></tr></tbody></table></div>
+<p>Les images acceptées sont JPG, PNG et WebP, <strong>5 Mo maximum</strong> par image. Une photo trop lourde est réduite automatiquement avant l'envoi. Si l'application refuse une image, essayez de la recadrer ou de la renvoyer en capture d'écran allégée.</p>
+<h3>La vidéo</h3>
+<ul><li>La vidéo permet à votre annonce d'apparaître dans le <a href="#feed-video">feed vidéo</a>.</li><li>Elle est publiée puis <strong>contrôlée par la modération</strong>. Elle peut être refusée (voir <a href="#video-retiree">Vidéo retirée</a>) ou mise en vérification (<a href="#video-verification">Vidéo en vérification</a>).</li><li>Filmez le <strong>vrai</strong> produit, tel que vous le vendez. N'utilisez pas la vidéo d'un autre vendeur, de musique protégée en excès, ni de contenus interdits.</li><li>Pour un service, montrez votre travail : avant/après, réalisations, atelier, équipe.</li></ul>
+<h3>Le statut « brouillon »</h3>
+<p>Si vous publiez une annonce avec vidéo depuis un compte gratuit, elle est d'abord enregistrée en <strong>brouillon</strong> pendant que vous payez les frais de publication. Elle n'est <strong>pas visible</strong> par les autres tant que le paiement n'est pas confirmé. Si le paiement n'est jamais effectué, le brouillon est <strong>supprimé automatiquement après 24 heures</strong>, ainsi que ses fichiers : vous devrez simplement recommencer.</p>
+<h3>Rédiger une bonne annonce</h3>
+<ul><li><strong>Titre précis</strong> : « iPhone 12 128 Go noir, batterie 88 % » vaut mieux que « Téléphone à vendre ».</li><li><strong>Prix réel</strong> et option « négociable » si vous acceptez de discuter.</li><li><strong>Description honnête</strong> : état, défauts, accessoires inclus, délai de livraison, quartiers couverts.</li><li><strong>Catégorie correcte</strong> : sinon l'annonce peut être masquée ou ignorée par la recherche.</li><li>Répondez vite aux messages : cela améliore votre disponibilité perçue.</li></ul>
+<div class="note warn"><strong>Contenus interdits :</strong> articles illégaux ou dangereux, contrefaçons, arnaques, contenus choquants, informations personnelles d'autrui, annonces en double répétées (spam). Ces contenus peuvent être retirés et mener à une sanction (<a href="#avertissement">avertissement</a>).</div>
+<div class="cta-row"><a class="btn" href="/sell">Publier une annonce</a></div>
+</section>
+<section id="frais-publication" aria-labelledby="h-frais-publication"><h2 id="h-frais-publication">Frais de publication et paiement</h2>
+<p>La publication est <strong>gratuite</strong> dans la plupart des cas. Un petit frais s'applique uniquement pour une annonce <strong>avec vidéo</strong> publiée depuis un compte gratuit.</p>
+<div class="tablewrap"><table><thead><tr><th>Situation</th><th>Frais</th></tr></thead><tbody>
+<tr><td>Annonce <strong>sans vidéo</strong> (photos seulement), compte gratuit</td><td>Gratuite</td></tr>
+<tr><td>Annonce <strong>avec vidéo</strong>, compte gratuit</td><td><strong>150 F CFA</strong> par annonce</td></tr>
+<tr><td>Annonce avec ou sans vidéo, compte <strong>Premium</strong> actif</td><td>Gratuite, sans limite de frais</td></tr></tbody></table></div>
+<h3>Comment payer les 150 F</h3><ol class="steps"><li>Remplissez votre annonce avec une vidéo et touchez <strong>Publier</strong>.</li><li>L'écran de paiement propose les moyens disponibles : <strong>Wave</strong>, et <strong>Orange Money</strong> lorsqu'il est proposé. Choisissez votre moyen de paiement.</li><li>Vous êtes redirigé vers l'application ou la page de paiement : confirmez avec votre code secret.</li><li>Revenez dans QUINCH : l'annonce passe de <strong>brouillon</strong> à <strong>publiée</strong> dès que le paiement est confirmé. Cela peut prendre quelques secondes.</li></ol>
+<h3>Si le paiement échoue ou reste « en attente »</h3>
+<ul><li>Vérifiez votre solde Wave ou Orange Money et votre connexion.</li><li>Attendez 1 à 2 minutes puis actualisez votre profil : parfois la confirmation arrive en retard.</li><li>Ouvrez votre brouillon dans votre profil et relancez le paiement.</li><li>Vous avez été débité mais l'annonce reste en brouillon ? Notez l'heure et la référence du paiement et <a href="#contacter-equipe">écrivez à l'équipe</a>.</li><li>Un brouillon non payé est supprimé au bout de 24 heures.</li></ul>
+<h3>Et le paiement entre acheteur et vendeur ?</h3>
+<div class="note">QUINCH <strong>ne prélève rien</strong> sur vos ventes et <strong>ne traite pas</strong> le paiement entre vous et l'acheteur. Vous vous entendez par messages : paiement en espèces à la remise, Wave, Orange Money ou autre, selon les modes que le vendeur a indiqués sur son annonce. Lisez les <a href="#securite">conseils de sécurité</a> avant tout paiement.</div>
+<h3>Passer Premium pour ne plus payer de frais</h3>
+<p>Si vous publiez régulièrement des annonces avec vidéo, le <a href="#premium">Premium</a> peut être plus avantageux : 2 000 F CFA par mois ou 20 000 F CFA par an, publication sans frais et 11 photos par annonce.</p>
+<div class="cta-row"><a class="btn" href="/sell">Publier</a><a class="btn ghost" href="/premium">Voir le Premium</a></div>
+</section>
+<section id="gerer-annonces" aria-labelledby="h-gerer-annonces"><h2 id="h-gerer-annonces">Gérer mes annonces</h2>
+<p>Toutes vos annonces et services sont dans <strong>Profil</strong>. Ouvrez le menu <strong>⋯</strong> d'une annonce pour agir dessus.</p>
+<div class="grid">
+<div class="card"><h4>Modifier</h4><p>Changez le titre, la description, le prix, les photos ou le stock. Les changements sont visibles tout de suite.</p></div>
+<div class="card"><h4>Désactiver (pause)</h4><p>L'annonce est masquée du public mais conservée. Utile en cas de rupture de stock ou de vacances. Vous pouvez la <strong>réactiver</strong> à tout moment.</p></div>
+<div class="card"><h4>Activer</h4><p>Remet en ligne une annonce que vous avez désactivée.</p></div>
+<div class="card"><h4>Supprimer</h4><p><strong>Définitif.</strong> L'annonce disparaît de QUINCH. Si vous voulez seulement faire une pause, préférez « Désactiver ».</p></div></div>
+<h3>Pourquoi mon annonce est-elle « masquée » ?</h3>
+<p>Une annonce masquée n'est plus visible dans le feed, Explorer ni la recherche. Il y a plusieurs raisons possibles :</p>
+<div class="tablewrap"><table><thead><tr><th>Raison</th><th>Qui l'a décidé ?</th><th>Puis-je la remettre en ligne ?</th></tr></thead><tbody>
+<tr><td>Vous l'avez désactivée</td><td>Vous</td><td>Oui : menu ⋯ → Activer.</td></tr>
+<tr><td>Brouillon en attente de paiement</td><td>Automatique</td><td>Oui : finalisez le paiement dans les 24 h.</td></tr>
+<tr><td>Votre compte est suspendu</td><td>Modération</td><td>Automatiquement à la fin de la suspension. Voir <a href="#suspension">Suspension</a>.</td></tr>
+<tr><td>Retirée par la modération</td><td>Modération</td><td>Non, mais vous pouvez <a href="#contester">contester</a>. Voir <a href="#annonce-masquee">Annonce masquée</a>.</td></tr></tbody></table></div>
+<div class="note warn">Une annonce retirée par la modération ne peut pas être réactivée par son propriétaire : ouvrez la notification correspondante et contestez la décision si vous pensez qu'elle est injuste.</div>
+<h3>Conseils de gestion</h3>
+<ul><li>Mettez à jour le <strong>stock</strong> : une annonce épuisée mais visible déçoit les acheteurs.</li><li>Supprimez les annonces dont vous ne disposez plus plutôt que de laisser de vieilles annonces actives.</li><li>Modifier un prix après un échange avec un acheteur : prévenez-le dans la conversation.</li></ul>
+<div class="cta-row"><a class="btn" href="/profile">Mes annonces</a></div>
+</section>
+<div class="grp" role="presentation">Utiliser QUINCH</div>
+<section id="feed-video" aria-labelledby="h-feed-video"><h2 id="h-feed-video">Le feed vidéo</h2>
+<p>Le feed vidéo est l'écran plein format de QUINCH : chaque vidéo présente un produit ou un service. On y accède par le bouton <strong>Vidéos</strong> de l'accueil. Deux onglets : <strong>Pour toi</strong> (sélection générale) et <strong>Abonnements</strong> (vendeurs que vous suivez, quand le suivi est disponible).</p>
+<div class="tablewrap"><table><thead><tr><th>Geste / bouton</th><th>Effet</th></tr></thead><tbody>
+<tr><td>Glisser vers le haut / le bas</td><td>Vidéo suivante / précédente (sur ordinateur : molette ou flèches ↑ ↓)</td></tr>
+<tr><td>Toucher la vidéo</td><td>Pause / lecture</td></tr>
+<tr><td>Double-toucher</td><td>Ajoute un « j'aime » ♥</td></tr>
+<tr><td>Maintenir le doigt appuyé</td><td>Lecture accélérée <strong>×2</strong> tant que vous maintenez ; relâchez pour revenir à la vitesse normale</td></tr>
+<tr><td>Icône haut-parleur</td><td>Couper / remettre le son</td></tr>
+<tr><td>♥</td><td>Aimer / ne plus aimer</td></tr>
+<tr><td>💬</td><td>Ouvrir les commentaires et avis de l'annonce</td></tr>
+<tr><td>Partager ↪</td><td>Partager le lien de l'annonce (quand le partage est disponible)</td></tr>
+<tr><td>🔖</td><td>Enregistrer dans vos favoris</td></tr>
+<tr><td>Voir détails</td><td>Ouvre la fiche : prix, description, état, livraison, modes de paiement, vendeur</td></tr>
+<tr><td>Photo / nom du vendeur</td><td>Ouvre son profil public</td></tr>
+<tr><td>Contacter / Acheter</td><td>Ouvre une conversation avec le vendeur à propos de cette annonce</td></tr></tbody></table></div>
+<h3>Le panneau « Voir détails »</h3>
+<p>Il s'ouvre par-dessus la vidéo. Glissez la poignée pour l'agrandir ou le réduire. Vous y trouvez aussi le bouton <strong>Signaler</strong> (voir <a href="#signaler">Signaler</a>), les avis, et le moyen de contacter le vendeur.</p>
+<h3>Qui apparaît dans le feed ?</h3>
+<p>Les vidéos de <strong>tous</strong> les vendeurs, gratuits ou Premium. L'ordre favorise les contenus récents et engageants ; à ancienneté égale, les comptes Premium sont un peu mis en avant. Une annonce <strong>sans vidéo</strong> n'apparaît pas dans le feed vidéo mais reste visible dans <a href="#explorer">Explorer</a>, la recherche et le profil du vendeur.</p>
+<h3>Je ne vois pas ma vidéo dans le feed</h3>
+<ul><li>Elle est peut-être <a href="#video-verification">en vérification</a> ou <a href="#video-retiree">retirée</a> : consultez vos notifications.</li><li>Votre annonce est peut-être en <a href="#publier">brouillon</a> (paiement non terminé), désactivée ou <a href="#annonce-masquee">masquée</a>.</li><li>Votre compte est peut-être <a href="#suspension">suspendu</a>.</li><li>Actualisez le feed : l'ordre change à chaque ouverture.</li></ul>
+<h3>Vidéo qui ne charge pas ou saccade</h3>
+<p>Vérifiez votre connexion (données mobiles faibles, Wi-Fi saturé). Faites une pause de quelques secondes pour laisser charger, ou ouvrez la fiche détail en photos pendant ce temps.</p>
+<div class="note">La cloche en haut du feed affiche le même nombre de notifications non lues que le menu principal.</div>
+<div class="cta-row"><a class="btn" href="/videos">Ouvrir le feed vidéo</a></div>
+</section>
+<section id="explorer" aria-labelledby="h-explorer"><h2 id="h-explorer">Explorer et recherche</h2>
+<p><strong>Explorer</strong> (page <em>Marketplace</em>) liste <strong>toutes</strong> les annonces actives, <strong>avec ou sans vidéo</strong>, comptes gratuits et Premium confondus (les Premium sont légèrement mis en avant).</p>
+<h3>Filtrer et trier</h3>
+<ul><li><strong>Produits / Services</strong> : choisissez ce que vous cherchez.</li><li><strong>Catégorie</strong>, <strong>fourchette de prix</strong>, <strong>état</strong> (neuf / occasion) et <strong>tri</strong> (plus récent, prix, popularité…).</li><li>Remettez les filtres à zéro si vous ne voyez plus aucun résultat : un filtre trop strict est la première cause d'une liste vide.</li></ul>
+<h3>La recherche</h3>
+<ul><li>Tapez un mot (produit, marque, quartier, hashtag) : des <strong>suggestions</strong> apparaissent instantanément.</li><li>Vos <strong>recherches récentes</strong> sont conservées pour aller plus vite ; vous pouvez les effacer.</li><li>La recherche trouve aussi des <strong>vendeurs</strong> par nom ou pseudo, avec leurs badges.</li></ul>
+<h3>Astuces pour mieux chercher</h3>
+<ul><li>Employez des mots simples (« canapé », « iPhone 12 », « coiffure à domicile »).</li><li>Essayez avec et sans accents, le singulier et le pluriel.</li><li>Regardez la ville du vendeur, son <a href="#score-confiance">score de confiance</a> et ses <a href="#badges">badges</a> avant de le contacter.</li><li>Enregistrez ce qui vous plaît avec 🔖 pour le retrouver dans vos <a href="#avis-favoris">favoris</a>.</li></ul>
+<h3>Aucun résultat ?</h3>
+<p>L'annonce n'existe peut-être pas ou n'est plus active. Vérifiez l'orthographe, retirez des filtres, ou publiez une demande de service en contactant des vendeurs proches.</p>
+<div class="cta-row"><a class="btn" href="/marketplace">Ouvrir Explorer</a><a class="btn ghost" href="/search">Rechercher</a></div>
+</section>
+<section id="messages" aria-labelledby="h-messages"><h2 id="h-messages">Messages</h2>
+<p>La messagerie est le cœur de QUINCH : c'est là que vous discutez avec le vendeur ou l'acheteur, que vous convenez du prix, du paiement et de la remise.</p>
+<h3>Démarrer une conversation</h3>
+<ol class="steps"><li>Ouvrez une annonce ou un profil vendeur et touchez <strong>Contacter</strong> (ou <strong>Acheter</strong>).</li><li>Écrivez votre message : le produit concerné est automatiquement <strong>étiqueté</strong> dans la conversation.</li><li>Retrouvez ensuite la discussion dans l'onglet <strong>Messages</strong>.</li></ol>
+<h3>Une seule conversation par personne</h3>
+<p>Entre deux personnes, il n'existe <strong>qu'une conversation</strong>. Si vous reparlez d'un autre produit, il est ajouté comme étiquette dans la même discussion, ce qui évite de perdre l'historique.</p>
+<h3>Ce que vous pouvez envoyer</h3>
+<div class="tablewrap"><table><thead><tr><th>Type</th><th>Limite</th></tr></thead><tbody>
+<tr><td>Texte</td><td>2 000 caractères par message</td></tr>
+<tr><td>Message vocal</td><td>10 Mo maximum, avec forme d'onde, barre de progression et vitesse 1× / 1,5× / 2×</td></tr>
+<tr><td>Photos et fichiers</td><td>20 Mo maximum par fichier</td></tr></tbody></table></div>
+<p class="muted">Selon les versions de l'application, l'envoi de vocaux et de fichiers peut être activé ou non : si vous ne voyez pas le bouton, la fonction n'est pas encore disponible pour tous.</p>
+<h3>Répertoire et disponibilité</h3>
+<ul><li>Filtre <strong>Tous</strong> (par défaut) ou <strong>Mes amis</strong> : on devient ami lorsque deux personnes s'abonnent l'une à l'autre.</li><li>Un indicateur montre si la personne est <strong>disponible</strong> (en ligne récemment). Un vendeur peut mettre plusieurs heures à répondre : ce n'est pas un signe de fraude.</li></ul>
+<h3>Supprimer un message ou une conversation</h3>
+<p>Appuyez longuement sur un message (ou ouvrez son menu) pour le supprimer. Vous pouvez aussi supprimer une conversation entière. Attention : conserver la discussion est utile si un <a href="#litige">litige</a> survient ; ne supprimez pas les échanges liés à un achat en cours.</p>
+<h3>Bloquer ou signaler</h3>
+<p>Une personne vous harcèle, vous insulte ou vous propose une arnaque ? Bloquez-la depuis son profil (la liste est gérable dans <strong>Paramètres → Bloqués et restreints</strong>) et <a href="#signaler">signalez-la</a>.</p>
+<div class="note warn">Ne donnez jamais votre mot de passe ni un code SMS, même à quelqu'un qui dit être de l'équipe. Évitez de payer à l'avance un inconnu. Gardez la discussion dans QUINCH : elle sert de preuve.</div>
+<h3>Le message « Veuillez patienter, chargement des messages… »</h3>
+<p>Il s'affiche brièvement pendant que la conversation se charge. S'il reste longtemps, vérifiez votre connexion puis rouvrez l'écran.</p>
+<div class="cta-row"><a class="btn" href="/messages">Ouvrir mes messages</a></div>
+</section>
+<section id="notifications" aria-labelledby="h-notifications"><h2 id="h-notifications">Notifications</h2>
+<p>Les notifications vous informent de tout ce qui vous concerne : messages, interactions, décisions de l'équipe. Ouvrez la cloche ou la page <strong>Notifications</strong>.</p>
+<h3>Les 4 onglets</h3>
+<div class="grid"><div class="card"><h4>Tout</h4><p>Toutes vos notifications, de la plus récente à la plus ancienne.</p></div><div class="card"><h4>Interactions</h4><p>J'aime, commentaires, mentions, nouveaux abonnés.</p></div><div class="card"><h4>Messages</h4><p>Nouveaux messages de vos conversations.</p></div><div class="card"><h4>Système</h4><p>Messages de l'équipe QUINCH : bienvenue, décisions de modération, Premium, support, litiges.</p></div></div>
+<h3>Lu / non lu</h3>
+<p>Une notification non lue est en gras avec un point de couleur. Elle passe en « lue » quand vous l'ouvrez. Vous pouvez aussi tout marquer comme lu. Le compteur de la cloche reflète le nombre de non lues.</p>
+<h3>Où mène chaque notification ?</h3>
+<div class="tablewrap"><table><thead><tr><th>Notification</th><th>Destination</th></tr></thead><tbody>
+<tr><td>Message d'une personne</td><td>Sa conversation</td></tr>
 <tr><td>J'aime, commentaire, mention</td><td>L'annonce concernée</td></tr>
 <tr><td>Nouvel abonné</td><td>Son profil</td></tr>
-<tr><td>Message de l'équipe « Voir le détail »</td><td>Ce guide</td></tr>
-<tr><td>Bienvenue</td><td>Modifier mon profil</td></tr></table>
-<p>Les messages importants de l'équipe (par exemple « nous avons corrigé… ») s'affichent aussi en haut du feed dès votre arrivée ; vous pouvez les fermer.</p>
-<p>Réglez les types de notifications dans <strong>Paramètres</strong>.</p>
+<tr><td>Message de l'équipe</td><td>Bouton <strong>« Voir le détail »</strong> → la page du message (et ce guide pour comprendre)</td></tr>
+<tr><td>Bienvenue</td><td>Modifier mon profil</td></tr></tbody></table></div>
+<h3>La page « message de l'équipe »</h3>
+<p>Quand l'équipe QUINCH vous écrit (avertissement, suspension, vidéo retirée, réponse de support…), la notification porte un bouton <strong>« Voir le détail »</strong>. Il ouvre la page du message qui affiche la décision complète, le motif et, si c'est possible, le bouton <strong>« Contester cette décision »</strong>. Voir <a href="#contester">Comment contester</a>. Les messages importants s'affichent aussi en haut du feed à votre arrivée ; vous pouvez les fermer, ils restent dans vos notifications.</p>
+<h3>Régler ce que vous recevez</h3>
+<p><strong>Paramètres → Notifications</strong> : activez ou coupez les notifications push, e-mail et SMS, et choisissez le détail par type (messages, j'aime, abonnés…). Les messages importants de l'équipe restent visibles dans la page Notifications.</p>
+<h3>Je ne reçois plus de notifications</h3>
+<ul><li>Vérifiez les réglages ci-dessus et l'autorisation des notifications dans votre téléphone ou navigateur.</li><li>Votre compte est-il <a href="#suspension">suspendu</a> ?</li><li>Actualisez la page, puis reconnectez-vous.</li></ul>
+<div class="cta-row"><a class="btn" href="/notifications">Voir mes notifications</a><a class="btn ghost" href="/settings">Réglages</a></div>
 </section>
-
-<section id="profil"><h2>8. Profil, badges &amp; changement de numéro</h2>
-<p>Votre <strong>profil vendeur</strong> public montre vos annonces, avis, abonnés, politiques et score de confiance. Vos <strong>badges</strong> (fidélité, vérification, premium…) s'affichent partout : profil, recherche, feed, messages, notifications, fiches, classement.</p>
-<h3>Changer de numéro</h3>
-<ol class="steps"><li>Profil → Modifier → Téléphone → <strong>Modifier</strong>.</li><li>Saisissez votre mot de passe et le nouveau numéro.</li><li>Entrez le code reçu par SMS sur le nouveau numéro.</li></ol>
+<section id="profil" aria-labelledby="h-profil"><h2 id="h-profil">Profil et profil public vendeur</h2>
+<p>Votre <strong>profil</strong> est votre vitrine. Les acheteurs le consultent avant de vous écrire.</p>
+<h3>Ce que montre votre profil public</h3>
+<ul><li>Photo, couverture, nom, pseudo, ville et région, bio, site web.</li><li>Score de confiance et <a href="#badges">badges</a>.</li><li>Vos annonces et services, vos avis, vos abonnés.</li><li>Vos <strong>politiques vendeur</strong> : retours, livraison, garanties.</li></ul>
+<h3>Modifier votre profil</h3>
+<ol class="steps"><li>Ouvrez <strong>Profil</strong> puis <strong>Modifier</strong>.</li><li>Changez photo, couverture, nom, bio, ville, région, e-mail, site, politiques vendeur.</li><li>Enregistrez : le <a href="#score-confiance">score de confiance</a> se met à jour.</li></ol>
+<h3>Voir un profil vendeur</h3>
+<p>Touchez la photo ou le nom d'un vendeur depuis une annonce ou une vidéo. Via le menu <strong>⋯</strong>, vous pouvez le partager, le bloquer ou le <a href="#signaler">signaler</a>.</p>
+<h3>Paramètres du compte</h3>
+<ul><li><strong>Changer mot de passe</strong> et <a href="#changer-numero">numéro</a>.</li><li><strong>Notifications</strong> et préférences de <a href="#classement">classement</a>.</li><li><strong>Bloqués et restreints</strong>, <strong>Exporter mes données</strong>, <strong>Langue</strong>.</li><li><strong>Signaler un problème</strong> (contact de l'équipe) et <a href="#supprimer-compte">suppression du compte</a>.</li></ul>
+<h3>Bons réflexes de vendeur</h3>
+<p>Une bio claire (ce que vous vendez, zones de livraison, horaires), de vraies photos, des politiques vendeur remplies et des réponses rapides augmentent la confiance et les ventes.</p>
+<div class="cta-row"><a class="btn" href="/profile">Mon profil</a><a class="btn ghost" href="/profile/edit">Modifier</a></div>
 </section>
-
-<section id="premium"><h2>9. Premium <span class="pill g">★</span></h2>
-<table><tr><th>Formule</th><th>Prix</th></tr><tr><td>Mensuel</td><td>2 000 F CFA</td></tr><tr><td>Annuel</td><td>20 000 F CFA</td></tr></table>
-<ul><li>11 photos par annonce au lieu de 6.</li><li>Annonces avec vidéo sans les 150 F.</li><li>Mise en avant dans le feed et l'Explorer à ancienneté égale.</li><li>Accès au <strong>Classement</strong>.</li><li>Badge Premium visible partout.</li></ul>
-<p>Paiement par Wave. L'abonnement expire automatiquement ; vous pouvez le renouveler à tout moment.</p>
+<section id="badges" aria-labelledby="h-badges"><h2 id="h-badges">Badges : comment ils fonctionnent</h2>
+<p>Un <strong>badge</strong> est une petite marque qui apparaît à côté du nom d'un compte pour dire quelque chose de lui : « identité vérifiée », « abonné Premium », « vendeur très actif »… Les badges aident les acheteurs à choisir en confiance, et récompensent les bons vendeurs.</p>
+<h3>Qui crée les badges ?</h3>
+<p>Les badges sont <strong>créés et gérés par l'équipe QUINCH</strong>. Chaque badge a :</p>
+<ul><li>un <strong>nom</strong> (ex. « Top Vendeur »),</li><li>une <strong>icône</strong> et une <strong>couleur</strong>,</li><li>une <strong>description</strong> (ce qu'il signifie),</li><li>une règle <strong>« Comment l'obtenir »</strong>.</li></ul>
+<h3>Deux façons d'obtenir un badge</h3>
+<div class="grid">
+<div class="card"><h4><span class="pill auto">Automatique</span></h4><p>Le système <strong>attribue</strong> le badge dès que la condition est remplie, et le <strong>retire</strong> si elle n'est plus remplie. Exemples : abonnement Premium actif, identité vérifiée, nombre de ventes finalisées, ancienneté du compte, score de confiance.</p></div>
+<div class="card"><h4><span class="pill man">Attribué par l'équipe</span></h4><p>L'équipe décerne le badge manuellement à un compte qui le mérite (ambassadeur, partenaire…). Exception : <strong>« Client Fidèle »</strong>, qu'un <strong>vendeur</strong> peut offrir à un acheteur qui a réellement acheté chez lui.</p></div></div>
+<div class="note">Ainsi un badge automatique n'est jamais « acheté » ni « demandé » : vous le méritez en remplissant la condition. Si vous perdez la condition (ex. votre Premium expire), le badge correspondant disparaît (voir <a href="#premium-retire">Premium retiré</a>).</div>
+<h3>Où voit-on les badges ?</h3>
+<p>L'équipe choisit, pour chaque badge, les endroits où il s'affiche : <strong>Accueil, Explorer, Feed vidéo, Détail produit, Profil vendeur, Messages, Recherche, Notifications, Classement, Mon profil</strong>. Un même badge n'apparaît donc pas forcément partout.</p>
+<h3>La liste officielle des badges</h3>
+<p class="muted">La liste ci-dessous est chargée en direct depuis QUINCH : elle reflète toujours les badges actuellement proposés.</p>
+<div id="badges-live" aria-live="polite"></div>
+<div id="badges-fallback" class="hide">
+<div class="note warn">La liste en direct n'a pas pu être chargée (connexion ou fonction indisponible). Voici les badges habituellement proposés ; les règles exactes peuvent évoluer.</div>
+<div class="grid" id="badges-static">
+<div class="card"><h4>Vérifié</h4><p>Identité contrôlée par l'équipe (KYC). Automatique.</p></div>
+<div class="card"><h4>Premium</h4><p>Abonnement Premium actif. Automatique, retiré à l'expiration.</p></div>
+<div class="card"><h4>Top Vendeur</h4><p>Vendeur très bien noté et très actif.</p></div>
+<div class="card"><h4>Livraison Express</h4><p>Vendeur reconnu pour des livraisons rapides.</p></div>
+<div class="card"><h4>Client Fidèle</h4><p>Offert par un vendeur à un acheteur qui a vraiment acheté chez lui.</p></div>
+<div class="card"><h4>Reviewer Actif</h4><p>Acheteur qui laisse régulièrement des avis utiles.</p></div>
+<div class="card"><h4>Première Vente</h4><p>Votre première vente finalisée.</p></div>
+<div class="card"><h4>100 Ventes</h4><p>100 ventes finalisées.</p></div>
+<div class="card"><h4>Ambassadeur</h4><p>Membre qui fait vivre la communauté QUINCH. Attribué par l'équipe.</p></div>
+<div class="card"><h4>1 an sur QUINCH</h4><p>Compte actif depuis plus d'un an. Automatique.</p></div></div></div>
+<h3>Astuces : comment gagner des badges</h3>
+<ul class="check">
+<li>Faites vérifier votre identité (<a href="#kyc">KYC</a>) : badge « Vérifié ».</li>
+<li>Passez <a href="#premium">Premium</a> : badge Premium tant que l'abonnement est actif.</li>
+<li>Finalisez vos ventes honnêtement et conservez de bons avis : badges de ventes.</li>
+<li>Complétez votre profil et gardez un bon <a href="#score-confiance">score de confiance</a>.</li>
+<li>Soyez fidèle : l'ancienneté débloque des badges avec le temps.</li>
+<li>Laissez des avis utiles sur les annonces que vous avez achetées.</li>
+<li>Respectez les règles : une sanction peut faire perdre des badges.</li></ul>
+<h3>Questions fréquentes</h3>
+<details><summary>Pourquoi je n'ai pas encore mon badge ?</summary><div class="dbody">La condition n'est probablement pas encore remplie. Relisez « Comment l'obtenir » sur la carte du badge. Les badges automatiques se mettent à jour peu après que la condition est remplie.</div></details>
+<details><summary>Pourquoi mon badge a disparu ?</summary><div class="dbody">Pour un badge automatique, la condition n'est plus remplie (Premium expiré, score en dessous du seuil, etc.). Pour un badge manuel, contactez l'équipe.</div></details>
+<details><summary>Puis-je demander un badge ?</summary><div class="dbody">Les badges automatiques ne se demandent pas, ils se méritent. Pour un badge attribué par l'équipe, vous pouvez écrire à l'équipe (<a href="#contacter-equipe">Contacter l'équipe</a>).</div></details>
 </section>
-
-<section id="classement"><h2>10. Classement</h2>
-<p>Réservé aux comptes Premium : meilleurs vendeurs, produits, profils et abonnés. Activez ou masquez votre présence dans vos préférences de classement.</p>
+<section id="avis-favoris" aria-labelledby="h-avis-favoris"><h2 id="h-avis-favoris">Avis, commentaires et favoris</h2>
+<h3>Laisser un avis</h3>
+<p>Quand la fonction est disponible, vous pouvez noter une annonce de <strong>1 à 5 étoiles</strong> et écrire un commentaire. Les avis aident les autres acheteurs et le vendeur.</p>
+<ul><li>Un avis est lié à <strong>l'annonce</strong> concernée, pas à tout le profil du vendeur. Il apparaît aussi dans l'onglet Avis du profil vendeur.</li><li><strong>Un seul avis</strong> par personne et par annonce. Vous pouvez le modifier ensuite.</li><li>Le <strong>vendeur peut répondre</strong> publiquement à un avis.</li><li>Restez respectueux et décrivez votre expérience réelle : pas d'insultes, de coordonnées personnelles ni de publicité.</li></ul>
+<h3>Un avis me concerne et je suis en désaccord</h3>
+<p>Répondez calmement en public, ou <a href="#signaler">signalez</a> l'avis s'il est faux, insultant ou hors sujet. Si l'équipe retire un avis, vous êtes prévenu : voir <a href="#avis-retire">Avis retiré</a>.</p>
+<h3>Commentaires sur les vidéos</h3>
+<p>Dans le feed vidéo, 💬 ouvre les commentaires de l'annonce. Vous pouvez mentionner un compte avec <strong>@pseudo</strong>. Les mêmes règles de respect s'appliquent.</p>
+<h3>Favoris</h3>
+<ul><li>Touchez 🔖 sur une annonce ou une vidéo pour l'enregistrer.</li><li>Retrouvez-les dans <strong>Favoris</strong>. Quand les collections sont disponibles, vous pouvez les ranger par thème.</li><li>Si une annonce favorite disparaît, c'est qu'elle a été supprimée, désactivée ou retirée.</li></ul>
+<h3>Suivre un vendeur</h3>
+<p>Quand le suivi est activé, vous pouvez vous abonner à un vendeur pour retrouver ses vidéos dans l'onglet <strong>Abonnements</strong> du feed. Deux abonnés mutuels deviennent « amis » dans les messages. Négociation du prix : selon disponibilité, elle peut aussi être proposée sur certaines annonces.</p>
+<div class="cta-row"><a class="btn" href="/favorites">Mes favoris</a></div>
 </section>
-
-<section id="avis"><h2>11. Avis &amp; favoris</h2>
-<ul><li>Un avis (1 à 5 étoiles + commentaire) est lié à <strong>l'annonce</strong> concernée : il n'apparaît pas sur les autres annonces du même vendeur. Il est visible aussi dans l'onglet Avis du profil vendeur.</li>
-<li>Un seul avis par personne et par annonce ; le vendeur peut répondre.</li>
-<li>🔖 <strong>Favoris</strong> : retrouvez vos annonces enregistrées et organisez-les en collections.</li></ul>
+<div class="grp" role="presentation">Premium & classement</div>
+<section id="premium" aria-labelledby="h-premium"><h2 id="h-premium">Premium</h2>
+<p>Le <strong>Premium</strong> est l'abonnement des vendeurs actifs. Il enlève les frais de publication, augmente le nombre de photos et vous met en avant.</p>
+<h3>Ce que vous obtenez</h3>
+<ul><li><strong>11 photos</strong> par annonce (1 couverture + 10) au lieu de 6.</li><li><strong>Annonces avec vidéo sans frais</strong> (au lieu de 150 F CFA).</li><li><strong>Mise en avant</strong> dans le feed et Explorer, à ancienneté égale.</li><li>Accès au <a href="#classement">Classement</a>.</li><li><strong>Badge Premium</strong> visible sur votre profil et vos annonces.</li></ul>
+<h3>Tarifs</h3>
+<div class="tablewrap"><table><thead><tr><th>Formule</th><th>Prix</th><th>Pour qui ?</th></tr></thead><tbody>
+<tr><td>Mensuel</td><td><strong>2 000 F CFA</strong></td><td>Essayer ou vendre de façon ponctuelle</td></tr>
+<tr><td>Annuel</td><td><strong>20 000 F CFA</strong></td><td>Vendeurs réguliers : l'équivalent de 2 mois offerts</td></tr></tbody></table></div>
+<h3>S'abonner</h3>
+<ol class="steps"><li>Ouvrez <strong>Premium</strong> depuis le menu ou votre profil.</li><li>Choisissez <strong>Mensuel</strong> ou <strong>Annuel</strong>.</li><li>Payez avec <strong>Wave</strong> (ou <strong>Orange Money</strong> lorsqu'il est proposé) et confirmez dans l'application de paiement.</li><li>Retour sur QUINCH : votre abonnement et votre badge sont activés dès la confirmation du paiement.</li></ol>
+<h3>Durée, expiration et renouvellement</h3>
+<ul><li>L'abonnement est valable pour la période payée (1 mois ou 1 an).</li><li>Il <strong>expire automatiquement</strong> à la date de fin. Vous pouvez le <strong>renouveler à tout moment</strong> depuis la page Premium.</li><li>Pas de renouvellement automatique caché : si vous ne payez pas, il s'arrête.</li></ul>
+<h3>Problèmes de paiement</h3>
+<ul><li>Payé mais pas activé : attendez quelques minutes, actualisez, puis <a href="#contacter-equipe">contactez l'équipe</a> avec l'heure et la référence du paiement.</li><li>Paiement annulé ou échoué : réessayez, aucun abonnement n'est créé sans paiement confirmé.</li></ul>
+<h3>Que se passe-t-il quand il se termine ?</h3>
+<p>Voir <a href="#premium-retire">Premium retiré ou expiré</a>.</p>
+<div class="cta-row"><a class="btn" href="/premium">Passer Premium</a></div>
 </section>
-
-<section id="signaler"><h2>12. Signaler &amp; modération</h2>
-<p>Un contenu ou un profil vous paraît frauduleux ou inapproprié ? Utilisez <strong>Signaler</strong> : dans la fiche d'une annonce, dans les détails du feed vidéo, ou dans le menu ⋯ d'un profil vendeur.</p>
-<table><tr><th>Cible</th><th>Motifs</th></tr>
+<section id="premium-retire" aria-labelledby="h-premium-retire"><h2 id="h-premium-retire">Premium retiré ou expiré</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre abonnement Premium n'est plus actif. Vous repassez en compte <strong>gratuit</strong> : votre compte et vos annonces restent en place.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>La période payée est arrivée à son terme (mensuel ou annuel).</li><li>Un paiement n'a pas été confirmé.</li><li>Dans de rares cas, l'équipe a retiré l'abonnement (par exemple après une erreur de paiement ou une décision de modération).</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li>Vos <strong>annonces existantes restent en ligne</strong> ; seules les nouvelles publications avec vidéo coûtent à nouveau <strong>150 F CFA</strong>.</li><li>Vous repassez à <strong>6 photos</strong> maximum par nouvelle annonce (1 couverture + 5).</li><li>Vous perdez la mise en avant, le badge Premium et l'accès au <a href="#classement">Classement</a>.</li><li>Pour retrouver ces avantages : <strong>renouvelez</strong> sur la page Premium, le paiement réactive tout immédiatement.</li><li>Si vous pensiez être encore abonné, vérifiez la date de fin et vos paiements Wave / Orange Money.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous pensez que le retrait est une erreur ? Ouvrez la notification de l'équipe → <strong>Voir le détail</strong> et utilisez <strong>Contester cette décision</strong> si le bouton est présent (voir <a href="#contester">Comment contester</a>).</li><li>Sinon, <a href="#contacter-equipe">écrivez à l'équipe</a> avec votre pseudo, la date et la référence de paiement.</li></ul></div></div><a class="btn" href="/premium">Renouveler Premium</a> <a class="btn" href="/settings">Contacter l'équipe</a> </section>
+<section id="classement" aria-labelledby="h-classement"><h2 id="h-classement">Classement</h2>
+<p>Le <strong>Classement</strong> met en valeur les meilleurs vendeurs, produits, profils et comptes les plus suivis. Il est <strong>réservé aux comptes Premium</strong>.</p>
+<h3>Ce que vous y trouvez</h3>
+<ul><li>Meilleurs vendeurs, meilleurs produits, profils les plus actifs, comptes les plus suivis.</li><li>Les badges des comptes classés, quand ils sont affichés dans cette zone.</li></ul>
+<h3>Participer ou rester discret</h3>
+<p>Votre présence est <strong>facultative (opt-in)</strong>. Dans vos <strong>préférences de classement</strong> (Paramètres / page Classement), vous pouvez :</p>
+<ul><li><strong>Apparaître</strong> avec votre nom et votre pseudo,</li><li>apparaître de façon <strong>anonyme</strong>,</li><li>ou ne pas apparaître du tout.</li></ul>
+<h3>Je ne peux pas ouvrir le Classement</h3>
+<ul><li>Votre abonnement Premium est peut-être expiré : voir <a href="#premium-retire">Premium retiré</a>.</li><li>Renouvelez sur la page <a href="#premium">Premium</a>.</li></ul>
+<div class="note">Le classement évolue avec l'activité : ventes, avis, engagement. Pour monter, publiez de belles annonces, répondez vite et gardez un bon score de confiance.</div>
+<div class="cta-row"><a class="btn" href="/rankings">Voir le classement</a></div>
+</section>
+<div class="grp" role="presentation">Modération & décisions</div>
+<section id="signaler" aria-labelledby="h-signaler"><h2 id="h-signaler">Signaler un utilisateur, une annonce ou un problème</h2>
+<p>Un contenu ou un compte vous paraît frauduleux, dangereux ou inapproprié ? Signalez-le : c'est la meilleure façon de protéger la communauté.</p>
+<h3>Où trouver « Signaler » ?</h3>
+<ul><li>Dans la <strong>fiche d'une annonce</strong>.</li><li>Dans le panneau <strong>Voir détails</strong> du feed vidéo.</li><li>Dans le menu <strong>⋯</strong> d'un <strong>profil vendeur</strong>.</li><li>Pour un bug ou une suggestion : <strong>Paramètres → Signaler un problème</strong>.</li></ul>
+<div class="tablewrap"><table><thead><tr><th>Cible</th><th>Motifs proposés</th></tr></thead><tbody>
 <tr><td>Annonce / vidéo</td><td>Fraude, contrefaçon, contenu inapproprié, spam, autre</td></tr>
-<tr><td>Profil</td><td>Fraude, harcèlement, usurpation, contenu inapproprié, spam, autre</td></tr></table>
-<p>Chaque signalement arrive dans l'espace d'administration, est examiné par l'équipe et peut mener à un avertissement, un retrait ou une suspension. Un doublon est refusé tant que le premier est en cours. Les signalements abusifs peuvent être sanctionnés.</p>
-<p>Votre annonce a été retirée ? Contestez-la depuis la notification correspondante.</p>
-<p>Un bug ou une suggestion ? Utilisez <strong>Paramètres → Signaler un problème</strong>.</p>
+<tr><td>Profil</td><td>Fraude, harcèlement, usurpation d'identité, contenu inapproprié, spam, autre</td></tr></tbody></table></div>
+<h3>Comment faire un bon signalement</h3>
+<ol class="steps"><li>Touchez <strong>Signaler</strong> et choisissez le <strong>motif</strong> le plus proche.</li><li>Ajoutez une <strong>description précise</strong> : ce qui s'est passé, quand, ce que la personne a demandé ou fait.</li><li>Envoyez. Conservez la conversation (ne la supprimez pas) : elle peut servir de preuve.</li></ol>
+<h3>Que se passe-t-il ensuite ?</h3>
+<ul><li>Votre signalement est <strong>examiné par l'équipe</strong> QUINCH.</li><li>Selon la gravité, l'équipe peut : ne rien faire, envoyer un <a href="#avertissement">avertissement</a>, retirer un contenu, <a href="#suspension">suspendre</a> ou <a href="#bannissement">bannir</a> un compte.</li><li>Pour protéger la vie privée de chacun, vous ne recevez pas toujours le détail de la sanction.</li><li>Un signalement identique est refusé tant que le premier est en cours de traitement : inutile de le répéter.</li></ul>
+<div class="note warn"><strong>Signalements abusifs :</strong> signaler à tort et de mauvaise foi (pour nuire à un concurrent, par exemple) est interdit et peut lui-même entraîner un avertissement, puis une suspension.</div>
+<h3>En attendant, protégez-vous</h3>
+<ul><li>Bloquez la personne (Paramètres → Bloqués et restreints).</li><li>N'envoyez pas d'argent, de code SMS ou de mot de passe.</li><li>Si vous avez déjà payé, <a href="#litige">ouvrez un litige</a> en écrivant à l'équipe et contactez votre opérateur de paiement.</li></ul>
 </section>
+<section id="kyc" aria-labelledby="h-kyc"><h2 id="h-kyc">Vérification d'identité (KYC)</h2>
+<p>La <strong>vérification d'identité</strong> (KYC) consiste à faire contrôler par l'équipe QUINCH que vous êtes bien une vraie personne. Elle rassure les acheteurs et améliore fortement votre profil.</p>
+<h3>Ce que ça vous apporte</h3>
+<ul><li><strong>+20 %</strong> de <a href="#score-confiance">score de confiance</a>.</li><li>Le badge <strong>Vérifié</strong> (voir <a href="#badges">Badges</a>).</li><li>Plus de confiance, donc plus de messages et de ventes.</li></ul>
+<h3>Comment ça se passe</h3>
+<ol class="steps"><li>Dans votre profil ou vos paramètres, suivez l'invitation à vérifier votre identité quand elle est proposée (ou répondez à la demande de l'équipe).</li><li>Envoyez les éléments demandés, avec des photos <strong>nettes et lisibles</strong>, sans reflets.</li><li>L'équipe examine votre demande. Vous êtes prévenu par <strong>notification</strong> : acceptée ou refusée, avec la raison.</li><li>Si c'est accepté, votre statut passe à <strong>vérifié</strong> et le badge s'affiche.</li></ol>
+<h3>Si la demande est refusée</h3>
+<ul><li>Lisez le motif (document illisible, nom différent du profil, informations incomplètes).</li><li>Corrigez et renvoyez une nouvelle demande avec de meilleures photos.</li><li>Vous pouvez aussi <a href="#contacter-equipe">écrire à l'équipe</a>.</li></ul>
+<div class="note">Vos documents servent uniquement à vérifier votre identité. Ils ne sont jamais affichés aux autres utilisateurs ; seul le statut « vérifié » est visible. L'équipe QUINCH ne vous demandera jamais de documents par une conversation privée avec un inconnu : méfiez-vous des faux comptes.</div>
+<div class="cta-row"><a class="btn" href="/profile">Voir mon profil</a></div>
+</section>
+<section id="moderation-regles" aria-labelledby="h-moderation-regles"><h2 id="h-moderation-regles">Les règles et le système de sanctions</h2>
+<p>QUINCH s'engage à rester un lieu sûr. La modération applique des sanctions <strong>progressives et proportionnées</strong> :</p>
+<div class="ladder">
+<div class="step1"><b>1. Retrait de contenu</b><span>Une annonce, une vidéo ou un avis est retiré.</span></div>
+<div class="step2"><b>2. Avertissement</b><span>Un « strike » est ajouté à votre compte.</span></div>
+<div class="step3"><b>3. Suspension</b><span>Temporaire (7 jours par défaut), automatique à 3 avertissements actifs.</span></div>
+<div class="step4"><b>4. Bannissement</b><span>Définitif, pour les cas graves.</span></div></div>
+<p>Selon la gravité, l'équipe peut sauter des étapes : une fraude avérée peut mener directement à une suspension ou un bannissement.</p>
+<h3>Ce qui est interdit (exemples)</h3>
+<ul><li>Fraude, arnaque, faux produit, contrefaçon.</li><li>Harcèlement, insultes, menaces, discrimination.</li><li>Usurpation d'identité, faux profils.</li><li>Contenus choquants, illégaux ou dangereux.</li><li>Spam, publicités abusives, annonces répétées.</li><li>Faux avis, signalements abusifs.</li></ul>
+<h3>Vos droits</h3>
+<ul><li>Vous êtes <strong>toujours informé</strong> d'une décision par notification, avec le motif.</li><li>Vous pouvez <strong>contester</strong> la plupart des décisions : <a href="#contester">comment contester</a>.</li><li>Une contestation acceptée <strong>rétablit</strong> le contenu ou <strong>retire l'avertissement</strong>.</li></ul>
+</section>
+<section id="avertissement" aria-labelledby="h-avertissement"><h2 id="h-avertissement">Avertissement (strike)</h2><p>Un avertissement est un rappel à l'ordre, pas une exclusion. La plupart des comptes qui en reçoivent un n'ont aucune autre sanction ensuite.</p><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>L'équipe vous a adressé un <strong>avertissement</strong> officiel : un « strike » est ajouté à votre compte parce qu'une règle a été enfreinte. Votre compte continue de fonctionner normalement.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>Un contenu (annonce, vidéo, avis, message) ne respecte pas les règles : fraude, contenu inapproprié, spam, harcèlement, etc.</li><li>Un signalement a été examiné et confirmé par l'équipe.</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li><strong>Lisez le motif</strong> dans la notification (Voir le détail).</li><li><strong>Corrigez</strong> ou retirez le contenu concerné ; ne le republiez pas à l'identique.</li><li>Relisez <a href="#moderation-regles">les règles</a> pour éviter la récidive.</li><li><strong>Règle des 3 avertissements :</strong> à <strong>3 avertissements actifs</strong>, votre compte est <strong>automatiquement suspendu 7 jours</strong> (voir <a href="#suspension">Suspension</a>).</li><li>Un avertissement <strong>expire tout seul après environ 180 jours</strong> : il ne compte alors plus dans les 3.</li><li>Un avertissement <strong>annulé</strong> après une contestation acceptée est retiré immédiatement.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous trouvez la décision injuste ? Ouvrez la notification → <strong>Voir le détail</strong> → page du message → <strong>Contester cette décision</strong> → expliquez votre point de vue (10 caractères minimum). Voir <a href="#contester">Comment contester</a>.</li><li>Si votre contestation est <strong>acceptée</strong>, l'avertissement est retiré et votre compteur diminue. Si elle est <strong>rejetée</strong>, vous recevez une explication finale.</li></ul></div></div><a class="btn" href="/notifications">Voir mes notifications</a> </section>
+<section id="suspension" aria-labelledby="h-suspension"><h2 id="h-suspension">Compte suspendu</h2><p>Une suspension est temporaire : ce n'est pas la fin de votre compte.</p><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre compte est <strong>temporairement</strong> bloqué. Vous avez été <strong>déconnecté</strong> et vous ne pouvez plus vous connecter pendant la durée de la suspension (un message vous l'explique quand vous essayez).</li><li>Pendant la suspension, vos <strong>annonces sont masquées</strong> : personne ne peut les voir ni vous écrire à leur sujet.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>Vous avez atteint <strong>3 avertissements actifs</strong> : la suspension est alors <strong>automatique, de 7 jours par défaut</strong>.</li><li>L'équipe a décidé d'une suspension directe à cause d'une faute plus grave (durée indiquée dans le message).</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li><strong>Patientez</strong> jusqu'à la date de fin indiquée : à la fin de la suspension, <strong>la réactivation est automatique</strong> (voir <a href="#compte-reactive">Compte réactivé</a>). Vous n'avez rien à demander.</li><li>Reconnectez-vous ensuite normalement ; vos annonces masquées par la suspension reviennent en ligne.</li><li>Lisez le motif et évitez de recommencer : une nouvelle faute peut mener à une sanction plus lourde.</li><li>N'ouvrez pas un second compte pour contourner la suspension : cela aggraverait votre cas.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous pensez qu'il s'agit d'une erreur ? Si vous avez reçu une notification avant d'être déconnecté, ouvrez-la → <strong>Voir le détail</strong> → <strong>Contester cette décision</strong>. Sinon, écrivez à l'équipe via un autre canal : <a href="#contacter-equipe">Contacter l'équipe</a>.</li><li>Si la contestation est acceptée, la suspension est levée et l'avertissement lié peut être retiré.</li></ul></div></div><a class="btn" href="/auth/login">Réessayer de me connecter</a> </section>
+<section id="bannissement" aria-labelledby="h-bannissement"><h2 id="h-bannissement">Compte banni</h2><p>Le bannissement est la sanction la plus lourde. Il est réservé aux cas graves.</p><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre compte est <strong>définitivement fermé</strong> par la modération. Vous ne pouvez plus vous connecter, publier ni écrire.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>Une faute <strong>très grave</strong> : fraude avérée, arnaque répétée, menaces ou harcèlement grave, usurpation d'identité, contenus illégaux.</li><li>Des sanctions précédentes répétées sans amélioration.</li><li>Un contournement d'une suspension précédente.</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li>Lisez le message affiché lors de la tentative de connexion : il indique le motif.</li><li>Ne créez pas un nouveau compte pour revenir : il serait lui aussi fermé.</li><li>Si vous pensez que c'est une erreur, <strong>écrivez au support depuis un autre canal</strong> (par un canal de contact officiel de QUINCH, comme ses pages officielles ou son adresse de contact publiée), en donnant votre pseudo, votre numéro et votre version des faits.</li><li>Si vous avez encore des paiements en cours de litige, mentionnez-le.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Un bannissement peut être réexaminé : l'équipe étudie les demandes sérieuses et argumentées. Soyez calme, factuel et précis ; les messages agressifs ne sont pas traités.</li><li>Si une contestation est possible depuis une notification reçue avant le bannissement, utilisez-la (voir <a href="#contester">Comment contester</a>).</li><li>La décision de l'équipe après réexamen est finale.</li></ul></div></div><a class="btn" href="#contacter-equipe">Comment contacter l'équipe</a> </section>
+<section id="compte-reactive" aria-labelledby="h-compte-reactive"><h2 id="h-compte-reactive">Compte réactivé</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre compte est de nouveau <strong>actif</strong> : vous pouvez vous connecter, publier et écrire normalement.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>La <strong>suspension est terminée</strong> : la réactivation est automatique à la fin de la durée.</li><li>Votre contestation a été <strong>acceptée</strong> et la suspension a été levée par l'équipe.</li><li>L'équipe a levé la sanction après réexamen.</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li><strong>Reconnectez-vous</strong> avec votre numéro ou pseudo et votre mot de passe.</li><li>Vérifiez que vos annonces masquées sont bien revenues en ligne (<a href="#gerer-annonces">Gérer mes annonces</a>). Une annonce retirée pour une raison de contenu ne revient que si une contestation l'a rétablie.</li><li>Relisez les <a href="#moderation-regles">règles</a> : après une suspension, un nouvel avertissement compte à nouveau.</li><li>Vos avertissements actifs continuent d'expirer au bout d'environ 180 jours.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Une annonce ou un contenu manque toujours ? Ouvrez la notification correspondante et <a href="#contester">contestez</a>.</li><li>Un problème de connexion persistant ? <a href="#connexion-impossible">Je n'arrive pas à me connecter</a> ou <a href="#contacter-equipe">contactez l'équipe</a>.</li></ul></div></div><a class="btn" href="/feed">Aller au feed</a> <a class="btn" href="/profile">Mes annonces</a> </section>
+<section id="video-retiree" aria-labelledby="h-video-retiree"><h2 id="h-video-retiree">Vidéo retirée</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>La vidéo de votre annonce a été <strong>retirée</strong> par la modération et n'apparaît plus dans le feed vidéo.</li><li><strong>Votre annonce reste en ligne</strong> avec ses photos, son prix et sa description : seule la vidéo disparaît. Les acheteurs peuvent toujours la trouver dans Explorer et la recherche.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>La vidéo contient un contenu <strong>inapproprié</strong> ou interdit.</li><li>Vidéo <strong>non conforme</strong> : ne montre pas le produit annoncé, trompeuse, ou reprise d'un autre vendeur.</li><li>Contenu protégé, choquant, publicitaire excessif ou signalé par la communauté puis confirmé par l'équipe.</li><li>Qualité inexploitable (impossible de vérifier ce qui est vendu).</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li><strong>Lisez le motif</strong> (Voir le détail dans la notification).</li><li>Filmez une <strong>nouvelle vidéo conforme</strong> qui montre le vrai produit, sans contenu interdit, et ajoutez-la en modifiant votre annonce.</li><li>Si vous êtes en compte gratuit, vérifiez les <a href="#frais-publication">frais de publication</a> : ajouter une vidéo à une annonce peut entraîner les 150 F CFA selon votre situation.</li><li>Ne republiez pas la même vidéo : elle serait de nouveau retirée et pourrait entraîner un <a href="#avertissement">avertissement</a>.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous pensez que la vidéo respectait les règles ? Ouvrez la notification → <strong>Voir le détail</strong> → page du message → <strong>Contester cette décision</strong> → expliquez votre point de vue (10 caractères minimum). Voir <a href="#contester">Comment contester</a>.</li><li>Si c'est <strong>accepté</strong>, la vidéo est rétablie dans le feed. Si c'est <strong>rejeté</strong>, une explication finale vous est envoyée.</li></ul></div></div><a class="btn" href="/notifications">Voir mes notifications</a> <a class="btn" href="/profile">Modifier mes annonces</a> </section>
+<section id="video-verification" aria-labelledby="h-video-verification"><h2 id="h-video-verification">Vidéo en vérification</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre vidéo est <strong>temporairement en cours de vérification</strong> par l'équipe. Elle n'est pas (encore) visible dans le feed, mais ce n'est <strong>pas une sanction</strong>.</li><li>Votre annonce reste généralement accessible avec ses photos.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>Un contrôle de routine après publication.</li><li>Un signalement doit être vérifié.</li><li>Un doute sur le contenu (produit difficile à identifier, nouveau compte, vidéo longue ou particulière).</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li><strong>Patientez</strong> : la vérification est en général rapide. Vous recevrez une notification dès la décision.</li><li>Ne republiez pas la même vidéo en double : cela ralentit la vérification et peut passer pour du spam.</li><li>Si la vidéo est validée, elle apparaît dans le feed ; sinon vous recevez un message <a href="#video-retiree">« Vidéo retirée »</a> avec le motif.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Si l'attente se prolonge anormalement, écrivez à l'équipe : <a href="#contacter-equipe">Contacter l'équipe</a>, avec le titre de l'annonce.</li><li>En cas de retrait, vous pourrez <a href="#contester">contester</a>.</li></ul></div></div><a class="btn" href="/notifications">Voir mes notifications</a> </section>
+<section id="annonce-masquee" aria-labelledby="h-annonce-masquee"><h2 id="h-annonce-masquee">Annonce masquée</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre annonce n'est <strong>plus visible</strong> pour les autres utilisateurs (feed, Explorer, recherche) mais existe encore dans votre profil.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>Vous l'avez <strong>désactivée</strong> vous-même.</li><li>C'est un <strong>brouillon</strong> dont le paiement des frais n'est pas terminé.</li><li>Votre compte est <a href="#suspension">suspendu</a> : toutes vos annonces sont masquées pendant la durée.</li><li>La modération l'a masquée après un signalement ou un contrôle, le temps de l'examiner (contenu douteux, catégorie incorrecte, informations manquantes).</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li>Ouvrez <strong>Profil</strong> et repérez l'annonce : son statut indique la raison.</li><li>Si c'est vous : menu <strong>⋯ → Activer</strong>.</li><li>Brouillon : finalisez le paiement dans les 24 h (<a href="#frais-publication">frais de publication</a>).</li><li>Suspension : attendez la fin, elle revient automatiquement.</li><li>Décision de la modération : lisez la notification et corrigez ce qui est reproché (photos, description, catégorie, prix cohérent).</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous ne pouvez pas réactiver vous-même une annonce masquée par la modération. Ouvrez la notification → <strong>Voir le détail</strong> → page du message → <strong>Contester cette décision</strong> → expliquez votre point de vue (10 caractères minimum). Voir <a href="#contester">Comment contester</a>.</li><li>Si c'est accepté, l'annonce est <strong>rétablie</strong>.</li></ul></div></div><a class="btn" href="/profile">Mes annonces</a> <a class="btn" href="/notifications">Mes notifications</a> </section>
+<section id="annonce-supprimee" aria-labelledby="h-annonce-supprimee"><h2 id="h-annonce-supprimee">Annonce supprimée par la modération</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Votre annonce a été <strong>retirée définitivement</strong> de QUINCH par l'équipe. Elle n'est plus visible et vous ne pouvez pas la réactiver.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>Contenu <strong>interdit</strong> ou illégal, fraude, contrefaçon, produit dangereux.</li><li>Annonce <strong>trompeuse</strong> ou arnaque confirmée après signalement.</li><li>Doublons répétés ou spam après des avertissements.</li><li>Informations personnelles d'une autre personne affichées sans autorisation.</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li>Lisez le motif dans la notification pour comprendre ce qui n'allait pas.</li><li>Ne republiez pas le même contenu : cela serait traité comme une récidive (<a href="#avertissement">avertissement</a>).</li><li>Si le produit est légitime, republiez une <strong>nouvelle annonce propre</strong> : vraies photos, description claire, catégorie correcte.</li><li>Vérifiez si un avertissement a été ajouté à votre compte.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous pensez que l'annonce était conforme ? Ouvrez la notification → <strong>Voir le détail</strong> → page du message → <strong>Contester cette décision</strong> → expliquez votre point de vue (10 caractères minimum). Voir <a href="#contester">Comment contester</a>.</li><li>Si c'est <strong>accepté</strong>, l'annonce est <strong>restaurée</strong> avec son contenu. Sinon, vous recevez une explication finale.</li></ul></div></div><a class="btn" href="/notifications">Voir mes notifications</a> <a class="btn" href="/sell">Publier une nouvelle annonce</a> </section>
+<section id="contester" aria-labelledby="h-contester"><h2 id="h-contester">Comment contester une décision</h2>
+<p>Vous pensez qu'une décision de l'équipe est une erreur ? Vous avez le droit de <strong>contester</strong> : avertissement, suspension, vidéo retirée, annonce masquée ou supprimée, avis retiré, etc. Voici la marche à suivre, la même pour tous les cas.</p>
+<ol class="steps"><li>Ouvrez la <strong>notification</strong> de l'équipe concernant la décision (page <a href="/notifications">Notifications</a>, onglet Système).</li><li>Touchez <strong>« Voir le détail »</strong> : la page du message s'ouvre avec la décision et son motif.</li><li>Touchez <strong>« Contester cette décision »</strong>.</li><li>Écrivez <strong>pourquoi</strong> vous pensez que la décision est injuste, avec <strong>au moins 10 caractères</strong>. Soyez précis : ce que vous avez réellement publié, les preuves, le contexte.</li><li>Envoyez. Votre demande est transmise à <strong>l'équipe qui a pris la décision</strong>.</li><li>La <strong>réponse arrive sous forme d'une nouvelle notification</strong>.</li></ol>
+<h3>Règles à connaître</h3>
+<ul><li><strong>Une seule contestation à la fois</strong> par décision : tant qu'elle est en cours, vous ne pouvez pas en envoyer une autre sur la même décision.</li><li>Écrivez calmement. Les insultes ou menaces ne font pas avancer votre cas et peuvent aggraver la situation.</li><li>Vous n'avez pas besoin de la renvoyer : l'équipe répond toujours.</li></ul>
+<h3>Quelle réponse puis-je recevoir ?</h3>
+<div class="grid">
+<div class="card okc"><h4>Acceptée</h4><p>La décision est annulée : contenu <strong>restauré</strong> (annonce, vidéo), avertissement <strong>retiré</strong> (votre compteur de strikes diminue), suspension levée.</p></div>
+<div class="card badc"><h4>Rejetée</h4><p>La décision est maintenue. Vous recevez une <strong>explication finale</strong> qui détaille les raisons. Pas de nouvelle contestation sur cette décision.</p></div></div>
+<h3>Je ne vois pas le bouton « Contester cette décision »</h3>
+<ul><li>La décision a peut-être déjà été contestée (une contestation est en cours ou terminée).</li><li>Certaines notifications ne sont pas contestables (par exemple une simple information).</li><li>Votre compte est banni ou suspendu et vous ne pouvez pas ouvrir l'application : <a href="#contacter-equipe">contactez l'équipe par un autre canal</a>.</li></ul>
+<h3>Conseils pour une contestation efficace</h3>
+<ul class="check"><li>Rappelez le contenu concerné (titre de l'annonce, nom de la vidéo).</li><li>Expliquez en quoi il respecte les règles.</li><li>Ajoutez le contexte utile (preuve d'achat, origine du produit…).</li><li>Restez courtois et concis.</li></ul>
+<div class="cta-row"><a class="btn" href="/notifications">Ouvrir mes notifications</a></div>
+</section>
+<section id="litige" aria-labelledby="h-litige"><h2 id="h-litige">Litige sur une transaction</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Un <strong>désaccord</strong> avec un acheteur ou un vendeur sur un échange : produit non reçu, non conforme, paiement non honoré, remboursement refusé, comportement suspect.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>QUINCH ne gère pas le paiement entre utilisateurs : ce sont <strong>vous et l'autre personne</strong> qui convenez du prix, du paiement et de la remise par messages. Un malentendu, un retard ou une fraude peut survenir.</li><li>Une annonce non conforme à la réalité.</li><li>Une personne qui ne répond plus après paiement.</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li><strong>Restez dans QUINCH</strong> : continuez à discuter dans la conversation, sans la supprimer : elle sert de preuve.</li><li>Rassemblez les <strong>preuves</strong> : captures de l'annonce et des messages, preuve de paiement (reçu Wave / Orange Money), photos du produit reçu, date et lieu de rencontre.</li><li>Essayez d'abord de <strong>résoudre à l'amiable</strong> : demandez poliment la remise, l'échange ou le remboursement.</li><li>Si la personne refuse ou disparaît : <strong>signalez-la</strong> (<a href="#signaler">Signaler</a>) et <a href="#contacter-equipe">écrivez à l'équipe</a> pour décrire le litige.</li><li>Contactez aussi votre opérateur de paiement (Wave / Orange Money) si vous avez payé.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Le litige est <strong>examiné par l'équipe</strong> à partir des preuves fournies ; elle peut sanctionner un compte fautif (avertissement, suspension, bannissement).</li><li>La décision vous est communiquée par <strong>notification</strong> ; vous pouvez la <a href="#contester">contester</a>.</li><li>Important : l'équipe n'est pas une banque et ne peut pas toujours récupérer un paiement fait en dehors de QUINCH. Prévenir vaut mieux que guérir : voir <a href="#securite">Sécurité</a>.</li></ul></div></div><a class="btn" href="/settings">Contacter l'équipe</a> <a class="btn" href="/messages">Mes messages</a> </section>
+<section id="ticket-support" aria-labelledby="h-ticket-support"><h2 id="h-ticket-support">Réponse à votre demande d'aide (ticket)</h2>
+<p>Quand vous écrivez à l'équipe (voir <a href="#contacter-equipe">Contacter l'équipe</a>), votre demande devient un <strong>ticket de support</strong>. La réponse vous arrive dans vos <a href="#notifications">notifications</a>.</p>
+<div class="pcards">
+<div class="pc means"><h3>Ce que ça veut dire</h3><p>L'équipe a répondu à votre message, ou l'a clôturé. La notification porte un bouton <strong>Voir le détail</strong> pour lire la réponse complète.</p></div>
+<div class="pc why"><h3>Pourquoi ça arrive</h3><p>Vous avez signalé un bug, posé une question, demandé un déblocage ou contesté quelque chose via le formulaire « Signaler un problème ».</p></div>
+<div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li>Lisez la réponse en entier et appliquez les étapes conseillées.</li><li>Si le problème est résolu, vous n'avez rien à faire.</li><li>S'il persiste, écrivez de nouveau en précisant ce qui a changé (capture d'écran, heure, message exact).</li></ul></div>
+<div class="pc help"><h3>Comment obtenir de l'aide</h3><p>Une réponse ne vous satisfait pas ou ne résout pas votre cas ? Renvoyez une demande en citant votre ticket précédent. Pour une sanction, utilisez plutôt <a href="#contester">Contester</a>.</p></div></div>
+<h3>Comment rédiger une demande qui avance vite</h3>
+<ul class="check"><li>Un seul sujet par demande.</li><li>Votre pseudo et, si besoin, le titre de l'annonce concernée.</li><li>Ce que vous avez fait, ce que vous attendiez, ce qui s'est produit.</li><li>Heure approximative et message d'erreur exact.</li><li>Une capture d'écran si possible. Jamais de mot de passe ni de code SMS.</li></ul>
+<div class="cta-row"><a class="btn" href="/notifications">Mes notifications</a><a class="btn ghost" href="/settings">Écrire à l'équipe</a></div>
+</section>
+<section id="avis-retire" aria-labelledby="h-avis-retire"><h2 id="h-avis-retire">Avis retiré</h2><div class="pcards"><div class="pc means"><h3>Ce que ça veut dire</h3><ul><li>Un avis (le vôtre, ou un avis sur votre annonce) a été <strong>retiré</strong> par la modération. Il n'est plus affiché.</li></ul></div><div class="pc why"><h3>Pourquoi ça arrive</h3><ul><li>L'avis contient des <strong>insultes</strong>, des menaces ou des propos discriminatoires.</li><li>Il contient des <strong>coordonnées personnelles</strong> ou de la publicité.</li><li>Il est jugé <strong>faux ou abusif</strong> (faux avis, avis d'un proche, avis sans lien avec l'annonce).</li><li>Il a été signalé puis confirmé par l'équipe.</li></ul></div><div class="pc todo"><h3>Ce que vous devez faire</h3><ul><li>Lisez le motif dans la notification.</li><li>Si c'était <strong>votre</strong> avis, vous pouvez en écrire un nouveau, <strong>respectueux et factuel</strong>, décrivant votre expérience réelle.</li><li>Si c'était un avis sur <strong>votre</strong> annonce, ne cherchez pas à pousser l'auteur à le modifier ou à le retirer : cela est interdit.</li><li>Ne faites jamais écrire de faux avis : cela peut mener à un <a href="#avertissement">avertissement</a>.</li></ul></div><div class="pc help"><h3>Comment contester / obtenir de l'aide</h3><ul><li>Vous pensez que l'avis respectait les règles ? Ouvrez la notification → <strong>Voir le détail</strong> → page du message → <strong>Contester cette décision</strong> → expliquez votre point de vue (10 caractères minimum). Voir <a href="#contester">Comment contester</a>.</li><li>Si c'est accepté, l'avis est <strong>rétabli</strong>. Sinon, une explication finale vous est envoyée.</li></ul></div></div><a class="btn" href="/notifications">Voir mes notifications</a> </section>
+<div class="grp" role="presentation">Aide & sécurité</div>
+<section id="contacter-equipe" aria-labelledby="h-contacter-equipe"><h2 id="h-contacter-equipe">Contacter l'équipe QUINCH</h2>
+<p>Un problème, une question, une suggestion ? L'équipe est là pour vous aider.</p>
+<h3>Depuis l'application (le plus simple)</h3>
+<ol class="steps"><li>Ouvrez <strong>Paramètres</strong>.</li><li>Touchez <strong>Signaler un problème</strong>.</li><li>Choisissez le sujet, décrivez votre situation (ce qui s'est passé, quand, message d'erreur exact) et ajoutez une capture d'écran si vous le pouvez.</li><li>Envoyez. La réponse arrive dans vos <a href="#notifications">notifications</a> (voir <a href="#ticket-support">Réponse à votre demande</a>).</li></ol>
+<h3>Si vous ne pouvez plus ouvrir l'application</h3>
+<p>Compte suspendu ou banni, mot de passe perdu et numéro inaccessible : utilisez un <strong>canal de contact officiel de QUINCH</strong> (pages officielles, adresse de contact publiée). Indiquez votre <strong>pseudo</strong>, votre numéro de téléphone et le message affiché. N'envoyez <strong>jamais</strong> votre mot de passe ni un code SMS.</p>
+<h3>Quel sujet choisir ?</h3>
+<div class="tablewrap"><table><thead><tr><th>Votre situation</th><th>Où aller</th></tr></thead><tbody>
+<tr><td>Je n'accepte pas une sanction ou un retrait de contenu</td><td><a href="#contester">Contester</a></td></tr>
+<tr><td>Quelqu'un m'arnaque ou me harcèle</td><td><a href="#signaler">Signaler</a></td></tr>
+<tr><td>Paiement de frais ou Premium non pris en compte</td><td>Signaler un problème, avec référence et heure</td></tr>
+<tr><td>Litige avec un acheteur / vendeur</td><td><a href="#litige">Litige</a></td></tr>
+<tr><td>Bug, suggestion, question générale</td><td>Signaler un problème</td></tr></tbody></table></div>
+<div class="note ok">Soyez patient : l'équipe traite les demandes dans l'ordre. Plusieurs demandes identiques ralentissent le traitement : une seule suffit.</div>
+<div class="cta-row"><a class="btn" href="/settings">Écrire à l'équipe</a></div>
+</section>
+<section id="supprimer-compte" aria-labelledby="h-supprimer-compte"><h2 id="h-supprimer-compte">Supprimer mon compte</h2>
+<p>Vous voulez quitter QUINCH ? Vous pouvez supprimer votre compte vous-même. <strong>Cette action est définitive</strong> : réfléchissez avant de confirmer.</p>
+<h3>Comment faire</h3>
+<ol class="steps"><li>Allez dans <strong>Paramètres</strong> puis touchez <strong>Supprimer mon compte</strong>.</li><li>Lisez le récapitulatif de ce qui sera effacé.</li><li><strong>Confirmez</strong> explicitement (confirmation requise) pour valider la suppression.</li><li>Vous êtes déconnecté et votre compte n'est plus accessible.</li></ol>
+<h3>Ce qui est effacé</h3>
+<ul><li>Votre profil public (nom, photo, couverture, bio) et vos informations personnelles.</li><li>Vos annonces, vidéos et photos.</li><li>Vos favoris, abonnements et préférences.</li><li>Votre accès à la messagerie.</li><li>Votre abonnement Premium éventuel : <strong>aucun remboursement</strong> du temps restant.</li></ul>
+<h3>Ce qui peut être conservé</h3>
+<p>Certaines informations peuvent être <strong>conservées pour des raisons légales</strong> et de sécurité, pendant la durée exigée par la loi : historique des paiements de frais et d'abonnement, données nécessaires à la prévention de la fraude, traces d'un litige ou d'une sanction en cours. Elles ne servent qu'à ces obligations.</p>
+<h3>Avant de supprimer</h3>
+<ul class="check"><li>Terminez vos échanges et ventes en cours.</li><li>Exportez vos données si vous le souhaitez : <strong>Paramètres → Exporter mes données</strong>.</li><li>Un simple <strong>repos</strong> ? Désactivez vos annonces au lieu de supprimer le compte (<a href="#gerer-annonces">Gérer mes annonces</a>).</li><li>Un problème avec le compte ? <a href="#contacter-equipe">Contactez d'abord l'équipe</a> : il y a peut-être une solution.</li></ul>
+<div class="note warn">Supprimer son compte n'efface pas une sanction : un compte banni qui se supprime ne peut pas revenir avec un nouveau compte pour contourner la décision.</div>
+<div class="cta-row"><a class="btn" href="/settings">Ouvrir les paramètres</a></div>
+</section>
+<section id="securite" aria-labelledby="h-securite"><h2 id="h-securite">Sécurité : se protéger des arnaques</h2>
+<p>La grande majorité des échanges se passent bien. Ces réflexes vous protègent des rares mauvaises surprises.</p>
+<h3>Règles d'or</h3>
+<div class="grid">
+<div class="card"><h4>Jamais votre code SMS</h4><p>Le code à 6 chiffres donne accès à votre compte. Ne le communiquez à personne, même à quelqu'un qui dit être de l'équipe.</p></div>
+<div class="card"><h4>Jamais votre mot de passe</h4><p>QUINCH <strong>ne vous demandera jamais</strong> votre mot de passe, ni par message, ni par appel, ni par SMS.</p></div>
+<div class="card"><h4>Payez au bon moment</h4><p>Privilégiez le paiement <strong>à la remise</strong>, après avoir vérifié le produit. Méfiez-vous des demandes d'avance.</p></div>
+<div class="card"><h4>Lieu public</h4><p>Rencontrez-vous dans un lieu fréquenté, de jour si possible, et prévenez un proche.</p></div></div>
+<h3>Reconnaître une arnaque</h3>
+<ul><li>Prix <strong>trop beau pour être vrai</strong> (téléphone récent à moitié prix).</li><li>Pression pour payer <strong>tout de suite</strong>, « il y a plein d'autres acheteurs ».</li><li>Fausse <strong>capture de paiement Wave / Orange Money</strong> : vérifiez TOUJOURS dans votre propre application que l'argent est arrivé avant de remettre le produit. Un reçu en image se falsifie facilement.</li><li>Demande de <strong>frais de livraison ou de douane à l'avance</strong> à un inconnu.</li><li>Vendeur qui refuse la vidéo, les photos ou une rencontre, ou qui veut quitter QUINCH pour une autre application.</li><li>Liens étranges, faux sites ou faux « support QUINCH » qui demandent votre code.</li><li>Quelqu'un vous demande de payer pour « débloquer » une commande, un gain ou un remboursement.</li></ul>
+<h3>Vérifier un vendeur avant d'acheter</h3>
+<ul class="check"><li>Regardez son <a href="#score-confiance">score de confiance</a> et son ancienneté.</li><li>Cherchez les <a href="#badges">badges</a> (Vérifié, Premium, Top Vendeur…).</li><li>Lisez ses <a href="#avis-favoris">avis</a> et ses politiques vendeur.</li><li>Demandez une vidéo ou des photos supplémentaires du produit.</li><li>Gardez toute la discussion dans la messagerie QUINCH.</li></ul>
+<h3>En cas de problème</h3>
+<ul><li><strong>Signalez</strong> le compte (<a href="#signaler">Signaler</a>), bloquez-le et conservez les preuves.</li><li>Si vous avez payé : contactez votre opérateur (Wave, Orange Money) rapidement et ouvrez un <a href="#litige">litige</a>.</li><li>Si vous avez donné par erreur votre code ou votre mot de passe : changez immédiatement votre mot de passe (<a href="#mot-de-passe-oublie">Mot de passe oublié</a>) et écrivez à l'équipe.</li></ul>
+<h3>Protéger votre compte</h3>
+<ul><li>Mot de passe unique et solide (8 caractères minimum, majuscule, chiffre).</li><li>Ne vous connectez pas sur un appareil partagé sans vous déconnecter ensuite.</li><li>Les liens externes ne sont jamais ouverts automatiquement depuis vos notifications ; restez prudent avec les liens reçus par message.</li><li>Les tentatives de connexion sont limitées pour protéger votre compte.</li><li>Dans les Paramètres : gérez les bloqués et exportez vos données.</li></ul>
+<div class="note bad"><strong>L'équipe QUINCH ne vous demandera jamais :</strong> votre mot de passe, votre code SMS, un paiement pour « débloquer » votre compte, ou de quitter l'application pour discuter.</div>
+</section>
+<section id="faq" aria-labelledby="h-faq"><h2 id="h-faq">Questions fréquentes (FAQ)</h2><p>Plus de 39 réponses rapides. Utilisez aussi la recherche en haut de la page.</p><details><summary>Dois-je avoir un compte pour regarder les annonces ?</summary><div class="dbody">Non. Vous pouvez parcourir le feed, Explorer, la recherche et les fiches sans compte. Un compte est nécessaire pour publier, écrire, aimer, enregistrer et signaler.</div></details><details><summary>QUINCH gère-t-il le paiement entre acheteur et vendeur ?</summary><div class="dbody">Non. QUINCH met en relation : il n'y a pas de panier ni de paiement entre utilisateurs. Vous convenez du prix, du paiement et de la remise par messages. Seuls les frais de publication et le Premium se paient dans l'application.</div></details><details><summary>Je n'ai pas reçu le code SMS. Que faire ?</summary><div class="dbody">Vérifiez le numéro et le réseau, attendez 60 secondes puis touchez « Renvoyer le code ». Vous pouvez demander au maximum 5 codes par heure. Voir <a href="#connexion-impossible">Je n'arrive pas à me connecter</a>.</div></details><details><summary>Combien de temps le code SMS est-il valable ?</summary><div class="dbody">10 minutes, avec 5 essais. Seul le dernier code reçu est valable.</div></details><details><summary>J'ai oublié mon mot de passe.</summary><div class="dbody">Utilisez « Mot de passe oublié » sur l'écran de connexion : numéro de téléphone, code SMS, nouveau mot de passe. Voir <a href="#mot-de-passe-oublie">Mot de passe oublié</a>.</div></details><details><summary>Comment changer mon numéro de téléphone ?</summary><div class="dbody">Profil → Modifier → Téléphone → Modifier, puis mot de passe, nouveau numéro et code reçu sur ce numéro. Voir <a href="#changer-numero">Changer de numéro</a>.</div></details><details><summary>Comment atteindre 80 % de score de confiance ?</summary><div class="dbody">Vérifiez votre téléphone, complétez entièrement votre profil (photo, couverture, ville, région, bio, e-mail, site) et renseignez vos politiques vendeur. Voir <a href="#score-confiance">Score de confiance</a>.</div></details><details><summary>Pourquoi mon score de confiance a-t-il baissé ?</summary><div class="dbody">Des informations ont été retirées du profil, des incidents ont été enregistrés (paiement échoué, activité suspecte) ou une sanction a été appliquée. Complétez votre profil et respectez les règles pour le faire remonter.</div></details><details><summary>Combien coûte la publication d'une annonce ?</summary><div class="dbody">Gratuite sans vidéo. Avec vidéo : 150 F CFA pour un compte gratuit, 0 F pour un compte Premium. Voir <a href="#frais-publication">Frais de publication</a>.</div></details><details><summary>Combien de photos puis-je mettre ?</summary><div class="dbody">Compte gratuit : 1 couverture + 5 photos (6 au total). Premium : 1 couverture + 10 photos (11 au total). 5 Mo maximum par image.</div></details><details><summary>Mon annonce est en « brouillon », pourquoi ?</summary><div class="dbody">Le paiement des frais de publication n'est pas terminé. Finalisez-le : sinon le brouillon est supprimé automatiquement après 24 heures.</div></details><details><summary>J'ai payé mais mon annonce n'est pas en ligne.</summary><div class="dbody">Attendez 1 à 2 minutes, actualisez votre profil. Si rien ne change, écrivez à l'équipe avec l'heure et la référence du paiement.</div></details><details><summary>Une annonce sans vidéo apparaît-elle dans le feed vidéo ?</summary><div class="dbody">Non, le feed vidéo ne montre que des vidéos. Elle est visible dans Explorer, la recherche et le profil du vendeur.</div></details><details><summary>Pourquoi ma vidéo ne s'affiche-t-elle pas tout de suite ?</summary><div class="dbody">Elle peut être en vérification ou avoir été retirée par la modération. Consultez vos notifications. Voir <a href="#video-verification">Vidéo en vérification</a> et <a href="#video-retiree">Vidéo retirée</a>.</div></details><details><summary>Ma vidéo a été retirée : mon annonce est-elle supprimée ?</summary><div class="dbody">Non. L'annonce reste en ligne avec ses photos ; seule la vidéo est retirée. Vous pouvez contester ou publier une nouvelle vidéo conforme.</div></details><details><summary>Comment désactiver temporairement une annonce ?</summary><div class="dbody">Profil → ⋯ sur l'annonce → Désactiver. Vous pouvez la réactiver quand vous voulez.</div></details><details><summary>Pourquoi mon annonce est-elle masquée ?</summary><div class="dbody">Vous l'avez désactivée, elle attend un paiement (brouillon), votre compte est suspendu, ou la modération l'a masquée. Voir <a href="#annonce-masquee">Annonce masquée</a>.</div></details><details><summary>Puis-je écrire plusieurs conversations avec la même personne ?</summary><div class="dbody">Non : il n'y a qu'une conversation par personne ; les produits discutés sont ajoutés comme étiquettes.</div></details><details><summary>Quelle est la taille maximale des messages vocaux et des fichiers ?</summary><div class="dbody">Vocaux : 10 Mo. Fichiers et photos : 20 Mo. Messages texte : 2 000 caractères. Ces options dépendent de leur disponibilité dans votre version.</div></details><details><summary>Comment bloquer quelqu'un ?</summary><div class="dbody">Depuis son profil (menu ⋯) ou dans Paramètres → Bloqués et restreints. Vous pouvez le débloquer au même endroit.</div></details><details><summary>Comment signaler une arnaque ?</summary><div class="dbody">Touchez Signaler sur l'annonce, la vidéo ou le profil, choisissez un motif et décrivez précisément. Voir <a href="#signaler">Signaler</a>.</div></details><details><summary>Que risque-t-on avec un faux signalement ?</summary><div class="dbody">Un signalement abusif et de mauvaise foi peut entraîner un avertissement puis une suspension.</div></details><details><summary>Comment fonctionne le Premium ?</summary><div class="dbody">2 000 F CFA par mois ou 20 000 F CFA par an, payables par Wave (ou Orange Money si proposé). Il apporte 11 photos, la publication sans frais, la mise en avant, le classement et le badge. Voir <a href="#premium">Premium</a>.</div></details><details><summary>Mon Premium est terminé. Que se passe-t-il ?</summary><div class="dbody">Vos annonces restent en ligne, mais vous repassez à 6 photos, les nouvelles annonces avec vidéo coûtent 150 F, et vous perdez la mise en avant, le classement et le badge. Renouvelez à tout moment. Voir <a href="#premium-retire">Premium retiré ou expiré</a>.</div></details><details><summary>Qui peut voir le Classement ?</summary><div class="dbody">Les comptes Premium. La participation est facultative : vous pouvez apparaître, rester anonyme ou ne pas apparaître.</div></details><details><summary>Comment obtenir un badge ?</summary><div class="dbody">Chaque badge a sa règle « Comment l'obtenir ». Certains sont automatiques (Premium actif, identité vérifiée, ventes, ancienneté, score), d'autres sont attribués par l'équipe. Voir <a href="#badges">Badges</a>.</div></details><details><summary>Qu'est-ce qu'un avertissement ?</summary><div class="dbody">Un rappel officiel de la modération. À 3 avertissements actifs, le compte est automatiquement suspendu 7 jours. Chaque avertissement expire après environ 180 jours. Voir <a href="#avertissement">Avertissement</a>.</div></details><details><summary>Mon compte est suspendu : combien de temps ?</summary><div class="dbody">La durée est indiquée dans le message (7 jours par défaut après 3 avertissements). À la fin, la réactivation est automatique. Voir <a href="#suspension">Compte suspendu</a>.</div></details><details><summary>Mon compte est banni, puis-je revenir ?</summary><div class="dbody">Le bannissement est définitif. Vous pouvez demander un réexamen en écrivant à l'équipe par un autre canal. Voir <a href="#bannissement">Compte banni</a>.</div></details><details><summary>Comment contester une décision ?</summary><div class="dbody">Notification → Voir le détail → Contester cette décision → expliquez (10 caractères minimum). La réponse arrive par notification. Voir <a href="#contester">Comment contester</a>.</div></details><details><summary>Puis-je contester plusieurs fois la même décision ?</summary><div class="dbody">Non. Une seule contestation à la fois par décision. Si elle est rejetée, vous recevez une explication finale.</div></details><details><summary>Que se passe-t-il si ma contestation est acceptée ?</summary><div class="dbody">Le contenu est restauré (annonce, vidéo, avis) ou l'avertissement est retiré, et une suspension liée peut être levée.</div></details><details><summary>Je ne reçois pas de notifications.</summary><div class="dbody">Vérifiez Paramètres → Notifications, les autorisations de votre appareil, et que votre compte n'est pas suspendu.</div></details><details><summary>Comment vérifier mon identité (KYC) ?</summary><div class="dbody">Suivez l'invitation de vérification dans votre profil ou répondez à la demande de l'équipe. Vous obtenez +20 % de score et le badge Vérifié. Voir <a href="#kyc">KYC</a>.</div></details><details><summary>Comment contacter l'équipe ?</summary><div class="dbody">Paramètres → Signaler un problème. La réponse arrive dans vos notifications. Voir <a href="#contacter-equipe">Contacter l'équipe</a>.</div></details><details><summary>Que faire si un acheteur ou vendeur ne respecte pas l'accord ?</summary><div class="dbody">Conservez la conversation et les preuves, essayez de résoudre à l'amiable, puis signalez et écrivez à l'équipe. Voir <a href="#litige">Litige</a>.</div></details><details><summary>Comment supprimer mon compte ?</summary><div class="dbody">Paramètres → Supprimer mon compte, avec confirmation. C'est définitif ; certaines données peuvent être conservées pour des raisons légales. Voir <a href="#supprimer-compte">Supprimer mon compte</a>.</div></details><details><summary>Puis-je récupérer mes données ?</summary><div class="dbody">Oui : Paramètres → Exporter mes données.</div></details><details><summary>L'équipe peut-elle me demander mon mot de passe ou mon code ?</summary><div class="dbody">Jamais. Toute personne qui vous le demande essaie de vous arnaquer : ne répondez pas et signalez-la.</div></details><div class="note">Vous ne trouvez pas votre réponse ? <a href="#contacter-equipe">Contactez l'équipe</a>.</div></section>
 
-<section id="securite"><h2>13. Sécurité</h2>
-<ul>
-<li>Ne donnez jamais votre mot de passe ni vos codes SMS, même à quelqu'un qui se dit de l'équipe.</li>
-<li>Privilégiez le paiement à la remise, après vérification du produit ; méfiez-vous des prix trop bas.</li>
-<li>Rencontrez-vous dans un lieu public ; gardez la discussion dans QUINCH pour qu'elle serve de preuve en cas de litige.</li>
-<li>Les liens vers des sites externes ne sont jamais ouverts automatiquement depuis les notifications.</li>
-<li>Les tentatives de connexion sont limitées et les comptes suspects peuvent être bloqués temporairement.</li>
-<li>Vous pouvez bloquer un utilisateur, exporter vos données ou supprimer votre compte dans les Paramètres.</li>
-</ul>
-</section>
-
-<section id="faq"><h2>14. FAQ</h2>
-<details><summary>Pourquoi ma vidéo ne s'affiche-t-elle pas tout de suite ?</summary><p>Une vidéo est publiée immédiatement puis contrôlée. Si elle est refusée ou mise en vérification, elle disparaît du feed et vous êtes notifié.</p></details>
-<details><summary>Une annonce sans vidéo apparaît-elle dans le feed vidéo ?</summary><p>Non, le feed vidéo ne montre que les vidéos. Elle est en revanche visible dans Explorer, la recherche et le profil du vendeur.</p></details>
-<details><summary>Je n'ai pas reçu le code SMS.</summary><p>Patientez 60 secondes puis demandez un nouveau code (5 envois maximum par heure).</p></details>
-<details><summary>Comment atteindre 80 % de confiance ?</summary><p>Vérifiez votre téléphone, complétez tous les champs du profil et configurez vos politiques vendeur (section 2).</p></details>
-<details><summary>Combien coûte la publication d'une vidéo ?</summary><p>150 F CFA par annonce avec vidéo pour un compte gratuit, 0 F pour un compte Premium.</p></details>
-<details><summary>Comment désactiver temporairement un service ?</summary><p>Profil → ⋯ sur le service → Désactiver. Vous pourrez le réactiver quand vous voulez.</p></details>
-<details><summary>Comment contacter l'équipe ?</summary><p>Paramètres → Signaler un problème. Les réponses importantes arrivent dans vos notifications.</p></details>
-</section>
 </main>
 </div>
-<footer>© QUINCH — Guide mis à jour avec l'application. <a href="/feed">Retour à l'application</a></footer>
+
+<footer><strong>QUINCH</strong> — Ce guide est mis à jour avec l'application. <a href="/feed">Retour à l'application</a> · <a href="#main">Haut de page</a></footer>
+
+<button class="fab" id="fab" type="button" aria-haspopup="dialog" aria-controls="sheet" aria-label="Ouvrir le sommaire"><span aria-hidden="true">☰</span> Sommaire</button>
+<button id="totop" type="button" aria-label="Retour en haut de la page">↑</button>
+<div class="sheet-bg" id="sbg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Sommaire" aria-hidden="true">
+ <div class="grab"></div>
+ <header><span>Sommaire</span><button class="hbtn" id="sclose" type="button" aria-label="Fermer le sommaire">✕</button></header>
+ <div class="list" id="slist"><h4>Bien démarrer</h4><a href="#demarrer">Démarrer sur QUINCH</a><a href="#compte-securise">Compte sécurisé : inscription, code SMS et Google</a><a href="#mot-de-passe-oublie">Mot de passe oublié</a><a href="#connexion-impossible">Je n'arrive pas à me connecter</a><a href="#changer-numero">Changer de numéro de téléphone</a><a href="#score-confiance">Score de confiance et objectif 80 %</a><h4>Vendre</h4><a href="#publier">Publier un produit ou un service</a><a href="#frais-publication">Frais de publication et paiement</a><a href="#gerer-annonces">Gérer mes annonces</a><h4>Utiliser QUINCH</h4><a href="#feed-video">Le feed vidéo</a><a href="#explorer">Explorer et recherche</a><a href="#messages">Messages</a><a href="#notifications">Notifications</a><a href="#profil">Profil et profil public vendeur</a><a href="#badges">Badges : comment ils fonctionnent</a><a href="#avis-favoris">Avis, commentaires et favoris</a><h4>Premium & classement</h4><a href="#premium">Premium</a><a href="#premium-retire">Premium retiré ou expiré</a><a href="#classement">Classement</a><h4>Modération & décisions</h4><a href="#signaler">Signaler un utilisateur, une annonce ou un problème</a><a href="#kyc">Vérification d'identité (KYC)</a><a href="#moderation-regles">Les règles et le système de sanctions</a><a href="#avertissement">Avertissement (strike)</a><a href="#suspension">Compte suspendu</a><a href="#bannissement">Compte banni</a><a href="#compte-reactive">Compte réactivé</a><a href="#video-retiree">Vidéo retirée</a><a href="#video-verification">Vidéo en vérification</a><a href="#annonce-masquee">Annonce masquée</a><a href="#annonce-supprimee">Annonce supprimée par la modération</a><a href="#contester">Comment contester une décision</a><a href="#litige">Litige sur une transaction</a><a href="#ticket-support">Réponse à votre demande d'aide (ticket)</a><a href="#avis-retire">Avis retiré</a><h4>Aide & sécurité</h4><a href="#contacter-equipe">Contacter l'équipe QUINCH</a><a href="#supprimer-compte">Supprimer mon compte</a><a href="#securite">Sécurité : se protéger des arnaques</a><a href="#faq">Questions fréquentes (FAQ)</a></div>
+</div>
 
 <script>
 (function(){
-  var root=document.documentElement,k='quinch_guide_theme';
-  try{var s=localStorage.getItem(k);if(s)root.setAttribute('data-theme',s)}catch(e){}
-  document.getElementById('theme').addEventListener('click',function(){
-    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');
-    var nx=cur==='light'?'dark':'light';root.setAttribute('data-theme',nx);try{localStorage.setItem(k,nx)}catch(e){}
-  });
-  var secs=[].slice.call(document.querySelectorAll('main section')),links=[].slice.call(document.querySelectorAll('#toc a'));
-  document.getElementById('q').addEventListener('input',function(e){
-    var q=e.target.value.trim().toLowerCase(),n=0;
-    secs.forEach(function(s){var ok=!q||s.textContent.toLowerCase().indexOf(q)>-1;s.classList.toggle('hide',!ok);if(ok)n++});
-    links.forEach(function(a,i){a.classList.toggle('hide',secs[i].classList.contains('hide'))});
-    document.getElementById('nores').classList.toggle('hide',n>0);
-  });
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-30% 0px -60% 0px'});
-    secs.forEach(function(s){io.observe(s)});
+'use strict';
+var root=document.documentElement,TK='quinch_guide_theme';
+function $(s,c){return (c||document).querySelector(s)}
+function $$(s,c){return [].slice.call((c||document).querySelectorAll(s))}
+var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* theme */
+try{var st=localStorage.getItem(TK);if(st==='dark'||st==='light')root.setAttribute('data-theme',st)}catch(e){}
+$('#theme').addEventListener('click',function(){
+ var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');
+ var nx=cur==='light'?'dark':'light';root.setAttribute('data-theme',nx);
+ try{localStorage.setItem(TK,nx)}catch(e){}
+});
+
+var secs=$$('main section[id]');
+var grps=$$('main .grp');
+
+/* anchors on headings */
+var used={};
+$$('[id]').forEach(function(e){used[e.id]=1});
+function slug(t){return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'section'}
+$$('main h2,main h3').forEach(function(h){
+ if(h.closest('.pc')||h.closest('.sheet'))return;
+ var tgt=h.id;
+ if(!tgt){
+  var sec=h.closest('section');
+  if(h.tagName==='H2'&&sec)tgt=sec.id;
+  else{var b=(sec?sec.id+'-':'')+slug(h.textContent),n=b,i=2;while(used[n]){n=b+'-'+i++}tgt=n;used[n]=1;h.id=n}
+ }
+ if(!tgt)return;
+ var btn=document.createElement('button');
+ btn.type='button';btn.className='anchor';btn.setAttribute('aria-label','Copier le lien vers cette section');btn.title='Copier le lien';btn.textContent='🔗';
+ btn.addEventListener('click',function(ev){
+  ev.preventDefault();
+  var url=location.href.split('#')[0]+'#'+tgt;
+  function ok(){btn.classList.add('done');btn.textContent='✓';setTimeout(function(){btn.classList.remove('done');btn.textContent='🔗'},1600)}
+  function fb(){var ta=document.createElement('textarea');ta.value=url;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){window.prompt('Copiez ce lien :',url)}document.body.removeChild(ta)}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(ok,fb)}else fb();
+  try{history.replaceState(null,'','#'+tgt)}catch(e){}
+ });
+ h.appendChild(btn);
+});
+
+/* deep link */
+function reveal(id,smooth){
+ if(!id)return;
+ var el=null;try{el=document.getElementById(decodeURIComponent(id))}catch(e){}
+ if(!el)return;
+ if(el.classList.contains('hide')||(el.closest&&el.closest('.hide'))){clearSearch()}
+ var p=el;
+ while(p&&p!==document.body){if(p.tagName==='DETAILS')p.open=true;p=p.parentElement}
+ if(el.tagName==='DETAILS')el.open=true;
+ var box=el.closest('section')||el;
+ el.scrollIntoView({behavior:(smooth&&!reduce)?'smooth':'auto',block:'start'});
+ box.classList.remove('target-flash');void box.offsetWidth;box.classList.add('target-flash');
+ setTimeout(function(){box.classList.remove('target-flash')},2600);
+ if(typeof el.focus==='function'){el.setAttribute('tabindex','-1');try{el.focus({preventScroll:true})}catch(e){}}
+}
+window.addEventListener('hashchange',function(){reveal(location.hash.slice(1),true)});
+$$('a[href^="#"]').forEach(function(a){
+ a.addEventListener('click',function(){
+  var id=a.getAttribute('href').slice(1);
+  if(id&&id===location.hash.slice(1)){setTimeout(function(){reveal(id,true)},0)}
+  if(a.closest('.sheet'))closeSheet();
+ });
+});
+
+/* search */
+var qi=$('#q'),qc=$('#qclear'),nores=$('#nores');
+function unmark(){
+ $$('mark[data-h]').forEach(function(m){var p=m.parentNode;p.replaceChild(document.createTextNode(m.textContent),m);p.normalize()});
+}
+function markIn(node,q){
+ var w=document.createTreeWalker(node,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+  var p=n.parentNode;if(!p||/^(SCRIPT|STYLE|BUTTON|MARK)$/.test(p.nodeName))return NodeFilter.FILTER_REJECT;
+  return n.nodeValue.toLowerCase().indexOf(q)>-1?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT}});
+ var list=[],n;while((n=w.nextNode()))list.push(n);
+ list.slice(0,60).forEach(function(t){
+  var s=t.nodeValue,l=s.toLowerCase(),i=l.indexOf(q);
+  if(i<0)return;
+  var f=document.createDocumentFragment(),last=0;
+  while(i>-1){
+   f.appendChild(document.createTextNode(s.slice(last,i)));
+   var m=document.createElement('mark');m.setAttribute('data-h','1');m.textContent=s.slice(i,i+q.length);f.appendChild(m);
+   last=i+q.length;i=l.indexOf(q,last);
   }
+  f.appendChild(document.createTextNode(s.slice(last)));
+  t.parentNode.replaceChild(f,t);
+ });
+}
+function norm(s){return s.toLowerCase()}
+function filter(){
+ var q=norm(qi.value.trim());
+ unmark();
+ qc.classList.toggle('hide',!qi.value);
+ var shown=0;
+ secs.forEach(function(s){
+  var ok=!q||norm(s.textContent).indexOf(q)>-1;
+  s.classList.toggle('hide',!ok);
+  if(ok){shown++;if(q.length>1){markIn(s,q);$$('details',s).forEach(function(d){d.open=!!d.querySelector('mark[data-h]')})}}
+ });
+ if(!q)$$('main details').forEach(function(d){d.open=false});
+ grps.forEach(function(g){
+  var n=g.nextElementSibling,any=false;
+  while(n&&!n.classList.contains('grp')){if(n.tagName==='SECTION'&&!n.classList.contains('hide'))any=true;n=n.nextElementSibling}
+  g.classList.toggle('hide',!any);
+ });
+ $('#quick').classList.toggle('hide',!!q);
+ nores.classList.toggle('hide',shown>0);
+ $$('#side a[href],#chips a,#slist a').forEach(function(a){
+  var id=a.getAttribute('href').slice(1),s=document.getElementById(id);
+  a.classList.toggle('hide',!!(s&&s.classList.contains('hide')));
+ });
+}
+function clearSearch(){qi.value='';filter()}
+var tmr;qi.addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(filter,120)});
+qc.addEventListener('click',function(){clearSearch();qi.focus()});
+
+/* scroll spy */
+var links=$$('#side a[href^="#"]'),chips=$$('#chips a'),sl=$$('#slist a'),curEl=$('#cur');
+var titles={};secs.forEach(function(s){var h=$('h2',s);titles[s.id]=h?h.firstChild.textContent.trim():s.id});
+function setOn(id){
+ [links,chips,sl].forEach(function(arr){arr.forEach(function(a){
+  var on=a.getAttribute('href')==='#'+id;a.classList.toggle('on',on);
+  if(on)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current');
+ })});
+ curEl.textContent=titles[id]||'';
+ var c=chips.filter(function(a){return a.classList.contains('on')})[0];
+ var cb=$('#chips');
+ if(c&&cb&&cb.offsetParent!==null){var l=c.offsetLeft-cb.clientWidth/2+c.clientWidth/2;cb.scrollTo?cb.scrollTo({left:l,behavior:reduce?'auto':'smooth'}):cb.scrollLeft=l}
+ var sd=$('#side'),a2=links.filter(function(a){return a.classList.contains('on')})[0];
+ if(a2&&sd&&sd.offsetParent!==null){var r=a2.getBoundingClientRect(),R=sd.getBoundingClientRect();if(r.top<R.top+40||r.bottom>R.bottom-20)sd.scrollTop+=r.top-R.top-R.height/3}
+}
+if('IntersectionObserver' in window){
+ var vis={};
+ var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){vis[e.target.id]=e.isIntersecting?e.intersectionRatio+0.0001:0});
+  var best=null,bv=0;secs.forEach(function(s){if(vis[s.id]>bv){bv=vis[s.id];best=s.id}});
+  if(best)setOn(best);
+ },{rootMargin:'-120px 0px -55% 0px',threshold:[0,.05,.2,.5,1]});
+ secs.forEach(function(s){io.observe(s)});
+}
+var prog=$('#prog'),tt=$('#totop'),tick=false;
+function onScroll(){
+ if(tick)return;tick=true;
+ requestAnimationFrame(function(){
+  var h=document.documentElement,max=h.scrollHeight-h.clientHeight;
+  prog.style.width=(max>0?Math.min(100,h.scrollTop/max*100):0)+'%';
+  tt.classList.toggle('show',h.scrollTop>700);tick=false;
+ });
+}
+window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+tt.addEventListener('click',function(){window.scrollTo({top:0,behavior:reduce?'auto':'smooth'})});
+
+/* bottom sheet */
+var sheet=$('#sheet'),sbg=$('#sbg'),fab=$('#fab'),lastF=null;
+function openSheet(){lastF=document.activeElement;sheet.classList.add('open');sbg.classList.add('open');sheet.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';var a=$('#slist a.on')||$('#slist a');if(a){a.focus();a.scrollIntoView({block:'center'})}}
+function closeSheet(){sheet.classList.remove('open');sbg.classList.remove('open');sheet.setAttribute('aria-hidden','true');document.body.style.overflow='';if(lastF&&lastF.focus)try{lastF.focus({preventScroll:true})}catch(e){}}
+fab.addEventListener('click',openSheet);sbg.addEventListener('click',closeSheet);$('#sclose').addEventListener('click',closeSheet);
+document.addEventListener('keydown',function(e){
+ if(e.key==='Escape'&&sheet.classList.contains('open'))closeSheet();
+ if(e.key==='Tab'&&sheet.classList.contains('open')){
+  var f=$$('a,button',sheet).filter(function(x){return x.offsetParent!==null});if(!f.length)return;
+  var first=f[0],last=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+ }
+ if(e.key==='/'&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).nodeName||'')){e.preventDefault();qi.focus()}
+});
+
+/* print : open all details */
+var wasOpen=[];
+window.addEventListener('beforeprint',function(){wasOpen=$$('details').map(function(d){return d.open});$$('details').forEach(function(d){d.open=true})});
+window.addEventListener('afterprint',function(){$$('details').forEach(function(d,i){d.open=!!wasOpen[i]})});
+
+/* ───── badges live ───── */
+var ZONES={feed:'Accueil',explorer:'Explorer',video_feed:'Feed vidéo',product_detail:'Détail produit',seller_profile:'Profil vendeur',messages:'Messages',search:'Recherche',notifications:'Notifications',rankings:'Classement',profile:'Mon profil'};
+function ruleText(rule,th){
+ var n=(th===null||th===undefined||th==='')?null:Number(th);
+ switch(rule){
+  case 'premium':return 'Abonnement Premium actif';
+  case 'kyc_verified':return 'Identité vérifiée (KYC)';
+  case 'sales_completed':return (n!==null?n:'Plusieurs')+' vente'+(n>1?'s':'')+' finalisée'+(n>1?'s':'');
+  case 'account_age_days':return (n!==null?n:'Plusieurs')+' jour'+(n>1?'s':'')+' d’ancienneté';
+  case 'trust_score':return 'Score de confiance ≥ '+(n!==null?n:'seuil')+' %';
+ }
+ return '';
+}
+function okColor(c){return typeof c==='string'&&/^#[0-9a-f]{3,8}$/i.test(c)?c:'#6366f1'}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined&&txt!==null)e.textContent=txt;return e}
+function normList(data){
+ var b=data&&data.badges!==undefined?data.badges:data;
+ if(data&&data.data&&data.badges===undefined)b=data.data.badges||data.data;
+ var out=[];
+ if(Array.isArray(b))out=b.slice();
+ else if(b&&typeof b==='object')Object.keys(b).forEach(function(k){var v=b[k];if(v&&typeof v==='object'){if(!v.key)v.key=k;out.push(v)}});
+ return out.filter(function(x){return x&&typeof x==='object'&&x.name});
+}
+function card(b){
+ var c=el('article','bcard'),h=el('div','bhead'),i=el('span','bi');
+ i.style.setProperty('--c',okColor(b.color));i.setAttribute('aria-hidden','true');
+ i.appendChild(el('span','ico material-icons',String(b.icon||'verified')));
+ i.appendChild(el('span','ltr',String(b.name).trim().charAt(0).toUpperCase()));
+ h.appendChild(i);
+ var t=el('div');t.appendChild(el('div','bname',b.name));
+ var auto=b.mode==='auto';
+ t.appendChild(el('span','pill '+(auto?'auto':'man'),auto?'Automatique':'Attribué par l’équipe'));
+ h.appendChild(t);c.appendChild(h);
+ if(b.description)c.appendChild(el('p',null,b.description));
+ var how=b.how_to_get||'';
+ if(auto&&b.auto_rule){var rt=ruleText(b.auto_rule,b.auto_threshold);if(rt)how=how?how+' ('+rt+')':rt}
+ if(how){var d=el('div','bhow');d.appendChild(el('strong',null,'Comment l’obtenir : '));d.appendChild(document.createTextNode(how));c.appendChild(d)}
+ var z=Array.isArray(b.zones)?b.zones:[];
+ if(z.length){var zw=el('div'),zl=el('div','muted','Où il s’affiche :');zl.style.marginBottom='4px';zw.appendChild(zl);
+  var zz=el('div','bzones');z.forEach(function(k){zz.appendChild(el('span','pill',ZONES[k]||String(k)))});zw.appendChild(zz);c.appendChild(zw)}
+ return c;
+}
+function fetchJson(url,ms){
+ return new Promise(function(res,rej){
+  var done=false,ctl=('AbortController' in window)?new AbortController():null;
+  var t=setTimeout(function(){if(!done){done=true;if(ctl)ctl.abort();rej(new Error('timeout'))}},ms);
+  fetch(url,{headers:{'Accept':'application/json'},signal:ctl?ctl.signal:undefined}).then(function(r){
+   if(!r.ok)throw new Error('http '+r.status);
+   var ct=r.headers.get('content-type')||'';if(ct.indexOf('json')<0)throw new Error('not json');
+   return r.json();
+  }).then(function(j){if(!done){done=true;clearTimeout(t);res(j)}},function(e){if(!done){done=true;clearTimeout(t);rej(e)}});
+ });
+}
+function loadBadges(){
+ var box=$('#badges-live'),fbk=$('#badges-fallback');
+ if(!box)return;
+ var sk=el('div','bgrid');for(var i=0;i<3;i++)sk.appendChild(el('div','skel'));
+ box.appendChild(sk);
+ var apis=['/api/v1','https://api.quinch.sn/api/v1'],idx=0;
+ function fail(){box.textContent='';box.classList.add('hide');fbk.classList.remove('hide')}
+ function next(){
+  if(idx>=apis.length)return fail();
+  var u=apis[idx++]+'/badges/definitions';
+  fetchJson(u,6000).then(function(j){
+   var l=normList(j);
+   if(!l.length)return next();
+   box.textContent='';var g=el('div','bgrid');l.forEach(function(b){g.appendChild(card(b))});box.appendChild(g);
+  },next);
+ }
+ next();
+}
+function checkIcons(){
+ function bad(){root.classList.add('noicons')}
+ try{
+  if(document.fonts&&document.fonts.load){
+   var to=setTimeout(function(){if(!document.fonts.check('24px "Material Icons"'))bad()},4000);
+   document.fonts.load('24px "Material Icons"','verified').then(function(f){clearTimeout(to);if(!f||!f.length||!document.fonts.check('24px "Material Icons"'))bad()},function(){clearTimeout(to);bad()});
+  }else bad();
+ }catch(e){bad()}
+ var lk=document.querySelector('link[href*="fonts.googleapis.com"]');
+ if(lk)lk.addEventListener('error',bad);
+}
+checkIcons();loadBadges();
+
+/* initial deep link */
+if(location.hash.length>1){
+ var go=function(){
+  var id=location.hash.slice(1),el=document.getElementById(id),moved=false;
+  if(!el)return;
+  /* Le contenu charge encore (badges en direct, polices) et décale la page : on garde la cible
+     alignée tant que l'utilisateur n'a pas lui-même fait défiler, pendant 4 s maximum. */
+  var stop=function(){moved=true};
+  ['wheel','touchstart','keydown','mousedown'].forEach(function(ev){window.addEventListener(ev,stop,{once:true,passive:true})});
+  var html=document.documentElement,prev=html.style.scrollBehavior;
+  html.style.scrollBehavior='auto';
+  reveal(id,false);
+  var align=function(){if(!moved){var t=document.getElementById(id);if(t)t.scrollIntoView({behavior:'auto',block:'start'})}};
+  var ro=window.ResizeObserver?new ResizeObserver(align):null;
+  if(ro)ro.observe(document.body);
+  setTimeout(function(){if(ro)ro.disconnect();html.style.scrollBehavior=prev},4000);
+ };
+ if(document.readyState==='complete')setTimeout(go,60);else window.addEventListener('load',function(){setTimeout(go,60)});
+}
 })();
 </script>
 </body>

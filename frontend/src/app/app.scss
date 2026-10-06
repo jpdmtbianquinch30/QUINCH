@@ -1714,3 +1714,10 @@
     transform: translateX(0);
   }
 }
+
+/* Lien « Administration » du staff : mis en avant pour passer du site au panneau admin. */
+.sidebar-link.admin-switch {
+  border: 1px dashed color-mix(in srgb, var(--q-accent, #6366f1) 55%, transparent);
+  background: color-mix(in srgb, var(--q-accent, #6366f1) 8%, transparent);
+}
+.sidebar-link.admin-switch .material-icons { color: var(--q-accent, #6366f1); }

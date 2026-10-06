@@ -271,15 +271,66 @@ class NotificationService
     }
 
     /**
-     * Admin notification to a user.
+     * Types de messages de l'équipe → page du guide qui explique la situation
+     * (`anchor`, identifiant d'une section de public/guide/index.html) et page
+     * ouverte par « Voir le détail » : `message` (page message complète, avec
+     * contestation possible) ou `guide` (information simple → directement la
+     * bonne zone du guide).
      */
-    public function notifyAdmin(string $userId, string $title, string $body, ?string $actionUrl = null): ?UserNotification
+    public const KINDS = [
+        'warning'         => ['anchor' => 'avertissement',      'detail' => 'message'],
+        'suspension'      => ['anchor' => 'suspension',         'detail' => 'message'],
+        'ban'             => ['anchor' => 'bannissement',       'detail' => 'message'],
+        'reactivation'    => ['anchor' => 'compte-reactive',    'detail' => 'guide'],
+        'video_removed'   => ['anchor' => 'video-retiree',      'detail' => 'message'],
+        'video_review'    => ['anchor' => 'video-verification', 'detail' => 'message'],
+        'video_restored'  => ['anchor' => 'video-retiree',      'detail' => 'guide'],
+        'product_hidden'  => ['anchor' => 'annonce-masquee',    'detail' => 'message'],
+        'product_deleted' => ['anchor' => 'annonce-supprimee',  'detail' => 'message'],
+        'product_restored' => ['anchor' => 'annonce-masquee',   'detail' => 'guide'],
+        'appeal_result'   => ['anchor' => 'contester',          'detail' => 'message'],
+        'premium_granted' => ['anchor' => 'premium',            'detail' => 'guide'],
+        'premium_revoked' => ['anchor' => 'premium-retire',     'detail' => 'message'],
+        'dispute_resolved' => ['anchor' => 'litige',            'detail' => 'message'],
+        'ticket_reply'    => ['anchor' => 'ticket-support',     'detail' => 'message'],
+        'review_removed'  => ['anchor' => 'avis-retire',        'detail' => 'message'],
+        'report_processed' => ['anchor' => 'signaler',          'detail' => 'guide'],
+        'kyc'             => ['anchor' => 'kyc',                'detail' => 'guide'],
+        'team_message'    => ['anchor' => 'contacter-equipe',   'detail' => 'message'],
+        'appeal_received' => ['anchor' => 'contester',          'detail' => 'message'],
+    ];
+
+    /**
+     * Message de l'équipe à un utilisateur.
+     *
+     * @param array $meta kind (clé de KINDS), contest ['target_type' => video|product|strike|account|message,
+     *                    'target_id' => uuid] (si l'utilisateur peut contester / répondre), concerned_admin_id
+     *                    (membre du staff qui a pris la décision : il sera prévenu d'une contestation).
+     */
+    public function notifyAdmin(string $userId, string $title, string $body, ?string $actionUrl = null, array $meta = []): ?UserNotification
     {
+        $kind = $meta['kind'] ?? 'team_message';
+        $def = self::KINDS[$kind] ?? self::KINDS['team_message'];
+
+        $data = [
+            'from' => 'team',
+            'kind' => $kind,
+            'detail' => $meta['detail'] ?? $def['detail'],
+            'guide_anchor' => $meta['guide_anchor'] ?? $def['anchor'],
+        ];
+        if (!empty($meta['contest'])) {
+            $data['contest'] = $meta['contest'];
+        }
+        if (!empty($meta['concerned_admin_id'])) {
+            $data['concerned_admin_id'] = $meta['concerned_admin_id'];
+        }
+
         return $this->send($userId, 'admin', $title, $body, [
             'icon'       => 'admin_panel_settings',
-            // « Voir le détail » : par défaut, le guide complet de QUINCH (public/guide/index.html).
-            'action_url' => $actionUrl ?? '/guide/index.html',
+            // null : le front décide (page message ou zone du guide) d'après data.detail.
+            'action_url' => $actionUrl,
             'priority'   => self::PRIORITY_CRITICAL,
+            'data'       => $data,
         ]);
     }
 

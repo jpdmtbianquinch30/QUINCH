@@ -3544,3 +3544,91 @@ $r-sm: 8px;
     }
 }
 /* LIGHT-AUTO:END */
+
+/* ═══ Profil vendeur cliquable + bottom-sheet redimensionnable ═══ */
+.seller-link {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  &:focus { outline: none; }
+  &:focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 2px;
+    border-radius: 12px;
+  }
+}
+.seller-avatar-sm.seller-link:focus-visible { border-radius: 50%; }
+.seller-username.seller-link:hover { text-decoration: underline; }
+.seller-card .seller-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  .seller-name { min-width: 0; }
+}
+
+.fd-resize-handle {
+  &:focus { outline: none; }
+  &:focus-visible::after {
+    background: #818cf8 !important;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.35);
+  }
+}
+
+/* Mobile : le panneau devient une vraie feuille en colonne flex.
+   La hauteur vient de --sheet-h (dvh) ; le corps défile (min-height:0). */
+@media (max-width: 768px) {
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet {
+    display: flex !important;
+    flex-direction: column !important;
+    height: var(--sheet-h, 55dvh) !important;
+    min-height: 0 !important;
+    max-height: 92dvh !important;
+    overflow: hidden !important;
+    transition: height 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet.sheet-dragging { transition: none; }
+
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet > .fd-resize-handle {
+    position: relative !important;
+    flex: 0 0 34px !important;
+    height: 34px !important;
+    touch-action: none !important;
+    cursor: ns-resize !important;
+    user-select: none;
+  }
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet > .fd-close {
+    position: absolute !important;
+    float: none !important;
+    top: 6px !important;
+    right: 12px !important;
+    margin: 0 !important;
+    z-index: 70 !important;
+  }
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet > .info-panel {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 18px !important;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* Écrans larges : on garde la mise en page côte à côte (vidéo | détails),
+   la poignée verticale règle la largeur. Le corps reste défilable. */
+@media (min-width: 769px) {
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet > .fd-resize-handle { touch-action: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-detail-panel,
+  .feed-detail-panel.fd-sheet,
+  .slide-inner.split-mode .feed-detail-panel.fd-sheet {
+    animation: none !important;
+    transition: none !important;
+  }
+  .fd-resize-handle,
+  .fd-resize-handle::after { transition: none !important; }
+}

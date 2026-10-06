@@ -11,7 +11,7 @@ class UserBadge extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $fillable = ['user_id', 'badge_type', 'badge_level', 'awarded_by', 'reason', 'expires_at'];
+    protected $fillable = ['user_id', 'badge_type', 'badge_level', 'awarded_by', 'reason', 'expires_at', 'source'];
 
     protected function casts(): array
     {
@@ -21,19 +21,29 @@ class UserBadge extends Model
     public function user() { return $this->belongsTo(User::class); }
     public function awardedBy() { return $this->belongsTo(User::class, 'awarded_by'); }
 
+    /**
+     * Définitions des badges ACTIFS (créés dans l'admin), indexées par clé.
+     * Source de vérité unique : table badge_definitions (voir BadgeDefinition).
+     * Un badge sans définition active n'est jamais affiché.
+     */
     public static function badgeDefinitions(): array
     {
+        return collect(BadgeDefinition::allByKey())
+            ->filter(fn ($d) => $d['is_active'] ?? false)
+            ->all();
+    }
+
+    /** Forme d'un badge telle que renvoyée aux fronts (nom, icône, couleur, zones…). */
+    public static function present(string $type, array $def, ?string $awardedAt = null): array
+    {
         return [
-            'verified' => ['name' => 'Vérifié', 'icon' => 'verified', 'color' => '#4f6ef7'],
-            'top_seller' => ['name' => 'Top Vendeur', 'icon' => 'emoji_events', 'color' => '#f59e0b'],
-            'fast_shipper' => ['name' => 'Livraison Express', 'icon' => 'local_shipping', 'color' => '#22c55e'],
-            'loyal_customer' => ['name' => 'Client Fidèle', 'icon' => 'favorite', 'color' => '#ef4444'],
-            'active_reviewer' => ['name' => 'Reviewer Actif', 'icon' => 'rate_review', 'color' => '#8b5cf6'],
-            'first_sale' => ['name' => 'Première Vente', 'icon' => 'celebration', 'color' => '#ec4899'],
-            'hundred_sales' => ['name' => '100 Ventes', 'icon' => 'military_tech', 'color' => '#f59e0b'],
-            'premium' => ['name' => 'Premium', 'icon' => 'star', 'color' => '#f59e0b'],
-            'ambassador' => ['name' => 'Ambassadeur', 'icon' => 'campaign', 'color' => '#3b82f6'],
-            'one_year' => ['name' => '1 an sur QUINCH', 'icon' => 'cake', 'color' => '#ec4899'],
+            'type' => $type,
+            'name' => $def['name'],
+            'icon' => $def['icon'],
+            'color' => $def['color'],
+            'description' => $def['description'] ?? '',
+            'zones' => $def['zones'] ?? [],
+            'awarded_at' => $awardedAt,
         ];
     }
 
@@ -45,19 +55,20 @@ class UserBadge extends Model
     public static function summaryForMany(array $userIds): array
     {
         $definitions = static::badgeDefinitions();
+        if (!$definitions || !$userIds) {
+            return [];
+        }
 
         return static::whereIn('user_id', $userIds)
+            ->whereIn('badge_type', array_keys($definitions))
             ->active()
             ->get()
             ->groupBy('user_id')
-            ->map(fn ($badges) => $badges->map(fn ($b) => [
-                'type' => $b->badge_type,
-                'name' => $definitions[$b->badge_type]['name'] ?? $b->badge_type,
-                'icon' => $definitions[$b->badge_type]['icon'] ?? 'stars',
-                'color' => $definitions[$b->badge_type]['color'] ?? '#666',
-                'description' => $definitions[$b->badge_type]['description'] ?? '',
-                'awarded_at' => $b->created_at?->toISOString(),
-            ])->values()->all())
+            ->map(fn ($badges) => $badges
+                // Ordre d'affichage = ordre défini dans l'admin.
+                ->sortBy(fn ($b) => array_search($b->badge_type, array_keys($definitions), true))
+                ->map(fn ($b) => static::present($b->badge_type, $definitions[$b->badge_type], $b->created_at?->toISOString()))
+                ->values()->all())
             ->toArray();
     }
 

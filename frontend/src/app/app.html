@@ -82,9 +82,9 @@
 
           @if (auth.isAdmin()) {
             <div class="sidebar-divider"></div>
-            <a routerLink="/admin" routerLinkActive="active" class="sidebar-link">
+            <a routerLink="/admin" routerLinkActive="active" class="sidebar-link admin-switch" title="Passer au panneau d'administration">
               <span class="sidebar-link-icon"><span class="material-icons">admin_panel_settings</span></span>
-              <span class="sidebar-link-label">Admin</span>
+              <span class="sidebar-link-label">Administration</span>
             </a>
           }
         } @else {
@@ -114,7 +114,7 @@
             </div>
             <div class="sidebar-user-info">
               <span class="sidebar-user-name">{{ auth.user()?.full_name }}</span>
-              <span class="sidebar-user-role">{{ auth.isAdmin() ? 'Administrateur' : 'Membre' }}</span>
+              <span class="sidebar-user-role">{{ staffRoleLabel() }}</span>
             </div>
             <span class="material-icons sidebar-user-chevron">chevron_right</span>
           </a>
@@ -132,3 +132,4 @@
 <!-- Global Toast Notifications -->
 <app-toast />
 <app-push-popup />
+<app-confirm-dialog />

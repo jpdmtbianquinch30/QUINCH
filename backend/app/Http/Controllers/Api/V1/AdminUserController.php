@@ -275,7 +275,8 @@ class AdminUserController extends Controller
             $validated['status'] === 'verified'
                 ? 'Votre identité a été vérifiée avec succès.'
                 : 'Votre vérification KYC a été rejetée. ' . ($validated['reason'] ?? ''),
-            '/profile'
+            null,
+            ['kind' => 'kyc']
         );
 
         return response()->json(['message' => 'Statut KYC mis à jour.', 'user' => $user->fresh()]);
@@ -308,9 +309,21 @@ class AdminUserController extends Controller
             'title' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'max:1000'],
             'action_url' => ['nullable', 'string', 'max:300', 'regex:/^\/(?![\/\\])/'],
+            // Autorise l'utilisateur à répondre / contester depuis la page du message.
+            'allow_reply' => ['nullable', 'boolean'],
+            'guide_anchor' => ['nullable', 'string', 'max:60', 'regex:/^[a-z0-9-]+$/'],
         ]);
 
-        $this->notif->notifyAdmin($user->id, $validated['title'], $validated['body'], $validated['action_url'] ?? null);
+        $meta = ['kind' => 'team_message', 'concerned_admin_id' => $request->user()->id];
+        if (!empty($validated['guide_anchor'])) {
+            $meta['guide_anchor'] = $validated['guide_anchor'];
+        }
+        $notification = $this->notif->notifyAdmin($user->id, $validated['title'], $validated['body'], $validated['action_url'] ?? null, $meta);
+        if ($notification && !empty($validated['allow_reply'])) {
+            $data = $notification->data ?? [];
+            $data['contest'] = ['target_type' => 'message', 'target_id' => $notification->id];
+            $notification->update(['data' => $data]);
+        }
 
         AdminLogger::log($request->user(), 'notification_sent', 'User', $user->id, ['title' => $validated['title']]);
 

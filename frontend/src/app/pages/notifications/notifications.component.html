@@ -108,16 +108,18 @@
               <div class="notif-content">
                 <div class="notif-text">
                   <span class="notif-title">{{ notif.title }}</span>
-                  @if (notif.sender?.is_premium) {
-                    <span class="material-icons n-badge n-premium" title="Premium">workspace_premium</span>
-                  }
-                  @for (b of notif.sender?.badges; track b.type) {
-                    <span class="material-icons n-badge" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-                  }
+                  <app-user-badges [badges]="notif.sender?.badges" zone="notifications" [max]="3" />
                   @if (getGroupedLabel(notif)) {
                     <span class="group-badge">{{ getGroupedLabel(notif) }}</span>
                   }
                 </div>
+                @if (isTeam(notif)) {
+                  <div class="team-line">
+                    <img src="logoquinch.png" alt="" class="team-logo" />
+                    <span>Équipe QUINCH</span>
+                    @if (notif.data?.contest) { <span class="team-chip">Contestable</span> }
+                  </div>
+                }
                 <p class="notif-body">{{ notif.body }}</p>
                 <div class="notif-footer">
                   <span class="notif-time">{{ formatTime(notif.created_at) }}</span>
@@ -135,6 +137,11 @@
                 @if (!notif.is_read) {
                   <span class="unread-dot"></span>
                 }
+                <button class="notif-delete notif-toggle" (click)="toggleRead($event, notif)"
+                  [title]="notif.is_read ? 'Marquer comme non lu' : 'Marquer comme lu'"
+                  [attr.aria-label]="notif.is_read ? 'Marquer comme non lu' : 'Marquer comme lu'">
+                  <span class="material-icons">{{ notif.is_read ? 'mark_email_unread' : 'drafts' }}</span>
+                </button>
                 <button class="notif-delete" (click)="deleteNotification($event, notif)" title="Supprimer">
                   <span class="material-icons">close</span>
                 </button>

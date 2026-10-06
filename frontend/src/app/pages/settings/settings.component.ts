@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { NotificationService, NotifPreference } from '../../core/services/notification.service';
 import { ApiService } from '../../core/services/api.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { ConfirmService } from '../../shared/confirm/confirm.service';
 
 @Component({
   selector: 'app-settings',
@@ -21,6 +22,7 @@ export class SettingsComponent implements OnInit {
   private notify = inject(NotificationService);
   private api = inject(ApiService);
   themeService = inject(ThemeService);
+  private confirm = inject(ConfirmService);
 
   user = this.auth.user;
   appVersion = '2.0.0';
@@ -168,19 +170,25 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  deleteAccount() {
-    const confirm1 = confirm('Etes-vous sur de vouloir supprimer votre compte ? Cette action est irreversible.');
-    if (!confirm1) return;
-    const confirm2 = confirm('Derniere chance: Toutes vos donnees, publications et transactions seront supprimees definitivement. Continuer ?');
-    if (!confirm2) return;
+  async deleteAccount() {
+    const r = await this.confirm.ask({
+      title: 'Supprimer définitivement votre compte ?',
+      message: 'Vos données personnelles, vos annonces et vos conversations seront effacées. Cette action est irréversible. Les traces de transactions sont conservées de façon anonyme pour des raisons légales.',
+      confirmLabel: 'Supprimer mon compte',
+      danger: true,
+      icon: 'delete_forever',
+      requireText: 'SUPPRIMER',
+      askPassword: true,
+    });
+    if (!r.confirmed) return;
 
-    this.api.delete('/auth/delete-account').subscribe({
+    this.api.post('auth/delete-account', { password: r.password }).subscribe({
       next: () => {
-        this.notify.success('Compte supprime. Au revoir!');
+        this.notify.success('Compte supprimé. Au revoir !');
         this.auth.logout();
       },
-      error: () => {
-        this.notify.error('Erreur lors de la suppression du compte.');
+      error: (e) => {
+        this.notify.error(e?.error?.errors?.password?.[0] || e?.error?.message || 'Erreur lors de la suppression du compte.');
       }
     });
   }
@@ -354,8 +362,15 @@ export class SettingsComponent implements OnInit {
   }
 
   // ─── Logout ──────────────────────
-  logout() {
+  async logout() {
+    const r = await this.confirm.ask({
+      title: 'Se déconnecter ?',
+      message: 'Vous devrez saisir à nouveau votre numéro et votre mot de passe pour revenir.',
+      confirmLabel: 'Se déconnecter',
+      icon: 'logout',
+    });
+    if (!r.confirmed) return;
     this.auth.logout();
-    this.notify.success('Deconnexion reussie. A bientot!');
+    this.notify.success('Déconnexion réussie. À bientôt !');
   }
 }

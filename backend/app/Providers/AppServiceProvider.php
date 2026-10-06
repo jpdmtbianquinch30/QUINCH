@@ -39,6 +39,20 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPermissionGates();
         $this->registerModerationHooks();
         $this->applySiteSettings();
+        $this->registerBadgeHooks();
+    }
+
+    /**
+     * Badges automatiques : dès qu'un compte change de statut Premium ou KYC, on
+     * recalcule SES badges immédiatement (le reste est resynchronisé chaque heure).
+     */
+    private function registerBadgeHooks(): void
+    {
+        User::saved(function (User $user) {
+            if ($user->wasChanged(['is_premium', 'premium_expires_at', 'kyc_status', 'account_status'])) {
+                app(\App\Services\BadgeService::class)->syncUserSafe($user);
+            }
+        });
     }
 
     /**

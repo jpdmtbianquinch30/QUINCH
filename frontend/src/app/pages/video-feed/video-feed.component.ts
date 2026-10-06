@@ -16,12 +16,13 @@ import { AnalyticsService } from '../../core/services/analytics.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ReviewService, ReviewStats } from '../../core/services/review.service';
 import { ReportModalComponent, ReportKind } from '../../shared/report-modal/report-modal.component';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, ReportModalComponent],
+  imports: [DecimalPipe, FormsModule, ReportModalComponent, UserBadgesComponent],
   templateUrl: './video-feed.component.html',
   styleUrl: './video-feed.component.scss',
 })
@@ -504,8 +505,30 @@ videoPaused = signal(false);
 
   viewSellerProfile(product: any, event: Event) {
     event.stopPropagation();
-    const username = product.seller?.username;
-    if (username) this.router.navigate(['/seller', username]);
+    event.preventDefault();
+    const username = product?.seller?.username || product?.user?.username;
+    if (!username) return;
+    // On coupe la lecture avant de quitter la page (pas de son résiduel).
+    this.videoPlayers?.forEach(ref => { try { ref.nativeElement.pause(); } catch { /* ignore */ } });
+    this.stopResize();
+    this.router.navigate(['/seller', username]);
+  }
+
+  /** Profil vendeur depuis le panneau de détails (avatar, nom, carte vendeur). */
+  dpOpenSeller(event: Event) {
+    const p = this.dp();
+    if (!p) { event.stopPropagation(); return; }
+    this.viewSellerProfile(p, event);
+  }
+
+  onSellerKey(product: any): (e: Event) => void {
+    return (e: Event) => this.viewSellerProfile(product, e);
+  }
+
+  /** Activation clavier (Entrée / Espace) d'un élément role="link". */
+  onLinkKey(event: Event, action: (e: Event) => void) {
+    const k = (event as KeyboardEvent).key;
+    if (k === 'Enter' || k === ' ') { action(event); }
   }
 
   // ─── Like ──────────────────────────────────────────────
@@ -983,6 +1006,128 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
     });
   }
 
+
+  // ─── Bottom-sheets redimensionnables (aide partagée) ───────────
+  // Même logique pour toutes les feuilles : poignée glissable (pointer
+  // events + setPointerCapture), clavier, double-tap 50% <-> 90%,
+  // fermeture si on descend sous 15%, hauteur mémorisée par type.
+  // `kind` = type de feuille ('detail' aujourd'hui ; 'comments' prêt à
+  // l'emploi dès qu'une feuille de commentaires existe dans le feed).
+  readonly SHEET_MIN = 25;
+  readonly SHEET_MAX = 92;
+  readonly SHEET_CLOSE = 15;
+  private readonly sheetDefaults: Record<string, number> = { detail: 55, comments: 60 };
+  /** Hauteurs en % de la hauteur de viewport (dvh). */
+  sheetH = signal<Record<string, number>>(this.loadSheetHeights());
+  sheetDragging = signal(false);
+  /** Vrai sur mobile / petit écran : le panneau est un bottom-sheet. */
+  isNarrow = signal(typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches);
+  private sheetDrag: { kind: string; startY: number; startH: number; moved: boolean; id: number; raw: number } | null = null;
+  private lastHandleTap = 0;
+
+  @HostListener('window:resize')
+  onWinResize(): void {
+    const n = window.matchMedia('(max-width: 768px)').matches;
+    if (n !== this.isNarrow()) this.isNarrow.set(n);
+  }
+
+  private sheetKey(kind: string) { return 'quinch.sheetHeight.' + kind; }
+
+  private loadSheetHeights(): Record<string, number> {
+    const out: Record<string, number> = { ...this.sheetDefaults };
+    for (const k of Object.keys(out)) {
+      try {
+        const v = parseFloat(localStorage.getItem(this.sheetKey(k)) || '');
+        if (isFinite(v)) out[k] = Math.min(this.SHEET_MAX, Math.max(this.SHEET_MIN, v));
+      } catch { /* stockage indisponible */ }
+    }
+    return out;
+  }
+
+  sheetHeight(kind: string): number { return this.sheetH()[kind] ?? this.sheetDefaults[kind] ?? 55; }
+
+  private setSheetHeight(kind: string, pct: number, persist: boolean) {
+    const v = Math.round(Math.min(this.SHEET_MAX, Math.max(this.SHEET_MIN, pct)) * 10) / 10;
+    this.sheetH.update(m => ({ ...m, [kind]: v }));
+    if (persist) {
+      try { localStorage.setItem(this.sheetKey(kind), String(v)); } catch { /* ignore */ }
+    }
+  }
+
+  private closeSheet(kind: string) {
+    if (kind === 'detail') this.closeDetail();
+  }
+
+  sheetDown(kind: string, e: PointerEvent): void {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.currentTarget as HTMLElement | null;
+    try { el?.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    this.sheetDrag = { kind, startY: e.clientY, startH: this.sheetHeight(kind), moved: false, id: e.pointerId, raw: this.sheetHeight(kind) };
+    this.sheetDragging.set(true);
+  }
+
+  sheetMove(e: PointerEvent): void {
+    const d = this.sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    e.preventDefault();
+    const dy = d.startY - e.clientY;
+    if (Math.abs(dy) > 4) d.moved = true;
+    const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+    const raw = d.startH + (dy / vh) * 100;
+    // On visualise le plancher ; la fermeture est décidée au relâchement.
+    this.setSheetHeight(d.kind, raw, false);
+    d.raw = raw;
+  }
+
+  sheetUp(e: PointerEvent): void {
+    const d = this.sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    const el = e.currentTarget as HTMLElement | null;
+    try { el?.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    this.sheetDrag = null;
+    this.sheetDragging.set(false);
+
+    if (!d.moved) {
+      // Tap (souris ou doigt) : deux taps rapprochés = bascule 50% <-> 90%.
+      const now = Date.now();
+      if (now - this.lastHandleTap < 320) {
+        this.lastHandleTap = 0;
+        this.setSheetHeight(d.kind, this.sheetHeight(d.kind) < 70 ? 90 : 50, true);
+      } else {
+        this.lastHandleTap = now;
+      }
+      return;
+    }
+    const raw = d.raw;
+    if (raw < this.SHEET_CLOSE) {
+      // Restaure la hauteur d'avant le geste pour la prochaine ouverture.
+      this.setSheetHeight(d.kind, d.startH, false);
+      this.closeSheet(d.kind);
+      return;
+    }
+    this.setSheetHeight(d.kind, raw, true);
+  }
+
+  sheetCancel(e: PointerEvent): void {
+    const d = this.sheetDrag;
+    if (!d || e.pointerId !== d.id) return;
+    this.sheetDrag = null;
+    this.sheetDragging.set(false);
+    this.setSheetHeight(d.kind, d.startH, false);
+  }
+
+  sheetKeydown(kind: string, e: KeyboardEvent): void {
+    if (!this.isNarrow()) return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.key === 'ArrowUp' ? 5 : -5;
+      this.setSheetHeight(kind, this.sheetHeight(kind) + delta, true);
+    }
+  }
+
   // ─── Resize Handle ────────────────────────────────────────────
   // Le même handle sert aux deux layouts :
   //  - desktop/tablette : ajuste la largeur vidéo <-> détails ;
@@ -990,6 +1135,8 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
   // On utilise Pointer Events pour que souris, tactile et stylet passent
   // par exactement le même chemin, sans ouvrir de popup/modale.
   startResize(e: PointerEvent | MouseEvent): void {
+    // Mobile : bottom-sheet redimensionnable (aide partagée, voir plus bas).
+    if (this.isNarrow()) { this.sheetDown('detail', e as PointerEvent); return; }
     e.preventDefault();
     e.stopPropagation();
 
@@ -1106,7 +1253,6 @@ if (this.touchDeltaY < 0 && this.currentIndex() < this.products().length - 1) {
   dpSellerAvatar(): string | null { const p = this.dp(); return p?.seller?.avatar_url || p?.seller?.avatar || null; }
   dpSellerName(): string { const p = this.dp(); return p?.seller?.full_name || p?.seller?.username || 'Vendeur'; }
   dpSellerUsername(): string { return this.dp()?.seller?.username || ''; }
-  dpSellerIsPremium(): boolean { return !!this.dp()?.seller?.is_premium; }
   dpTrustScore(): number { return this.dp()?.seller?.trust_score || 0; }
   dpSellerCity(): string { return this.dp()?.seller?.city || ''; }
   dpCondition(): string {

@@ -49,6 +49,7 @@ export const routes: Routes = [
   { path: 'messages', canActivate: [authGuard], loadComponent: () => import('./pages/messages/messages.component').then(m => m.MessagesComponent) },
   { path: 'favorites', canActivate: [authGuard], loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent) },
   { path: 'notifications', canActivate: [authGuard], loadComponent: () => import('./pages/notifications/notifications.component').then(m => m.NotificationsComponent) },
+  { path: 'notifications/:id', canActivate: [authGuard], loadComponent: () => import('./pages/notifications/notification-detail.component').then(m => m.NotificationDetailComponent) },
   // URLs exactes attendues par PremiumController::subscribe() (success_url/error_url) — ne pas renommer.
   { path: 'premium', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },
   { path: 'premium/success', canActivate: [authGuard], loadComponent: () => import('./pages/premium/premium.component').then(m => m.PremiumComponent) },

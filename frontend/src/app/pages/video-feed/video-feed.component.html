@@ -41,8 +41,7 @@
                   }
                   <div class="search-item-info">
                     <span class="search-item-name">{{ user.full_name }}
-                      @if (user.is_premium) { <span class="material-icons premium-icon-sm">workspace_premium</span> }
-                      @for (b of user.badges; track b.type) { <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span> }
+                      <app-user-badges [badges]="user.badges" zone="video_feed" [max]="4" />
                     </span>
                     <span class="search-item-sub">&#64;{{ user.username }} {{ user.city ? '· ' + user.city : '' }}</span>
                   </div>
@@ -306,20 +305,21 @@
               <div class="card-info">
                 <!-- Seller row (avatar + pseudo + suivre) -->
                 <div class="info-seller-row">
-                  <div class="seller-avatar-sm" (click)="viewSellerProfile(product, $event)">
+                  <div class="seller-avatar-sm seller-link" role="link" tabindex="0"
+                       [attr.aria-label]="'Voir le profil de ' + (product.seller?.username || 'vendeur')"
+                       (click)="viewSellerProfile(product, $event)"
+                       (keydown)="onLinkKey($event, onSellerKey(product))">
                     @if (product.seller?.avatar) {
                       <img [src]="product.seller.avatar" alt="" (error)="onImgError($event)" />
                     } @else {
                       <span class="material-icons">person</span>
                     }
                   </div>
-                                  <span class="seller-username" (click)="viewSellerProfile(product, $event)">&#64;{{ product.seller?.username || 'vendeur' }}</span>
-                    @if (product.seller?.is_premium) {
-                      <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span>
-                    }
-                    @for (b of product.seller?.badges; track b.type) {
-                      <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-                    }
+                  <span class="seller-username seller-link" role="link" tabindex="0"
+                        [attr.aria-label]="'Voir le profil de ' + (product.seller?.username || 'vendeur')"
+                        (click)="viewSellerProfile(product, $event)"
+                        (keydown)="onLinkKey($event, onSellerKey(product))">&#64;{{ product.seller?.username || 'vendeur' }}</span>
+                    <app-user-badges [badges]="product.seller?.badges" zone="video_feed" [max]="4" />
                     @if (product.seller?.trust_score >= 0.7) {
                       <span class="material-icons verified-icon">verified</span>
                     }
@@ -416,12 +416,24 @@
 
             <!-- ══ RESIZE HANDLE + DETAIL PANEL ══ -->
             @if (detailMode() && currentIndex() === i && dp(); as p) {
-              <div class="feed-detail-panel" [class.is-service]="dpIsService()" [class.is-product]="dpIsProduct()">
+              <div class="feed-detail-panel fd-sheet" [class.is-service]="dpIsService()" [class.is-product]="dpIsProduct()"
+                   [class.sheet-dragging]="sheetDragging()"
+                   [style.--sheet-h]="sheetHeight('detail') + 'dvh'">
                 <div class="fd-resize-handle"
-                     [class.dragging]="resizing()"
+                     role="separator"
+                     tabindex="0"
+                     [attr.aria-orientation]="isNarrow() ? 'horizontal' : 'vertical'"
+                     [attr.aria-valuemin]="isNarrow() ? 25 : null"
+                     [attr.aria-valuemax]="isNarrow() ? 92 : null"
+                     [attr.aria-valuenow]="isNarrow() ? sheetHeight('detail') : null"
+                     [class.dragging]="resizing() || sheetDragging()"
                      (pointerdown)="startResize($any($event))"
-                     aria-label="Ajuster la hauteur du panneau"></div>
-                <button class="fd-close" (click)="closeDetail()"><span class="material-icons">close</span></button>
+                     (pointermove)="sheetMove($any($event))"
+                     (pointerup)="sheetUp($any($event))"
+                     (pointercancel)="sheetCancel($any($event))"
+                     (keydown)="sheetKeydown('detail', $any($event))"
+                     aria-label="Ajuster la hauteur du panneau (flèches haut et bas, double-clic pour agrandir ou réduire)"></div>
+                <button class="fd-close" type="button" aria-label="Fermer les détails" (click)="closeDetail()"><span class="material-icons">close</span></button>
                 <div class="info-panel">
                   <div class="info-tags">
                     <span class="type-tag" [class.service]="dpIsService()"><span class="material-icons">{{ dpTypeIcon() }}</span> {{ dpTypeLabel() }}</span>
@@ -503,11 +515,13 @@
   <span>Conseil : contactez {{ dpIsService() ? 'le prestataire' : 'le vendeur' }} pour confirmer les détails et convenir de la remise du produit.</span>
 </div>
                   <div class="info-section"><h3 class="section-title">Description</h3><p class="section-text">{{ p.description || 'Aucune description disponible.' }}</p></div>
-                  <div class="seller-card" [class.service]="dpIsService()" (click)="viewSellerProfile(p, $event)">
+                  <div class="seller-card seller-link" [class.service]="dpIsService()" role="link" tabindex="0"
+                       [attr.aria-label]="'Voir le profil de ' + dpSellerName()"
+                       (click)="dpOpenSeller($event)" (keydown)="onLinkKey($event, dpOpenSeller.bind(this))">
                     <div class="seller-avatar">
                       @if (dpSellerAvatar()) { <img [src]="dpSellerAvatar()" alt="" (error)="onImgError($event)" /> } @else { <span class="material-icons">person</span> }
                     </div>
-                    <div class="seller-info"><span class="seller-name">{{ dpSellerName() }}</span><span class="seller-username">&#64;{{ dpSellerUsername() }}</span></div>
+                    <div class="seller-info"><span class="seller-name-row"><span class="seller-name">{{ dpSellerName() }}</span><app-user-badges [badges]="p.seller?.badges" zone="video_feed" [max]="4" /></span><span class="seller-username">&#64;{{ dpSellerUsername() }}</span></div>
                     <div class="seller-trust">
                       <div class="trust-score"><span class="material-icons">verified</span> {{ (dpTrustScore() * 100) | number:'1.0-0' }}%</div>
                       @if (dpSellerCity()) { <span class="seller-location"><span class="material-icons">location_on</span> {{ dpSellerCity() }}</span> }

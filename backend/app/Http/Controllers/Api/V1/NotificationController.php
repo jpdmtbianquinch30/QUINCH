@@ -3,7 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\ModerationAppeal;
 use App\Models\NotificationPreference;
+use App\Models\Product;
+use App\Models\ProductVideo;
+use App\Models\User;
+use App\Models\UserStrike;
+use App\Services\NotificationService;
 use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,6 +96,120 @@ class NotificationController extends Controller
             ->get(['id', 'type', 'title', 'body', 'icon', 'action_url', 'data', 'created_at']);
 
         return response()->json(['data' => $items]);
+    }
+
+    /**
+     * Détail complet d'une notification (page « message de l'équipe »).
+     * Renvoie aussi l'état de la contestation éventuelle : peut-on contester,
+     * existe-t-il déjà une contestation et quelle est la réponse de l'équipe.
+     */
+    public function show(Request $request, UserNotification $notification): JsonResponse
+    {
+        if ($notification->user_id !== $request->user()->id) abort(403);
+
+        $contest = $notification->data['contest'] ?? null;
+        $appeal = ModerationAppeal::where('notification_id', $notification->id)
+            ->where('user_id', $request->user()->id)->latest()->first();
+
+        // Une contestation en cours, acceptée ou refusée clôt le sujet (réponse finale) ;
+        // seules les réponses à un simple message peuvent se répéter une fois traitées.
+        $canContest = $contest !== null
+            && (!$appeal || (($contest['target_type'] ?? null) === 'message' && $appeal->status !== 'pending'));
+
+        return response()->json([
+            'notification' => $notification->only([
+                'id', 'type', 'title', 'body', 'icon', 'action_url', 'data', 'is_read', 'read_at', 'created_at', 'priority',
+            ]),
+            'guide_anchor' => $notification->data['guide_anchor'] ?? null,
+            'contest' => $contest ? [
+                'type' => $contest['target_type'] ?? null,
+                'can_contest' => $canContest,
+                'appeal' => $appeal ? $appeal->only(['id', 'status', 'message', 'response', 'created_at', 'handled_at']) : null,
+            ] : null,
+        ]);
+    }
+
+    /** Remet une notification en « non lue ». */
+    public function markUnread(Request $request, UserNotification $notification): JsonResponse
+    {
+        if ($notification->user_id !== $request->user()->id) abort(403);
+
+        $notification->update(['is_read' => false, 'read_at' => null]);
+
+        return response()->json(['message' => 'Marquée comme non lue.']);
+    }
+
+    /**
+     * Contester une décision (avertissement, retrait de vidéo, annonce masquée,
+     * suspension…) OU répondre à un message de l'équipe, depuis la notification.
+     * La contestation arrive dans la boîte « À traiter » du staff ET prévient
+     * directement le membre du staff qui a pris la décision.
+     */
+    public function contest(Request $request, UserNotification $notification): JsonResponse
+    {
+        $user = $request->user();
+        if ($notification->user_id !== $user->id) abort(403);
+
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'min:10', 'max:2000'],
+        ], ['message.min' => 'Expliquez votre démarche en au moins 10 caractères.']);
+
+        $contest = $notification->data['contest'] ?? null;
+        if (!$contest || empty($contest['target_type']) || empty($contest['target_id'])) {
+            return response()->json(['message' => 'Cette décision ne peut pas être contestée.'], 422);
+        }
+
+        $type = $contest['target_type'];
+        $id = $contest['target_id'];
+
+        // La cible doit appartenir à l'utilisateur et être réellement concernée.
+        $ok = match ($type) {
+            'video' => ProductVideo::where('id', $id)->where('user_id', $user->id)->whereIn('moderation_status', ['rejected', 'flagged'])->exists(),
+            'product' => Product::withTrashed()->where('id', $id)->where('user_id', $user->id)
+                ->where(fn ($q) => $q->where('status', 'disabled')->orWhereNotNull('deleted_at'))->exists(),
+            'strike' => UserStrike::where('id', $id)->where('user_id', $user->id)->whereNull('revoked_at')->exists(),
+            'account' => $id === $user->id,
+            'message' => $id === $notification->id,
+            default => false,
+        };
+        if (!$ok) {
+            return response()->json(['message' => "Cette décision n'est plus contestable (déjà traitée ou rétablie)."], 422);
+        }
+
+        $pending = ModerationAppeal::where('user_id', $user->id)->where('target_type', $type)->where('target_id', $id)
+            ->where('status', 'pending')->exists();
+        if ($pending) {
+            return response()->json(['message' => 'Une contestation est déjà en cours pour cette décision.'], 409);
+        }
+
+        $concerned = $notification->data['concerned_admin_id'] ?? null;
+        $concerned = $concerned && User::where('id', $concerned)->whereIn('role', ['moderator', 'admin', 'super_admin'])->exists() ? $concerned : null;
+
+        $appeal = ModerationAppeal::create([
+            'user_id' => $user->id,
+            'target_type' => $type,
+            'target_id' => $id,
+            'message' => $validated['message'],
+            'notification_id' => $notification->id,
+            'concerned_admin_id' => $concerned,
+        ]);
+
+        // Prévenir l'admin concerné ; à défaut (décision automatique), les super admins.
+        $recipients = $concerned
+            ? [$concerned]
+            : User::where('role', 'super_admin')->where('account_status', 'active')->limit(10)->pluck('id')->all();
+        $label = $type === 'message' ? 'Réponse' : 'Contestation';
+        foreach ($recipients as $rid) {
+            app(NotificationService::class)->notifyAdmin(
+                $rid,
+                "{$label} de {$user->full_name}",
+                mb_substr($validated['message'], 0, 200),
+                '/admin/inbox',
+                ['kind' => 'appeal_received', 'detail' => 'guide']
+            );
+        }
+
+        return response()->json(['message' => 'Votre message a été envoyé à l\'équipe. Vous recevrez une réponse ici.', 'appeal' => $appeal], 201);
     }
 
     /**

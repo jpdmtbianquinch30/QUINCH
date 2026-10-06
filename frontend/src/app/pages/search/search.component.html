@@ -28,10 +28,7 @@
           <div class="user-info">
             <span class="user-name-row">
               <strong>{{ u.full_name }}</strong>
-              @if (u.is_premium) { <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span> }
-              @for (b of u.badges; track b.type) {
-                <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-              }
+              <app-user-badges [badges]="u.badges" zone="search" [max]="4" />
             </span>
             <span>&#64;{{ u.username }}</span>
           </div>
@@ -52,9 +49,7 @@
               <span class="result-type-tag" [class.service]="p.type === 'service'">{{ p.type === 'service' ? 'Service' : 'Produit' }}</span>
               <span class="result-title">{{ p.title }}</span>
               <span class="result-price">{{ p.price | number:'1.0-0' }} F</span>
-              @if (p.seller_is_premium) {
-                <span class="result-premium"><span class="material-icons">workspace_premium</span> Premium</span>
-              }
+              <app-user-badges [badges]="p.seller_badges ?? p.seller?.badges" zone="search" [max]="4" />
             </div>
           </button>
         }
@@ -80,10 +75,7 @@
              <div class="user-info">
             <span class="user-name-row">
               <strong>{{ u.full_name }}</strong>
-              @if (u.is_premium) { <span class="material-icons premium-icon-sm" title="Vendeur Premium">workspace_premium</span> }
-              @for (b of u.badges; track b.type) {
-                <span class="material-icons badge-chip" [style.color]="b.color" [title]="b.name">{{ b.icon }}</span>
-              }
+              <app-user-badges [badges]="u.badges" zone="search" [max]="4" />
             </span>
             <span>&#64;{{ u.username }}</span>
           </div>
@@ -107,9 +99,7 @@
                 <span class="result-type-tag" [class.service]="p.type === 'service'">{{ p.type === 'service' ? 'Service' : 'Produit' }}</span>
                 <span class="result-title">{{ p.title }}</span>
                 <span class="result-price">{{ p.price | number:'1.0-0' }} F</span>
-                @if (p.seller_is_premium) {
-                  <span class="result-premium"><span class="material-icons">workspace_premium</span> Premium</span>
-                }
+                <app-user-badges [badges]="p.seller_badges ?? p.seller?.badges" zone="search" [max]="4" />
               </div>
               </button>
             }

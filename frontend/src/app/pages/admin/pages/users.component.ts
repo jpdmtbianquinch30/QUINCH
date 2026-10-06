@@ -78,6 +78,10 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
         </div>
       } @else { <div class="adm-warn-box">Vous ne pouvez pas agir sur ce compte (rôle égal ou supérieur, ou votre propre compte).</div> }
 
+      <div class="adm-section">Badges</div>
+      <div class="adm-row" style="flex-wrap:wrap;gap:6px">@for (b of d.user.badges; track b.id) { <span class="adm-chip info">{{ b.badge_type }}{{ b.source === 'auto' ? ' · auto' : '' }}
+        @if (d.can_manage && admin.can('users.badges')) { <button class="adm-btn sm" style="margin-left:6px;padding:0 6px" (click)="revokeBadge(b.badge_type)" aria-label="Retirer le badge">✕</button> }</span> } @empty { <span class="adm-muted">Aucun badge.</span> }</div>
+
       <div class="adm-section">Avertissements</div>
       <ul class="adm-timeline">@for (s of d.strikes; track s.id) { <li>{{ s.created_at | date:'dd/MM/yy' }} · {{ s.reason }} @if (s.revoked_at) { <span class="adm-chip">retiré</span> } @else if (d.can_manage && admin.can('users.warn')) { <button class="adm-btn sm" (click)="revokeStrike(s.id)">Retirer</button> }</li> } @empty { <li>Aucun.</li> }</ul>
       <div class="adm-section">Annonces récentes</div>
@@ -100,9 +104,12 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
           <div class="adm-warn-box">Le compte sera déconnecté et devra se reconnecter. « Super admin » ne s'attribue que par la commande serveur.</div> }
         @case ('trust') { <label class="adm-label">Score (0 à 1)</label><input class="adm-input" type="number" step="0.05" min="0" max="1" [(ngModel)]="trust" /> }
         @case ('kyc') { <label class="adm-label">Statut KYC</label><select class="adm-input" [(ngModel)]="kyc"><option value="verified">Vérifié</option><option value="rejected">Rejeté</option></select> }
-        @case ('notify') { <label class="adm-label">Titre</label><input class="adm-input" [(ngModel)]="nTitle" /><label class="adm-label">Message</label><textarea class="adm-input" rows="3" [(ngModel)]="nBody"></textarea> }
+        @case ('notify') { <label class="adm-label">Titre</label><input class="adm-input" [(ngModel)]="nTitle" /><label class="adm-label">Message</label><textarea class="adm-input" rows="4" maxlength="1000" [(ngModel)]="nBody"></textarea>
+          <label class="adm-muted" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" [(ngModel)]="nReply" /> Autoriser l'utilisateur à répondre (vous recevrez sa réponse dans « À traiter »)</label> }
         @case ('grant') { <label class="adm-label">Durée offerte (jours)</label><input class="adm-input" type="number" min="1" max="730" [(ngModel)]="days" /> }
-        @case ('badge') { <label class="adm-label">Badge</label><select class="adm-input" [(ngModel)]="badge"><option value="verified">Vérifié</option><option value="top_seller">Top Vendeur</option><option value="fast_shipper">Livraison Express</option><option value="ambassador">Ambassadeur</option><option value="loyal_customer">Client Fidèle</option></select> }
+        @case ('badge') { <label class="adm-label">Badge (créés dans « Badges »)</label>
+          <select class="adm-input" [(ngModel)]="badge">@for (b of badgeChoices(); track b.key) { <option [value]="b.key">{{ b.name }}{{ b.auto_rule ? ' (auto)' : '' }}{{ b.is_active ? '' : ' — désactivé' }}</option> }</select>
+          <div class="adm-muted">Un badge « auto » est posé tout seul quand le compte remplit la règle ; l'attribuer ici le force à la main.</div> }
       }
     </adm-modal>
   }`,
@@ -120,7 +127,7 @@ export class AdminUsersPage implements OnInit {
   d = computed(() => this.detail());
   dlg = signal<Act | null>(null);
   busy = signal(false); error = signal('');
-  duration: number | null = 7; role = 'moderator'; trust = 0.5; kyc = 'verified'; nTitle = ''; nBody = ''; days = 30; badge = 'verified';
+  duration: number | null = 7; role = 'moderator'; trust = 0.5; kyc = 'verified'; nTitle = ''; nBody = ''; nReply = true; days = 30; badge = 'verified';
   maxDays = computed(() => this.admin.can('users.suspend') ? 365 : (this.admin.me()?.moderator_max_suspension_days ?? 7));
 
   ngOnInit() {
@@ -139,7 +146,8 @@ export class AdminUsersPage implements OnInit {
 
   open(id: string) { this.admin.getUser(id).subscribe({ next: d => this.detail.set(d), error: e => this.notif.error(errMsg(e)) }); }
   private refresh() { const id = this.detail()?.user?.id; this.load(this.page()); if (id) this.open(id); }
-  ask(a: Act) { this.error.set(''); this.duration = this.admin.can('users.suspend') ? 7 : Math.min(7, this.maxDays()); this.trust = this.detail().user.trust_score; this.dlg.set(a); }
+  badgeChoices = signal<any[]>([]);
+  ask(a: Act) { if (a === 'badge') this.admin.getBadgeCatalog().subscribe(r => { this.badgeChoices.set(r.badges); if (r.badges.length) this.badge = r.badges[0].key; }); this.error.set(''); this.duration = this.admin.can('users.suspend') ? 7 : Math.min(7, this.maxDays()); this.trust = this.detail().user.trust_score; this.dlg.set(a); }
 
   title(a: Act) { return ({ warn: 'Envoyer un avertissement', suspend: 'Suspendre le compte', lift: 'Lever la suspension', ban: 'Bannir définitivement', unban: 'Débannir le compte', delete: 'Supprimer le compte', role: 'Changer le rôle', trust: 'Ajuster la confiance', notify: 'Envoyer une notification', kyc: 'Statut KYC', grant: 'Offrir le Premium', revoke: 'Retirer le Premium', export: 'Export des données (RGPD)', badge: 'Attribuer un badge' } as any)[a]; }
   danger(a: Act) { return ['ban', 'delete', 'suspend', 'revoke'].includes(a); }
@@ -161,7 +169,7 @@ export class AdminUsersPage implements OnInit {
       case 'role': req = this.admin.setRole(id, this.role, r, pw); break;
       case 'trust': req = this.admin.adjustTrust(id, this.trust, r); break;
       case 'kyc': req = this.admin.verifyKyc(id, this.kyc, r); break;
-      case 'notify': req = this.admin.sendNotification(id, this.nTitle, this.nBody); break;
+      case 'notify': req = this.admin.sendNotification(id, this.nTitle, this.nBody, this.nReply); break;
       case 'grant': req = this.admin.grantPremium(id, this.days, r); break;
       case 'revoke': req = this.admin.revokePremium(id, r); break;
       case 'badge': req = this.admin.awardBadge(id, this.badge); break;
@@ -176,6 +184,10 @@ export class AdminUsersPage implements OnInit {
       next: () => { this.busy.set(false); this.dlg.set(null); this.notif.success('Action effectuée'); this.refresh(); },
       error: (e: any) => { this.busy.set(false); this.error.set(errMsg(e)); },
     });
+  }
+
+  revokeBadge(type: string) {
+    this.admin.revokeBadge(this.detail().user.id, type).subscribe({ next: () => { this.notif.success('Badge retiré'); this.refresh(); }, error: e => this.notif.error(errMsg(e)) });
   }
 
   revokeStrike(strikeId: string) {

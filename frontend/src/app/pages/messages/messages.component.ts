@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { ChatService, Conversation, Message, ConversationProductTag } from '../../core/services/chat.service';
@@ -9,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink],
+  imports: [UserBadgesComponent, DecimalPipe, FormsModule, RouterLink],
   templateUrl: './messages.component.html',
   styleUrl: './messages.component.scss',
 })

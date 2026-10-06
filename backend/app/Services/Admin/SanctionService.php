@@ -43,7 +43,9 @@ class SanctionService
             $user->id,
             'Compte suspendu',
             'Votre compte est suspendu' . ($until ? " jusqu'au " . $until->format('d/m/Y à H:i') : '')
-                . '. Motif : ' . $reason
+                . '. Motif : ' . $reason,
+            null,
+            ['kind' => 'suspension', 'concerned_admin_id' => $by?->id, 'contest' => ['target_type' => 'account', 'target_id' => $user->id]]
         );
     }
 
@@ -63,7 +65,7 @@ class SanctionService
         $this->restoreProducts($user);
 
         AdminLogger::log($by, 'user_reactivated', 'User', $user->id, ['reason' => $reason]);
-        $this->notif->notifyAdmin($user->id, 'Compte réactivé', 'Votre compte a été réactivé.');
+        $this->notif->notifyAdmin($user->id, 'Compte réactivé', 'Votre compte a été réactivé.', null, ['kind' => 'reactivation']);
 
         return true;
     }
@@ -99,7 +101,7 @@ class SanctionService
         $this->restoreProducts($user);
 
         AdminLogger::log($by, 'user_unbanned', 'User', $user->id, ['reason' => $reason], 'warning');
-        $this->notif->notifyAdmin($user->id, 'Compte réactivé', 'Votre compte a été réactivé après réexamen.');
+        $this->notif->notifyAdmin($user->id, 'Compte réactivé', 'Votre compte a été réactivé après réexamen.', null, ['kind' => 'reactivation']);
 
         return true;
     }

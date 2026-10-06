@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { NotificationService, Announcement } from '../../core/services/notification.service';
+import { NotificationService, Announcement, resolveTeamNotificationUrl } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 
 /**
@@ -66,7 +66,7 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   open(a: Announcement) {
-    const url = a.action_url || (a.type === 'welcome' ? '/profile/edit' : '/guide/index.html');
+    const url = resolveTeamNotificationUrl(a) || a.action_url || (a.type === 'welcome' ? '/profile/edit' : '/guide/index.html');
     this.notif.dismissAnnouncement(a.id);
     if (url.startsWith('/guide')) { window.location.assign(url); return; }
     if (url.startsWith('/') && !url.startsWith('//')) this.router.navigateByUrl(url);

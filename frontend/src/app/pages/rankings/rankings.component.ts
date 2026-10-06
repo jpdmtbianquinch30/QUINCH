@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import {
@@ -13,7 +14,7 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-rankings',
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [UserBadgesComponent, RouterLink, DecimalPipe],
   templateUrl: './rankings.component.html',
   styleUrl: './rankings.component.scss',
 })

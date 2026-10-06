@@ -355,8 +355,9 @@ class ProductFeedController extends Controller
             'image' => $product->poster_full_url ?? $product->video?->thumbnail_url ?? ($product->images[0] ?? null),
             'seller' => $product->user?->username,
             'seller_is_premium' => $product->user?->isPremiumActive() ?? false,
+            'seller_id' => $product->user_id,
         ];
-    });
+    })->pipe(fn ($c) => $this->attachSellerBadges($c));
 
         // Search users (sellers)
          $userResults = User::query()
@@ -449,7 +450,8 @@ class ProductFeedController extends Controller
                 'seller' => $p->user?->username,
                 'like_count' => $p->like_count,
                 'seller_is_premium' => $p->user?->isPremiumActive() ?? false,
-            ]);
+                'seller_id' => $p->user_id,
+            ])->pipe(fn ($c) => $this->attachSellerBadges($c));
 
         return response()->json(['suggestions' => $suggestions, 'sellers' => $this->suggestedSellers()]);
     }
@@ -480,7 +482,8 @@ class ProductFeedController extends Controller
                 'seller' => $p->user?->username,
                 'like_count' => $p->like_count,
                 'seller_is_premium' => $p->user?->isPremiumActive() ?? false,
-            ]);
+                'seller_id' => $p->user_id,
+            ])->pipe(fn ($c) => $this->attachSellerBadges($c));
 
         return response()->json(['suggestions' => $trending, 'sellers' => $this->suggestedSellers()]);
     }
@@ -543,5 +546,18 @@ class ProductFeedController extends Controller
             });
 
         return response()->json(['sellers' => $sellers]);
+    }
+
+    /** Ajoute `seller_badges` (badges admin du vendeur) à une liste de produits, en une seule requête. */
+    private function attachSellerBadges($products)
+    {
+        $badges = \App\Models\UserBadge::summaryForMany($products->pluck('seller_id')->filter()->unique()->values()->all());
+
+        return $products->map(function ($p) use ($badges) {
+            $p['seller_badges'] = $badges[$p['seller_id']] ?? [];
+            unset($p['seller_id']);
+
+            return $p;
+        });
     }
 }

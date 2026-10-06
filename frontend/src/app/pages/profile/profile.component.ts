@@ -1,4 +1,6 @@
+import { ConfirmService } from '../../shared/confirm/confirm.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { UserBadgesComponent } from '../../shared/user-badges/user-badges.component';
 import { Router, RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +14,7 @@ import { UserService } from '../../core/services/user.service';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, FormsModule],
+  imports: [UserBadgesComponent, RouterLink, DecimalPipe, FormsModule],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
 })
@@ -24,6 +26,7 @@ export class ProfileComponent implements OnInit {
   private badgeService = inject(BadgeService);
   private followService = inject(FollowService);
   private userService = inject(UserService);
+  private confirm = inject(ConfirmService);
 
   user = this.auth.user;
   productsCount = signal(0);
@@ -434,8 +437,15 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  logout() {
+  async logout() {
+    const r = await this.confirm.ask({
+      title: 'Se déconnecter ?',
+      message: 'Vous devrez saisir à nouveau votre numéro et votre mot de passe pour revenir.',
+      confirmLabel: 'Se déconnecter',
+      icon: 'logout',
+    });
+    if (!r.confirmed) return;
     this.auth.logout();
-    this.notify.success('Deconnexion reussie.');
+    this.notify.success('Déconnexion réussie.');
   }
 }

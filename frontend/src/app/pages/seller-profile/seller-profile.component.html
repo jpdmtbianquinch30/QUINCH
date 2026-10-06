@@ -22,14 +22,8 @@
 
 </div>
 
-          <h1 class="sp-name">{{ profile().user.full_name }}</h1>
+          <h1 class="sp-name">{{ profile().user.full_name }} <app-user-badges [badges]="profile().badges ?? profile().user.badges" zone="seller_profile" [max]="4" /></h1>
           <p class="sp-username">&#64;{{ profile().user.username }}</p>
-
-          @if (profile().user.is_premium) {
-            <span class="q-badge q-badge-premium sp-premium-badge">
-              <span class="material-icons">workspace_premium</span> Vendeur Premium
-            </span>
-          }
 
           <div class="sp-info-tags">
             @if (profile().user.city) {
@@ -347,6 +341,7 @@
                 <h3><span class="material-icons">military_tech</span> Badges</h3>
                 <div class="sp-badges-list">
                   @for (badge of profile().badges; track badge.type) {
+                    @if (badge.zones?.includes('seller_profile') ?? true) {
                     <div class="sp-badge">
                       <div class="sp-badge-icon" [style.background]="badge.color + '15'" [style.color]="badge.color">
                         <span class="material-icons">{{ badge.icon }}</span>
@@ -358,6 +353,7 @@
                         }
                       </div>
                     </div>
+                    }
                   }
                 </div>
               </div>

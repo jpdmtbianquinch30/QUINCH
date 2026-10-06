@@ -15,7 +15,7 @@ class ModerationAppeal extends Model
 
     protected $fillable = [
         'user_id', 'target_type', 'target_id', 'message',
-        'status', 'handled_by', 'response', 'handled_at',
+        'status', 'handled_by', 'response', 'handled_at', 'notification_id', 'concerned_admin_id',
     ];
 
     protected function casts(): array

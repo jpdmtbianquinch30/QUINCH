@@ -490,13 +490,6 @@
 
           }
 
-          @if (product.seller?.is_premium) {
-            <span class="cbadge cbadge-premium" title="Vendeur Premium">
-              <span class="material-icons">workspace_premium</span>
-              Premium
-            </span>
-          }
-
           @if (hasVideo(product)) {
 
             <span class="cbadge cbadge-video">
@@ -595,7 +588,7 @@
               {{ product.seller?.full_name
                 || product.seller?.name
                 || product.user?.full_name }}
-              <app-user-badges [badges]="product.seller?.badges" [premium]="!!product.seller?.is_premium" />
+              <app-user-badges [badges]="product.seller?.badges" zone="explorer" [max]="4" />
             </span>
 
             @if (product.seller?.city || product.user?.city) {

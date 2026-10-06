@@ -412,7 +412,7 @@ class ContentModerationController extends Controller
         ]);
 
         if (!empty($validated['reply'])) {
-            $this->notif->notifyAdmin($ticket->user_id, 'Réponse du support QUINCH', $validated['reply']);
+            $this->notif->notifyAdmin($ticket->user_id, 'Réponse du support QUINCH', $validated['reply'], null, ['kind' => 'ticket_reply']);
         }
 
         AdminLogger::log($request->user(), 'support_ticket_resolved', 'SupportTicket', $ticket->id, ['status' => $validated['status']]);
@@ -561,11 +561,16 @@ class ContentModerationController extends Controller
         $page = $query->latest()->paginate($this->perPage($request, 20, 50));
 
         $page->getCollection()->transform(function ($a) {
-            if ($a->target_type === 'video') {
-                $a->target = ProductVideo::select('id', 'moderation_status', 'moderation_reason', 'user_id', 'thumbnail_path', 'video_path')->find($a->target_id);
-            } else {
-                $a->target = Product::withTrashed()->select('id', 'title', 'status', 'moderation_reason', 'deleted_at')->find($a->target_id);
-            }
+            $a->target = match ($a->target_type) {
+                'video' => ProductVideo::select('id', 'moderation_status', 'moderation_reason', 'user_id', 'thumbnail_path', 'video_path')->find($a->target_id),
+                'product' => Product::withTrashed()->select('id', 'title', 'status', 'moderation_reason', 'deleted_at')->find($a->target_id),
+                'strike' => \App\Models\UserStrike::select('id', 'reason', 'revoked_at', 'expires_at')->find($a->target_id),
+                'account' => \App\Models\User::select('id', 'full_name', 'account_status', 'suspension_reason', 'suspended_until')->find($a->target_id),
+                default => null,
+            };
+            $a->concerned_admin = $a->concerned_admin_id
+                ? \App\Models\User::select('id', 'full_name')->find($a->concerned_admin_id)
+                : null;
 
             return $a;
         });
@@ -595,6 +600,14 @@ class ContentModerationController extends Controller
                         $product->restore();
                     }
                     $this->moderation->restoreProduct($product, $admin, 'Contestation acceptée');
+                } elseif ($appeal->target_type === 'strike') {
+                    \App\Models\UserStrike::where('id', $appeal->target_id)->whereNull('revoked_at')->update(['revoked_at' => now()]);
+                } elseif ($appeal->target_type === 'account') {
+                    // Suspension contestée à raison : on la lève (un compte banni ne se réactive pas ici).
+                    $target = \App\Models\User::find($appeal->target_id);
+                    if ($target && $target->account_status === 'suspended') {
+                        app(\App\Services\Admin\SanctionService::class)->lift($target, 'Contestation acceptée', $admin);
+                    }
                 }
             }
 
@@ -608,7 +621,9 @@ class ContentModerationController extends Controller
             $this->notif->notifyAdmin(
                 $appeal->user_id,
                 $validated['decision'] === 'accepted' ? 'Contestation acceptée' : 'Contestation refusée',
-                $validated['response']
+                $validated['response'],
+                null,
+                ['kind' => 'appeal_result']
             );
 
             AdminLogger::log($admin, 'appeal_' . $validated['decision'], 'ModerationAppeal', $appeal->id, [
@@ -630,7 +645,9 @@ class ContentModerationController extends Controller
             'Signalement traité',
             $status === 'dismissed'
                 ? "Après examen, {$what} n'a pas donné lieu à une sanction. Merci pour votre vigilance."
-                : "Merci : {$what} a été examiné et une suite lui a été donnée."
+                : "Merci : {$what} a été examiné et une suite lui a été donnée.",
+            null,
+            ['kind' => 'report_processed']
         );
     }
 }

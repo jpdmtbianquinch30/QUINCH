@@ -49,6 +49,77 @@ class AdminStaffController extends Controller
     }
 
     /**
+     * Création directe d'un compte moderator ou admin par le super admin.
+     * Le compte est immédiatement actif et vérifié (aucun SMS) ; le mot de passe
+     * est choisi par le super admin et transmis hors application. Le rôle
+     * super_admin ne se crée JAMAIS ici (commande Artisan uniquement).
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'min:3', 'max:100'],
+            'username' => ['required', 'string', 'min:3', 'max:30', 'unique:users,username', 'regex:/^[a-zA-Z0-9_]+$/'],
+            'phone_number' => ['required', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number'],
+            'email' => ['nullable', 'email', 'max:150', 'unique:users,email'],
+            'role' => ['required', 'in:moderator,admin'],
+            'password' => ['required', 'string', 'min:10', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
+        ], [
+            'phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
+            'phone_number.unique' => 'Ce numéro est déjà utilisé.',
+            'username.unique' => "Ce nom d'utilisateur est déjà pris.",
+            'username.regex' => 'Lettres, chiffres et _ uniquement.',
+            'password.regex' => 'Le mot de passe doit contenir une majuscule, une minuscule et un chiffre.',
+            'password.min' => 'Le mot de passe staff doit faire au moins 10 caractères.',
+        ]);
+
+        $user = new User();
+        $user->fill([
+            'phone_number' => $validated['phone_number'],
+            'full_name' => $validated['full_name'],
+            'username' => $validated['username'],
+            'email' => $validated['email'] ?? null,
+            'password' => $validated['password'],
+            'is_seller' => false,
+            'is_buyer' => false,
+            'phone_verified' => true,
+            'onboarding_completed' => true,
+        ]);
+        // Champs privilégiés hors $fillable : posés explicitement.
+        $user->forceFill(['role' => $validated['role'], 'account_status' => 'active'])->save();
+
+        AdminLogger::log($request->user(), 'staff_created', 'User', $user->id, [
+            'role' => $validated['role'], 'username' => $validated['username'],
+        ], 'critical');
+
+        return response()->json([
+            'message' => 'Compte ' . ($validated['role'] === 'admin' ? 'administrateur' : 'modérateur') . ' créé.',
+            'user' => $user->only(['id', 'full_name', 'username', 'phone_number', 'email', 'role', 'account_status']),
+        ], 201);
+    }
+
+    /** Nouveau mot de passe d'un membre du staff (sessions révoquées). */
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:10', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
+        ], ['password.regex' => 'Le mot de passe doit contenir une majuscule, une minuscule et un chiffre.']);
+
+        if ($deny = $this->denyIfCannotManage($request, $user)) {
+            return $deny;
+        }
+        if (!$user->isStaff()) {
+            return response()->json(['message' => "Ce compte ne fait pas partie de l'équipe."], 422);
+        }
+
+        $user->forceFill(['password' => $validated['password']])->save();
+        $user->tokens()->delete();
+
+        AdminLogger::log($request->user(), 'staff_password_reset', 'User', $user->id, [], 'critical');
+
+        return response()->json(['message' => 'Mot de passe modifié. Le membre doit se reconnecter.']);
+    }
+
+    /**
      * Change le rôle d'un utilisateur : user | moderator | admin.
      * super_admin ne s'attribue QUE par la commande Artisan quinch:set-role
      * (jamais depuis l'API). Les jetons du compte sont révoqués : il doit se

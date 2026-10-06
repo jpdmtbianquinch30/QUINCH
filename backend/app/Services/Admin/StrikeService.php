@@ -61,7 +61,9 @@ class StrikeService
             $this->notif->notifyAdmin(
                 $user->id,
                 "Avertissement {$count}/{$threshold}",
-                "Votre compte a reçu un avertissement. Motif : {$reason}. À {$threshold} avertissements, votre compte sera suspendu."
+                "Votre compte a reçu un avertissement. Motif : {$reason}. À {$threshold} avertissements, votre compte sera suspendu.",
+                null,
+                ['kind' => 'warning', 'concerned_admin_id' => $by?->id, 'contest' => ['target_type' => 'strike', 'target_id' => $strike->id]]
             );
         }
 

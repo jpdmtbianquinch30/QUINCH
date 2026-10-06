@@ -29,3 +29,6 @@ Schedule::job(new LiftExpiredSuspensions)->everyFiveMinutes()->withoutOverlappin
 Schedule::job(new RunFraudScan)->hourly()->withoutOverlapping()->onOneServer();
 // Ménage : bans d'IP expirés, vieux journaux techniques.
 Schedule::job(new PurgeExpiredAdminData)->daily()->withoutOverlapping()->onOneServer();
+
+// Badges automatiques (Premium, KYC, ventes, ancienneté, score de confiance).
+Schedule::command('quinch:sync-badges')->hourly()->withoutOverlapping()->onOneServer();

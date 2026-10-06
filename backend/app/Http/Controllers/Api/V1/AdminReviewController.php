@@ -37,7 +37,7 @@ class AdminReviewController extends Controller
             'comment' => mb_substr((string) $review->comment, 0, 300),
         ], 'warning');
 
-        $notif->notifyAdmin($review->reviewer_id, 'Votre avis a été retiré', 'Motif : ' . $validated['reason']);
+        $notif->notifyAdmin($review->reviewer_id, 'Votre avis a été retiré', 'Motif : ' . $validated['reason'], null, ['kind' => 'review_removed']);
         $review->delete();
 
         return response()->json(['message' => 'Avis supprimé.']);

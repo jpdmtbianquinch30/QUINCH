@@ -17,6 +17,7 @@ export const ADMIN_ROUTES: Routes = [
       { path: 'categories', loadComponent: () => import('./pages/categories.component').then(m => m.AdminCategoriesPage) },
       { path: 'notifications', loadComponent: () => import('./pages/notifications.component').then(m => m.AdminNotificationsPage) },
       { path: 'settings', loadComponent: () => import('./pages/settings.component').then(m => m.AdminSettingsPage) },
+      { path: 'badges', loadComponent: () => import('./pages/badges.component').then(m => m.AdminBadgesPage) },
       { path: 'team', loadComponent: () => import('./pages/team.component').then(m => m.AdminTeamPage) },
     ],
   },

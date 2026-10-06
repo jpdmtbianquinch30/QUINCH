@@ -36,14 +36,7 @@ class PublicProfileController extends Controller
         $avgCommunication = UserReview::where('seller_id', $user->id)->avg('communication_rating') ?? 0;
         $avgAccuracy = UserReview::where('seller_id', $user->id)->avg('accuracy_rating') ?? 0;
 
-        $badges = UserBadge::where('user_id', $user->id)->active()->get()->map(fn ($b) => [
-            'type' => $b->badge_type,
-            'name' => UserBadge::badgeDefinitions()[$b->badge_type]['name'] ?? $b->badge_type,
-            'icon' => UserBadge::badgeDefinitions()[$b->badge_type]['icon'] ?? 'stars',
-            'color' => UserBadge::badgeDefinitions()[$b->badge_type]['color'] ?? '#666',
-            'description' => UserBadge::badgeDefinitions()[$b->badge_type]['description'] ?? '',
-            'awarded_at' => $b->created_at?->toISOString(),
-        ]);
+        $badges = UserBadge::summaryFor($user->id);
 
         $isFollowing = $authUser
             ? UserFollow::where('follower_id', $authUser->id)->where('following_id', $user->id)->exists()
