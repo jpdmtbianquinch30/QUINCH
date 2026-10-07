@@ -464,7 +464,7 @@ Voir `docs/LEGAL.md`.
 
 ## 18. Licence / propriété
 
-Projet QUINCH. Les éléments de marque, contenus, logos et règles métier restent sous le contrôle du propriétaire du projet. J'adapterai cette section avec les mentions juridiques définitives avant publication publique.
+Projet QUINCH. Les éléments de marque, contenus, logos et règles métier restent sous le contrôle du propriétaire du projet. Adapter cette section avec les mentions juridiques définitives avant publication publique.
 
 ---
 
