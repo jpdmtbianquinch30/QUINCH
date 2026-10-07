@@ -12,7 +12,7 @@ COPY . ./
 RUN npx ng build --configuration production
 
 # ─── Étape 2 : service statique ──────────────────────────────────────────────
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.29-alpine
 # Le modèle est traité au démarrage (envsubst) : ${API_ORIGIN} est injecté dans la CSP.
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html
