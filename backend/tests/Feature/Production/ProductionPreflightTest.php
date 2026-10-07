@@ -25,6 +25,11 @@ class ProductionPreflightTest extends TestCase
             'cache.default' => 'redis',
             'database.redis.default.password' => 'Xk93mQ7vLp2ZtR8wYb4NcA6dHf',
             'database.connections.pgsql.password' => 'Tn5Qe8Wz2LpV7kXr3MaBy9HcJd',
+            'legal.publisher.name' => 'Jean Philippe Bianquinch',
+            'legal.publisher.address' => 'Dakar, Sénégal',
+            'legal.contact_email' => 'contact@quinch.sn',
+            'legal.hosting.provider' => 'Contabo GmbH',
+            'legal.hosting.location' => 'Allemagne',
             'session.secure' => true,
             'session.http_only' => true,
             'session.same_site' => 'lax',
@@ -199,5 +204,20 @@ class ProductionPreflightTest extends TestCase
         $this->validProductionConfig();
         config(['database.connections.pgsql.password' => 'CHANGER_MOI_aussi_1234567']);
         $this->assertStringContainsString('DB_PASSWORD', implode(' ', $this->errors()));
+    }
+
+    public function test_legal_information_is_required_in_production(): void
+    {
+        foreach ([
+            'legal.publisher.name' => 'LEGAL_PUBLISHER_NAME',
+            'legal.publisher.address' => 'LEGAL_PUBLISHER_ADDRESS',
+            'legal.contact_email' => 'LEGAL_CONTACT_EMAIL',
+            'legal.hosting.provider' => 'LEGAL_HOST_NAME',
+            'legal.hosting.location' => 'LEGAL_HOST_LOCATION',
+        ] as $key => $variable) {
+            $this->validProductionConfig();
+            config([$key => '']);
+            $this->assertStringContainsString($variable, implode(' ', $this->errors()));
+        }
     }
 }

@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\SecurityController;
 use App\Http\Controllers\Api\V1\VideoStreamController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\GoogleAuthController;
+use App\Http\Controllers\Api\V1\LegalController;
 use App\Http\Controllers\Api\V1\PremiumController;
 use App\Http\Controllers\Api\V1\AdminProductController;
 use App\Http\Controllers\Api\V1\AdminTransactionController;
@@ -75,6 +76,8 @@ Route::get('videos/{videoId}/thumbnail', [VideoStreamController::class, 'thumbna
 Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath']);
 
 // ─── Public ──────────────────────────────────────────────────────────────────
+// Mentions légales : éditeur, contact, hébergeur, versions des textes.
+Route::get('legal/info', [LegalController::class, 'info'])->middleware('throttle:60,1');
 // Bannières, message défilant et mode maintenance pilotés depuis l'admin.
 Route::get('feed/config', [AdminSettingsController::class, 'publicFeedConfig']);
 Route::get('categories', [CategoryController::class, 'index']);
@@ -139,7 +142,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('users/blocked', [UserController::class, 'blockedUsers']);
     Route::post('users/{user}/block', [UserController::class, 'blockUser']);
     Route::post('users/{user}/unblock', [UserController::class, 'unblockUser']);
-    Route::get('users/export-data', [UserController::class, 'exportData']);
+    Route::get('users/export-data', [UserController::class, 'exportData'])->middleware('throttle:5,60');
 
     // Contester un retrait de vidéo / d'annonce
     Route::get('moderation/appeals/mine', [ModerationAppealController::class, 'mine']);

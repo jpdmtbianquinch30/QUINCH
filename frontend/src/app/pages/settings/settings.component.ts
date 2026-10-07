@@ -358,7 +358,8 @@ export class SettingsComponent implements OnInit {
   }
 
   openTerms() {
-    this.showTerms.set(!this.showTerms());
+    // Les textes intégrés (obsolètes) sont remplacés par les pages officielles.
+    this.router.navigate(['/legal/cgu']);
   }
 
   // ─── Logout ──────────────────────

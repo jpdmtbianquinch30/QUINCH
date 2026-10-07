@@ -47,6 +47,11 @@
           @if (googleAvailable()) {
             <div class="auth-separator"><span>ou</span></div>
             <div class="google-btn-wrapper" #googleBtn></div>
+            <p class="google-terms">
+              En continuant avec Google, vous acceptez les
+              <a routerLink="/legal/cgu">conditions d'utilisation</a> et la
+              <a routerLink="/legal/confidentialite">politique de confidentialité</a>.
+            </p>
           }
 
           <div class="demo-box">

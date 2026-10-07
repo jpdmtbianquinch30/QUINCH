@@ -51,6 +51,16 @@
             </div>
           </div>
 
+          <label class="terms-check">
+            <input type="checkbox" [(ngModel)]="acceptTerms" name="acceptTerms" />
+            <span>
+              J'ai lu et j'accepte les
+              <a routerLink="/legal/cgu" target="_blank">conditions d'utilisation</a>
+              et la
+              <a routerLink="/legal/confidentialite" target="_blank">politique de confidentialité</a>.
+            </span>
+          </label>
+
           <button type="submit" class="q-btn q-btn-primary q-btn-full q-btn-lg" [disabled]="loading()">
             @if (loading()) {
               <span class="spinner"></span> Creation...

@@ -61,4 +61,6 @@ export interface RegisterRequest {
   username: string;
   password: string;
   password_confirmation: string;
+  /** Consentement aux conditions d'utilisation et à la politique de confidentialité. */
+  accept_terms: boolean;
 }

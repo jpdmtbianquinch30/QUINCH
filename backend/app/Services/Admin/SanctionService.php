@@ -6,6 +6,9 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -117,8 +120,25 @@ class SanctionService
         DB::transaction(function () use ($user, $reason, $by) {
             $user->tokens()->delete();
 
-            // Suppression douce de toutes ses annonces.
+            // Suppression douce de toutes ses annonces. Leurs textes et médias sont
+            // effacés définitivement après le délai légal (PurgeAnonymizedAccountData).
             Product::where('user_id', $user->id)->delete();
+
+            // Données liées au compte qui n'ont plus aucune raison d'être conservées.
+            foreach ([
+                ['user_notifications', 'user_id'],
+                ['notification_preferences', 'user_id'],
+                ['favorite_items', 'user_id'],
+                ['favorite_collections', 'user_id'],
+                ['product_likes', 'user_id'],
+                ['product_saves', 'user_id'],
+                ['user_follows', 'follower_id'],
+                ['user_follows', 'following_id'],
+            ] as [$table, $column]) {
+                if (Schema::hasTable($table) && Schema::hasColumn($table, $column)) {
+                    DB::table($table)->where($column, $user->id)->delete();
+                }
+            }
 
             $user->forceFill([
                 'phone_number'         => null,
@@ -133,6 +153,16 @@ class SanctionService
                 'website'              => null,
                 'seller_policies'      => null,
                 'device_fingerprint'   => null,
+                // Localisation, vérification d'identité, préférences, codes : effacés aussi.
+                'city'                 => null,
+                'region'               => null,
+                'latitude'             => null,
+                'longitude'            => null,
+                'kyc_data'             => null,
+                'preferences'          => null,
+                'last_seen_at'         => null,
+                'otp_code'             => null,
+                'otp_expires_at'       => null,
                 'password'             => Str::random(40), // re-hashé par le cast "hashed"
                 'account_status'       => 'deactivated',
                 'is_premium'           => false,
@@ -141,6 +171,15 @@ class SanctionService
 
             AdminLogger::log($by, 'user_deleted', 'User', $user->id, ['reason' => $reason], 'critical');
         });
+
+        // Photo de profil et de couverture : fichiers supprimés tout de suite
+        // (hors transaction : un échec de stockage ne doit pas annuler l'anonymisation).
+        try {
+            Storage::disk('public')->deleteDirectory('avatars/' . $user->id);
+            Storage::disk('public')->deleteDirectory('covers/' . $user->id);
+        } catch (\Throwable $e) {
+            Log::warning('Suppression des images de profil impossible', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
     }
 
     private function hideProducts(User $user): void

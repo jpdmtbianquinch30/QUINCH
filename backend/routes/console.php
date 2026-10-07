@@ -11,6 +11,7 @@ use App\Jobs\RecalculateTrustScores;
 use App\Jobs\LiftExpiredSuspensions;
 use App\Jobs\RunFraudScan;
 use App\Jobs\PurgeExpiredAdminData;
+use App\Jobs\PurgeAnonymizedAccountData;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -32,6 +33,8 @@ Schedule::job(new LiftExpiredSuspensions)->everyFiveMinutes()->withoutOverlappin
 Schedule::job(new RunFraudScan)->hourly()->withoutOverlapping()->onOneServer();
 // Ménage : bans d'IP expirés, vieux journaux techniques.
 Schedule::job(new PurgeExpiredAdminData)->daily()->withoutOverlapping()->onOneServer();
+// Comptes supprimés : effacement définitif des contenus après le délai légal (30 jours par défaut).
+Schedule::job(new PurgeAnonymizedAccountData)->daily()->withoutOverlapping()->onOneServer();
 
 // Badges automatiques (Premium, KYC, ventes, ancienneté, score de confiance).
 Schedule::command('quinch:sync-badges')->hourly()->withoutOverlapping()->onOneServer();

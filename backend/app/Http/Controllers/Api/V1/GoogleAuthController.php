@@ -67,6 +67,15 @@ class GoogleAuthController extends Controller
             // New user — create account. `google_id` est volontairement
             // hors de $fillable (champ d'identité lié à l'auth, jamais
             // assignable via une requête externe) : forceFill nécessaire.
+            // Consentement : la création d'un compte exige l'acceptation des
+            // conditions (le frontend l'affiche sous le bouton Google).
+            if (!$request->boolean('accept_terms')) {
+                return response()->json([
+                    'message' => "Vous devez accepter les conditions d'utilisation et la politique de confidentialité pour créer un compte.",
+                    'error'   => 'terms_required',
+                ], 422);
+            }
+
             $isNewUser = true;
             $username  = $this->generateUsername($fullName, $email);
 
@@ -81,6 +90,7 @@ class GoogleAuthController extends Controller
             ]);
             // Adresse confirmée par Google (email_verified contrôlé plus haut).
             $user->forceFill(['google_id' => $googleId, 'email_verified_at' => now()])->save();
+            $user->recordLegalConsent();
 
             app(NotificationService::class)->notifyWelcome($user);
         } else {

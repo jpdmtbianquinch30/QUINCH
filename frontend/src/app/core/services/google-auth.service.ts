@@ -104,7 +104,7 @@ export class GoogleAuthService {
    * Échange l'ID token Google contre une session QUINCH.
    */
   signIn(idToken: string): Observable<GoogleAuthResult> {
-    return this.api.post<GoogleAuthResult>('auth/google', { id_token: idToken }).pipe(
+    return this.api.post<GoogleAuthResult>('auth/google', { id_token: idToken, accept_terms: true }).pipe(
       tap((res) => this.auth.applyGoogleSession(res.token, res.user))
     );
   }

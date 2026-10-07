@@ -1332,3 +1332,17 @@
   }
 
 }
+
+.terms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px 0 16px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--q-text-secondary, #a1a1aa);
+  cursor: pointer;
+
+  input { margin-top: 3px; flex-shrink: 0; }
+  a { color: var(--q-accent-light, #818cf8); text-decoration: underline; }
+}

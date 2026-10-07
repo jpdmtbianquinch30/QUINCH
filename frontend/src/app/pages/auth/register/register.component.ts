@@ -19,6 +19,7 @@ export class RegisterComponent {
   email = '';
   password = '';
   passwordConfirm = '';
+  acceptTerms = false;
   loading = signal(false);
   error = signal('');
 
@@ -44,6 +45,11 @@ export class RegisterComponent {
       return;
     }
 
+    if (!this.acceptTerms) {
+      this.error.set("Vous devez accepter les conditions d'utilisation et la politique de confidentialité.");
+      return;
+    }
+
     this.loading.set(true);
     this.error.set('');
 
@@ -53,6 +59,7 @@ export class RegisterComponent {
       email: this.email.trim(),
       password: this.password,
       password_confirmation: this.passwordConfirm,
+      accept_terms: this.acceptTerms,
     }).subscribe({
       next: () => {
         this.loading.set(false);

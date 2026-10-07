@@ -91,6 +91,8 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'suspended_until' => 'datetime',
             'anonymized_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
+            'content_purged_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'false_reports_count' => 'integer',
     ];
@@ -301,7 +303,21 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
         return $this->account_status === 'banned';
     }
 
-        public function generateOtp(): string
+    /**
+     * Enregistre la preuve que l'utilisateur a accepté les conditions et la
+     * politique de confidentialité (date + version des textes). Champs hors
+     * $fillable : jamais modifiables par une requête.
+     */
+    public function recordLegalConsent(): void
+    {
+        $this->forceFill([
+            'terms_accepted_at' => now(),
+            'terms_version'     => config('legal.versions.terms'),
+            'privacy_version'   => config('legal.versions.privacy'),
+        ])->save();
+    }
+
+    public function generateOtp(): string
     {
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 

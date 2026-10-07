@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent),
   },
 
+  // ─── Pages légales (publiques) ───────────────────────────────────────────
+  { path: 'legal/cgu', data: { doc: 'cgu' }, loadComponent: () => import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent) },
+  { path: 'legal/confidentialite', data: { doc: 'confidentialite' }, loadComponent: () => import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent) },
+  { path: 'legal/mentions-legales', data: { doc: 'mentions-legales' }, loadComponent: () => import('./pages/legal/legal-page.component').then(m => m.LegalPageComponent) },
+
   // ─── Pages publiques ─────────────────────────────────────────────────────
   { path: 'feed', loadComponent: () => import('./pages/feed/feed.component').then(m => m.FeedComponent) },
   { path: 'videos', loadComponent: () => import('./pages/video-feed/video-feed.component').then(m => m.VideoFeedComponent) },

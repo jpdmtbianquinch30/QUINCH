@@ -26,7 +26,7 @@ class PurgeExpiredAdminData implements ShouldQueue
         // DELETE ... LIMIT n'existe pas en PostgreSQL : sous-requête sur les ids.
         DB::delete(
             'DELETE FROM audit_logs WHERE id IN (SELECT id FROM audit_logs WHERE created_at < ? LIMIT 50000)',
-            [now()->subDays(180)]
+            [now()->subDays((int) config('legal.retention.audit_logs_days', 180))]
         );
     }
 }

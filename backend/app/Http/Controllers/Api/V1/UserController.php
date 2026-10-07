@@ -231,21 +231,18 @@ class UserController extends Controller
     }
 
     // ─── Data Export ─────────────────────────────────────────────────────
+    /**
+     * Droit d'accès / portabilité : toutes les données personnelles de l'utilisateur.
+     * (L'ancienne version appelait des relations inexistantes — User::transactions()
+     * et User::favorites() — et répondait par une erreur 500.)
+     */
     public function exportData(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $data = app(\App\Services\UserDataExporter::class)->export($request->user());
 
-        $data = [
-            'profile' => $user->toArray(),
-            'products' => $user->products()->get()->toArray(),
-            'transactions' => $user->transactions()->get()->toArray(),
-            'favorites' => $user->favorites()->with('product:id,title,slug')->get()->toArray(),
-            'followers' => $user->followers()->select('users.id', 'users.full_name')->get()->toArray(),
-            'following' => $user->following()->select('users.id', 'users.full_name')->get()->toArray(),
-            'exported_at' => now()->toIso8601String(),
-        ];
-
-        return response()->json($data);
+        return response()->json($data)
+            ->header('Content-Disposition', 'attachment; filename="quinch-mes-donnees-' . now()->format('Ymd') . '.json"')
+            ->header('Cache-Control', 'no-store, private');
     }
 
     // ─── Report Problem ──────────────────────────────────────────────────

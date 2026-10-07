@@ -104,6 +104,19 @@ class ProductionPreflight
             $errors[] = 'SANCTUM_TOKEN_EXPIRATION_MINUTES ne doit pas être null (jetons sans expiration).';
         }
 
+        // ── Informations légales (mentions légales, contact des droits) ──
+        foreach ([
+            'LEGAL_PUBLISHER_NAME'    => config('legal.publisher.name'),
+            'LEGAL_PUBLISHER_ADDRESS' => config('legal.publisher.address'),
+            'LEGAL_CONTACT_EMAIL'     => config('legal.contact_email'),
+            'LEGAL_HOST_NAME'         => config('legal.hosting.provider'),
+            'LEGAL_HOST_LOCATION'     => config('legal.hosting.location'),
+        ] as $name => $value) {
+            if ($this->blank($value)) {
+                $errors[] = "{$name} est vide : les mentions légales et la politique de confidentialité seraient incomplètes (obligatoire avant l'ouverture au public).";
+            }
+        }
+
         // ── Cookies de session ──
         // L'API s'authentifie par jeton Bearer, mais tout cookie émis (routes web,
         // mode « stateful » de Sanctum) doit être Secure, HttpOnly et SameSite.

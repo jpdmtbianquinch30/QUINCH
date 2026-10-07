@@ -25,6 +25,7 @@ class AuthController extends Controller
             'full_name' => ['required', 'string', 'max:100'],
             'username'  => ['required', 'string', 'min:3', 'max:30', 'unique:users', 'regex:/^[a-zA-Z0-9_]+$/'],
             'password'  => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*[0-9]).+$/'],
+            'accept_terms' => ['accepted'],
         ], [
             'email.email'    => 'Adresse e-mail invalide.',
             'email.unique'   => 'Cette adresse e-mail est déjà utilisée.',
@@ -32,6 +33,7 @@ class AuthController extends Controller
             'username.regex'  => 'Lettres, chiffres et _ uniquement.',
             'password.regex'  => 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre.',
             'password.min'    => 'Le mot de passe doit faire au moins 8 caractères.',
+            'accept_terms.accepted' => "Vous devez accepter les conditions d'utilisation et la politique de confidentialité.",
         ]);
 
         $user = User::create([
@@ -43,6 +45,7 @@ class AuthController extends Controller
             'is_buyer' => true,
             'device_fingerprint' => $request->header('X-Device-Fingerprint'),
         ]);
+        $user->recordLegalConsent();
 
         // Message de bienvenue de l'équipe QUINCH dès l'inscription (et non à la 1re connexion).
         app(NotificationService::class)->notifyWelcome($user);

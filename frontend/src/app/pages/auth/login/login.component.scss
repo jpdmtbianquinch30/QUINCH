@@ -1347,3 +1347,13 @@
   }
 
 }
+
+.google-terms {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--q-text-secondary, #a1a1aa);
+
+  a { color: var(--q-accent-light, #818cf8); text-decoration: underline; }
+}
