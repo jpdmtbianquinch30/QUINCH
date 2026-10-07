@@ -1,0 +1,40 @@
+#!/bin/sh
+# Garde-fou anti-fuite de secrets : s'exécute avant CHAQUE commit.
+# Installation (une fois par copie du dépôt) :  git config core.hooksPath scripts/hooks
+#
+# Bloque le commit si :
+#   1. un VRAI fichier d'environnement est ajouté (.env, .env.docker, .env.production...) ;
+#   2. un fichier « *.example » contient une vraie valeur de secret (mot de passe,
+#      clé, jeton de 20 caractères ou plus qui n'est pas un texte à remplacer).
+# Les fichiers *.example ne doivent contenir QUE des valeurs à remplacer
+# (CHANGE_ME, CHANGER_MOI, <votre-valeur>, vide...).
+
+status=0
+
+# 1) Vrais fichiers d'environnement
+for f in $(git diff --cached --name-only --diff-filter=AM); do
+    case "$f" in
+        *.example) ;;
+        .env|.env.*|*/.env|*/.env.*)
+            echo "✗ BLOQUÉ : « $f » est un vrai fichier d'environnement (il contient vos secrets)."
+            echo "  Il ne doit jamais être commité : git restore --staged \"$f\""
+            status=1
+            ;;
+    esac
+done
+
+# 2) Valeurs de secret dans les fichiers d'exemple
+files=$(git diff --cached --name-only --diff-filter=AM | grep -E '\.example$' || true)
+if [ -n "$files" ]; then
+    found=$(git diff --cached -U0 --no-color -- $files \
+        | grep -E '^\+[A-Za-z0-9_]*(PASSWORD|PASSWD|SECRET|TOKEN|API_KEY|APP_KEY|PRIVATE_KEY)[A-Za-z0-9_]*=[A-Za-z0-9+/=_.:-]{20,}[[:space:]]*$' \
+        | grep -viE 'CHANGE|CHANGER|EXAMPLE|XXXX|PLACEHOLDER|REMPLAC|VOTRE|YOUR|test-key|base64:A{20,}' || true)
+    if [ -n "$found" ]; then
+        echo "✗ BLOQUÉ : un fichier *.example contient ce qui ressemble à un VRAI secret :"
+        echo "$found" | sed -E 's/(=.{4}).*/\1…(masqué)/'
+        echo "  Remplacez la valeur par CHANGE_ME et mettez le vrai secret dans le fichier .env (ignoré par git)."
+        status=1
+    fi
+fi
+
+exit $status
