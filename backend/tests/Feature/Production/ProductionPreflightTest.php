@@ -23,8 +23,11 @@ class ProductionPreflightTest extends TestCase
             'mail.from.address' => 'no-reply@quinch.sn',
             'queue.default' => 'redis',
             'cache.default' => 'redis',
-            'database.redis.default.password' => 'redis-secret',
-            'database.connections.pgsql.password' => 'db-secret',
+            'database.redis.default.password' => 'Xk93mQ7vLp2ZtR8wYb4NcA6dHf',
+            'database.connections.pgsql.password' => 'Tn5Qe8Wz2LpV7kXr3MaBy9HcJd',
+            'session.secure' => true,
+            'session.http_only' => true,
+            'session.same_site' => 'lax',
             'sanctum.expiration' => 20160,
             'quinch.enabled_payment_methods' => ['wave'],
             'services.wave.api_key' => 'wave-key',
@@ -162,5 +165,39 @@ class ProductionPreflightTest extends TestCase
         config(['mail.mailers.smtp.port' => 587, 'mail.mailers.smtp.scheme' => 'smtp']);
 
         $this->assertSame([], $this->errors());
+    }
+
+    public function test_session_cookies_must_be_secure_httponly_and_samesite(): void
+    {
+        $this->validProductionConfig();
+        config(['session.secure' => null]);
+        $this->assertStringContainsString('SESSION_SECURE_COOKIE', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['session.http_only' => false]);
+        $this->assertStringContainsString('SESSION_HTTP_ONLY', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['session.same_site' => 'none']);
+        $this->assertStringContainsString('SESSION_SAME_SITE', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['session.same_site' => 'strict']);
+        $this->assertSame([], $this->errors());
+    }
+
+    public function test_placeholder_or_short_secrets_are_refused(): void
+    {
+        $this->validProductionConfig();
+        config(['database.connections.pgsql.password' => 'CHANGE_ME']);
+        $this->assertStringContainsString('DB_PASSWORD', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['database.redis.default.password' => 'court123']);
+        $this->assertStringContainsString('REDIS_PASSWORD', implode(' ', $this->errors()));
+
+        $this->validProductionConfig();
+        config(['database.connections.pgsql.password' => 'CHANGER_MOI_aussi_1234567']);
+        $this->assertStringContainsString('DB_PASSWORD', implode(' ', $this->errors()));
     }
 }

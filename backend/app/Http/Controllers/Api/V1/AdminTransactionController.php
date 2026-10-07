@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Support\CsvSafe;
 
 /**
  * Transactions & litiges. Avant : un litige créait un faux « signalement
@@ -174,11 +175,12 @@ class AdminTransactionController extends Controller
             $query->with(['buyer:id,full_name', 'seller:id,full_name', 'product' => fn ($q) => $q->withTrashed()->select('id', 'title')])
                 ->chunkById(500, function ($rows) use ($out) {
                     foreach ($rows as $t) {
-                        fputcsv($out, [
+                        // CsvSafe : noms et titres sont saisis par les utilisateurs (injection de formule Excel).
+                        fputcsv($out, CsvSafe::row([
                             $t->id, $t->created_at, $t->buyer->full_name ?? '', $t->seller->full_name ?? '',
                             $t->product->title ?? '', $t->amount, $t->transaction_fee, $t->payment_method,
                             $t->payment_status, $t->order_status, $t->security_check,
-                        ], ';');
+                        ]), ';');
                     }
                 }, 'id');
 

@@ -104,6 +104,30 @@ class ProductionPreflight
             $errors[] = 'SANCTUM_TOKEN_EXPIRATION_MINUTES ne doit pas être null (jetons sans expiration).';
         }
 
+        // ── Cookies de session ──
+        // L'API s'authentifie par jeton Bearer, mais tout cookie émis (routes web,
+        // mode « stateful » de Sanctum) doit être Secure, HttpOnly et SameSite.
+        if (config('session.secure') !== true) {
+            $errors[] = 'SESSION_SECURE_COOKIE doit valoir true en production (cookies envoyés uniquement en HTTPS).';
+        }
+        if (config('session.http_only') === false) {
+            $errors[] = 'SESSION_HTTP_ONLY ne doit pas valoir false (cookies lisibles par JavaScript).';
+        }
+        if (!in_array(strtolower((string) config('session.same_site')), ['lax', 'strict'], true)) {
+            $errors[] = 'SESSION_SAME_SITE doit valoir lax ou strict (none ou vide expose aux attaques CSRF).';
+        }
+
+        // ── Secrets ──
+        foreach ([
+            'DB_PASSWORD' => config('database.connections.pgsql.password'),
+            'REDIS_PASSWORD' => config('database.redis.default.password'),
+        ] as $name => $value) {
+            // Un mot de passe vide est déjà signalé plus haut.
+            if (!$this->blank($value) && $this->isWeakSecret((string) $value)) {
+                $errors[] = "{$name} est trop court ou reste un modèle (CHANGE_ME, CHANGER_MOI...) : générer au moins 16 caractères aléatoires.";
+            }
+        }
+
         // ── Paiements ──
         $methods = (array) config('quinch.enabled_payment_methods', []);
         if (in_array('wave', $methods, true)) {
@@ -126,6 +150,23 @@ class ProductionPreflight
         }
 
         return $errors;
+    }
+
+    /** Moins de 16 caractères, ou valeur d'exemple / mot de passe courant. */
+    private function isWeakSecret(string $value): bool
+    {
+        if (strlen($value) < 16) {
+            return true;
+        }
+
+        $lower = strtolower($value);
+        foreach (['change_me', 'changeme', 'changer_moi', 'password', 'motdepasse', '123456', 'azerty', 'qwerty', 'postgres', 'quinch'] as $token) {
+            if (str_contains($lower, $token)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function blank(mixed $value): bool

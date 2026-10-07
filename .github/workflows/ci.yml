@@ -80,5 +80,22 @@ jobs:
           cp .env.example .env
           cp backend/.env.docker.example backend/.env.docker
           docker compose config -q
+      - name: Valider la surcouche de production (HTTPS + frontend)
+        run: |
+          API_DOMAIN=api.example.com APP_DOMAIN=example.com ACME_EMAIL=ops@example.com \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
       - name: Construire l'image backend
         run: docker build -f backend/Dockerfile -t quinch-backend:ci .
+      - name: Construire l'image frontend (production)
+        run: docker build -f frontend/Dockerfile -t quinch-web:ci ./frontend
+
+  secrets:
+    name: Recherche de secrets (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scanner tout l'historique git
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --no-banner --redact

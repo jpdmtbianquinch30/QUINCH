@@ -13,6 +13,7 @@ use App\Services\Admin\AdminLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Support\CsvSafe;
 
 class SecurityController extends Controller
 {
@@ -70,10 +71,11 @@ class SecurityController extends Controller
             fputcsv($out, ['date', 'admin', 'action', 'cible', 'cible_id', 'gravite', 'ip', 'details'], ';');
             $query->chunkById(500, function ($rows) use ($out) {
                 foreach ($rows as $l) {
-                    fputcsv($out, [
+                    // CsvSafe : le détail contient des données saisies par des utilisateurs.
+                    fputcsv($out, CsvSafe::row([
                         $l->created_at, $l->admin->full_name ?? 'Système', $l->action, $l->target_type,
                         $l->target_id, $l->severity, $l->ip_address, json_encode($l->metadata, JSON_UNESCAPED_UNICODE),
-                    ], ';');
+                    ]), ';');
                 }
             }, 'id');
             fclose($out);

@@ -1,0 +1,32 @@
+# Passerelle HTTPS de production : certificats Let's Encrypt obtenus et
+# renouvelés automatiquement, redirection HTTP -> HTTPS, TLS moderne par défaut.
+#
+# Variables (fichier .env à la racine, lues par docker-compose.prod.yml) :
+#   API_DOMAIN   = api.quinch.sn
+#   APP_DOMAIN   = quinch.sn
+#   ACME_EMAIL   = adresse qui reçoit les alertes d'expiration de certificat
+#
+# Prérequis : les enregistrements DNS A (et AAAA) de API_DOMAIN, APP_DOMAIN et
+# www.APP_DOMAIN pointent vers ce serveur, et les ports 80 et 443 sont ouverts.
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+	request_body {
+		max_size 520MB
+	}
+	reverse_proxy nginx:80
+	header -Server
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:8080
+	header -Server
+}
+
+www.{$APP_DOMAIN} {
+	redir https://{$APP_DOMAIN}{uri} permanent
+}
