@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\WaveWebhookController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductVideoController;
 use App\Http\Controllers\Api\V1\ProductFeedController;
@@ -420,7 +421,8 @@ Route::prefix('admin')
 // ─── Webhooks ────────────────────────────────────────────────────────────────
 Route::prefix('webhooks')->group(function () {
     Route::post('orange-money', [TransactionController::class, 'webhookOrangeMoney']);
-    Route::post('wave', [TransactionController::class, 'webhookWave']);
+    // URL UNIQUE à enregistrer dans le portail Wave Business : aiguille selon client_reference.
+    Route::post('wave', [WaveWebhookController::class, 'handle']);
     Route::post('wave-premium', [PremiumController::class, 'webhookWave']);
     Route::post('wave-listing', [ProductController::class, 'webhookWaveListingFee']);
 });

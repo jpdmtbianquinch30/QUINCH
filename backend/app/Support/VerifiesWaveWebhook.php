@@ -16,20 +16,38 @@ trait VerifiesWaveWebhook
         return is_string($secret) && trim($secret) !== '' ? $secret : null;
     }
 
+    /**
+     * En-tête Wave-Signature : « t=<horodatage>,v1=<hmac>[,v1=<hmac>...] ».
+     * Plusieurs signatures v1 peuvent coexister (rotation de secret) : une seule
+     * valide suffit. L'horodatage doit rester dans une fenêtre de 5 minutes.
+     */
     private function verifyWaveSignature(string $header, string $body, string $secret): bool
     {
-        $parts = collect(explode(',', $header))->mapWithKeys(function ($part) {
-            [$key, $value] = array_pad(explode('=', $part, 2), 2, null);
-            return [$key => $value];
-        });
+        $timestamp = null;
+        $signatures = [];
 
-        $timestamp = $parts->get('t');
-        $signature = $parts->get('v1');
+        foreach (explode(',', $header) as $part) {
+            [$key, $value] = array_pad(explode('=', trim($part), 2), 2, null);
 
-        if (!$timestamp || !$signature || abs(time() - (int) $timestamp) > 300) {
+            if ($key === 't') {
+                $timestamp = $value;
+            } elseif ($key === 'v1' && $value !== null && $value !== '') {
+                $signatures[] = $value;
+            }
+        }
+
+        if (!$timestamp || !ctype_digit((string) $timestamp) || $signatures === [] || abs(time() - (int) $timestamp) > 300) {
             return false;
         }
 
-        return hash_equals(hash_hmac('sha256', $timestamp . $body, $secret), $signature);
+        $expected = hash_hmac('sha256', $timestamp . $body, $secret);
+
+        foreach ($signatures as $signature) {
+            if (hash_equals($expected, $signature)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

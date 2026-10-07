@@ -210,7 +210,6 @@ class ProductController extends Controller
             'transaction_id' => 'listing_' . $product->id,
             'success_url' => "{$frontendUrl}/feed",
             'error_url' => "{$frontendUrl}/sell",
-            'notif_url' => url('/api/v1/webhooks/wave-listing'),
         ]);
 
         if (!($result['success'] ?? false)) {
@@ -325,54 +324,7 @@ class ProductController extends Controller
         }
 
         if (($payload['type'] ?? null) === 'checkout.session.completed' && ($data['payment_status'] ?? null) === 'succeeded') {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($productId, $data) {
-                // Verrou : deux webhooks simultanés ne peuvent pas traiter la même annonce.
-                $product = Product::whereKey($productId)->lockForUpdate()->first();
-
-                if (!$product) {
-                    Log::warning('Wave listing: paiement reçu pour une annonce introuvable (supprimée ?) — remboursement à étudier', [
-                        'product_id' => $productId,
-                    ]);
-                    return;
-                }
-
-                if ($product->listing_fee_status === 'paid') {
-                    return; // déjà traité (idempotent)
-                }
-
-                if (!in_array($product->listing_fee_status, ['pending', 'failed'], true)) {
-                    Log::warning('Wave listing: paiement reçu pour une annonce sans frais en attente — remboursement à étudier', [
-                        'product_id' => $product->id,
-                    ]);
-                    return;
-                }
-
-                // Le montant payé ne doit pas être inférieur aux frais attendus.
-                $expected = (int) ($product->listing_fee_amount ?: config('quinch.premium.listing_fee_with_video', 150));
-                if (isset($data['amount']) && (int) round((float) $data['amount']) < $expected) {
-                    Log::critical('Wave listing: montant payé inférieur aux frais attendus', [
-                        'product_id' => $product->id,
-                        'expected' => $expected,
-                        'received' => $data['amount'],
-                    ]);
-                    return;
-                }
-
-                // Un paiement réussi fait foi, même si une tentative précédente était "failed".
-                $product->update([
-                    'status' => 'active',
-                    'listing_fee_status' => 'paid',
-                    'listing_fee_gateway_id' => $data['id'] ?? $product->listing_fee_gateway_id,
-                ]);
-
-                try {
-                    if ($product->user) {
-                        app(\App\Services\NotificationService::class)->notifyMentions($product->fresh(), $product->user);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('notifyMentions a échoué', ['error' => $e->getMessage()]);
-                }
-            });
+            app(\App\Services\Payments\WavePaymentConfirmer::class)->confirmListingFee($productId, $data);
         }
 
         if (($payload['type'] ?? null) === 'checkout.session.payment_failed') {

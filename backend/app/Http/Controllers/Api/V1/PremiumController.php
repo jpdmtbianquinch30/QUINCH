@@ -81,7 +81,6 @@ class PremiumController extends Controller
             'transaction_id' => 'premium_' . $subscription->id,
             'success_url' => "{$frontendUrl}/premium/success",
             'error_url' => "{$frontendUrl}/premium/error",
-            'notif_url' => url('/api/v1/webhooks/wave-premium'),
         ]);
 
         if (!($result['success'] ?? false)) {
@@ -128,31 +127,14 @@ class PremiumController extends Controller
         }
 
         if (($payload['type'] ?? null) === 'checkout.session.completed' && ($data['payment_status'] ?? null) === 'succeeded') {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($subscriptionId, $data) {
-                // Verrou : deux webhooks simultanés ne doublent plus l'abonnement.
-                $subscription = PremiumSubscription::whereKey($subscriptionId)->lockForUpdate()->first();
-
-                if (!$subscription || $subscription->status !== 'pending') {
-                    return;
-                }
-
-                if (isset($data['amount']) && (int) round((float) $data['amount']) < (int) $subscription->amount) {
-                    Log::critical('Wave premium: montant payé inférieur au prix attendu', [
-                        'subscription_id' => $subscription->id,
-                        'expected' => $subscription->amount,
-                        'received' => $data['amount'],
-                    ]);
-                    return;
-                }
-
-                $subscription->update(['payment_gateway_id' => $data['id'] ?? $subscription->payment_gateway_id]);
-                $subscription->activate();
-            });
+            app(\App\Services\Payments\WavePaymentConfirmer::class)->confirmPremium($subscriptionId, $data);
         }
 
-        if (($payload['type'] ?? null) === 'checkout.session.payment_failed') {
-            PremiumSubscription::where('id', $subscriptionId)->where('status', 'pending')->update(['status' => 'cancelled']);
-        }
+        // `checkout.session.payment_failed` est volontairement ignoré : Wave peut
+        // signaler plusieurs échecs avant un succès dans la même session (le
+        // client réessaie pendant 30 minutes). Annuler ici ferait perdre un
+        // paiement réussi ensuite. Une session abandonnée est annulée par
+        // ReconcileWavePayments une fois expirée.
 
         return response()->json(['status' => 'received']);
     }

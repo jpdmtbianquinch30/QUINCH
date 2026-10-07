@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use App\Jobs\ReconcileWavePayments;
 use App\Jobs\ReleaseExpiredReservations;
 use Illuminate\Support\Facades\Schedule;
 use App\Jobs\ExpirePremiumSubscriptions;
@@ -18,6 +19,8 @@ Artisan::command('inspire', function () {
 // withoutOverlapping + onOneServer : une seule exécution même avec plusieurs
 // conteneurs "scheduler". Nécessite un cache à verrous atomiques (Redis en prod).
 Schedule::job(new ReleaseExpiredReservations)->everyMinute()->withoutOverlapping(10)->onOneServer();
+// Rattrapage des paiements Wave dont le webhook s'est perdu (voir ReconcileWavePayments).
+Schedule::job(new ReconcileWavePayments)->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 Schedule::job(new ExpirePremiumSubscriptions)->daily()->withoutOverlapping()->onOneServer();
 Schedule::job(new CleanupAbandonedDraftListings)->hourly()->withoutOverlapping()->onOneServer();
 Schedule::job(new RecalculateTrustScores)->daily()->withoutOverlapping()->onOneServer();

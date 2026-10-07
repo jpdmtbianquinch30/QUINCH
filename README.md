@@ -120,6 +120,21 @@ Il n'existe **plus aucun mode simulation** (le simulateur `/dev/simulate-payment
 - Pour essayer Wave en local, renseignez de vraies valeurs dans `backend/.env` (webhooks : tunnel HTTPS type ngrok).
 - Orange Money : à activer (`QUINCH_PAYMENT_METHODS=wave,orange_money`) uniquement une fois le compte marchand Sonatel obtenu.
 
+### Webhook Wave (à enregistrer dans le portail Wave Business)
+
+Wave ne permet pas de choisir l'URL de notification session par session : le webhook se déclare dans le portail
+(une URL + un secret). Un **seul** webhook suffit :
+
+- URL : `https://api.TONDOMAINE.sn/api/v1/webhooks/wave` (aiguille Premium / frais d'annonce / commandes selon `client_reference`)
+- Événements : `checkout.session.completed` et `checkout.session.payment_failed`
+- Stratégie d'authentification : **Signing secret** (signature HMAC `Wave-Signature`) — pas le « shared secret »
+- Copier le secret affiché dans `WAVE_WEBHOOK_SECRET` (`backend/.env.docker`), puis redémarrer les conteneurs
+- Pare-feu : autoriser les adresses IP publiques de Wave (liste dans la documentation Wave, section Webhooks)
+
+Filet de sécurité : la tâche `ReconcileWavePayments` (toutes les 5 minutes) interroge Wave pour tout paiement en attente
+de plus de 3 minutes : un webhook perdu n'empêche donc jamais l'activation. Les anciennes URL `wave-premium` et
+`wave-listing` restent actives mais ne sont plus nécessaires.
+
 > Le driver SMS `log` (codes OTP dans les logs et `demo_otp`) reste réservé au développement local et aux
 > tests. En production il est **refusé au démarrage** par `quinch:preflight`.
 
