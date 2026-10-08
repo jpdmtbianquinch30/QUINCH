@@ -17,6 +17,7 @@ class RegistrationTest extends TestCase
         'username' => 'fatou_diop',
         'password' => 'Password1',
         'password_confirmation' => 'Password1',
+        'accept_terms' => true,
     ];
 
     public function test_register_creates_user_and_returns_token(): void

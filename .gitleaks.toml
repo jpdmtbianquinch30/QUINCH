@@ -1,0 +1,15 @@
+# Configuration gitleaks (lue automatiquement par la CI à la racine du dépôt).
+title = "QUINCH"
+
+[extend]
+# Garde toutes les règles par défaut de gitleaks.
+useDefault = true
+
+[allowlist]
+description = "Valeurs factices : jeux de données des tests automatisés et fichiers d'exemple"
+paths = [
+  # Les tests utilisent de faux mots de passe (ex. 'Password1', 'secret') : jamais de vrais secrets.
+  'backend/tests/.*',
+  # Fichiers d'exemple versionnés : uniquement des valeurs CHANGE_ME / vides.
+  '(^|/)\.env(\.[a-z]+)*\.example$',
+]

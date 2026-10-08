@@ -174,7 +174,7 @@ class SecurityHardeningTest extends TestCase
     {
         $this->fakeGoogle('nouvelle@example.com', 'google-sub-2');
 
-        $this->postJson('/api/v1/auth/google', ['id_token' => 'x'])
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'x', 'accept_terms' => true])
             ->assertCreated()
             ->assertJsonPath('is_new_user', true)
             ->assertJsonMissingPath('needs_phone');

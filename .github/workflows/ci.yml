@@ -98,4 +98,4 @@ jobs:
           fetch-depth: 0
       - name: Scanner tout l'historique git
         run: |
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --no-banner --redact
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --no-banner --redact -v
