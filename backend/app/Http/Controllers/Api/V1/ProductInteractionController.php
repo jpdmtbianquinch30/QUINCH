@@ -29,10 +29,15 @@ class ProductInteractionController extends Controller
 
     public function view(Request $request, Product $product): JsonResponse
     {
-        $product->increment('view_count');
+        // Une vue par visiteur (utilisateur ou IP) et par annonce toutes les 10 minutes :
+        // le classement « populaires » n'est plus gonflable par simple rafraîchissement en boucle.
+        $viewer = $request->user('sanctum')?->id ?? $request->ip();
+        if (\Illuminate\Support\Facades\Cache::add("view:{$product->id}:{$viewer}", 1, now()->addMinutes(10))) {
+            $product->increment('view_count');
 
-        if ($product->video) {
-            $product->video->increment('view_count');
+            if ($product->video) {
+                $product->video->increment('view_count');
+            }
         }
 
         return response()->json(['view_count' => $product->view_count]);

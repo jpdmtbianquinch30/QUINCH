@@ -32,8 +32,11 @@ QUINCH est volontairement un **monolithe modulaire** : un backend Laravel bien s
 - connexion Google ;
 - téléphone facultatif dans le profil ;
 - changement/suppression du compte ;
-- sessions Sanctum avec expiration ;
-- blocage et signalement d'utilisateurs.
+- sessions Sanctum avec expiration (8 h pour le staff, y compris via Google) ;
+- changement d'e-mail protégé : mot de passe actuel exigé, alerte envoyée à l'ancienne adresse, autres sessions déconnectées ;
+- changement de mot de passe : les autres appareils sont déconnectés ;
+- pseudo unique sans tenir compte de la casse, noms réservés refusés (`admin`, `support`, tout nom contenant `quinch`…) ;
+- blocage (dans les deux sens : messages, conversations, suivis, négociations) et signalement d'utilisateurs.
 
 > **Décision actuelle :** le téléphone n'est pas obligatoire et le SMS OTP n'est pas utilisé pour le parcours normal d'authentification. Les anciennes références à un OTP SMS obligatoire sont obsolètes.
 
@@ -49,7 +52,7 @@ QUINCH est volontairement un **monolithe modulaire** : un backend Laravel bien s
 - likes, sauvegardes et favoris ;
 - collections de favoris ;
 - partage ;
-- avis ;
+- avis (réservés aux acheteurs d'une transaction finalisée ou aux personnes ayant échangé avec le vendeur) ;
 - abonnements/follow ;
 - classements ;
 - badges ;
@@ -62,7 +65,7 @@ QUINCH est volontairement un **monolithe modulaire** : un backend Laravel bien s
 - badges de messages non lus ;
 - présence/dernière activité ;
 - rattachement d'un produit à une conversation ;
-- audio/fichiers selon les feature flags actuels.
+- audio/fichiers selon les feature flags actuels (les métadonnées d'un message sont toujours construites par le serveur, jamais fournies par le client).
 
 ### Administration
 
@@ -97,6 +100,8 @@ Le backend contient l'architecture des passerelles de paiement, notamment :
 - cash pour certains flux internes/testés.
 
 La production doit utiliser de vraies credentials marchand et les webhooks vérifiés. Il n'existe plus de simulateur de paiement en production.
+
+Les webhooks de commande (Wave et Orange Money) passent par `App\Services\Payments\OrderPaymentConfirmer` : verrou de ligne, idempotence, montant et devise vérifiés, un échec n'annule jamais une commande payée (voir `docs/PAYMENTS.md`).
 
 ## 3. Architecture
 
@@ -340,6 +345,9 @@ Les protections déjà intégrées comprennent notamment :
 - validation des données ;
 - contrôle d'accès côté backend ;
 - audit des actions administratives ;
+- aucune erreur 500 sur entrée invalide : identifiants non-UUID en 404, valeurs trop longues en 422, gestionnaire global des erreurs PostgreSQL ;
+- annonces non publiées, profils bannis ou supprimés et chiffre d'affaires des vendeurs non exposés publiquement ;
+- compteurs de vues dédupliqués, transitions de commande atomiques, `ffmpeg` limité aux protocoles `file`/`https` ;
 - détection/modération ;
 - Gitleaks dans la CI ;
 - audit Composer/npm ;
@@ -379,7 +387,9 @@ cd frontend
 npm test
 ```
 
-Les tests backend couvrent notamment l'authentification, l'OTP e-mail, les permissions admin, la modération, les favoris, les follows, les badges, les paiements Wave, la réconciliation, Premium, les limites de pagination et plusieurs scénarios de sécurité.
+Près de 400 tests backend (PHPUnit sur PostgreSQL) couvrent notamment l'authentification, l'OTP e-mail, la protection contre la prise de compte, les permissions admin, la modération, les favoris, les follows, les badges, les paiements Wave/Orange Money et leurs webhooks, la réconciliation, Premium, la machine d'état des commandes, l'absence d'erreur 500 sur entrées invalides, l'exposition publique des données, les limites de pagination et plusieurs scénarios de sécurité.
+
+Après une mise à jour du code : `docker compose exec app php artisan migrate --force` (la table `blocked_users` et ses clés étrangères sont créées par migration).
 
 ## 13. Médias et vidéos
 
@@ -426,8 +436,9 @@ Mis en place (phase 5) :
 
 - pages publiques `/legal/cgu`, `/legal/confidentialite`, `/legal/mentions-legales` ;
 - informations de l'éditeur réglées par les variables `LEGAL_*` (la production refuse de démarrer si elles manquent) ;
-- consentement mémorisé (date + version) ; à la première connexion Google, une fenêtre demande d'accepter
-  les conditions avant de créer le compte ;
+- consentement mémorisé (date + version) ; la connexion Google reste verrouillée tant que la case
+  d'acceptation des conditions n'est pas cochée, et le serveur refuse (422 `terms_required`) de créer un compte
+  sans cette acceptation ;
 - export complet des données (`GET /users/export-data`) et suppression de compte avec effacement différé
   des contenus (30 jours) ;
 - registre des traitements pour la déclaration à la CDP.
@@ -478,4 +489,4 @@ Projet QUINCH. Les éléments de marque, contenus, logos et règles métier rest
 
 ---
 
-**Dernière révision : octobre 2026**
+**Dernière révision : 9 octobre 2026** (audit de sécurité traité : voir `docs/CHANGELOG-2026-10.md` et `docs/SECURITY.md`)

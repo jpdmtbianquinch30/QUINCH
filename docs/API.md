@@ -22,9 +22,9 @@ POST /auth/logout
 POST /auth/logout-all
 POST /auth/refresh
 GET  /auth/me
-PUT  /auth/change-password
-POST /auth/delete-account
-DELETE /auth/delete-account
+PUT  /auth/change-password     (5/min ; déconnecte les autres appareils)
+POST /auth/delete-account      (5/min)
+DELETE /auth/delete-account    (5/min)
 ```
 
 ## Public marketplace
@@ -37,8 +37,8 @@ GET  /products/active-sellers
 GET  /search
 GET  /search/suggestions
 GET  /search/trending
-GET  /products/{slug}
-GET  /users/{username}/profile
+GET  /products/{slug}          (404 si l'annonce n'est pas publiée, sauf auteur et staff)
+GET  /users/{username}/profile (sans chiffre d'affaires ; 404 si le compte est banni ou supprimé)
 GET  /users/{username}/products
 ```
 
@@ -52,14 +52,14 @@ GET /videos/{videoId}/thumbnail
 ## Utilisateur
 
 ```text
-GET/PUT /user/profile
+GET/PUT /user/profile       (changer `email` exige `current_password` ; 20 requêtes/min)
 POST    /user/preferences
 POST    /user/policies
 POST    /user/upload-avatar
 POST    /user/upload-cover
 PUT     /user/phone
 GET     /users/blocked
-POST    /users/{user}/block
+POST    /users/{user}/block      (appliqué dans les deux sens : conversations, messages, suivis, négociations, avis)
 POST    /users/{user}/unblock
 GET     /users/export-data     (téléchargement JSON complet, 5 demandes/heure)
 ```
@@ -80,7 +80,15 @@ GET    /my-products
 GET    /my-likes
 ```
 
+## Erreurs
+
+Un identifiant mal formé (`/users/abc/badges`) renvoie **404**, une valeur invalide ou trop longue **422** ; l'API ne
+renvoie plus de 500 pour une entrée utilisateur. Corps JSON : `{ "message": "…" }`.
+
 ## Social
+
+Avis (`POST /reviews`) : réservés aux acheteurs d'une transaction finalisée chez ce vendeur, ou aux utilisateurs lui
+ayant déjà écrit (`422 review_requires_interaction` sinon). Une `video_id` jointe à une annonce doit appartenir à son auteur.
 
 Le backend expose les flux de follows, avis, badges, favoris, partages et classements via leurs contrôleurs dédiés. Les fonctionnalités sont protégées par les feature flags lorsqu'elles sont optionnelles.
 
@@ -95,7 +103,8 @@ Les endpoints Premium et transactions doivent être utilisés uniquement pour le
 ## Webhook
 
 ```text
-POST /webhooks/wave
+POST /webhooks/wave           (aiguillage selon client_reference : premium_… / listing_… / UUID de commande)
+POST /webhooks/orange-money   (signature HMAC `X-Orange-Signature`)
 ```
 
 Ce endpoint est externe à l'authentification utilisateur et doit vérifier la signature Wave, l'idempotence et la cohérence de la transaction.

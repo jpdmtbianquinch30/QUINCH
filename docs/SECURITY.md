@@ -14,7 +14,14 @@
 - Google OAuth avec validation du token côté backend.
 - Récupération par code e-mail temporaire.
 - Téléphone facultatif.
-- Sanctum avec expiration configurée.
+- Sanctum avec expiration configurée ; jeton du staff limité à 8 h (connexion classique **et** Google).
+- Changer l'e-mail exige le mot de passe actuel ; l'ancienne adresse est prévenue, les autres sessions sont coupées
+  et la nouvelle adresse repasse « non confirmée ».
+- Changer le mot de passe déconnecte les autres appareils.
+- `change-password`, `delete-account` (POST **et** DELETE) et `PUT user/profile` sont limités en fréquence.
+- Règle de mot de passe unique (inscription, réinitialisation, changement) : 8 à 72 caractères, une majuscule,
+  une minuscule, un chiffre.
+- Pseudos : 3 à 30 caractères, unicité insensible à la casse, noms réservés refusés (`App\Rules\AvailableUsername`).
 
 ## Protection des routes
 
@@ -39,6 +46,10 @@ signature webhook
 + état fournisseur
 + idempotence
 ```
+
+Pour les commandes (`App\Services\Payments\OrderPaymentConfirmer`) : montant ET devise vérifiés (prix × quantité + frais),
+un échec Wave n'annule jamais une commande payée, un succès arrivé après expiration de la réservation re-réserve le
+stock ou place la commande en revue manuelle (jamais de survente), et un même webhook rejoué ne change rien.
 
 ## Uploads
 
@@ -92,6 +103,23 @@ Exploitation (phase 6) :
 
 Risque assumé : le jeton de connexion est stocké dans `localStorage` (lisible par un script injecté). La CSP stricte
 est la parade ; passer à un cookie HttpOnly changerait toute l'authentification (CSRF, application mobile).
+
+## Audit de sécurité (octobre 2026)
+
+Un audit statique du code a produit une liste de failles ; chacune a été confirmée dans le code puis corrigée avec des tests.
+
+| Lot | Sujet | Correctif |
+|---|---|---|
+| A | Webhooks de paiement | Webhook Orange `FAILED` qui marquait la commande payée ; échecs Wave tardifs qui annulaient une commande payée ; montant non vérifié. Tout passe par `OrderPaymentConfirmer` (verrou, idempotence, montant, devise) |
+| B | Prise de compte | Mot de passe exigé pour changer d'e-mail, alerte à l'ancienne adresse, révocation des autres jetons, limites de fréquence, jeton staff Google de 8 h |
+| C | Erreurs 500 | Identifiants non-UUID en 404 (`Route::pattern`), règle `uuid` partout, filtres numériques tolérants, `mb_substr` (accents), longueurs bornées, gestionnaire global des erreurs PostgreSQL 22P02/22001/22003 |
+| D | Confidentialité | Annonces non publiées (brouillon, expirée, en pause, désactivée) visibles seulement par leur auteur et le staff ; `total_revenue` retiré du profil public ; profils bannis/anonymisés en 404 ; `fileReplacements` du build de production |
+| E | Abus | Avis réservés aux vrais interlocuteurs, vidéo d'un autre vendeur refusée, blocage appliqué (la table `blocked_users` manquait : création par migration), métadonnées de message non modifiables par le client, pseudos |
+| F | Durcissement | Machine d'état des commandes atomique (livraison non répétable, annulations qui restituent le stock), compteurs de vues dédupliqués, collection de favoris vérifiée, `-protocol_whitelist` ffmpeg, `install-php-extensions` épinglé avec empreinte SHA-256, règle de mot de passe unique |
+
+Restent volontairement ouverts : jeton de connexion en `localStorage`, double authentification du staff, anti-rejeu
+horodaté du webhook Orange (format Sonatel à confirmer), épinglage des images `pgadmin4` et `pgbouncer`, vidéos
+« pending » publiques tant que la modération n'a pas statué (choix produit).
 
 ## Secrets
 

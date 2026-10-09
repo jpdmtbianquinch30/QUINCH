@@ -151,10 +151,11 @@ class Product extends Model
         return $query->whereFullText(['title', 'description'], $term);
     }
 
-    public function scopePriceRange($query, ?float $min, ?float $max)
+    public function scopePriceRange($query, mixed $min, mixed $max)
     {
-        if ($min !== null) $query->where('price', '>=', $min);
-        if ($max !== null) $query->where('price', '<=', $max);
+        // Valeurs venant de l'URL : tout ce qui n'est pas un nombre est ignoré (jamais d'erreur 500).
+        if (is_numeric($min)) $query->where('price', '>=', (float) $min);
+        if (is_numeric($max)) $query->where('price', '<=', (float) $max);
         return $query;
     }
 
@@ -184,6 +185,19 @@ public function scopeTieredRank($query)
     public function getFormattedPriceAttribute(): string
     {
         return number_format($this->price, 0, ',', '.') . ' ' . $this->currency;
+    }
+
+    /** Statuts visibles par n'importe quel visiteur (brouillons, expirées, en pause, désactivées : non). */
+    public const PUBLIC_STATUSES = ['active', 'reserved', 'sold'];
+
+    /** Visible publiquement, ou par son propriétaire / l'équipe (modération). */
+    public function isVisibleTo(?User $viewer): bool
+    {
+        if (in_array($this->status, self::PUBLIC_STATUSES, true)) {
+            return true;
+        }
+
+        return $viewer !== null && ($this->isOwnedBy($viewer) || $viewer->isStaff());
     }
 
     public function isOwnedBy(User $user): bool

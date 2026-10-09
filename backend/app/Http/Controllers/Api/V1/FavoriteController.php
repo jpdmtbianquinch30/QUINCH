@@ -24,11 +24,17 @@ class FavoriteController extends Controller
     public function toggle(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'collection_id' => 'nullable|exists:favorite_collections,id',
+            'product_id' => 'required|uuid|exists:products,id',
+            'collection_id' => 'nullable|uuid|exists:favorite_collections,id',
         ]);
 
         $userId = $request->user()->id;
+
+        // La collection doit appartenir à l'utilisateur.
+        if (!empty($validated['collection_id'])
+            && !\App\Models\FavoriteCollection::where('id', $validated['collection_id'])->where('user_id', $userId)->exists()) {
+            return response()->json(['message' => 'Collection introuvable.', 'errors' => ['collection_id' => ['Collection introuvable.']]], 422);
+        }
 
         // delete() renvoie le nombre de lignes supprimées : atomique.
         $deleted = FavoriteItem::where('user_id', $userId)

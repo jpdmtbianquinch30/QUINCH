@@ -18,6 +18,7 @@ use App\Models\UserReport;
 use App\Support\ResolvesFrontendUrl;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\Payments\OrderPaymentConfirmer;
 
 
 class TransactionController extends Controller
@@ -169,6 +170,12 @@ class TransactionController extends Controller
         return response()->json(['message' => 'Paiement annulé, stock restitué.']);
     }
 
+    /** Passage d'état atomique : ne réussit que si la commande est encore dans l'un des états attendus. */
+    private function transition(Transaction $transaction, array $from, array $to): bool
+    {
+        return Transaction::whereKey($transaction->id)->whereIn('order_status', $from)->update($to) === 1;
+    }
+
     private function releaseStock(Product $product, int $qty): void
     {
         DB::transaction(function () use ($product, $qty) {
@@ -257,7 +264,11 @@ class TransactionController extends Controller
             }
 
             if ($newStatus === 'delivered') {
-                $transaction->update(['order_status' => 'delivered']);
+                // Transition atomique : une commande déjà livrée, en litige ou annulée ne peut
+                // plus être « livrée » (sinon le score de confiance serait gonflable à l'infini).
+                if (!$this->transition($transaction, ['processing', 'shipped'], ['order_status' => 'delivered'])) {
+                    return response()->json(['message' => 'Cette commande ne peut pas être marquée comme livrée dans son état actuel.'], 422);
+                }
                 $transaction->product->update(['status' => 'sold']);
                 $user->incrementTrustScore(0.02);
                 $this->notifyOtherParty($transaction, 'delivered');
@@ -268,11 +279,17 @@ class TransactionController extends Controller
             }
 
              if ($newStatus === 'cancelled') {
-                if (!in_array($transaction->order_status, ['pending_payment', 'processing'])) {
+                $wasPaid = $transaction->payment_status === 'completed';
+                if (!$this->transition($transaction, ['pending_payment', 'processing'], ['order_status' => 'cancelled'])) {
                     return response()->json(['message' => 'Cette commande ne peut plus être annulée.'], 422);
                 }
-                $transaction->update(['order_status' => 'cancelled']);
-                $transaction->product->update(['status' => 'active']);
+                // Le stock réservé à l'initiation est restitué (avant : seul le statut repassait « actif »).
+                $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
+                if ($wasPaid) {
+                    // Déjà encaissée : remboursement manuel à traiter par l'équipe.
+                    $transaction->update(['security_check' => 'manual_review']);
+                    Log::warning('Commande payée annulée par le vendeur — REMBOURSEMENT À FAIRE', ['transaction_id' => $transaction->id]);
+                }
                 $this->notifyOtherParty($transaction, 'cancelled', $validated['note'] ?? null);
                 return response()->json([
                     'message' => 'Commande annulée.',
@@ -304,8 +321,15 @@ class TransactionController extends Controller
             }
 
             if ($newStatus === 'cancelled' && $transaction->order_status === 'pending_payment') {
-                $transaction->update(['order_status' => 'cancelled']);
-                $transaction->product->update(['status' => 'active']);
+                // Atomique ET jamais après un paiement : un webhook peut arriver pile entre la lecture et l'écriture.
+                $cancelled = Transaction::whereKey($transaction->id)
+                    ->where('order_status', 'pending_payment')
+                    ->where('payment_status', '!=', 'completed')
+                    ->update(['order_status' => 'cancelled', 'payment_status' => 'failed']);
+                if ($cancelled !== 1) {
+                    return response()->json(['message' => 'Cette commande ne peut plus être annulée.'], 422);
+                }
+                $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
                 $this->notifyOtherParty($transaction, 'cancelled', $validated['note'] ?? null);
                 return response()->json([
                     'message' => 'Commande annulée.',
@@ -364,23 +388,24 @@ class TransactionController extends Controller
         $payload = $request->json()->all();
         $data = $payload['data'] ?? [];
 
+        $confirmer = app(OrderPaymentConfirmer::class);
+        $reference = $data['client_reference'] ?? null;
+
         if (($payload['type'] ?? null) === 'checkout.session.completed' && ($data['payment_status'] ?? null) === 'succeeded') {
-            $transaction = Transaction::find($data['client_reference'] ?? null);
-            if ($transaction && $transaction->payment_status !== 'completed') {
-                $transaction->markPaid($data['id'] ?? null);
-                $this->notif->notifyTransaction($transaction->buyer_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
-                $this->notif->notifyTransaction($transaction->seller_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
-            }
+            $confirmer->confirm(is_string($reference) ? $reference : null, [
+                'id' => $data['id'] ?? null,
+                'amount' => $data['amount'] ?? null,
+                'currency' => $data['currency'] ?? null,
+            ]);
         }
 
+        // Échec Wave : NON final (le client peut réessayer pendant 30 min et
+        // payer ensuite). On ne fait que compter ; une session abandonnée est
+        // annulée par ReleaseExpiredReservations. Un échec n'annule jamais une
+        // commande payée.
         if (($payload['type'] ?? null) === 'checkout.session.payment_failed') {
-                $transaction = Transaction::find($data['client_reference'] ?? null);
-                if ($transaction && $transaction->order_status === 'pending_payment') {
-                    $transaction->update(['order_status' => 'cancelled']);
-                    $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
-                }
-                $transaction?->markPaymentFailed();
-         }
+            $confirmer->recordFailure(is_string($reference) ? $reference : null, false);
+        }
 
         return response()->json(['status' => 'received']);
     }
@@ -399,26 +424,17 @@ class TransactionController extends Controller
         // Noms de champs à ajuster une fois la doc Sonatel reçue.
         $transactionRef = $request->input('order_id');
         $status = $request->input('status');
+        $confirmer = app(OrderPaymentConfirmer::class);
 
-        if ($transactionRef) {
-            $transaction = Transaction::find($transactionRef);
-            if ($transaction && $status === 'SUCCESS' && $transaction->payment_status !== 'completed') {
-                $transaction->markPaid($request->input('txnid'));
-               } elseif ($transaction && $status === 'FAILED') {
-                // Restitution explicite du stock (comme pour le webhook Wave
-                // juste au-dessus) : on ne compte plus sur le job planifié
-                // ReleaseExpiredReservations pour le faire, puisque
-                // markPaymentFailed() clôture désormais order_status tout de
-                // suite (voir Transaction::markPaymentFailed).
-                if ($transaction->order_status === 'pending_payment') {
-                    $this->releaseStock($transaction->product, $transaction->quantity ?? 1);
-                }
-            if ($transaction && $transaction->payment_status !== 'completed') {
-                $transaction->markPaid($data['id'] ?? null);
-                $this->notif->notifyTransaction($transaction->buyer_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
-                $this->notif->notifyTransaction($transaction->seller_id, 'confirmed', $transaction->id, $transaction->product->title, $transaction->amount);
-            }
-            }
+        if ($status === 'SUCCESS') {
+            $confirmer->confirm(is_string($transactionRef) ? $transactionRef : null, [
+                'id' => $request->input('txnid'),
+                'amount' => $request->input('amount'),
+                'currency' => $request->input('currency'),
+            ]);
+        } elseif ($status === 'FAILED') {
+            // Échec définitif : annulation + restitution du stock, une seule fois.
+            $confirmer->recordFailure(is_string($transactionRef) ? $transactionRef : null, true);
         }
 
         return response()->json(['status' => 'received']);

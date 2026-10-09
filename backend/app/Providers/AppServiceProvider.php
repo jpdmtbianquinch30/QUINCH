@@ -29,6 +29,20 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Paramètres de route qui sont TOUJOURS des UUID : un identifiant mal formé
+        // (/users/abc/badges) donne un 404 propre au lieu d'une erreur PostgreSQL 22P02 (500).
+        // `product` est exclu : certaines routes l'utilisent avec le slug ({product:slug}).
+        foreach ([
+            'user', 'conversation', 'message', 'negotiation', 'notification', 'transaction',
+            'cartItem', 'review', 'report', 'appeal', 'ticket', 'strike', 'banner', 'bannedIp',
+            'badge', 'category', 'video',
+        ] as $param) {
+            \Illuminate\Support\Facades\Route::pattern(
+                $param,
+                '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+            );
+        }
+
         $this->configureRateLimiting();
         $this->registerPermissionGates();
         $this->registerModerationHooks();

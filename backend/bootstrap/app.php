@@ -68,6 +68,24 @@ return Application::configure(basePath: dirname(__DIR__))
         // à un client mobile/JS. Sans ça, une exception imprévue (bug, 500,
         // 404, etc.) sur une route api/* renverrait la page d'erreur HTML de
         // Laravel, que Flutter/Angular ne sauraient pas parser.
+        // Erreurs PostgreSQL provoquées par une entrée utilisateur : jamais de 500.
+        //   22P02 = texte invalide pour le type (ex. « abc » à la place d'un UUID) -> 404
+        //   22001 = valeur trop longue ; 22003 = nombre hors limites ; 22007/22008 = date invalide -> 422
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, $request) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+            $state = $e->errorInfo[0] ?? (string) $e->getCode();
+            if ($state === '22P02') {
+                return response()->json(['message' => 'Ressource introuvable.'], 404);
+            }
+            if (in_array($state, ['22001', '22003', '22007', '22008'], true)) {
+                return response()->json(['message' => 'Une des valeurs envoyées est invalide ou trop longue.'], 422);
+            }
+
+            return null;
+        });
+
         $exceptions->shouldRenderJsonWhen(function ($request, \Throwable $e) {
             return $request->is('api/*') || $request->expectsJson();
         });

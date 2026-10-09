@@ -15,7 +15,8 @@ FROM php:8.3-fpm-alpine
 # quand possible, beaucoup plus rapide et fiable que "docker-php-ext-install"
 # pur (qui recompile tout depuis les sources, y compris opcache+JIT qui est
 # notoirement lent a compiler sur Alpine/musl).
-ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+# Version ET empreinte épinglées : un « latest » compromis ne peut plus entrer dans l'image.
+ADD --chmod=0755 --checksum=sha256:3f49c71fa66c79b8b2b96bc0ce92885dafd7946f3b5a46f545b390d6f1617e2c https://github.com/mlocati/docker-php-extension-installer/releases/download/2.12.0/install-php-extensions /usr/local/bin/
 
 # ffmpeg : nécessaire à ProcessVideoJob. redis : cache, files d'attente, limiteur.
 RUN apk add --no-cache libpq ffmpeg \

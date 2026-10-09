@@ -42,7 +42,7 @@ class ProductFeedController extends Controller
                 ? $request->exclude_ids
                 : array_filter(explode(',', $request->exclude_ids));
             // Borne la liste et ne garde que des chaînes.
-            $excludeIds = array_slice(array_values(array_filter($excludeIds, 'is_string')), 0, 200);
+            $excludeIds = array_slice(array_values(array_filter($excludeIds, fn ($id) => is_string($id) && \Illuminate\Support\Str::isUuid($id))), 0, 200);
             if (!empty($excludeIds)) {
                 $query->whereNotIn('products.id', $excludeIds);
             }
@@ -63,7 +63,7 @@ class ProductFeedController extends Controller
         }
 
 
-        if ($request->has('category')) {
+        if ($request->has('category') && is_string($request->category) && \Illuminate\Support\Str::isUuid($request->category)) {
             $query->where('category_id', $request->category);
         }
 

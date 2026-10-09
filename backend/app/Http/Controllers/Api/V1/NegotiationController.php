@@ -15,7 +15,7 @@ class NegotiationController extends Controller
     public function propose(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|uuid|exists:products,id',
             'proposed_price' => 'required|numeric|min:100',
             'message' => 'nullable|string|max:500',
         ]);
@@ -26,6 +26,10 @@ class NegotiationController extends Controller
         }
         if ($product->user_id === $request->user()->id) {
             return response()->json(['message' => 'Vous ne pouvez pas négocier votre propre produit.'], 422);
+        }
+
+        if ($request->user()->isBlockedWith((string) $product->user_id)) {
+            return response()->json(['message' => "Cet utilisateur n'est pas joignable."], 403);
         }
 
         $negotiation = Negotiation::create([

@@ -52,6 +52,13 @@ class ProductController extends Controller
         ]);
 
         $user = $request->user();
+
+        // La vidéo jointe doit appartenir à l'auteur de l'annonce.
+        if (!empty($validated['video_id'])
+            && !\App\Models\ProductVideo::where('id', $validated['video_id'])->where('user_id', $user->id)->exists()) {
+            return response()->json(['message' => 'Vidéo introuvable.', 'errors' => ['video_id' => ['Vidéo introuvable.']]], 422);
+        }
+
         $isPremium = $user->isPremiumActive();
 
         // ─── Limite de photos ────────────────────────────────────────────
@@ -336,6 +343,12 @@ class ProductController extends Controller
 
     public function show(Request $request, Product $product): JsonResponse
     {
+        // Route publique : brouillons, annonces expirées, en pause ou désactivées
+        // par la modération ne sont lisibles que par leur auteur et l'équipe.
+        if (!$product->isVisibleTo($request->user('sanctum'))) {
+            return response()->json(['message' => 'Annonce introuvable.'], 404);
+        }
+
         $product->load(['user', 'category', 'video']);
 
         $isLiked = false;

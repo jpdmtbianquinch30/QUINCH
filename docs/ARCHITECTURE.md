@@ -30,6 +30,8 @@ Models / DB
 
 Les traitements lourds passent par Redis + workers.
 
+La logique de paiement des commandes est isolée dans `App\Services\Payments\OrderPaymentConfirmer` (verrou, idempotence, contrôle du montant), appelée par les webhooks Wave et Orange Money ; Premium et frais de publication passent par `WavePaymentConfirmer`.
+
 ### Données
 
 PostgreSQL 16.

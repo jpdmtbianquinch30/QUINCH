@@ -62,3 +62,9 @@ Tester au minimum :
 - plusieurs demandes ;
 - nouveau mot de passe ;
 - ancienne session invalidée si prévu par le flux.
+
+## Alerte de changement d'adresse
+
+Quand un utilisateur change son adresse e-mail (mot de passe actuel exigé), un message d'alerte est envoyé à
+**l'ancienne** adresse (« votre adresse e-mail a été modifiée »). Les autres sessions sont déconnectées et la nouvelle
+adresse repasse « non confirmée ». L'envoi est tenté sans bloquer la requête : un échec est seulement journalisé.

@@ -89,6 +89,7 @@ export class EditProfileComponent implements OnInit {
       full_name: [u?.full_name || '', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       username: [u?.username || '', [Validators.minLength(3), Validators.maxLength(30)]],
       email: [u?.email || '', [Validators.email]],
+      current_password: [''],
       city: [u?.city || ''],
       region: [u?.region || ''],
       bio: [u?.bio || ''],
@@ -192,6 +193,13 @@ export class EditProfileComponent implements OnInit {
   }
 
   // ─── Save Profile ──────────────────────────────
+  /** Vrai si l'e-mail saisi diffère de celui du compte (affiche le champ mot de passe). */
+  emailChanged(): boolean {
+    const typed = (this.profileForm?.get('email')?.value || '').trim().toLowerCase();
+    const current = (this.user()?.email || '').trim().toLowerCase();
+    return !!typed && typed !== current;
+  }
+
   save(): void {
     if (this.profileForm.invalid || this.saving()) return;
 
@@ -204,6 +212,16 @@ export class EditProfileComponent implements OnInit {
       if (data[key] !== '' && data[key] !== null && data[key] !== undefined) {
         payload[key] = data[key];
       }
+    }
+
+    // Changer l'e-mail exige le mot de passe actuel (sinon on ne l'envoie pas).
+    if (!this.emailChanged()) {
+      delete payload['current_password'];
+      delete payload['email'];
+    } else if (!payload['current_password']) {
+      this.saving.set(false);
+      this.notify.error('Saisissez votre mot de passe actuel pour changer d\'adresse e-mail.');
+      return;
     }
 
     // Track name change date

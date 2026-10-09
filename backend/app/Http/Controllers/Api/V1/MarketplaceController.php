@@ -31,7 +31,7 @@ class MarketplaceController extends Controller
         }
 
         // Filtre catégorie
-        if ($request->filled('category')) {
+        if ($request->filled('category') && is_string($request->category) && \Illuminate\Support\Str::isUuid($request->category)) {
             $query->where('products.category_id', $request->category);
         }
 
@@ -41,7 +41,7 @@ class MarketplaceController extends Controller
         }
 
         // Filtre vendeur
-        if ($request->filled('seller_id')) {
+        if ($request->filled('seller_id') && is_string($request->seller_id) && \Illuminate\Support\Str::isUuid($request->seller_id)) {
             $query->where('products.user_id', $request->seller_id);
         }
 

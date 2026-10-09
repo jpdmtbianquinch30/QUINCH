@@ -52,14 +52,18 @@ class ConversationController extends Controller
     public function start(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'seller_id' => 'required|exists:users,id',
-            'product_id' => 'nullable|exists:products,id',
+            'seller_id' => 'required|uuid|exists:users,id',
+            'product_id' => 'nullable|uuid|exists:products,id',
             'message' => 'nullable|string|max:1000',
         ]);
 
         $userId = $request->user()->id;
         if ((string)$userId === (string)$validated['seller_id']) {
             return response()->json(['message' => 'Vous ne pouvez pas vous contacter vous-même.'], 422);
+        }
+
+        if ($request->user()->isBlockedWith((string) $validated['seller_id'])) {
+            return response()->json(['message' => "Cet utilisateur n'est pas joignable."], 403);
         }
 
         // Find existing conversation between these two users (in either direction)
@@ -214,15 +218,19 @@ if (!empty($validated['message'])) {
         $validated = $request->validate([
             'body' => 'required|string|max:2000',
             'type' => 'sometimes|in:text,image,offer,audio',
-            'metadata' => 'sometimes|array',
         ]);
+
+        $otherId = $conversation->buyer_id === $userId ? $conversation->seller_id : $conversation->buyer_id;
+        if ($request->user()->isBlockedWith((string) $otherId)) {
+            return response()->json(['message' => "Cet utilisateur n'est pas joignable."], 403);
+        }
 
         $message = Message::create([
             'conversation_id' => $conversation->id,
             'sender_id' => $userId,
             'body' => $validated['body'],
             'type' => $validated['type'] ?? 'text',
-            'metadata' => $validated['metadata'] ?? null,
+            'metadata' => null, // jamais fournies par le client : URL forgées / pixels espions
         ]);
 
         $conversation->update(['last_message_at' => now()]);

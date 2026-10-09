@@ -130,7 +130,12 @@ class GoogleAuthController extends Controller
 
         // Revoke old tokens & create new one
         $user->tokens()->delete();
-        $token = $user->createToken('quinch-app')->plainTextToken;
+        // Le staff reçoit un jeton de durée courte, comme à la connexion classique.
+        $token = $user->createToken(
+            'quinch-app',
+            ['*'],
+            $user->isStaff() ? now()->addHours((int) config('quinch.staff_token_hours', 8)) : null
+        )->plainTextToken;
 
         return response()->json([
             'message'        => $isNewUser ? 'Compte créé avec Google.' : 'Connexion réussie.',
@@ -149,7 +154,7 @@ class GoogleAuthController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'username' => ['required', 'string', 'min:3', 'max:30', 'unique:users,username,' . $user->id, 'regex:/^[a-zA-Z0-9_]+$/'],
+            'username' => ['required', 'string', new \App\Rules\AvailableUsername($user->id)],
         ], [
             'username.unique' => "Ce nom d'utilisateur est déjà pris.",
             'username.regex'  => "Lettres, chiffres et _ uniquement.",

@@ -14,13 +14,31 @@ use Illuminate\Http\Request;
 
 class PublicProfileController extends Controller
 {
-    public function show(Request $request, string $username): JsonResponse
+    /**
+     * Profil public : introuvable (404) s'il est banni ou anonymisé (compte supprimé).
+     * Le chiffre d'affaires du vendeur n'est JAMAIS exposé publiquement.
+     */
+    private function findPublicUser(string $username): User
     {
         $user = User::where('username', $username)->firstOrFail();
 
+        if ($user->isBanned() || $user->anonymized_at !== null) {
+            abort(404, 'Profil introuvable.');
+        }
+
+        return $user;
+    }
+
+    public function show(Request $request, string $username): JsonResponse
+    {
+        $user = $this->findPublicUser($username);
+
         $authUser = auth('sanctum')->user();
         if (!$authUser || $authUser->id !== $user->id) {
-            $user->increment('profile_views_count');
+            $viewer = $authUser?->id ?? $request->ip();
+            if (\Illuminate\Support\Facades\Cache::add("profile_view:{$user->id}:{$viewer}", 1, now()->addMinutes(10))) {
+                $user->increment('profile_views_count');
+            }
         }
 
         $productsCount = Product::where('user_id', $user->id)->where('status', 'active')->count();
@@ -41,11 +59,6 @@ class PublicProfileController extends Controller
         $isFollowing = $authUser
             ? UserFollow::where('follower_id', $authUser->id)->where('following_id', $user->id)->exists()
             : false;
-
-        // Total revenue for seller
-        $totalRevenue = Transaction::where('seller_id', $user->id)
-            ->where('payment_status', 'completed')
-            ->sum('amount');
 
         return response()->json([
             'user' => [
@@ -80,7 +93,6 @@ class PublicProfileController extends Controller
                 'avg_delivery' => round($avgDelivery, 1),
                 'avg_communication' => round($avgCommunication, 1),
                 'avg_accuracy' => round($avgAccuracy, 1),
-                'total_revenue' => $totalRevenue,
             ],
             'badges' => $badges,
             'is_following' => $isFollowing,
@@ -89,24 +101,24 @@ class PublicProfileController extends Controller
 
     public function products(Request $request, string $username): JsonResponse
     {
-        $user = User::where('username', $username)->firstOrFail();
+        $user = $this->findPublicUser($username);
 
         $query = Product::where('user_id', $user->id)
             ->where('status', 'active')
             ->with('video', 'category');
 
         // Filters
-        if ($request->has('category') && $request->category) {
+        if (is_string($request->category) && \Illuminate\Support\Str::isUuid($request->category)) {
             $query->where('category_id', $request->category);
         }
         if ($request->has('condition') && $request->condition) {
             $query->where('condition', $request->condition);
         }
-        if ($request->has('min_price') && $request->min_price) {
-            $query->where('price', '>=', $request->min_price);
+        if (is_numeric($request->min_price) && (float) $request->min_price > 0) {
+            $query->where('price', '>=', (float) $request->min_price);
         }
-        if ($request->has('max_price') && $request->max_price) {
-            $query->where('price', '<=', $request->max_price);
+        if (is_numeric($request->max_price) && (float) $request->max_price > 0) {
+            $query->where('price', '<=', (float) $request->max_price);
         }
         if ($request->has('q') && $request->q) {
             $query->where('title', 'LIKE', '%' . $request->q . '%');

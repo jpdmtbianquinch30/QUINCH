@@ -22,6 +22,10 @@ class FollowController extends Controller
             return response()->json(['message' => 'Vous ne pouvez pas vous suivre vous-même.'], 422);
         }
 
+        if ($me->isBlockedWith((string) $user->id)) {
+            return response()->json(['message' => "Cet utilisateur n'est pas joignable."], 403);
+        }
+
         $existing = UserFollow::where('follower_id', $me->id)->where('following_id', $user->id)->first();
         if ($existing) {
             return response()->json(['message' => 'Vous suivez déjà cet utilisateur.'], 422);

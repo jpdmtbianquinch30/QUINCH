@@ -12,7 +12,7 @@ class ShareController extends Controller
     public function track(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|uuid|exists:products,id',
             'platform' => 'required|in:whatsapp,facebook,instagram,sms,copy_link,qr_code',
         ]);
 
@@ -28,10 +28,14 @@ class ShareController extends Controller
 
     public function getShareData(Request $request, Product $product): JsonResponse
     {
+        if (!$product->isVisibleTo($request->user('sanctum'))) {
+            return response()->json(['message' => 'Annonce introuvable.'], 404);
+        }
+
         return response()->json([
             'url' => url("/product/{$product->slug}"),
             'title' => $product->title,
-            'description' => substr($product->description ?? '', 0, 150),
+            'description' => mb_substr((string) ($product->description ?? ''), 0, 150),
             'price' => $product->formatted_price,
             'image' => $product->video?->thumbnail,
             'platforms' => [

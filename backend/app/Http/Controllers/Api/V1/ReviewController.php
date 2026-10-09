@@ -64,9 +64,9 @@ class ReviewController extends Controller
     public function create(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'seller_id' => 'required|exists:users,id',
+            'seller_id' => 'required|uuid|exists:users,id',
             'product_id' => 'nullable|uuid|exists:products,id',
-            'transaction_id' => 'nullable|exists:transactions,id',
+            'transaction_id' => 'nullable|uuid|exists:transactions,id',
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',
             'delivery_rating' => 'nullable|numeric|min:1|max:5',
@@ -86,6 +86,40 @@ class ReviewController extends Controller
             if (!$owns) {
                 return response()->json(['message' => 'Ce produit n\'appartient pas à ce vendeur.'], 422);
             }
+        }
+
+        // Pas d'avis sans relation réelle avec le vendeur (anti-avis bidons) :
+        // un achat finalisé, ou à défaut un échange de messages avec lui.
+        $reviewerId = $request->user()->id;
+        $boughtFromSeller = \App\Models\Transaction::where('buyer_id', $reviewerId)
+            ->where('seller_id', $validated['seller_id'])
+            ->where('payment_status', 'completed')
+            ->when(!empty($validated['transaction_id']), fn ($q) => $q->where('id', $validated['transaction_id']))
+            ->exists();
+
+        if (!empty($validated['transaction_id']) && !$boughtFromSeller) {
+            return response()->json(['message' => "Cette transaction n'est pas la vôtre ou n'est pas finalisée."], 422);
+        }
+
+        if (!$boughtFromSeller) {
+            $talked = \App\Models\Message::where('sender_id', $reviewerId)
+                ->whereIn('conversation_id', \App\Models\Conversation::where(function ($q) use ($reviewerId, $validated) {
+                    $q->where('buyer_id', $reviewerId)->where('seller_id', $validated['seller_id']);
+                })->orWhere(function ($q) use ($reviewerId, $validated) {
+                    $q->where('buyer_id', $validated['seller_id'])->where('seller_id', $reviewerId);
+                })->select('id'))
+                ->exists();
+
+            if (!$talked) {
+                return response()->json([
+                    'message' => 'Vous pouvez donner votre avis après avoir acheté ou échangé avec ce vendeur.',
+                    'error' => 'review_requires_interaction',
+                ], 422);
+            }
+        }
+
+        if ($request->user()->isBlockedWith((string) $validated['seller_id'])) {
+            return response()->json(['message' => "Cet utilisateur n'est pas joignable."], 403);
         }
 
         // Un avis par personne et par produit (ou par vendeur si aucun produit n'est précisé).

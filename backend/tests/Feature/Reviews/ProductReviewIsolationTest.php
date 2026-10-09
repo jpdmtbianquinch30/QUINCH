@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Reviews;
 
+use App\Models\Conversation;
+use App\Models\Message;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +14,13 @@ class ProductReviewIsolationTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Un avis exige une relation réelle : ici, le visiteur a écrit au vendeur. */
+    private function talk(User $buyer, User $seller): void
+    {
+        $c = Conversation::create(['buyer_id' => $buyer->id, 'seller_id' => $seller->id, 'status' => 'active', 'last_message_at' => now()]);
+        Message::create(['conversation_id' => $c->id, 'sender_id' => $buyer->id, 'body' => 'Bonjour', 'type' => 'text']);
+    }
+
     public function test_review_only_appears_on_its_own_product(): void
     {
         $seller = User::factory()->create();
@@ -19,6 +28,7 @@ class ProductReviewIsolationTest extends TestCase
         $a = Product::factory()->create(['user_id' => $seller->id]);
         $b = Product::factory()->create(['user_id' => $seller->id]);
 
+        $this->talk($buyer, $seller);
         Sanctum::actingAs($buyer);
         $this->postJson('/api/v1/reviews', [
             'seller_id' => $seller->id, 'product_id' => $a->id, 'rating' => 5, 'comment' => 'Top',
@@ -40,6 +50,7 @@ class ProductReviewIsolationTest extends TestCase
         $a = Product::factory()->create(['user_id' => $seller->id]);
         $b = Product::factory()->create(['user_id' => $seller->id]);
 
+        $this->talk($buyer, $seller);
         Sanctum::actingAs($buyer);
         $this->postJson('/api/v1/reviews', ['seller_id' => $seller->id, 'product_id' => $a->id, 'rating' => 4])->assertCreated();
         $this->postJson('/api/v1/reviews', ['seller_id' => $seller->id, 'product_id' => $b->id, 'rating' => 3])->assertCreated();
@@ -53,6 +64,7 @@ class ProductReviewIsolationTest extends TestCase
         $buyer = User::factory()->create();
         $foreign = Product::factory()->create(['user_id' => $other->id]);
 
+        $this->talk($buyer, $seller);
         Sanctum::actingAs($buyer);
         $this->postJson('/api/v1/reviews', ['seller_id' => $seller->id, 'product_id' => $foreign->id, 'rating' => 5])
             ->assertStatus(422);

@@ -74,6 +74,11 @@ class Transaction extends Model
 
     public function markPaymentFailed(): void
     {
+        // Un paiement réussi n'est jamais défait par un échec.
+        if ($this->payment_status === 'completed') {
+            return;
+        }
+
         $this->increment('payment_failure_count');
         $this->update([
             'payment_status' => 'failed',

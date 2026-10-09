@@ -370,4 +370,31 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
     {
         return \App\Support\MediaUrl::for($value ?: null);
     }
+
+    /**
+     * Révoque tous les jetons SAUF celui de la requête courante (changement de
+     * mot de passe / d'e-mail : un jeton volé ne survit pas, la session en cours oui).
+     */
+    public function revokeOtherTokens(): void
+    {
+        $current = $this->currentAccessToken();
+        $query = $this->tokens();
+        if ($current && isset($current->id)) {
+            $query->where('id', '!=', $current->id);
+        }
+        $query->delete();
+    }
+
+    /** Blocage dans un sens OU dans l'autre (celui qui a bloqué comme celui qui est bloqué). */
+    public function isBlockedWith(string $otherUserId): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('blocked_users')
+            ->where(function ($q) use ($otherUserId) {
+                $q->where('user_id', $this->id)->where('blocked_user_id', $otherUserId);
+            })
+            ->orWhere(function ($q) use ($otherUserId) {
+                $q->where('user_id', $otherUserId)->where('blocked_user_id', $this->id);
+            })
+            ->exists();
+    }
 }

@@ -63,17 +63,17 @@ Route::prefix('auth')->group(function () {
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
         Route::post('refresh', [AuthController::class, 'refresh']);
         Route::get('me', [AuthController::class, 'me']);
-        Route::put('change-password', [AuthController::class, 'changePassword']);
-        Route::delete('delete-account', [AuthController::class, 'deleteAccount']);
+        Route::put('change-password', [AuthController::class, 'changePassword'])->middleware('throttle:5,1');
+        Route::delete('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:5,1');
         Route::post('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:5,1');
     });
 });
 
 // ─── Video Streaming (public — no auth required) ────────────────────────────
 Route::get('videos/{videoId}/stream', [VideoStreamController::class, 'stream'])
-    ->where('videoId', '[a-f0-9\-]{36}')->name('videos.stream');
+    ->where('videoId', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')->name('videos.stream');
 Route::get('videos/{videoId}/thumbnail', [VideoStreamController::class, 'thumbnail'])
-    ->where('videoId', '[a-f0-9\-]{36}')->name('videos.thumbnail');
+    ->where('videoId', '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')->name('videos.thumbnail');
 Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath']);
 
 // ─── Public ──────────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ Route::get('search/trending', [ProductFeedController::class, 'trending']);
 // interprétait comme "session invalide" et déconnectait tout le monde -
 // y compris en plein milieu d'un parcours d'achat ou d'abonnement Premium
 // n'ayant pourtant aucun rapport avec cette route.
-Route::post('products/{product}/view', [ProductInteractionController::class, 'view']);
+Route::post('products/{product}/view', [ProductInteractionController::class, 'view'])->middleware('throttle:60,1');
 Route::get('products/{product:slug}', [ProductController::class, 'show']);
 Route::middleware('feature:sharing')->group(function () {
     Route::post('shares/track', [ShareController::class, 'track'])->middleware('throttle:100,1');
@@ -133,7 +133,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // User profile
     Route::prefix('user')->group(function () {
         Route::get('profile', [UserController::class, 'profile']);
-        Route::put('profile', [UserController::class, 'updateProfile']);
+        Route::put('profile', [UserController::class, 'updateProfile'])->middleware('throttle:20,1');
         Route::post('preferences', [UserController::class, 'savePreferences']);
         Route::post('policies', [UserController::class, 'savePolicies']);
         Route::post('upload-avatar', [UserController::class, 'uploadAvatar']);

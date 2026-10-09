@@ -50,3 +50,23 @@
 - **PgBouncer** : service optionnel et `DB_EMULATE_PREPARES` prêts, à activer seulement si les mesures le justifient.
 - **Préproduction** : `backend/.env.staging.example`, `scripts/staging-smoke-test.sh`, procédure de mise en production.
 - **Docs** : `docs/SERVICES.md` (inventaire des services), `STORAGE`, `MONITORING`, `BACKUPS`, `STAGING`, `LOAD-TESTING`.
+
+## Audit de sécurité — correctifs (9 octobre 2026)
+
+Détail et justification dans `docs/SECURITY.md` (« Audit de sécurité »).
+
+- **A — Paiements** : `OrderPaymentConfirmer` (webhooks Wave et Orange Money idempotents, montant/devise vérifiés,
+  échec jamais appliqué à une commande payée, pas de survente). Tests `OrderWebhookTest`.
+- **B — Comptes** : changement d'e-mail avec mot de passe + alerte + déconnexion des autres sessions ;
+  limites de fréquence sur `change-password`, `delete-account`, `PUT user/profile` ; jeton staff Google de 8 h.
+  Champ « mot de passe actuel » dans l'édition du profil.
+- **C — Zéro erreur 500** : motifs UUID de routes, règles `uuid`, filtres tolérants, `mb_substr`, longueurs bornées,
+  gestionnaire global PostgreSQL.
+- **D — Confidentialité** : annonces non publiées masquées, chiffre d'affaires retiré du profil public, profils
+  bannis/supprimés introuvables, `fileReplacements` dans `angular.json` (l'API de production pointe sur `api.quinch.sn`).
+- **E — Abus** : avis réservés aux vrais interlocuteurs, vidéo d'un autre vendeur refusée, blocage appliqué et migration
+  `blocked_users` (la table n'existait pas), métadonnées de message serveur uniquement, règle de pseudos.
+- **F — Durcissement** : transitions de commande atomiques, restitution du stock, vues dédupliquées, favoris, ffmpeg,
+  `install-php-extensions` épinglé, règle de mot de passe unique.
+
+Migration à lancer : `php artisan migrate --force`.

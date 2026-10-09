@@ -73,6 +73,7 @@ class ProcessVideoJob implements ShouldQueue
         try {
             $process = new Process([
                 'ffprobe', '-v', 'error',
+                '-protocol_whitelist', 'file,https,tls,tcp,crypto',
                 '-show_entries', 'format=duration',
                 '-of', 'default=noprint_wrappers=1:nokey=1',
                 $inputPath,
@@ -115,7 +116,10 @@ class ProcessVideoJob implements ShouldQueue
 
         try {
             $process = new Process([
-                'ffmpeg', '-y', '-ss', $seek,
+                'ffmpeg', '-y',
+                // Seuls fichier local et HTTPS (URL temporaire du bucket) : jamais concat:/file:/rtmp: forgés.
+                '-protocol_whitelist', 'file,https,tls,tcp,crypto',
+                '-ss', $seek,
                 '-i', $inputPath,
                 '-vframes', '1', '-q:v', '2',
                 $thumbFullPath,

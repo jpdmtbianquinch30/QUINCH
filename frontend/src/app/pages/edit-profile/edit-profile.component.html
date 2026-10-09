@@ -98,6 +98,14 @@
         }
       </div>
 
+      @if (emailChanged()) {
+        <div class="form-group">
+          <label>Mot de passe actuel</label>
+          <input type="password" class="q-input" formControlName="current_password" autocomplete="current-password" placeholder="Requis pour changer l'e-mail" />
+          <span class="field-hint">Par sécurité, votre ancienne adresse sera prévenue du changement et vos autres appareils seront déconnectés.</span>
+        </div>
+      }
+
       <div class="form-group">
         <label>Localisation</label>
         <div class="location-row">

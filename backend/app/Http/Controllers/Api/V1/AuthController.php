@@ -23,15 +23,15 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'full_name' => ['required', 'string', 'max:100'],
-            'username'  => ['required', 'string', 'min:3', 'max:30', 'unique:users', 'regex:/^[a-zA-Z0-9_]+$/'],
-            'password'  => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*[0-9]).+$/'],
+            'username'  => ['required', 'string', new \App\Rules\AvailableUsername()],
+            'password'  => ['required', 'string', 'min:8', 'max:72', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
             'accept_terms' => ['accepted'],
         ], [
             'email.email'    => 'Adresse e-mail invalide.',
             'email.unique'   => 'Cette adresse e-mail est déjà utilisée.',
             'username.unique' => "Ce nom d'utilisateur est déjà pris.",
             'username.regex'  => 'Lettres, chiffres et _ uniquement.',
-            'password.regex'  => 'Le mot de passe doit contenir au moins 1 majuscule et 1 chiffre.',
+            'password.regex'  => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
             'password.min'    => 'Le mot de passe doit faire au moins 8 caractères.',
             'accept_terms.accepted' => "Vous devez accepter les conditions d'utilisation et la politique de confidentialité.",
         ]);
@@ -43,7 +43,7 @@ class AuthController extends Controller
             'username' => $validated['username'],
             'is_seller' => true,
             'is_buyer' => true,
-            'device_fingerprint' => $request->header('X-Device-Fingerprint'),
+            'device_fingerprint' => ($request->header('X-Device-Fingerprint') ? mb_substr((string) $request->header('X-Device-Fingerprint'), 0, 255) : null),
         ]);
         $user->recordLegalConsent();
 
@@ -125,7 +125,7 @@ class AuthController extends Controller
 
         // Update device fingerprint
         $user->update([
-            'device_fingerprint' => $request->header('X-Device-Fingerprint'),
+            'device_fingerprint' => ($request->header('X-Device-Fingerprint') ? mb_substr((string) $request->header('X-Device-Fingerprint'), 0, 255) : null),
         ]);
 
         // Revoke old tokens & create new one
@@ -194,7 +194,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'string', 'email'],
             'otp' => ['required', 'string', 'size:6'],
-            'password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+            'password' => ['required', 'confirmed', 'min:8', 'max:72', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
         ], [
             'password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
         ]);
@@ -282,7 +282,9 @@ class AuthController extends Controller
     {
         $request->validate([
             'current_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+            'new_password' => ['required', 'string', 'min:8', 'max:72', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+        ], [
+            'new_password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
         ]);
 
         $user = $request->user();
@@ -294,6 +296,9 @@ class AuthController extends Controller
         $user->update([
             'password' => Hash::make($request->new_password),
         ]);
+
+        // Un jeton volé ne doit pas survivre au changement de mot de passe.
+        $user->revokeOtherTokens();
 
         return response()->json(['message' => 'Mot de passe modifié avec succès.']);
     }

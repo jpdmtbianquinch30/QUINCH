@@ -24,8 +24,8 @@ class ProductVideoController extends Controller
                 'max:512000',
             ],
             'source' => ['sometimes', 'in:upload,camera'],
-            'width'  => ['sometimes', 'integer'],
-            'height' => ['sometimes', 'integer'],
+            'width'  => ['sometimes', 'integer', 'min:0', 'max:20000'],
+            'height' => ['sometimes', 'integer', 'min:0', 'max:20000'],
         ], [
             'video.max'      => 'La vidéo ne doit pas dépasser 500 Mo.',
             'video.mimetypes'=> 'Format vidéo non supporté. Utilisez MP4, MOV, AVI ou WebM.',
@@ -44,10 +44,11 @@ class ProductVideoController extends Controller
 
         $existing = ProductVideo::where('hash_sha256', $hash)->first();
         if ($existing) {
-            return response()->json([
+            // Doublon d'un AUTRE utilisateur : on ne lui renvoie jamais sa vidéo.
+            return response()->json(array_filter([
                 'message' => 'Cette vidéo existe déjà.',
-                'video'   => $existing,
-            ], 409);
+                'video'   => $existing->user_id === $request->user()->id ? $existing : null,
+            ]), 409);
         }
 
         $path        = $video->store('videos/' . date('Y/m'), 'public');
@@ -62,7 +63,7 @@ class ProductVideoController extends Controller
             'video_path'        => $path,
             'thumbnail_path'    => null,
             'duration_seconds'  => null,
-            'format'            => $video->getClientOriginalExtension(),
+            'format'            => substr(strtolower(preg_replace('/[^a-z0-9]/i', '', $video->getClientOriginalExtension()) ?: 'mp4'), 0, 10),
             'resolution'        => $resolution,
             'width'             => $width ?: null,
             'height'            => $height ?: null,

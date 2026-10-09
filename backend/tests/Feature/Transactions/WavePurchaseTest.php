@@ -190,6 +190,8 @@ class WavePurchaseTest extends TestCase
                 'id' => 'cs-test-123',
                 'client_reference' => $transaction->id,
                 'payment_status' => 'succeeded',
+                'amount' => (string) (int) $product->price,
+                'currency' => 'XOF',
             ],
         ]);
 

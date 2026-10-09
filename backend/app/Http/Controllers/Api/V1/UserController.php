@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\Controller;
 use App\Models\SupportTicket;
 use App\Models\User;
@@ -33,9 +34,10 @@ class UserController extends Controller
     public function updateProfile(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'username' => ['sometimes', 'string', 'max:50', 'unique:users,username,' . $request->user()->id],
+            'username' => ['sometimes', 'string', new \App\Rules\AvailableUsername($request->user()->id)],
             'full_name' => ['sometimes', 'string', 'max:100'],
-            'email' => ['sometimes', 'email', 'unique:users,email,' . $request->user()->id],
+            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $request->user()->id],
+            'current_password' => ['sometimes', 'nullable', 'string'],
             'bio' => ['sometimes', 'nullable', 'string', 'max:500'],
             'website' => ['sometimes', 'nullable', 'url', 'max:255'],
             'city' => ['sometimes', 'string', 'max:100'],
@@ -46,7 +48,42 @@ class UserController extends Controller
             'cover_url' => ['sometimes', 'string', 'max:500'],
         ]);
 
-        $request->user()->update($validated);
+        $user = $request->user();
+        $emailChanged = isset($validated['email'])
+            && mb_strtolower($validated['email']) !== mb_strtolower((string) $user->email);
+
+        // L'e-mail est l'identifiant du compte ET le canal de récupération :
+        // le changer exige le mot de passe actuel (un jeton volé ne suffit pas).
+        if ($emailChanged) {
+            if (empty($validated['current_password']) || !Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'message' => 'Mot de passe actuel requis et correct pour changer d\'adresse e-mail.',
+                    'error' => 'password_required',
+                    'errors' => ['current_password' => ['Mot de passe actuel incorrect.']],
+                ], 422);
+            }
+            $validated['email'] = mb_strtolower($validated['email']);
+        }
+        unset($validated['current_password']);
+
+        $oldEmail = $user->email;
+        $user->update($validated);
+
+        if ($emailChanged) {
+            // La nouvelle adresse n'est pas encore confirmée ; les autres sessions sont coupées
+            // et l'ancienne adresse est prévenue (elle permet de réagir à un détournement).
+            $user->forceFill(['email_verified_at' => null])->save();
+            $user->revokeOtherTokens();
+            try {
+                \Illuminate\Support\Facades\Mail::raw(
+                    "Bonjour,\n\nL'adresse e-mail de votre compte QUINCH vient d'être remplacée. "
+                    . "Si ce n'est pas vous, réinitialisez immédiatement votre mot de passe et contactez le support.",
+                    fn ($m) => $m->to($oldEmail)->subject('QUINCH : votre adresse e-mail a été modifiée')
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Alerte changement d\'e-mail non envoyée', ['error' => $e->getMessage()]);
+            }
+        }
 
         $newScore = (new TrustScoreCalculator())->calculate($request->user());
         $request->user()->forceFill(['trust_score' => $newScore])->save();
