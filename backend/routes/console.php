@@ -12,6 +12,8 @@ use App\Jobs\LiftExpiredSuspensions;
 use App\Jobs\RunFraudScan;
 use App\Jobs\PurgeExpiredAdminData;
 use App\Jobs\PurgeAnonymizedAccountData;
+use App\Support\HealthChecker;
+use Illuminate\Support\Facades\Cache;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -41,3 +43,9 @@ Schedule::command('quinch:sync-badges')->hourly()->withoutOverlapping()->onOneSe
 
 // Journal des envois SMS : purge au-delà de 90 jours (voir SmsLog::prunable).
 Schedule::command('model:prune', ['--model' => [\App\Models\SmsLog::class]])->daily()->onOneServer();
+
+// Battement du planificateur : GET /api/v1/ops/health signale « degraded » s'il s'arrête
+// (scheduler arrêté = paiements non rattrapés, comptes supprimés non effacés...).
+Schedule::call(fn () => Cache::put(HealthChecker::SCHEDULER_KEY, now()->timestamp, 900))
+    ->everyMinute()
+    ->name('health-heartbeat');

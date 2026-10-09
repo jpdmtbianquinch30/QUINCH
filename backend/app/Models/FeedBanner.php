@@ -35,11 +35,7 @@ class FeedBanner extends Model
         if (!$path) {
             return null;
         }
-        if (str_starts_with($path, 'http')) {
-            return $path;
-        }
-
-        return url('/storage/' . ltrim($path, '/'));
+        return \App\Support\MediaUrl::for($path);
     }
 
     /** Bannières diffusables maintenant (active + dans la fenêtre de planning). */

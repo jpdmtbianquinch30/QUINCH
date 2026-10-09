@@ -96,6 +96,12 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // PgBouncer en mode « transaction » : les requêtes préparées côté serveur ne
+            // survivent pas à la transaction. DB_EMULATE_PREPARES=true les émule côté PHP.
+            // À activer UNIQUEMENT derrière PgBouncer (voir docs/OPERATIONS.md).
+            'options' => array_filter([
+                \PDO::ATTR_EMULATE_PREPARES => filter_var(env('DB_EMULATE_PREPARES', false), FILTER_VALIDATE_BOOLEAN) ? true : null,
+            ], fn ($value) => $value !== null),
         ],
 
         'sqlsrv' => [

@@ -8,6 +8,7 @@ use App\Models\ProductVideo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -54,6 +55,64 @@ class LegalComplianceTest extends TestCase
         $this->assertNotNull($user->terms_accepted_at);
         $this->assertSame('2026-10', $user->terms_version);
         $this->assertSame('2026-11', $user->privacy_version);
+    }
+
+    // ─── Google : consentement explicite pour un NOUVEAU compte ──────────────
+
+    private function fakeGoogle(string $email, string $sub): void
+    {
+        config(['services.google.client_id' => 'test-client']);
+
+        Http::fake([
+            'oauth2.googleapis.com/*' => Http::response([
+                'aud' => 'test-client',
+                'iss' => 'https://accounts.google.com',
+                'exp' => time() + 3600,
+                'sub' => $sub,
+                'email' => $email,
+                'email_verified' => 'true',
+                'name' => 'Nouvelle Utilisatrice',
+            ], 200),
+        ]);
+    }
+
+    public function test_google_refuses_to_create_an_account_without_explicit_consent(): void
+    {
+        $this->fakeGoogle('nouvelle@example.com', 'google-sub-consent');
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'x'])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'terms_required');
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'x', 'accept_terms' => false])
+            ->assertUnprocessable()
+            ->assertJsonPath('error', 'terms_required');
+
+        $this->assertDatabaseMissing('users', ['email' => 'nouvelle@example.com']);
+    }
+
+    public function test_google_creates_the_account_and_records_consent_once_accepted(): void
+    {
+        $this->fakeGoogle('nouvelle@example.com', 'google-sub-consent');
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'x', 'accept_terms' => true])
+            ->assertCreated();
+
+        $user = User::where('email', 'nouvelle@example.com')->firstOrFail();
+        $this->assertNotNull($user->terms_accepted_at);
+        $this->assertSame(config('legal.versions.terms'), $user->terms_version);
+    }
+
+    public function test_google_login_of_an_existing_account_does_not_ask_for_consent_again(): void
+    {
+        $this->fakeGoogle('ancienne@example.com', 'google-sub-existing');
+        $user = User::factory()->create(['email' => 'ancienne@example.com', 'google_id' => 'google-sub-existing']);
+
+        $this->postJson('/api/v1/auth/google', ['id_token' => 'x'])
+            ->assertSuccessful()
+            ->assertJsonPath('is_new_user', false);
+
+        $this->assertSame($user->id, User::where('email', 'ancienne@example.com')->value('id'));
     }
 
     // ─── Informations légales publiques ──────────────────────────────────────

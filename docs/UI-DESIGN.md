@@ -37,3 +37,9 @@ Le redesign conserve la navigation existante et les routes. Il adopte une identi
 ## Règles
 
 Ne pas ajouter des dégradés ou effets à chaque élément. Le gradient de marque doit rester une signature : logo, CTA principal, état actif ou élément Premium lorsque pertinent.
+
+## Listes déroulantes (`<select>`)
+
+Le menu d'un `<select>` est dessiné par le navigateur : il ignore les fonds translucides de nos champs et
+s'affiche sur fond blanc. Une règle globale de `styles.scss` impose `color-scheme` (sombre ou clair selon le
+thème) et un fond opaque (`--q-bg-elevated`) aux `<option>`. Ne pas utiliser de fond translucide sur une `<option>`.

@@ -1357,3 +1357,48 @@
 
   a { color: var(--q-accent-light, #818cf8); text-decoration: underline; }
 }
+
+// ─── Étape de consentement (première connexion Google) ──────────────────────
+.consent-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 6, 18, 0.72);
+}
+
+.consent-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  border: 1px solid var(--q-border, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  background: var(--q-bg-elevated, #242a42);
+  color: var(--q-text-primary, #f0f2f7);
+
+  h2 { margin: 0 0 8px; font-size: 1.15rem; }
+  p { margin: 0 0 14px; font-size: 0.9rem; line-height: 1.5; color: var(--q-text-secondary, #a1a1aa); }
+}
+
+.terms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--q-text-secondary, #a1a1aa);
+  cursor: pointer;
+
+  input { margin-top: 3px; flex-shrink: 0; }
+  a { color: var(--q-accent-light, #818cf8); text-decoration: underline; }
+}
+
+.consent-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}

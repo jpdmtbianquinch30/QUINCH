@@ -48,10 +48,44 @@
             <div class="auth-separator"><span>ou</span></div>
             <div class="google-btn-wrapper" #googleBtn></div>
             <p class="google-terms">
-              En continuant avec Google, vous acceptez les
+              Première connexion avec Google ? Nous vous demanderons d'accepter les
               <a routerLink="/legal/cgu">conditions d'utilisation</a> et la
-              <a routerLink="/legal/confidentialite">politique de confidentialité</a>.
+              <a routerLink="/legal/confidentialite">politique de confidentialité</a>
+              avant de créer votre compte.
             </p>
+          }
+
+          @if (showGoogleConsent()) {
+            <div class="consent-overlay" role="dialog" aria-modal="true" aria-labelledby="google-consent-title">
+              <div class="consent-card">
+                <h2 id="google-consent-title">Créer votre compte QUINCH</h2>
+                <p>
+                  Aucun compte QUINCH n'existe encore pour cette adresse Google.
+                  Pour le créer, vous devez accepter nos conditions.
+                </p>
+
+                <label class="terms-check">
+                  <input type="checkbox" [(ngModel)]="googleTermsAccepted" name="googleTerms" />
+                  <span>
+                    J'ai lu et j'accepte les
+                    <a routerLink="/legal/cgu" target="_blank">conditions d'utilisation</a>
+                    et la
+                    <a routerLink="/legal/confidentialite" target="_blank">politique de confidentialité</a>.
+                  </span>
+                </label>
+
+                <div class="consent-actions">
+                  <button type="button" class="q-btn q-btn-ghost" (click)="cancelGoogleConsent()">Annuler</button>
+                  <button
+                    type="button"
+                    class="q-btn q-btn-primary"
+                    [disabled]="!googleTermsAccepted || loading()"
+                    (click)="confirmGoogleConsent()">
+                    Créer mon compte
+                  </button>
+                </div>
+              </div>
+            </div>
           }
 
           <div class="demo-box">

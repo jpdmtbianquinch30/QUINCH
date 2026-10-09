@@ -196,9 +196,7 @@ public function scopeTieredRank($query)
     {
         $poster = $this->attributes['poster_url'] ?? null;
         if (!$poster) return null;
-        if (str_starts_with($poster, 'http')) return $poster;
-        if (str_starts_with($poster, '/storage/')) return url($poster);
-        return url('/storage/' . $poster);
+        return \App\Support\MediaUrl::for($poster);
     }
 
     // ─── URL Accessor for images (return full absolute URLs) ─────────
@@ -210,9 +208,7 @@ public function scopeTieredRank($query)
 
         return array_values(array_filter(array_map(function ($img) {
             if (!$img) return null;
-            if (str_starts_with($img, 'http')) return $img;
-            if (str_starts_with($img, '/storage/')) return url($img);
-            return url('/storage/' . $img);
+            return \App\Support\MediaUrl::for($img);
         }, $images)));
     }
 

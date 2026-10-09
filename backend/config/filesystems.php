@@ -38,11 +38,39 @@ return [
             'report' => false,
         ],
 
-        'public' => [
+        // Disque des médias (photos, vidéos, miniatures, pièces jointes) : TOUT le code
+        // l'appelle « public ». MEDIA_DRIVER=s3 le bascule vers un stockage objet
+        // compatible S3 (Contabo, R2, Scaleway...) sans modifier aucun appel de fichier.
+        // Prérequis : composer require league/flysystem-aws-s3-v3 "^3.0" (voir docs/STORAGE.md).
+        'public' => env('MEDIA_DRIVER', 'local') === 's3'
+            ? [
+                'driver' => 's3',
+                'key' => env('MEDIA_S3_KEY'),
+                'secret' => env('MEDIA_S3_SECRET'),
+                'region' => env('MEDIA_S3_REGION', 'default'),
+                'bucket' => env('MEDIA_S3_BUCKET'),
+                'endpoint' => env('MEDIA_S3_ENDPOINT'),
+                // Contabo et la plupart des stockages S3 « maison » exigent le mode path-style.
+                'use_path_style_endpoint' => (bool) env('MEDIA_S3_PATH_STYLE', true),
+                // En stockage distant, un échec d'écriture doit lever une erreur
+                // (et non renvoyer false en silence, ce qui enregistrerait un chemin cassé).
+                'throw' => true,
+                'report' => false,
+            ]
+            : [
+                'driver' => 'local',
+                'root' => storage_path('app/public'),
+                'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+                'visibility' => 'public',
+                'throw' => false,
+                'report' => false,
+            ],
+
+        // Dossier local des médias : source de la migration vers le stockage objet
+        // (php artisan quinch:media-migrate). Inutilisé en fonctionnement normal.
+        'local_public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
-            'visibility' => 'public',
             'throw' => false,
             'report' => false,
         ],

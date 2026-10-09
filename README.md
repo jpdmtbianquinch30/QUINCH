@@ -407,33 +407,34 @@ Il faut éviter de faire du VPS le stockage définitif de toutes les vidéos.
 
 Avant l'ouverture publique :
 
-- sauvegardes PostgreSQL ;
-- test de restauration ;
-- monitoring ;
+- sauvegardes PostgreSQL (`scripts/backup/backup.sh`, `docs/BACKUPS.md`) ;
+- test de restauration (`scripts/backup/restore-test.sh`) ;
+- monitoring (`GET /api/v1/ops/health`, Uptime Kuma, `docs/MONITORING.md`) ;
 - alertes disque/RAM/CPU ;
 - surveillance des queues ;
-- préproduction ;
-- tests de charge k6 ;
-- stockage objet/CDN ;
+- préproduction (`docs/STAGING.md`, `scripts/staging-smoke-test.sh`) ;
+- tests de charge k6 (`load-tests/`, `docs/LOAD-TESTING.md`) ;
+- stockage objet/CDN (`MEDIA_DRIVER=s3`, `docs/STORAGE.md`) ;
 - procédure de rollback.
 
-Voir `docs/OPERATIONS.md`.
+Inventaire de tous les services, de leur rôle et des conséquences d'une panne : `docs/SERVICES.md`.
+Voir aussi `docs/OPERATIONS.md`.
 
 ## 15. Conformité
 
-La phase de conformité doit être traitée avant l'ouverture publique/monétisée selon le statut réel de l'activité.
+Mis en place (phase 5) :
 
-Pages à prévoir :
+- pages publiques `/legal/cgu`, `/legal/confidentialite`, `/legal/mentions-legales` ;
+- informations de l'éditeur réglées par les variables `LEGAL_*` (la production refuse de démarrer si elles manquent) ;
+- consentement mémorisé (date + version) ; à la première connexion Google, une fenêtre demande d'accepter
+  les conditions avant de créer le compte ;
+- export complet des données (`GET /users/export-data`) et suppression de compte avec effacement différé
+  des contenus (30 jours) ;
+- registre des traitements pour la déclaration à la CDP.
 
-- mentions légales ;
-- conditions d'utilisation ;
-- politique de confidentialité ;
-- cookies ;
-- contact/support ;
-- suppression de compte ;
-- règles de contenu et signalement.
+Reste avant l'ouverture publique : constituer l'entité, déclaration CDP, relecture par un juriste.
 
-Voir `docs/LEGAL.md`.
+Voir `docs/LEGAL.md` et `docs/conformite/`.
 
 ## 16. Variables métier principales
 
@@ -450,6 +451,15 @@ Voir `docs/LEGAL.md`.
 | `QUINCH_FEATURE_CHAT_AUDIO` | `true` | audio dans le chat |
 | `QUINCH_FEATURE_CHAT_FILE` | `true` | fichiers dans le chat |
 | `QUINCH_FEATURE_PURCHASES` | `false` | achats entre utilisateurs désactivés |
+| `LEGAL_PUBLISHER_NAME` / `LEGAL_PUBLISHER_ADDRESS` | `…` | éditeur affiché dans les mentions légales (obligatoire en production) |
+| `LEGAL_CONTACT_EMAIL` | `contact@quinch.sn` | contact légal et exercice des droits |
+| `LEGAL_HOST_NAME` / `LEGAL_HOST_LOCATION` | `Contabo GmbH` / pays | hébergeur et pays des serveurs |
+| `MEDIA_DRIVER` | `local` | `local` (disque) ou `s3` (stockage objet, voir `docs/STORAGE.md`) |
+| `MEDIA_CDN_URL` | vide | URL publique des médias servie par le CDN (https) |
+| `HEALTH_TOKEN` | vide | jeton de `GET /api/v1/ops/health` (vide = désactivé) |
+| `DB_EMULATE_PREPARES` | `false` | `true` uniquement derrière PgBouncer |
+| `QUINCH_ALLOW_LOADTEST_DATA` | `false` | `true` en préproduction seulement (comptes de test k6) |
+| `LEGAL_ANONYMIZED_CONTENT_DAYS` | `30` | délai avant effacement définitif des contenus d'un compte supprimé |
 
 ## 17. Décisions d'architecture à conserver
 

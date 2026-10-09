@@ -323,7 +323,7 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
     };
 
     $path = $file->store($folder, 'public');
-    $fileUrl = url('/storage/' . $path);
+    $fileUrl = \App\Support\MediaUrl::for($path);
 
     $preview = match (true) {
         $isImage => '📷 Image',
@@ -366,7 +366,7 @@ public function sendFile(Request $request, Conversation $conversation): JsonResp
 
         $file = $request->file('audio');
         $path = $file->store('messages/audio', 'public');
-        $audioUrl = url('/storage/' . $path);
+        $audioUrl = \App\Support\MediaUrl::for($path);
         $duration = $request->input('duration', 0);
 
         $message = Message::create([

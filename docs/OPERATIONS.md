@@ -22,61 +22,73 @@
 7. Vérifier healthchecks.
 8. Surveiller les erreurs.
 
-## Backups
+## Production HTTPS
 
-### PostgreSQL
-
-Backup automatique quotidien minimum, avec plusieurs points de rétention.
-
-Le backup doit être stocké hors du VPS principal.
-
-### Test de restauration
-
-Au moins périodiquement :
-
-```text
-backup → restauration isolée → vérification
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
-## Monitoring minimum
+Variables du `.env` racine : `API_DOMAIN`, `APP_DOMAIN`, `ACME_EMAIL`. Docker Compose 2.24.4 ou plus requis.
+Les DNS (`api.`, domaine principal, `www.`) doivent pointer vers le serveur, ports 80 et 443 ouverts.
+Voir `docs/SECURITY.md` pour la CSP et les réglages de proxy.
 
-- disponibilité HTTP ;
-- erreurs 5xx ;
-- CPU ;
-- RAM ;
-- disque ;
-- PostgreSQL ;
-- Redis ;
-- queues ;
-- temps de réponse ;
-- stockage médias ;
-- certificats TLS.
+## Tâches planifiées (conformité)
+
+- `PurgeAnonymizedAccountData` (quotidienne) : efface définitivement annonces, médias et messages des comptes
+  supprimés depuis plus de `LEGAL_ANONYMIZED_CONTENT_DAYS` jours.
+- `PurgeExpiredAdminData` (quotidienne) : journaux techniques plus vieux que `LEGAL_AUDIT_LOGS_DAYS` jours.
+
+Le worker `queue` et le scheduler doivent tourner. Lors du passage au stockage objet (phase 6), vérifier que
+l'effacement des fichiers (annonces, vidéos, pièces jointes des messages) utilise le nouveau disque.
+
+## Backups
+
+Détail complet : `docs/BACKUPS.md`.
+
+- PostgreSQL : `scripts/backup/backup.sh` (dump vérifié, chiffrement age, copie hors serveur avec rclone, rotation), planifié en cron ;
+- test de restauration au moins une fois par mois : `scripts/backup/restore-test.sh` (base temporaire, jamais la production) ;
+- médias : copie périodique du bucket vers un autre fournisseur ; secrets : gestionnaire de mots de passe.
+
+## Monitoring
+
+Détail complet : `docs/MONITORING.md`.
+
+- `GET /up` (public) et `GET /api/v1/ops/health` (jeton `HEALTH_TOKEN`) : base, Redis, files, scheduler, disque, médias ;
+- `php artisan quinch:health --deep` depuis le serveur ;
+- Uptime Kuma (`docker-compose.ops.yml`, profil `monitoring`) pour les alertes ; Dokploy pour les métriques CPU, RAM, disque ;
+- à surveiller en plus : erreurs 5xx, certificats TLS, tâches en échec (`queue:failed`).
+
+## Stockage objet et CDN
+
+Détail complet : `docs/STORAGE.md`. `MEDIA_DRIVER=s3` bascule les médias vers le bucket S3, `MEDIA_CDN_URL` donne l'adresse publique,
+`php artisan quinch:media-migrate` copie les fichiers existants.
 
 ## Préproduction
 
-Utiliser un environnement séparé :
-
-```text
-staging.quinch.sn
-api-staging.quinch.sn
-```
-
-avec base de données et credentials séparés.
+Détail complet : `docs/STAGING.md`. Environnement séparé (`staging.quinch.sn`, `api-staging.quinch.sn`) avec base, Redis, bucket,
+secrets et clés de paiement de test **distincts** de la production. Contrôle après déploiement : `scripts/staging-smoke-test.sh`.
 
 ## Charge
 
-k6 doit tester progressivement :
+Détail complet : `docs/LOAD-TESTING.md`. Scénarios k6 dans `load-tests/` (fumée, navigation, utilisateurs connectés, connexion,
+faux webhook), à lancer **uniquement en préproduction**. Comptes de test : `php artisan quinch:seed-load-users`.
 
-- connexion ;
-- feed ;
-- recherche ;
-- marketplace ;
-- profils ;
-- messagerie ;
-- upload ;
-- webhook.
+### PgBouncer : quand l'ajouter
 
-Ne pas ajouter PgBouncer ou une architecture distribuée avant d'avoir des métriques qui justifient le changement.
+Pas avant d'avoir des chiffres. Si les tests de charge montrent que les connexions à PostgreSQL sont le goulot
+(`pg_stat_activity` proche de `max_connections`, erreurs « too many clients ») :
+
+1. démarrer le service : `docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ops.yml --profile pgbouncer up -d pgbouncer` ;
+2. dans `backend/.env.docker` : `DB_HOST=pgbouncer` et `DB_EMULATE_PREPARES=true` (obligatoire en mode « transaction ») ;
+3. redémarrer `app`, `queue`, `queue_videos`, `scheduler` ;
+4. refaire le même test de charge et comparer.
+
+Retour arrière : remettre `DB_HOST=postgres` et `DB_EMULATE_PREPARES=false`, puis redémarrer ces quatre services.
+Laravel y est déjà préparé (`config/database.php`). Ne pas ajouter d'architecture distribuée sans mesures.
+
+## Services
+
+Inventaire de chaque service (conteneurs et services externes), rôle, dépendances et conséquence d'une panne : `docs/SERVICES.md`.
 
 ## Incident
 

@@ -23,7 +23,7 @@ Hébergement : Contabo, pays des serveurs : `[LEGAL_HOST_LOCATION]` (transfert h
 - **Statistiques d'usage (#8) et journal d'administration (#7)** : aucune durée n'est appliquée aujourd'hui.
   Fixez une durée (par exemple 12 à 24 mois pour les statistiques) puis ajoutez-la à la tâche
   `PurgeExpiredAdminData`. Dites-le-moi et je l'implémente.
-- **Fichiers de messages** : leur effacement repose sur l'URL enregistrée dans les métadonnées ; à revérifier
-  lors du passage au stockage objet (phase 6).
-- **Sauvegardes** (phase 6) : une donnée supprimée subsiste dans les sauvegardes jusqu'à leur expiration ;
-  prévoir une rotation courte (ex. 30 jours) et la mentionner dans la déclaration.
+- **Fichiers de messages** : leur effacement lit l'URL enregistrée dans les métadonnées ; elle est reconnue
+  qu'elle vienne du disque local ou du CDN (`MediaUrl::path`), donc l'effacement fonctionne aussi en stockage objet.
+- **Sauvegardes** : une donnée supprimée subsiste dans les sauvegardes jusqu'à leur expiration (environ 30 jours avec les
+  réglages de `docs/BACKUPS.md`) ; à mentionner dans la déclaration. Les copies du bucket de médias doivent aussi expirer.

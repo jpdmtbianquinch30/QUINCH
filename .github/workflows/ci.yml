@@ -84,6 +84,13 @@ jobs:
         run: |
           API_DOMAIN=api.example.com APP_DOMAIN=example.com ACME_EMAIL=ops@example.com \
             docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
+      - name: Valider la surcouche d'exploitation (PgBouncer, supervision)
+        run: |
+          API_DOMAIN=api.example.com APP_DOMAIN=example.com ACME_EMAIL=ops@example.com \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ops.yml config -q
+      - name: Vérifier la syntaxe des scripts shell
+        run: |
+          for f in scripts/*.sh scripts/backup/*.sh; do bash -n "$f" && echo "OK $f"; done
       - name: Construire l'image backend
         run: docker build -f backend/Dockerfile -t quinch-backend:ci .
       - name: Construire l'image frontend (production)

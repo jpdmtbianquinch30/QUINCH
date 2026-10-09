@@ -147,21 +147,21 @@ class PurgeAnonymizedAccountData implements ShouldQueue
         ]);
     }
 
-    /** Chemin relatif au disque « public » d'une URL du type https://.../storage/messages/x.jpg, sinon null. */
+    /**
+     * Chemin relatif au disque des médias d'une URL de média (locale « /storage/... » ou du CDN),
+     * sinon null. Seules les URL sont acceptées : une simple chaîne des métadonnées (nom de
+     * fichier, type MIME...) ne doit jamais désigner un fichier à supprimer.
+     */
     private function storagePath(mixed $value): ?string
     {
         if (!is_string($value)) {
             return null;
         }
 
-        $position = strpos($value, '/storage/');
-        if ($position === false) {
+        if (!preg_match('#^https?://#i', $value) && !str_starts_with($value, '/storage/')) {
             return null;
         }
 
-        $path = substr($value, $position + strlen('/storage/'));
-        $path = explode('?', $path)[0];
-
-        return ($path === '' || str_contains($path, '..')) ? null : $path;
+        return \App\Support\MediaUrl::path($value);
     }
 }

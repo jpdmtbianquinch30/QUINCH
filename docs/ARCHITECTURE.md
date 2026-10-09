@@ -43,7 +43,7 @@ Redis 7 sert à :
 
 ### Médias
 
-Aujourd'hui, le Docker volume local est utilisé. C'est un point de migration vers Object Storage + CDN avant une montée en charge importante.
+Par défaut, le disque local (volume Docker) est utilisé : acceptable pour le développement et une très petite bêta. Pour la production durable, `MEDIA_DRIVER=s3` bascule les médias vers un stockage objet servi par un CDN, sans changer le code applicatif (voir `docs/STORAGE.md`). Inventaire de tous les services : `docs/SERVICES.md`.
 
 ## Pourquoi ne pas passer en microservices
 

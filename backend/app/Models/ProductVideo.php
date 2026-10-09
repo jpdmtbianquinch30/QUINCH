@@ -117,7 +117,7 @@ class ProductVideo extends Model
     public function getVideoStorageUrlAttribute(): ?string
     {
         if (!$this->video_path) return null;
-        return url('/storage/' . $this->video_path);
+        return \App\Support\MediaUrl::for($this->video_path);
     }
 
     public function getThumbnailUrlAttribute(): ?string

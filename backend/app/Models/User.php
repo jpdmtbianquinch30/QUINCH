@@ -363,15 +363,11 @@ protected function isOnline(): \Illuminate\Database\Eloquent\Casts\Attribute
     // ─── URL Accessors (return full absolute URLs for frontend) ──────
     public function getAvatarUrlAttribute($value): ?string
     {
-        if (!$value) return null;
-        if (str_starts_with($value, 'http')) return $value;
-        return url($value);
+        return \App\Support\MediaUrl::for($value ?: null);
     }
 
     public function getCoverUrlAttribute($value): ?string
     {
-        if (!$value) return null;
-        if (str_starts_with($value, 'http')) return $value;
-        return url($value);
+        return \App\Support\MediaUrl::for($value ?: null);
     }
 }

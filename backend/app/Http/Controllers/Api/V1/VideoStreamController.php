@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\ProductVideo;
 use Illuminate\Http\Request;
+use App\Support\MediaUrl;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Sert les vidéos du stockage avec les bons Content-Type et le support des
@@ -14,7 +16,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class VideoStreamController extends Controller
 {
-    public function stream(Request $request, string $videoId): BinaryFileResponse|\Illuminate\Http\Response
+    public function stream(Request $request, string $videoId): Response
     {
         $video = ProductVideo::find($videoId);
 
@@ -23,6 +25,11 @@ class VideoStreamController extends Controller
         }
 
         $this->abortIfHidden($request, $video);
+
+        // Stockage objet : le CDN sert le fichier (pas de lecture par PHP ni X-Accel).
+        if (MediaUrl::isRemote()) {
+            return $this->redirectToMedia($request, $video->video_path);
+        }
 
         $disk = Storage::disk('public');
         $path = $video->video_path;
@@ -41,7 +48,7 @@ class VideoStreamController extends Controller
      * SÉCURITÉ : le paramètre `path` doit correspondre exactement au video_path
      * d'une ProductVideo en base, et le chemin réel doit rester dans le disque public.
      */
-    public function streamByPath(Request $request): BinaryFileResponse|\Illuminate\Http\Response
+    public function streamByPath(Request $request): Response
     {
         $path = $request->query('path');
 
@@ -55,6 +62,10 @@ class VideoStreamController extends Controller
         }
 
         $this->abortIfHidden($request, $video);
+
+        if (MediaUrl::isRemote()) {
+            return $this->redirectToMedia($request, $path);
+        }
 
         $disk = Storage::disk('public');
 
@@ -76,7 +87,7 @@ class VideoStreamController extends Controller
         return $this->fileResponse($path, $fullPath, $mimeType);
     }
 
-    public function thumbnail(Request $request, string $videoId): BinaryFileResponse
+    public function thumbnail(Request $request, string $videoId): Response
     {
         $video = ProductVideo::find($videoId);
 
@@ -85,6 +96,10 @@ class VideoStreamController extends Controller
         }
 
         $this->abortIfHidden($request, $video);
+
+        if (MediaUrl::isRemote()) {
+            return $this->redirectToMedia($request, $video->thumbnail_path);
+        }
 
         $disk = Storage::disk('public');
 
@@ -100,6 +115,28 @@ class VideoStreamController extends Controller
         $response->headers->set('Access-Control-Allow-Origin', '*');
 
         return $response;
+    }
+
+    /**
+     * Stockage objet : redirige vers le fichier.
+     *  - public : URL du CDN (mise en cache courte, la modération peut masquer la vidéo) ;
+     *  - lien signé du staff (vidéo masquée au public) : URL S3 temporaire de 15 minutes.
+     */
+    private function redirectToMedia(Request $request, string $path): Response
+    {
+        if ($request->hasValidRelativeSignature()) {
+            return redirect()->away(
+                Storage::disk('public')->temporaryUrl($path, now()->addMinutes(15)),
+                302,
+                ['Cache-Control' => 'private, no-store'],
+            );
+        }
+
+        return redirect()->away(
+            (string) MediaUrl::for($path),
+            302,
+            ['Cache-Control' => 'public, max-age=300'],
+        );
     }
 
     /**
@@ -121,7 +158,7 @@ class VideoStreamController extends Controller
      *   avec X-Accel-Redirect et c'est nginx qui envoie la vidéo.
      * - sinon : BinaryFileResponse (dev local sans nginx).
      */
-    private function fileResponse(string $relativePath, string $fullPath, string $mimeType): BinaryFileResponse|\Illuminate\Http\Response
+    private function fileResponse(string $relativePath, string $fullPath, string $mimeType): Response
     {
         if (config('quinch.video.accel_redirect')) {
             $internal = rtrim((string) config('quinch.video.accel_prefix', '/_protected_storage/'), '/')

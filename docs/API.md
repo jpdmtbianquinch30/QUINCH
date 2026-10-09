@@ -7,11 +7,12 @@ API versionnée sous `/api/v1`.
 ### Public
 
 ```text
-POST /auth/register
+POST /auth/register          (accept_terms obligatoire : consentement aux conditions)
 POST /auth/login
 POST /auth/forgot-password
 POST /auth/reset-password
-POST /auth/google
+POST /auth/google            (nouveau compte : accept_terms obligatoire, sinon 422 `terms_required`)
+GET  /legal/info             (éditeur, contact, hébergeur, versions des textes, durées de conservation)
 ```
 
 ### Authentifié
@@ -60,7 +61,7 @@ PUT     /user/phone
 GET     /users/blocked
 POST    /users/{user}/block
 POST    /users/{user}/unblock
-GET     /users/export-data
+GET     /users/export-data     (téléchargement JSON complet, 5 demandes/heure)
 ```
 
 ## Produits

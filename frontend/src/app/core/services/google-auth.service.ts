@@ -102,9 +102,14 @@ export class GoogleAuthService {
 
   /**
    * Échange l'ID token Google contre une session QUINCH.
+   *
+   * `acceptTerms` ne doit valoir true QUE si l'utilisateur a coché l'acceptation des
+   * conditions. Un compte déjà existant se connecte sans (aucun consentement à redonner) ;
+   * pour un NOUVEAU compte, le serveur répond 422 `terms_required` tant qu'elle manque
+   * (voir LoginComponent : étape de consentement explicite).
    */
-  signIn(idToken: string): Observable<GoogleAuthResult> {
-    return this.api.post<GoogleAuthResult>('auth/google', { id_token: idToken, accept_terms: true }).pipe(
+  signIn(idToken: string, acceptTerms = false): Observable<GoogleAuthResult> {
+    return this.api.post<GoogleAuthResult>('auth/google', { id_token: idToken, accept_terms: acceptTerms }).pipe(
       tap((res) => this.auth.applyGoogleSession(res.token, res.user))
     );
   }

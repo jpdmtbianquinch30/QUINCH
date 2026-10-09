@@ -396,6 +396,26 @@ select.q-input {
   option { background: var(--q-bg-card); color: var(--q-text-primary); }
 }
 
+// ─── Listes déroulantes natives (<select>) ──────────────────────────────────
+// La liste s'ouvre dans une fenêtre dessinée par le navigateur, qui ignore le fond
+// de nos champs (souvent translucide) et affiche un fond BLANC. Les <option> héritant
+// du texte clair du champ, on obtenait du blanc sur blanc (constaté dans l'admin).
+//  - color-scheme prévient le navigateur du thème (menu sombre ou clair) ;
+//  - les <option> reçoivent un fond OPAQUE et une couleur de texte explicites.
+select {
+  color-scheme: dark;
+}
+
+body.quinch-light select {
+  color-scheme: light;
+}
+
+select option,
+select optgroup {
+  background-color: var(--q-bg-elevated);
+  color: var(--q-text-primary);
+}
+
 textarea.q-input { resize: vertical; min-height: 100px; }
 
 // ─── Cards ──────────────────────────────────────────────────────────────────

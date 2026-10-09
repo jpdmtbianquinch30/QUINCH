@@ -25,6 +25,12 @@ export class LoginComponent implements AfterViewInit {
   loading = signal(false);
   error = signal('');
 
+  // ─── Consentement Google (nouveau compte) ─────────────────────────────
+  /** Jeton Google gardé en attente : aucun compte n'est créé avant l'acceptation explicite. */
+  private pendingGoogleToken: string | null = null;
+  showGoogleConsent = signal(false);
+  googleTermsAccepted = false;
+
   login() {
     if (!this.email.trim() || !this.password) {
       this.error.set('Veuillez remplir tous les champs.');
@@ -75,21 +81,44 @@ export class LoginComponent implements AfterViewInit {
     }
   }
 
-  private loginWithGoogle(idToken: string): void {
+  private loginWithGoogle(idToken: string, acceptTerms = false): void {
     this.loading.set(true);
     this.error.set('');
 
-    this.googleAuth.signIn(idToken).subscribe({
-      next: (res) => {
+    this.googleAuth.signIn(idToken, acceptTerms).subscribe({
+      next: () => {
         this.loading.set(false);
-
+        this.cancelGoogleConsent();
         this.redirectAfterLogin();
       },
       error: (err) => {
         this.loading.set(false);
+
+        if (err.error?.error === 'terms_required') {
+          // Première connexion Google : aucun compte n'existe encore. On demande
+          // l'acceptation explicite des conditions avant d'en créer un.
+          this.pendingGoogleToken = idToken;
+          this.googleTermsAccepted = false;
+          this.showGoogleConsent.set(true);
+          return;
+        }
+
+        this.cancelGoogleConsent();
         this.error.set(err.error?.message || 'Connexion Google impossible. Réessayez.');
       },
     });
+  }
+
+  /** L'utilisateur a coché la case et confirme : on renvoie le même jeton, cette fois avec son accord. */
+  confirmGoogleConsent(): void {
+    if (!this.googleTermsAccepted || !this.pendingGoogleToken) return;
+    this.loginWithGoogle(this.pendingGoogleToken, true);
+  }
+
+  cancelGoogleConsent(): void {
+    this.pendingGoogleToken = null;
+    this.googleTermsAccepted = false;
+    this.showGoogleConsent.set(false);
   }
 
   /**

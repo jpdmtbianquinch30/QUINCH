@@ -21,7 +21,7 @@
 |---|---|
 | Informer les personnes | Pages publiques `/legal/cgu`, `/legal/confidentialite`, `/legal/mentions-legales` ; liens à l'inscription, sous le bouton Google et dans les réglages |
 | Identité de l'éditeur | Renseignée dans `backend/.env.docker` (`LEGAL_*`), servie par `GET /api/v1/legal/info` ; **la production refuse de démarrer si elle est vide** |
-| Consentement | Case obligatoire à l'inscription ; pour Google, un nouveau compte exige l'acceptation. Date et version des textes mémorisées (`terms_accepted_at`, `terms_version`, `privacy_version`) |
+| Consentement | Case obligatoire à l'inscription ; pour Google, **fenêtre de consentement explicite** à la première connexion (un compte déjà existant se connecte directement, un nouveau compte n'est créé qu'après avoir coché la case). Date et version des textes mémorisées (`terms_accepted_at`, `terms_version`, `privacy_version`) |
 | Droit d'accès / portabilité | « Exporter mes données » : export complet en JSON téléchargeable (profil, annonces, vidéos, transactions, conversations, avis, favoris, notifications, messages envoyés, etc.). **Correction d'un bug** : l'ancien export plantait (erreur 500) sur des relations inexistantes |
 | Droit à l'effacement | La suppression du compte efface aussi localisation, coordonnées GPS, pièce d'identité (kyc), préférences, notifications, favoris, abonnements, photos de profil. Les annonces, vidéos, photos et messages sont **effacés définitivement après 30 jours** (tâche quotidienne `PurgeAnonymizedAccountData`) |
 | Durées de conservation | Configurables (`LEGAL_ANONYMIZED_CONTENT_DAYS`, `LEGAL_AUDIT_LOGS_DAYS`), appliquées par des tâches planifiées, affichées dans la politique |

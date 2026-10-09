@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\V1\SecurityController;
 use App\Http\Controllers\Api\V1\VideoStreamController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\GoogleAuthController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\LegalController;
 use App\Http\Controllers\Api\V1\PremiumController;
 use App\Http\Controllers\Api\V1\AdminProductController;
@@ -78,6 +79,8 @@ Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath'])
 // ─── Public ──────────────────────────────────────────────────────────────────
 // Mentions légales : éditeur, contact, hébergeur, versions des textes.
 Route::get('legal/info', [LegalController::class, 'info'])->middleware('throttle:60,1');
+// Supervision : santé détaillée, protégée par le jeton HEALTH_TOKEN (404 sinon).
+Route::get('ops/health', [HealthController::class, 'show'])->middleware('throttle:30,1');
 // Bannières, message défilant et mode maintenance pilotés depuis l'admin.
 Route::get('feed/config', [AdminSettingsController::class, 'publicFeedConfig']);
 Route::get('categories', [CategoryController::class, 'index']);

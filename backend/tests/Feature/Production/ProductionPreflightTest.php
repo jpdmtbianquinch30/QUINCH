@@ -220,4 +220,45 @@ class ProductionPreflightTest extends TestCase
             $this->assertStringContainsString($variable, implode(' ', $this->errors()));
         }
     }
+
+    public function test_object_storage_requires_its_settings(): void
+    {
+        $this->validProductionConfig();
+        config([
+            'filesystems.disks.public.driver' => 's3',
+            'filesystems.disks.public.bucket' => '',
+            'filesystems.disks.public.key' => '',
+            'filesystems.disks.public.secret' => '',
+            'filesystems.disks.public.endpoint' => '',
+            'media.url' => '',
+        ]);
+
+        $errors = implode(' ', $this->errors());
+        foreach (['MEDIA_S3_BUCKET', 'MEDIA_S3_KEY', 'MEDIA_S3_SECRET', 'MEDIA_S3_ENDPOINT', 'MEDIA_CDN_URL'] as $variable) {
+            $this->assertStringContainsString($variable, $errors);
+        }
+    }
+
+    public function test_cdn_url_must_be_https(): void
+    {
+        $this->validProductionConfig();
+        config([
+            'filesystems.disks.public.driver' => 's3',
+            'filesystems.disks.public.bucket' => 'quinch-media',
+            'filesystems.disks.public.key' => 'k',
+            'filesystems.disks.public.secret' => 's',
+            'filesystems.disks.public.endpoint' => 'https://eu2.contabostorage.com',
+            'media.url' => 'http://media.quinch.sn',
+        ]);
+
+        $this->assertStringContainsString('https://', implode(' ', $this->errors()));
+    }
+
+    public function test_local_media_storage_adds_no_error(): void
+    {
+        $this->validProductionConfig();
+        config(['filesystems.disks.public.driver' => 'local']);
+
+        $this->assertSame([], $this->errors());
+    }
 }

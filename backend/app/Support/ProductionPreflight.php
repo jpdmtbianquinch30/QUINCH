@@ -117,6 +117,29 @@ class ProductionPreflight
             }
         }
 
+        // ── Médias (stockage objet) ──
+        if (config('filesystems.disks.public.driver') === 's3') {
+            foreach ([
+                'MEDIA_S3_BUCKET'   => config('filesystems.disks.public.bucket'),
+                'MEDIA_S3_KEY'      => config('filesystems.disks.public.key'),
+                'MEDIA_S3_SECRET'   => config('filesystems.disks.public.secret'),
+                'MEDIA_S3_ENDPOINT' => config('filesystems.disks.public.endpoint'),
+                'MEDIA_CDN_URL'     => config('media.url'),
+            ] as $name => $value) {
+                if ($this->blank($value)) {
+                    $errors[] = "{$name} est vide alors que MEDIA_DRIVER=s3 (stockage objet).";
+                }
+            }
+
+            if (!$this->blank(config('media.url')) && !str_starts_with((string) config('media.url'), 'https://')) {
+                $errors[] = 'MEDIA_CDN_URL doit commencer par https:// (sinon contenu mixte bloqué par les navigateurs).';
+            }
+
+            if (!class_exists(\League\Flysystem\AwsS3V3\AwsS3V3Adapter::class)) {
+                $errors[] = 'MEDIA_DRIVER=s3 exige le paquet league/flysystem-aws-s3-v3 : composer require league/flysystem-aws-s3-v3 "^3.0" (puis valider composer.lock).';
+            }
+        }
+
         // ── Cookies de session ──
         // L'API s'authentifie par jeton Bearer, mais tout cookie émis (routes web,
         // mode « stateful » de Sanctum) doit être Secure, HttpOnly et SameSite.

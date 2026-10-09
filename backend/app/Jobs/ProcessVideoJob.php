@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ProductVideo;
+use App\Support\MediaUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -40,7 +41,11 @@ class ProcessVideoJob implements ShouldQueue
             throw new \RuntimeException("Fichier vidéo introuvable : {$this->video->video_path}");
         }
 
-        $inputPath = $disk->path($this->video->video_path);
+        // Stockage objet : ffprobe/ffmpeg lisent la vidéo par une URL S3 temporaire (requêtes
+        // Range : seuls les octets utiles sont téléchargés, pas les 500 Mo du fichier).
+        $inputPath = MediaUrl::isRemote()
+            ? $disk->temporaryUrl($this->video->video_path, now()->addMinutes(30))
+            : $disk->path($this->video->video_path);
 
         $duration  = $this->probeDuration($inputPath);
         $thumbPath = $this->generateThumbnail($inputPath, $duration);
@@ -90,12 +95,23 @@ class ProcessVideoJob implements ShouldQueue
     private function generateThumbnail(string $inputPath, ?int $duration): ?string
     {
         $disk     = Storage::disk('public');
+        $remote   = MediaUrl::isRemote();
         $thumbDir = 'thumbnails/' . date('Y/m');
-        $disk->makeDirectory($thumbDir);
 
-        $thumbPath     = $thumbDir . '/' . pathinfo($this->video->video_path, PATHINFO_FILENAME) . '.jpg';
-        $thumbFullPath = $disk->path($thumbPath);
-        $seek          = ($duration !== null && $duration < 2) ? '0' : '1';
+        $thumbPath = $thumbDir . '/' . pathinfo($this->video->video_path, PATHINFO_FILENAME) . '.jpg';
+        $seek      = ($duration !== null && $duration < 2) ? '0' : '1';
+
+        // Disque local : ffmpeg écrit directement dans le dossier des médias.
+        // Stockage objet : il écrit dans un fichier temporaire, ensuite envoyé au bucket.
+        $tmpBase = null;
+        if ($remote) {
+            // tempnam crée un fichier vide ; ffmpeg a besoin d'une extension pour choisir le format.
+            $tmpBase       = tempnam(sys_get_temp_dir(), 'qthumb_');
+            $thumbFullPath = $tmpBase . '.jpg';
+        } else {
+            $disk->makeDirectory($thumbDir);
+            $thumbFullPath = $disk->path($thumbPath);
+        }
 
         try {
             $process = new Process([
@@ -108,10 +124,31 @@ class ProcessVideoJob implements ShouldQueue
             $process->run();
 
             if ($process->isSuccessful() && file_exists($thumbFullPath)) {
+                if (!$remote) {
+                    return $thumbPath;
+                }
+
+                $stream = fopen($thumbFullPath, 'rb');
+                try {
+                    $disk->writeStream($thumbPath, $stream);
+                } finally {
+                    if (is_resource($stream)) {
+                        fclose($stream);
+                    }
+                }
+
                 return $thumbPath;
             }
         } catch (\Throwable $e) {
             Log::warning('ffmpeg indisponible ou en échec', ['error' => $e->getMessage()]);
+        } finally {
+            if ($remote) {
+                foreach ([$thumbFullPath, $tmpBase] as $temporary) {
+                    if (is_string($temporary) && file_exists($temporary)) {
+                        @unlink($temporary);
+                    }
+                }
+            }
         }
 
         return null;

@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Services d'EXPLOITATION optionnels (profils). À combiner avec les autres fichiers :
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.ops.yml \
+#     --profile monitoring up -d              (supervision : Uptime Kuma)
+#   ... --profile pgbouncer up -d             (pool de connexions PostgreSQL)
+#
+# Rien ici ne démarre sans son profil : ajouter ce fichier ne change rien à l'existant.
+# Détails : docs/MONITORING.md (supervision) et docs/OPERATIONS.md (PgBouncer).
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  # PgBouncer : met en commun les connexions PostgreSQL (app, queue, queue_videos, scheduler).
+  # À n'activer que si les tests de charge montrent une pression sur les connexions
+  # (voir docs/OPERATIONS.md). Pour l'utiliser :
+  #   1. dans backend/.env.docker : DB_HOST=pgbouncer  et  DB_EMULATE_PREPARES=true
+  #   2. redémarrer app, queue, queue_videos et scheduler.
+  # Variables de l'image edoburu/pgbouncer : à confirmer dans sa documentation ; épingler une
+  # version précise après essai (ne pas rester sur « latest » en production).
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: quinch_pgbouncer
+    profiles: ["pgbouncer"]
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      LISTEN_PORT: "5432"
+      # « transaction » : une connexion serveur n'est gardée que le temps d'une transaction.
+      POOL_MODE: transaction
+      # PostgreSQL 14+ chiffre les mots de passe en SCRAM par défaut.
+      AUTH_TYPE: scram-sha-256
+      MAX_CLIENT_CONN: "500"
+      DEFAULT_POOL_SIZE: "20"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quinch
+
+  # Uptime Kuma : surveille les adresses (site, API, santé détaillée) et alerte par e-mail,
+  # Telegram, etc. Interface sur 127.0.0.1:3001 uniquement : y accéder par tunnel SSH
+  #   ssh -L 3001:127.0.0.1:3001 utilisateur@serveur   puis http://localhost:3001
+  uptime_kuma:
+    image: louislam/uptime-kuma:1
+    container_name: quinch_uptime_kuma
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - quinch
+
+volumes:
+  uptime_kuma_data:
