@@ -183,7 +183,7 @@ export class AdminShellComponent implements OnInit, OnDestroy {
       { path: 'team', label: 'Équipe & Premium', icon: 'badge', perms: ['staff.manage', 'premium.manage', 'reviews.moderate'] },
     ] },
     { title: 'Finance & sécurité', items: [
-      { path: 'transactions', label: 'Transactions', icon: 'receipt_long', perms: ['finance.view'] },
+      // « Transactions » masqué pendant la bêta : aucun achat/paiement n'est actif (route conservée pour plus tard).
       { path: 'security', label: 'Sécurité & audit', icon: 'shield', perms: ['audit.view', 'security.ip_ban'] },
     ] },
     { title: 'Système', items: [

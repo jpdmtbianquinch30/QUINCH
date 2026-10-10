@@ -80,6 +80,12 @@
               </div>
             </div>
           } @else if (videoPreview()) {
+            @if (beta()) {
+            <div class="media-hint beta-hint">
+              <span class="material-icons">science</span>
+              <span><strong>Version bêta — phase de test.</strong> La publication de vidéos est gratuite et aucun paiement n'est demandé. Vos retours nous aident à améliorer QUINCH.</span>
+            </div>
+            }
             <div class="video-preview-wrap" [class.edited]="videoEdited()">
               <div class="video-preview-inner"
                    [style.filter]="videoEdited() ? getVideoEditorFilterCss() : ''"
@@ -119,10 +125,20 @@
             } @else {
               <div class="media-hint video-fee-hint">
                 <span class="material-icons">videocam</span>
-                <span>Publier une vidéo booste votre visibilité dans le feed vidéo — 150 F par vidéo pour un compte gratuit, inclus avec
-                  <a (click)="goToPremium()">Premium</a>.
-                </span>
+                @if (listingFee() > 0) {
+                  <span>Publier une vidéo booste votre visibilité dans le feed vidéo — {{ listingFee() | number }} F par vidéo pour un compte gratuit@if (premiumPayments()) {, inclus avec
+                    <a (click)="goToPremium()">Premium</a>}.
+                  </span>
+                } @else {
+                  <span>Publier une vidéo booste votre visibilité dans le feed vidéo — gratuit pendant la bêta.</span>
+                }
               </div>
+            }
+            @if (beta()) {
+            <div class="media-hint beta-hint">
+              <span class="material-icons">science</span>
+              <span><strong>Version bêta — phase de test.</strong> La publication de vidéos est gratuite et aucun paiement n'est demandé. Vos retours nous aident à améliorer QUINCH.</span>
+            </div>
             }
             <div class="video-options">
               <label class="upload-area video-upload">
@@ -497,24 +513,25 @@
         </div>
 
 <!-- ═══════ À QUOI S'ATTENDRE ═══════ -->
-<div class="expect-notice" [class.premium]="isPremiumActive()" [class.fee]="videoId() && !isPremiumActive()">
-  <span class="material-icons">{{ isPremiumActive() ? 'workspace_premium' : (videoId() ? 'payments' : 'rocket_launch') }}</span>
+<div class="expect-notice" [class.premium]="isPremiumActive()" [class.fee]="videoId() && !isPremiumActive() && listingFee() > 0">
+  <span class="material-icons">{{ isPremiumActive() ? 'workspace_premium' : (videoId() && listingFee() > 0 ? 'payments' : 'rocket_launch') }}</span>
   <div>
     <strong>
       @if (isPremiumActive()) { Compte Premium actif }
-      @else if (videoId()) { 150 F à régler pour publier }
+      @else if (videoId() && listingFee() > 0) { {{ listingFee() | number }} F à régler pour publier }
+      @else if (beta()) { Version bêta : publication gratuite }
       @else { Publication immédiate et gratuite }
     </strong>
     <span>
       @if (isPremiumActive()) {
         Votre annonce sera visible tout de suite, mise en avant dans le feed et le marketplace.
-      } @else if (videoId()) {
-        Une vidéo est jointe : vous serez redirigé vers le paiement des 150 F juste après ce formulaire, puis votre annonce sera mise en ligne.
+      } @else if (videoId() && listingFee() > 0) {
+        Une vidéo est jointe : vous serez redirigé vers le paiement des {{ listingFee() | number }} F juste après ce formulaire, puis votre annonce sera mise en ligne.
       } @else {
         Votre annonce sera visible tout de suite, sans frais. Passez Premium pour la mettre en avant et débloquer jusqu'à 10 photos.
       }
     </span>
-    @if (!isPremiumActive()) {
+    @if (!isPremiumActive() && premiumPayments()) {
       <button type="button" class="expect-premium-btn" (click)="goToPremium()">
         <span class="material-icons">workspace_premium</span> Passer Premium
       </button>

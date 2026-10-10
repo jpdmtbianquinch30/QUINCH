@@ -31,6 +31,8 @@ use App\Http\Controllers\Api\V1\GoogleAuthController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\LegalController;
 use App\Http\Controllers\Api\V1\PremiumController;
+use App\Http\Controllers\Api\V1\PremiumOfferController;
+use App\Http\Controllers\Api\V1\AdminPremiumOfferController;
 use App\Http\Controllers\Api\V1\AdminProductController;
 use App\Http\Controllers\Api\V1\AdminTransactionController;
 use App\Http\Controllers\Api\V1\AdminSettingsController;
@@ -51,6 +53,7 @@ Route::prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+    Route::post('verify-email', [AuthController::class, 'verifyEmail'])->middleware('throttle:10,1');
 
     // Connexion / inscription via Google : route PUBLIQUE par définition.
     // (Avant ce correctif elle était déclarée à l'intérieur du groupe
@@ -63,6 +66,7 @@ Route::prefix('auth')->group(function () {
         Route::post('logout-all', [AuthController::class, 'logoutAll']);
         Route::post('refresh', [AuthController::class, 'refresh']);
         Route::get('me', [AuthController::class, 'me']);
+        Route::post('resend-verification', [AuthController::class, 'resendVerification'])->middleware('throttle:3,1');
         Route::put('change-password', [AuthController::class, 'changePassword'])->middleware('throttle:5,1');
         Route::delete('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:5,1');
         Route::post('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:5,1');
@@ -79,6 +83,7 @@ Route::get('videos/stream-path', [VideoStreamController::class, 'streamByPath'])
 // ─── Public ──────────────────────────────────────────────────────────────────
 // Mentions légales : éditeur, contact, hébergeur, versions des textes.
 Route::get('legal/info', [LegalController::class, 'info'])->middleware('throttle:60,1');
+Route::get('public-config', [\App\Http\Controllers\Api\V1\PublicConfigController::class, 'show'])->middleware('throttle:60,1');
 // Supervision : santé détaillée, protégée par le jeton HEALTH_TOKEN (404 sinon).
 Route::get('ops/health', [HealthController::class, 'show'])->middleware('throttle:30,1');
 // Bannières, message défilant et mode maintenance pilotés depuis l'admin.
@@ -234,7 +239,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Transactions
         Route::prefix('transactions')->middleware('feature:purchases')->group(function () {
-        Route::post('initiate', [TransactionController::class, 'initiate'])->middleware('throttle:3,1');
+        Route::post('initiate', [TransactionController::class, 'initiate'])->middleware(['email.verified', 'throttle:3,1']);
         Route::get('history', [TransactionController::class, 'history']);
         Route::get('{transaction}', [TransactionController::class, 'show']);
         Route::put('{transaction}/status', [TransactionController::class, 'updateStatus']);
@@ -245,8 +250,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             // Premium (abonnement vendeur)
     Route::prefix('premium')->group(function () {
         Route::get('plans', [PremiumController::class, 'plans']);
-        Route::post('subscribe', [PremiumController::class, 'subscribe'])->middleware('throttle:3,1');
+        Route::post('subscribe', [PremiumController::class, 'subscribe'])->middleware(['email.verified', 'throttle:3,1']);
         Route::get('status', [PremiumController::class, 'status']);
+        Route::get('offer', [PremiumOfferController::class, 'show']);
+        Route::post('offer/apply', [PremiumOfferController::class, 'apply'])->middleware(['email.verified', 'throttle:5,1']);
     });
 
     // Classements — reserves aux comptes Premium (voir RankingController).
@@ -394,6 +401,9 @@ Route::prefix('admin')
 
         // ── Premium, avis ──
         Route::get('premium', [AdminPremiumController::class, 'index'])->middleware('permission:premium.manage');
+        Route::get('premium-offer', [AdminPremiumOfferController::class, 'index'])->middleware('permission:premium.manage');
+        Route::post('premium-offer/{application}/grant', [AdminPremiumOfferController::class, 'grant'])->middleware('permission:premium.manage');
+        Route::post('premium-offer/{application}/reject', [AdminPremiumOfferController::class, 'reject'])->middleware('permission:premium.manage');
         Route::get('reviews', [AdminReviewController::class, 'index'])->middleware('permission:reviews.moderate');
         Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.moderate');
         Route::post('reviews/{review}/delete', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.moderate');

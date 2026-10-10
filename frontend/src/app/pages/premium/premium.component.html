@@ -69,7 +69,14 @@
           </div>
 
           @if (isExpiringSoon()) {
-            <p class="premium-tagline">Renouveler mon abonnement :</p>
+            @if (!paymentsEnabled()) {
+            <div class="pending-banner">
+              <span class="material-icons">schedule</span>
+              QUINCH Premium arrive bientôt. Pendant la bêta, la publication de vidéos est gratuite pour tous.
+            </div>
+          }
+
+          <p class="premium-tagline">Renouveler mon abonnement :</p>
             <div class="plans-grid">
               @for (plan of plans(); track plan.id) {
                 <div class="plan-card gold" [class.highlighted]="plan.id === 'annual'">
@@ -109,6 +116,35 @@
               </li>
             }
           </ul>
+
+          @if (!paymentsEnabled()) {
+            <div class="pending-banner">
+              <span class="material-icons">science</span>
+              Version bêta : le paiement n'est pas encore actif. Le Premium est offert aux {{ offer()?.slots_total ?? 100 }} premiers utilisateurs qui postulent.
+            </div>
+          }
+
+          @if (offer(); as o) {
+            <div class="offer-card">
+              <span class="material-icons">card_giftcard</span>
+              <div>
+                <strong>Premium offert aux {{ o.slots_total }} premiers utilisateurs</strong>
+                <span>{{ o.days }} jours de Premium gratuits pour les testeurs de la bêta.
+                  @if (o.slots_left > 0) { Il reste <b>{{ o.slots_left }}</b> place{{ o.slots_left > 1 ? 's' : '' }}. } @else { Toutes les places sont attribuées. }
+                </span>
+                @switch (o.my_status) {
+                  @case ('pending') { <em class="offer-state">Candidature envoyée — en attente de validation.</em> }
+                  @case ('granted') { <em class="offer-state ok">Offre accordée 🎉</em> }
+                  @case ('rejected') { <em class="offer-state">Candidature non retenue.</em> }
+                  @default {
+                    @if (o.slots_left > 0) {
+                      <button class="subscribe-btn" [disabled]="applying()" (click)="applyForOffer()">Postuler pour un Premium offert</button>
+                    }
+                  }
+                }
+              </div>
+            </div>
+          }
 
           <!-- Plans -->
           <div class="plans-grid">

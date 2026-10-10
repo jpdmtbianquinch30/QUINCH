@@ -68,6 +68,11 @@
   .material-icons { color: #fbbf24; }
   a { color: #fbbf24; font-weight: 700; cursor: pointer; text-decoration: underline; }
 }
+.media-hint.beta-hint {
+  background: rgba(99, 102, 241, 0.10);
+  border-color: rgba(99, 102, 241, 0.35);
+  .material-icons { color: #818cf8; }
+}
 .media-hint.premium {
   background: rgba(34, 197, 94, 0.08);
   border-color: rgba(34, 197, 94, 0.25);

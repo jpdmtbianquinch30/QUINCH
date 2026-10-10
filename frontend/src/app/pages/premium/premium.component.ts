@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
-import { PremiumService, PremiumPlan, PremiumStatus } from '../../core/services/premium.service';
+import { ApiService } from '../../core/services/api.service';
+import { PremiumService, PremiumPlan, PremiumStatus, PremiumOffer } from '../../core/services/premium.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -26,13 +27,19 @@ export class PremiumComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private notify = inject(NotificationService);
+  private api = inject(ApiService);
     private auth = inject(AuthService);
 
   mode = signal<ViewMode>('plans');
   loading = signal(true);
   subscribing = signal<'monthly' | 'annual' | null>(null);
 
+  /** false = « Premium bientôt disponible » (réglage serveur QUINCH_PREMIUM_PAYMENTS). */
+  paymentsEnabled = signal(true);
+
   plans = signal<PremiumPlan[]>([]);
+  offer = signal<PremiumOffer | null>(null);
+  applying = signal(false);
   status = signal<PremiumStatus | null>(null);
 
     benefits = [
@@ -59,6 +66,12 @@ export class PremiumComponent implements OnInit {
     else if (path === 'premium/error') this.mode.set('error');
     else this.mode.set('plans');
 
+    this.api.get<{ premium_payments: boolean }>('public-config').subscribe({
+      next: (cfg) => this.paymentsEnabled.set(cfg.premium_payments !== false),
+    });
+
+    this.premiumService.getOffer().subscribe({ next: (o) => this.offer.set(o), error: () => {} });
+
     this.loading.set(true);
     this.premiumService.getStatus().subscribe({
       next: (res) => {
@@ -81,6 +94,10 @@ export class PremiumComponent implements OnInit {
 
   subscribe(plan: 'monthly' | 'annual') {
     if (this.subscribing()) return;
+    if (!this.paymentsEnabled()) {
+      this.notify.error("Le mode de paiement n'est pas actif actuellement pour la version bêta.");
+      return;
+    }
     this.subscribing.set(plan);
     this.premiumService.subscribe(plan, 'wave').subscribe({
       next: (res) => {
@@ -90,6 +107,22 @@ export class PremiumComponent implements OnInit {
       error: (err) => {
         this.subscribing.set(null);
         this.notify.error(err?.error?.message || "Impossible d'initier l'abonnement pour le moment.");
+      },
+    });
+  }
+
+  applyForOffer() {
+    if (this.applying()) return;
+    this.applying.set(true);
+    this.premiumService.applyOffer().subscribe({
+      next: (res) => {
+        this.applying.set(false);
+        this.offer.update(o => o ? { ...o, my_status: 'pending' } : o);
+        this.notify.success(res.message);
+      },
+      error: (err) => {
+        this.applying.set(false);
+        this.notify.error(err?.error?.message || "Impossible d'envoyer la candidature pour le moment.");
       },
     });
   }

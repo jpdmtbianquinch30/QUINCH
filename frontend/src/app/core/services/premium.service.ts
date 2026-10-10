@@ -17,6 +17,13 @@ export interface PremiumStatus {
   pending_subscription: { id: string; plan: string; status: string } | null;
 }
 
+export interface PremiumOffer {
+  slots_total: number;
+  slots_left: number;
+  days: number;
+  my_status: 'pending' | 'granted' | 'rejected' | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PremiumService {
   private api = inject(ApiService);
@@ -31,5 +38,13 @@ export class PremiumService {
 
   subscribe(plan: 'monthly' | 'annual', paymentMethod: string = 'wave'): Observable<{ payment_url: string }> {
     return this.api.post('premium/subscribe', { plan, payment_method: paymentMethod });
+  }
+
+  getOffer(): Observable<PremiumOffer> {
+    return this.api.get('premium/offer');
+  }
+
+  applyOffer(): Observable<{ message: string; my_status: string }> {
+    return this.api.post('premium/offer/apply', {});
   }
 }

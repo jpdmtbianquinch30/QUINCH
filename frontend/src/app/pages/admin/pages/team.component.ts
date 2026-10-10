@@ -44,6 +44,14 @@ import { ROLE_LABELS, errMsg, fmtMoney } from '../shared/admin-utils';
           @for (s of p.subscriptions.data; track s.id) { <tr><td>{{ s.user?.full_name }}</td><td>{{ s.plan }}{{ s.payment_method === 'admin_grant' ? ' (offert)' : '' }}</td><td>{{ money(s.amount) }}</td><td><span class="adm-chip" [class.ok]="s.status === 'active'">{{ s.status }}</span></td>
             <td class="adm-sub">{{ s.starts_at | date:'dd/MM/yy' }}</td><td class="adm-sub">{{ s.expires_at | date:'dd/MM/yy' }}</td></tr>
           } @empty { <tr><td colspan="6" class="adm-empty">Aucun abonnement.</td></tr> }</tbody></table></div>
+        @if (offer(); as o) {
+          <h3 style="margin:18px 0 8px">Premium offert aux {{ o.slots_total }} premiers — {{ o.slots_left }} place(s) restante(s) · {{ o.pending }} candidature(s) en attente</h3>
+          <div class="adm-table-wrap"><table class="adm-table"><thead><tr><th>Utilisateur</th><th>E-mail</th><th>Date</th><th>Statut</th><th></th></tr></thead><tbody>
+            @for (a of o.applications.data; track a.id) { <tr><td>{{ a.user?.full_name }}</td><td class="adm-sub">{{ a.user?.email }}</td><td class="adm-sub">{{ a.created_at | date:'dd/MM/yy HH:mm' }}</td>
+              <td><span class="adm-chip" [class.ok]="a.status === 'granted'">{{ a.status }}</span></td>
+              <td>@if (a.status === 'pending') { <button class="adm-btn" (click)="decide(a, true)">Offrir {{ o.days }} j</button> <button class="adm-btn ghost" (click)="decide(a, false)">Refuser</button> }</td></tr>
+            } @empty { <tr><td colspan="5" class="adm-empty">Aucune candidature.</td></tr> }</tbody></table></div>
+        }
         <p class="adm-sub">Pour offrir ou retirer un Premium : fiche utilisateur → « Offrir / Retirer Premium ».</p>
       }
     }
@@ -89,7 +97,7 @@ export class AdminTeamPage implements OnInit {
 
   roles = ROLE_LABELS; money = fmtMoney;
   tab = signal<'staff' | 'premium' | 'reviews'>('staff');
-  staff = signal<any[]>([]); prem = signal<any>(null); reviews = signal<any[]>([]);
+  staff = signal<any[]>([]); prem = signal<any>(null); offer = signal<any>(null); reviews = signal<any[]>([]);
   pf = ''; expiring = false; rs = ''; rr = '';
   target: any = null; busy = signal(false); error = signal('');
   createRole = signal<'moderator' | 'admin' | null>(null); showPw = signal(false);
@@ -134,7 +142,17 @@ export class AdminTeamPage implements OnInit {
     if (t === 'premium') this.loadPremium();
     if (t === 'reviews') this.loadReviews();
   }
-  loadPremium() { this.admin.getPremium({ status: this.pf || null, expiring: this.expiring ? 1 : null }).subscribe(r => this.prem.set(r)); }
+  loadPremium() {
+    this.admin.getPremium({ status: this.pf || null, expiring: this.expiring ? 1 : null }).subscribe(r => this.prem.set(r));
+    this.admin.getPremiumOffer().subscribe(r => this.offer.set(r));
+  }
+  decide(a: any, grant: boolean) {
+    const call = grant ? this.admin.grantPremiumOffer(a.id) : this.admin.rejectPremiumOffer(a.id);
+    call.subscribe({
+      next: (r: any) => { this.notif.success(r.message || 'OK'); this.loadPremium(); },
+      error: e => this.notif.error(errMsg(e)),
+    });
+  }
   loadReviews() { this.admin.getReviews({ search: this.rs || null, rating: this.rr || null }).subscribe(r => this.reviews.set(r.data)); }
 
   delReview(res: ModalResult) {

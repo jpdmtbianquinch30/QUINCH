@@ -148,7 +148,8 @@ class ProductController extends Controller
         // immédiat, comme avant.
         $hasVideo = !empty($validated['video_id']);
 
-        if ($hasVideo && !$isPremium) {
+        // Frais à 0 (bêta gratuite) : aucune étape de paiement, publication immédiate.
+        if ($hasVideo && !$isPremium && $this->listingFee() > 0) {
             $validated['status'] = 'draft';
             $validated['listing_fee_status'] = 'pending';
             $validated['listing_fee_amount'] = $this->listingFee();
@@ -184,6 +185,11 @@ class ProductController extends Controller
         /** Frais de publication (F CFA) d'une annonce avec vidéo pour un compte gratuit. */
     private function listingFee(): int
     {
+        // Bêta : publication gratuite pour tous, quel que soit le réglage admin.
+        if (config('quinch.beta')) {
+            return 0;
+        }
+
         return (int) config('quinch.premium.listing_fee_with_video', 150);
     }
 
@@ -206,7 +212,9 @@ class ProductController extends Controller
             $product->update(['listing_fee_status' => 'failed']);
 
             return response()->json([
-                'message' => "Le paiement n'est pas disponible pour le moment. Vous pouvez publier sans vidéo, ou réessayer plus tard.",
+                'message' => config('quinch.beta')
+                    ? "Version bêta : le paiement n'est pas encore actif. Vous pouvez publier sans vidéo, ou réessayer bientôt."
+                    : "Le paiement n'est pas disponible pour le moment. Vous pouvez publier sans vidéo, ou réessayer plus tard.",
             ], 422);
         }
 
@@ -254,7 +262,8 @@ class ProductController extends Controller
             return response()->json(['message' => 'Seul un brouillon peut être publié.'], 422);
         }
 
-        $needsFee = !empty($product->video_id)
+        $needsFee = $this->listingFee() > 0
+            && !empty($product->video_id)
             && !$user->isPremiumActive()
             && $product->listing_fee_status !== 'paid';
 

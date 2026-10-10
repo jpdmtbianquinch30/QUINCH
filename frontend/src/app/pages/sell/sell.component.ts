@@ -6,6 +6,7 @@ import { ProductService } from '../../core/services/product.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { Category } from '../../core/models/product.model';
 import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 import { HttpEventType } from '@angular/common/http';
 
 @Component({
@@ -25,6 +26,14 @@ export class SellComponent implements OnInit, OnDestroy {
   private notify = inject(NotificationService);
 
   auth = inject(AuthService);
+  private api = inject(ApiService);
+
+  /** Frais de publication vidéo (F CFA) lus côté serveur ; 0 = gratuit (bêta). */
+  listingFee = signal(150);
+  /** false = Premium « bientôt disponible » : on masque les invitations à s'abonner. */
+  premiumPayments = signal(true);
+  /** Mode bêta (QUINCH_BETA) : bandeau « version de test », aucun paiement. */
+  beta = signal(false);
 
   categories = signal<Category[]>([]);
   loading = signal(false);
@@ -246,6 +255,13 @@ export class SellComponent implements OnInit, OnDestroy {
   ];
 
   ngOnInit() {
+    this.api.get<{ listing_fee_with_video: number; premium_payments: boolean; beta?: boolean }>('public-config').subscribe({
+      next: (cfg) => {
+        this.beta.set(!!cfg.beta);
+        this.listingFee.set(Number(cfg.listing_fee_with_video) || 0);
+        this.premiumPayments.set(cfg.premium_payments !== false);
+      },
+    });
     this.productService.getCategories().subscribe({
       next: (res) => this.categories.set(res.categories),
     });

@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             'user', 'conversation', 'message', 'negotiation', 'notification', 'transaction',
             'cartItem', 'review', 'report', 'appeal', 'ticket', 'strike', 'banner', 'bannedIp',
-            'badge', 'category', 'video',
+            'badge', 'category', 'video', 'application',
         ] as $param) {
             \Illuminate\Support\Facades\Route::pattern(
                 $param,

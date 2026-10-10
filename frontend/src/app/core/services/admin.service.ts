@@ -181,6 +181,9 @@ export class AdminService {
   syncBadges() { return this.api.post<any>('admin/badges/sync'); }
   getBadgeHolders(id: string, page = 1) { return this.api.get<any>(`admin/badges/${id}/holders`, { page }); }
   getPremium(params: Record<string, any> = {}) { return this.api.get<any>('admin/premium', params); }
+  getPremiumOffer(params: Record<string, any> = {}) { return this.api.get<any>('admin/premium-offer', params); }
+  grantPremiumOffer(id: string) { return this.api.post(`admin/premium-offer/${id}/grant`, {}); }
+  rejectPremiumOffer(id: string) { return this.api.post(`admin/premium-offer/${id}/reject`, {}); }
   getReviews(params: Record<string, any> = {}) { return this.api.get<any>('admin/reviews', params); }
   deleteReview(id: string, reason: string) { return this.api.post(`admin/reviews/${id}/delete`, { reason }); }
 

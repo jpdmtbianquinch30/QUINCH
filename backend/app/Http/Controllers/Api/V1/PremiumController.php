@@ -46,6 +46,13 @@ class PremiumController extends Controller
 
     public function subscribe(Request $request): JsonResponse
     {
+        if (!config('quinch.premium.payments_enabled', true)) {
+            return response()->json([
+                'message' => "Le mode de paiement n'est pas actif actuellement pour la version bêta.",
+                'error' => 'premium_coming_soon',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'plan' => ['required', Rule::in(['monthly', 'annual'])],
             'payment_method' => ['required', Rule::in(config('quinch.enabled_payment_methods', ['wave']))],

@@ -1,6 +1,11 @@
 <?php
 
+// Mode bêta : paiements désactivés partout (publication vidéo gratuite, Premium sans paiement).
+$beta = filter_var(env('QUINCH_BETA', false), FILTER_VALIDATE_BOOL);
+
 return [
+
+    'beta' => $beta,
 
     /*
     |--------------------------------------------------------------------------
@@ -66,6 +71,15 @@ return [
     |
     */
     'premium' => [
+        // false = « Premium bientôt disponible » : plus aucun abonnement possible (bêta gratuite).
+        'payments_enabled' => $beta ? false : filter_var(env('QUINCH_PREMIUM_PAYMENTS', true), FILTER_VALIDATE_BOOL),
+
+        // Offre de lancement : Premium offert aux N premiers utilisateurs qui postulent.
+        'offer' => [
+            'slots' => (int) env('QUINCH_PREMIUM_OFFER_SLOTS', 100),
+            'days'  => (int) env('QUINCH_PREMIUM_OFFER_DAYS', 90),
+        ],
+
         'prices' => [
             'monthly' => (int) env('QUINCH_PREMIUM_PRICE_MONTHLY', 2000),
             'annual'  => (int) env('QUINCH_PREMIUM_PRICE_ANNUAL', 20000),

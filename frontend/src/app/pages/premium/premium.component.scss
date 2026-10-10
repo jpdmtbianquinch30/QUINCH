@@ -1121,3 +1121,12 @@
     transition: none;
   }
 }
+
+.offer-card {
+  display: flex; gap: 12px; align-items: flex-start; margin: 16px 0; padding: 14px 16px;
+  border-radius: 14px; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.3);
+  > .material-icons { color: #fbbf24; font-size: 28px; }
+  div { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+  .offer-state { font-style: normal; font-weight: 600; &.ok { color: #22c55e; } }
+  .subscribe-btn { align-self: flex-start; }
+}
