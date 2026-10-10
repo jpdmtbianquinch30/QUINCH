@@ -76,4 +76,16 @@ class PremiumOfferTest extends TestCase
         Sanctum::actingAs($this->verifiedUser());
         $this->postJson("/api/v1/admin/premium-offer/{$a->id}/grant")->assertStatus(403);
     }
+
+    public function test_applying_notifies_staff_who_manage_premium(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $moderator = User::factory()->create(['role' => 'moderator']);
+
+        Sanctum::actingAs($this->verifiedUser());
+        $this->postJson('/api/v1/premium/offer/apply')->assertCreated();
+
+        $this->assertDatabaseHas('user_notifications', ['user_id' => $admin->id, 'type' => 'admin']);
+        $this->assertDatabaseMissing('user_notifications', ['user_id' => $moderator->id, 'type' => 'admin']);
+    }
 }

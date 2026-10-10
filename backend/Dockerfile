@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 
 # ─── Étape 1 : dépendances Composer ──────────────────────────────────────────
 FROM composer:2 AS vendor

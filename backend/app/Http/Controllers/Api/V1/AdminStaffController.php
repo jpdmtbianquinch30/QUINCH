@@ -64,7 +64,7 @@ class AdminStaffController extends Controller
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'phone_number' => ['nullable', 'string', 'regex:/^\+221[0-9]{9}$/', 'unique:users,phone_number'],
             'role' => ['required', 'in:moderator,admin'],
-            'password' => ['required', 'string', 'min:10', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
+            'password' => ['required', 'string', 'min:12', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
         ], [
             'phone_number.regex' => 'Le numéro doit être au format Sénégal (+221XXXXXXXXX).',
             'phone_number.unique' => 'Ce numéro est déjà utilisé.',
@@ -108,7 +108,7 @@ class AdminStaffController extends Controller
     public function resetPassword(Request $request, User $user): JsonResponse
     {
         $validated = $request->validate([
-            'password' => ['required', 'string', 'min:10', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
+            'password' => ['required', 'string', 'min:12', 'max:100', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).+$/'],
         ], ['password.regex' => 'Le mot de passe doit contenir une majuscule, une minuscule et un chiffre.']);
 
         if ($deny = $this->denyIfCannotManage($request, $user)) {

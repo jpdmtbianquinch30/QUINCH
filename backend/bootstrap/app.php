@@ -54,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'sensitive' => \App\Http\Middleware\RequirePasswordConfirmation::class,
         'fraud.check' => \App\Http\Middleware\FraudDetection::class,
         'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
+        'email.verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
     ]);
         // API pure : il n'existe aucune route web nommée "login". Sans ceci,
         // une requête non authentifiée qui n'envoie pas Accept:application/json

@@ -280,12 +280,21 @@ class AuthController extends Controller
 
     public function changePassword(Request $request): JsonResponse
     {
+        // Les comptes de l'équipe (modérateur, admin, super admin) ont des pouvoirs
+        // étendus : un mot de passe long est exigé (la longueur compte plus que les symboles).
+        $isStaff = (bool) $request->user()?->isStaff();
+
+        $messages = [
+            'new_password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
+        ];
+        if ($isStaff) {
+            $messages['new_password.min'] = 'Pour un compte de l\'équipe, le mot de passe doit contenir au moins 14 caractères.';
+        }
+
         $request->validate([
             'current_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'max:72', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
-        ], [
-            'new_password.regex' => 'Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre.',
-        ]);
+            'new_password' => ['required', 'string', 'min:' . ($isStaff ? 14 : 8), 'max:72', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+        ], $messages);
 
         $user = $request->user();
 
