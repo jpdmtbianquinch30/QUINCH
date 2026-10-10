@@ -103,6 +103,13 @@ La production doit utiliser de vraies credentials marchand et les webhooks véri
 
 Les webhooks de commande (Wave et Orange Money) passent par `App\Services\Payments\OrderPaymentConfirmer` : verrou de ligne, idempotence, montant et devise vérifiés, un échec n'annule jamais une commande payée (voir `docs/PAYMENTS.md`).
 
+### Mode bêta
+
+Avec `QUINCH_BETA=true`, la publication avec vidéo est gratuite et les paiements Premium sont désactivés (message « Le mode de
+paiement n'est pas actif actuellement pour la version bêta »). Les premiers utilisateurs peuvent **postuler au Premium offert**
+(100 places, 90 jours par défaut) depuis la page Premium ; l'équipe est notifiée et décide dans **Équipe & Premium**. Une adresse
+e-mail confirmée est exigée. Détails, comptes de l'équipe et liste de contrôle : [`docs/BETA.md`](docs/BETA.md).
+
 ## 3. Architecture
 
 ```text
@@ -213,6 +220,20 @@ npm start
 ```
 
 L'application de développement Angular est disponible sur `http://localhost:4200`.
+
+### Développer avec le backend Docker
+
+`npm start` utilise `proxy.conf.json` (API sur `127.0.0.1:8000`, c'est-à-dire `php artisan serve`). Pour travailler contre les
+conteneurs (Redis, workers, stockage partagé), utiliser :
+
+```bash
+cd frontend
+ng serve --proxy-config proxy.docker.conf.json   # API sur 127.0.0.1:8080
+```
+
+Le code est copié dans les images : après un changement backend, reconstruire avec
+`docker compose up -d --build app queue queue_videos scheduler` puis `docker compose exec app php artisan migrate --force`.
+Avec Docker, `QUEUE_CONNECTION=redis` est obligatoire (sinon notifications à tous et e-mails restent en attente).
 
 ## 6. Configuration production
 
@@ -355,6 +376,14 @@ Les protections déjà intégrées comprennent notamment :
 
 Voir `docs/SECURITY.md`.
 
+### Comptes de l'équipe
+
+- Le rôle `super_admin` s'attribue uniquement par `php artisan quinch:set-role <email> super_admin` sur le serveur.
+- Mot de passe de l'équipe : 14 caractères minimum au changement, 12 minimum à la création ou réinitialisation.
+- Pseudos contenant `quinch` réservés ; le compte officiel reçoit son pseudo par le serveur.
+- `DatabaseSeeder` (compte `admin@quinch.sn`) est réservé à `local` et `testing` : ne jamais l'exécuter sur un serveur.
+- Pas encore de double authentification (2FA) applicative : à prévoir avant une ouverture large. Voir `docs/SECURITY.md`.
+
 ## 11. CI/CD
 
 GitHub Actions exécute actuellement :
@@ -387,7 +416,11 @@ cd frontend
 npm test
 ```
 
-Près de 400 tests backend (PHPUnit sur PostgreSQL) couvrent notamment l'authentification, l'OTP e-mail, la protection contre la prise de compte, les permissions admin, la modération, les favoris, les follows, les badges, les paiements Wave/Orange Money et leurs webhooks, la réconciliation, Premium, la machine d'état des commandes, l'absence d'erreur 500 sur entrées invalides, l'exposition publique des données, les limites de pagination et plusieurs scénarios de sécurité.
+Environ 420 tests backend (PHPUnit sur PostgreSQL) couvrent notamment l'authentification, l'OTP e-mail, la protection contre la prise de compte, les permissions admin, la modération, les favoris, les follows, les badges, les paiements Wave/Orange Money et leurs webhooks, la réconciliation, Premium, la machine d'état des commandes, l'absence d'erreur 500 sur entrées invalides, l'exposition publique des données, les limites de pagination et plusieurs scénarios de sécurité.
+
+Il n'existe pas de test unitaire Angular (`npm test` exécute 0 test) : l'interface se vérifie par `ng build --configuration production`
+et un parcours manuel (voir `docs/BETA.md`). Contrôles complémentaires : `composer audit`, `npm audit --omit=dev --audit-level=high`,
+`php artisan quinch:preflight --as=production`, `docker compose exec app php artisan quinch:health --deep`.
 
 Après une mise à jour du code : `docker compose exec app php artisan migrate --force` (la table `blocked_users` et ses clés étrangères sont créées par migration).
 
@@ -453,7 +486,11 @@ Voir `docs/LEGAL.md` et `docs/conformite/`.
 |---|---:|---|
 | `QUINCH_PREMIUM_PRICE_MONTHLY` | `2000` | Premium mensuel en XOF |
 | `QUINCH_PREMIUM_PRICE_ANNUAL` | `20000` | Premium annuel en XOF |
-| `QUINCH_LISTING_FEE_WITH_VIDEO` | `150` | frais de publication configurés |
+| `QUINCH_LISTING_FEE_WITH_VIDEO` | `150` | frais de publication avec vidéo (affiché 0 en bêta) |
+| `QUINCH_BETA` | `true` | mode bêta : publication vidéo gratuite, paiements Premium coupés |
+| `QUINCH_PREMIUM_PAYMENTS` | `false` | paiements Premium (sans effet si `QUINCH_BETA=true`) |
+| `QUINCH_PREMIUM_OFFER_SLOTS` | `100` | places du Premium offert |
+| `QUINCH_PREMIUM_OFFER_DAYS` | `90` | durée du Premium offert, en jours |
 | `QUINCH_FEATURE_NEGOTIATION` | `true` | négociation |
 | `QUINCH_FEATURE_FOLLOW` | `true` | abonnements |
 | `QUINCH_FEATURE_REVIEWS` | `true` | avis |

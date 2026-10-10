@@ -63,6 +63,9 @@ docker compose logs -f --tail=100 app queue scheduler        # application
 docker compose logs -f --tail=100 nginx caddy                # accès, erreurs HTTP, certificats
 docker compose exec app php artisan queue:failed             # tâches en échec (le contenu est chiffré)
 docker compose exec app php artisan queue:retry all          # relancer les tâches en échec
+# Cause du dernier échec vidéo :
+docker compose exec app php artisan tinker --execute="echo substr(DB::table('failed_jobs')->where('payload','like','%ProcessVideoJob%')->orderByDesc('failed_at')->value('exception'),0,600);"
+docker compose exec app php artisan queue:flush              # vider la liste une fois la cause comprise
 ```
 
 Les journaux d'audit d'administration sont dans l'interface admin (conservés 180 jours).
@@ -80,3 +83,12 @@ Les journaux d'audit d'administration sont dans l'interface admin (conservés 18
 
 Un suivi des erreurs applicatives (Sentry ou équivalent) et des métriques fines (Prometheus/Grafana) seront utiles quand
 le trafic le justifiera : aucun des deux n'est installé aujourd'hui, pour garder le serveur simple.
+
+## Vidéos en échec (`ProcessVideoJob`)
+
+- « Fichier vidéo introuvable » : le worker `queue_videos` ne voit pas le fichier. Causes habituelles : volume
+  `storage_data` supprimé (`docker compose down -v`), worker démarré sans le volume partagé, fichier purgé.
+  Vérifier : `docker compose exec queue_videos ls /var/www/html/storage/app/public/videos`.
+- Le job ne réessaie plus ce cas (inutile) : il échoue une fois et la vidéo passe à `failed`.
+- Une vidéo supprimée avant son traitement n'est plus un échec : le job est abandonné.
+- Une vidéo `failed` ne se répare pas par `queue:retry` si le fichier n'existe plus : le vendeur doit la republier.

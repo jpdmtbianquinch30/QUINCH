@@ -44,6 +44,10 @@ class BadgeController extends Controller
             'reason' => 'nullable|string|max:500',
         ]);
 
+        if ($deny = $this->denyBadgeOnSelf($request, $user)) {
+            return $deny;
+        }
+
         $badge = UserBadge::updateOrCreate(
             ['user_id' => $user->id, 'badge_type' => $validated['badge_type']],
             ['awarded_by' => $request->user()->id, 'reason' => $validated['reason'] ?? null, 'source' => 'manual']
@@ -55,6 +59,10 @@ class BadgeController extends Controller
     // Admin: revoke badge
     public function revoke(Request $request, User $user, string $badgeType): JsonResponse
     {
+        if ($deny = $this->denyBadgeOnSelf($request, $user)) {
+            return $deny;
+        }
+
         UserBadge::where('user_id', $user->id)->where('badge_type', $badgeType)->delete();
         return response()->json(['message' => 'Badge retiré.']);
     }
@@ -176,5 +184,20 @@ class BadgeController extends Controller
             'awarded_at' => $badge->created_at,
             'expires_at' => $badge->expires_at,
         ];
+    }
+
+    /** Un membre de l'équipe ne peut pas s'attribuer de badge, sauf le super admin. */
+    private function denyBadgeOnSelf(Request $request, User $target): ?JsonResponse
+    {
+        $actor = $request->user();
+
+        if ($actor->id === $target->id && $actor->role !== 'super_admin') {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas modifier vos propres badges.',
+                'error' => 'cannot_manage_self',
+            ], 403);
+        }
+
+        return null;
     }
 }

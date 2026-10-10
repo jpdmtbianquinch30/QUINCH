@@ -98,6 +98,7 @@ class AdminUserController extends Controller
         return response()->json([
             'user' => $user,
             'can_manage' => $request->user()->canManage($user),
+            'is_self_super' => $request->user()->id === $user->id && $request->user()->role === 'super_admin',
             'active_strikes' => $this->strikes->activeCount($user),
             'strikes' => $user->strikes()->with('issuer:id,full_name')->latest()->limit(20)->get(),
             'recent_activity' => AuditLog::forUser($user->id)->recent(30)->latest('created_at')->limit(20)->get(),
@@ -289,7 +290,10 @@ class AdminUserController extends Controller
             'reason' => $this->reasonRules(),
         ]);
 
-        if ($deny = $this->denyIfCannotManage($request, $user)) {
+        // Le super admin peut régler le score de son propre compte ; personne d'autre.
+        $selfAsSuperAdmin = $request->user()->id === $user->id && $request->user()->role === 'super_admin';
+
+        if (!$selfAsSuperAdmin && ($deny = $this->denyIfCannotManage($request, $user))) {
             return $deny;
         }
 

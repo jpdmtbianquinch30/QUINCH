@@ -15,6 +15,7 @@ Documentation de référence du projet.
 - [Stockage des médias : objet + CDN](STORAGE.md)
 - [Supervision](MONITORING.md)
 - [Sauvegardes et restauration](BACKUPS.md)
+- [Version bêta : interrupteurs, Premium offert, comptes de l'équipe](BETA.md)
 - [Préproduction](STAGING.md)
 - [Tests de charge k6](LOAD-TESTING.md)
 - [Système visuel](UI-DESIGN.md)

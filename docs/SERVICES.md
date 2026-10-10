@@ -78,7 +78,7 @@ informations légales manquantes, stockage objet incomplet...). Lire ses message
 | Tous les services tournent-ils ? | `docker compose ps` |
 | L'application est-elle prête ? | `curl https://api.quinch.sn/up` (200) |
 | Santé détaillée | `docker compose exec app php artisan quinch:health --deep` |
-| Un worker est-il bloqué ? | `docker compose logs --tail=50 queue` ; tâches en échec : `docker compose exec app php artisan queue:failed` |
+| Un worker est-il bloqué ? | `docker compose logs --tail=50 queue` ; tâches en échec : `docker compose exec app php artisan queue:failed` ; vidéos : voir « Vidéos en échec » dans `docs/MONITORING.md` |
 | Le scheduler tourne-t-il ? | `docker compose logs --tail=20 scheduler` |
 | Connexions à la base | `docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "select count(*) from pg_stat_activity"` |
 | Espace disque | `df -h` sur le serveur ; `docker system df` |

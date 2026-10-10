@@ -8,6 +8,12 @@ class TrustScoreCalculator
 {
     public function calculate(User $user): float
     {
+        // Les comptes de l'équipe (modérateur, admin, super admin) ne sont pas recalculés :
+        // leur score reste celui que le super admin a choisi.
+        if ($user->isStaff()) {
+            return (float) $user->trust_score;
+        }
+
         $baseScore = 0.3;
 
         $positiveFactors = [

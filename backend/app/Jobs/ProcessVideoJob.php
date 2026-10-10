@@ -26,6 +26,10 @@ class ProcessVideoJob implements ShouldQueue
     // Doit rester < retry_after de la file (config/queue.php : 720 s).
     public int $timeout = 600;
 
+    // Vidéo supprimée (compte effacé, modération, quinch:delete-all-videos) avant le passage
+    // du worker : il n'y a plus rien à traiter, ce n'est pas une erreur -> job abandonné sans échec.
+    public bool $deleteWhenMissingModels = true;
+
     public function __construct(public ProductVideo $video)
     {
         $this->onQueue((string) config('quinch.video.queue', 'videos'));
@@ -33,13 +37,24 @@ class ProcessVideoJob implements ShouldQueue
 
     public function handle(): void
     {
-        $this->video->update(['processing_status' => 'processing']);
-
         $disk = Storage::disk('public');
 
+        // Fichier absent (volume de stockage réinitialisé, worker sans le volume partagé, fichier
+        // purgé) : réessayer ne le fera pas réapparaître. On échoue tout de suite, une seule fois,
+        // avec un message exploitable, au lieu de 3 tentatives inutiles.
         if (!$this->video->video_path || !$disk->exists($this->video->video_path)) {
-            throw new \RuntimeException("Fichier vidéo introuvable : {$this->video->video_path}");
+            $this->fail(new \RuntimeException(sprintf(
+                'Fichier vidéo introuvable (video_id=%s, chemin=%s, disque=%s). '
+                . 'Vérifiez que le volume de stockage est bien partagé entre app et queue_videos.',
+                $this->video->id,
+                $this->video->video_path ?: '(vide)',
+                config('filesystems.disks.public.driver', 'local')
+            )));
+
+            return;
         }
+
+        $this->video->update(['processing_status' => 'processing']);
 
         // Stockage objet : ffprobe/ffmpeg lisent la vidéo par une URL S3 temporaire (requêtes
         // Range : seuls les octets utiles sont téléchargés, pas les 500 Mo du fichier).
@@ -65,7 +80,8 @@ class ProcessVideoJob implements ShouldQueue
             'error'    => $e->getMessage(),
         ]);
 
-        $this->video->update(['processing_status' => 'failed']);
+        // La ligne peut avoir disparu entre-temps : un UPDATE sans effet ne doit pas lever d'erreur.
+        ProductVideo::whereKey($this->video->id)->update(['processing_status' => 'failed']);
     }
 
     private function probeDuration(string $inputPath): ?int

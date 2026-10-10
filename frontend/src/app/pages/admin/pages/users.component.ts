@@ -76,11 +76,18 @@ type Act = 'warn' | 'suspend' | 'lift' | 'ban' | 'unban' | 'delete' | 'role' | '
           @if (admin.can('users.export')) { <button class="adm-btn sm" (click)="ask('export')">Export RGPD</button> }
           @if (admin.can('users.delete') && !d.user.anonymized_at) { <button class="adm-btn sm danger" (click)="ask('delete')">Supprimer le compte</button> }
         </div>
+      } @else if (d.is_self_super) {
+        <div class="adm-section">Actions</div>
+        <div class="adm-row">
+          @if (admin.can('users.trust')) { <button class="adm-btn sm" (click)="ask('trust')">Confiance</button> }
+          @if (admin.can('users.badges')) { <button class="adm-btn sm" (click)="ask('badge')">Badge</button> }
+        </div>
+        <div class="adm-muted">C'est votre compte : seuls la confiance et les badges sont modifiables ici.</div>
       } @else { <div class="adm-warn-box">Vous ne pouvez pas agir sur ce compte (rôle égal ou supérieur, ou votre propre compte).</div> }
 
       <div class="adm-section">Badges</div>
       <div class="adm-row" style="flex-wrap:wrap;gap:6px">@for (b of d.user.badges; track b.id) { <span class="adm-chip info">{{ b.badge_type }}{{ b.source === 'auto' ? ' · auto' : '' }}
-        @if (d.can_manage && admin.can('users.badges')) { <button class="adm-btn sm" style="margin-left:6px;padding:0 6px" (click)="revokeBadge(b.badge_type)" aria-label="Retirer le badge">✕</button> }</span> } @empty { <span class="adm-muted">Aucun badge.</span> }</div>
+        @if ((d.can_manage || d.is_self_super) && admin.can('users.badges')) { <button class="adm-btn sm" style="margin-left:6px;padding:0 6px" (click)="revokeBadge(b.badge_type)" aria-label="Retirer le badge">✕</button> }</span> } @empty { <span class="adm-muted">Aucun badge.</span> }</div>
 
       <div class="adm-section">Avertissements</div>
       <ul class="adm-timeline">@for (s of d.strikes; track s.id) { <li>{{ s.created_at | date:'dd/MM/yy' }} · {{ s.reason }} @if (s.revoked_at) { <span class="adm-chip">retiré</span> } @else if (d.can_manage && admin.can('users.warn')) { <button class="adm-btn sm" (click)="revokeStrike(s.id)">Retirer</button> }</li> } @empty { <li>Aucun.</li> }</ul>

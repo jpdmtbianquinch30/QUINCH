@@ -70,3 +70,15 @@ Détail et justification dans `docs/SECURITY.md` (« Audit de sécurité »).
   `install-php-extensions` épinglé, règle de mot de passe unique.
 
 Migration à lancer : `php artisan migrate --force`.
+
+## Bêta fermée — octobre 2026 (suite)
+
+- Middleware `email.verified` (alias enregistré dans `bootstrap/app.php`) : correction de 15 tests en échec et des routes
+  achat, abonnement Premium et candidature.
+- Mode bêta et **offre Premium offert** : notification des admins à chaque candidature ; documentation `docs/BETA.md`.
+- Mots de passe de l'équipe plus longs (14 au changement, 12 à la création/réinitialisation).
+- Super admin : badges et confiance réglables sur son propre compte ; la confiance de l'équipe n'est plus recalculée.
+- Guide utilisateur : section « Version bêta », frais et Premium mis à jour.
+- Docker : `frontend/proxy.docker.conf.json` pour développer Angular contre le backend Docker ; rappel de reconstruire les
+  images après un changement de code.
+- Tests : environ 420 tests backend ; aucun test unitaire Angular.

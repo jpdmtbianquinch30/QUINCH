@@ -22,6 +22,20 @@
 7. Vérifier healthchecks.
 8. Surveiller les erreurs.
 
+## Mise à jour du code en Docker
+
+Le code est copié dans l'image : un changement local n'a aucun effet tant que l'image n'est pas reconstruite.
+
+```bash
+docker compose up -d --build app queue queue_videos scheduler
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan config:clear
+docker compose exec app php artisan quinch:health --deep
+```
+
+Avec Docker, la file doit être `redis` (`QUEUE_CONNECTION=redis`). Une file `database` ou un worker arrêté laisse
+notifications à tous et e-mails en attente. Contrôle : `docker compose exec app php artisan queue:failed` (liste vide).
+
 ## Production HTTPS
 
 ```bash

@@ -100,6 +100,25 @@ Le domaine conversationnel est géré par `ConversationController`, avec message
 
 Les endpoints Premium et transactions doivent être utilisés uniquement pour les fonctionnalités payantes de QUINCH. Les anciennes routes panier/achat entre utilisateurs sont désactivées par défaut et certaines anciennes URLs redirigent vers la marketplace.
 
+### Mode bêta et offre Premium offert
+
+```text
+GET  /public-config                           (public) beta, listing_fee_with_video, premium_offer_slots, premium_payments
+GET  /premium/offer                           slots_total, slots_left, days, my_status (null|pending|granted|rejected)
+POST /premium/offer/apply                     201 pending | 422 déjà Premium ou plus de places | 403 email_not_verified
+POST /premium/subscribe                       refusé en bêta : 403 premium_coming_soon
+GET  /admin/premium-offer                     (permission premium.manage) candidatures et places restantes
+POST /admin/premium-offer/{application}/grant
+POST /admin/premium-offer/{application}/reject
+```
+
+Erreur `email_not_verified` (HTTP 403) : renvoyée par le middleware `email.verified` sur `transactions/initiate`,
+`premium/subscribe` et `premium/offer/apply`. Voir `docs/BETA.md`.
+
+Badges et confiance en administration : `POST /admin/users/{user}/badges`, `DELETE /admin/users/{user}/badges/{type}` et
+`POST /admin/users/{user}/adjust-trust` refusent (403 `cannot_manage_self`) un membre de l'équipe qui vise son propre compte,
+sauf le super admin.
+
 ## Webhook
 
 ```text

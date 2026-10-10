@@ -21,6 +21,9 @@
 - `change-password`, `delete-account` (POST **et** DELETE) et `PUT user/profile` sont limités en fréquence.
 - Règle de mot de passe unique (inscription, réinitialisation, changement) : 8 à 72 caractères, une majuscule,
   une minuscule, un chiffre.
+- Comptes de l'équipe (modérateur, admin, super admin) : 14 caractères minimum au changement de mot de passe, 12 minimum à la
+  création et à la réinitialisation par le super admin.
+- Pseudos contenant `quinch` réservés (anti-usurpation) ; un compte officiel reçoit son pseudo par le serveur.
 - Pseudos : 3 à 30 caractères, unicité insensible à la casse, noms réservés refusés (`App\Rules\AvailableUsername`).
 
 ## Protection des routes
@@ -121,6 +124,17 @@ Restent volontairement ouverts : jeton de connexion en `localStorage`, double au
 horodaté du webhook Orange (format Sonatel à confirmer), épinglage des images `pgadmin4` et `pgbouncer`, vidéos
 « pending » publiques tant que la modération n'a pas statué (choix produit).
 
+## Comptes de l'équipe
+
+- Le rôle `super_admin` ne s'attribue que par la commande `php artisan quinch:set-role` sur le serveur (jamais par HTTP) ;
+  l'action est journalisée en « critical » et révoque les sessions du compte.
+- Un super admin ne peut ni bannir ni supprimer un autre super admin ; personne n'agit sur son propre compte, sauf le super
+  admin pour ses badges et sa confiance.
+- `DatabaseSeeder` (compte `admin@quinch.sn`, mot de passe trivial) ne s'exécute qu'en `local` et `testing` : ne jamais le
+  lancer sur un serveur ; supprimer ce compte de toute base conservée.
+- La boîte e-mail d'un super admin reçoit les codes de réinitialisation : validation en deux étapes obligatoire sur cette boîte.
+- La double authentification applicative (2FA) n'existe pas encore : à ajouter avant une ouverture large.
+
 ## Secrets
 
 Ne jamais committer :
@@ -147,3 +161,6 @@ La CI utilise Gitleaks en complément des bonnes pratiques Git.
 - [ ] test TLS ;
 - [ ] `APP_DEBUG=false` ;
 - [ ] secrets uniquement côté serveur.
+- [ ] aucun compte de démonstration (`admin@quinch.sn`) sur le serveur ;
+- [ ] validation en deux étapes sur la boîte e-mail du super admin ;
+- [ ] liste des rôles `moderator`/`admin`/`super_admin` relue (voir `docs/BETA.md`).

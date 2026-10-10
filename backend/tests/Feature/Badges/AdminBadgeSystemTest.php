@@ -118,4 +118,18 @@ class AdminBadgeSystemTest extends TestCase
         $this->actingAs($admin, 'sanctum')->postJson("/api/v1/admin/users/{$target->id}/badges", ['badge_type' => 'inexistant'])->assertStatus(422);
         $this->actingAs($admin, 'sanctum')->postJson("/api/v1/admin/users/{$target->id}/badges", ['badge_type' => 'ambassador'])->assertOk();
     }
+
+    public function test_only_super_admin_can_award_a_badge_to_himself(): void
+    {
+        $superAdmin = $this->staff('super_admin');
+        $admin = $this->staff('admin');
+
+        $this->actingAs($superAdmin, 'sanctum')
+            ->postJson("/api/v1/admin/users/{$superAdmin->id}/badges", ['badge_type' => 'ambassador'])
+            ->assertOk();
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson("/api/v1/admin/users/{$admin->id}/badges", ['badge_type' => 'ambassador'])
+            ->assertForbidden();
+    }
 }

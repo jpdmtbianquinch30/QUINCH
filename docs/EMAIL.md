@@ -49,6 +49,26 @@ Configurer également :
 - DKIM ;
 - DMARC.
 
+## File d'attente
+
+Les e-mails passent par la file `redis` : le worker `queue` doit tourner (`docker compose ps`). Si les messages ne partent plus,
+regarder d'abord `docker compose logs queue --tail 50` et `queue:failed`, puis `quinch:mail-test`.
+
+## Fournisseur conseillé pour la bêta
+
+Gmail (mot de passe d'application) dépanne en développement mais plafonne l'envoi et classe souvent en spam. Pour la bêta
+publique : un service dédié comme **Brevo** (offre gratuite d'environ 300 e-mails par jour, à vérifier chez le fournisseur),
+avec un **nom de domaine à soi** pour publier SPF, DKIM et DMARC.
+
+```text
+MAIL_HOST=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_FROM_ADDRESS=no-reply@votredomaine
+```
+
+Compte Gmail utilisé comme expéditeur : activer la validation en deux étapes (nécessaire au mot de passe d'application) ;
+le mot de passe d'application s'écrit sans espaces dans `MAIL_PASSWORD`.
+
 ## Tests
 
 Tester au minimum :
