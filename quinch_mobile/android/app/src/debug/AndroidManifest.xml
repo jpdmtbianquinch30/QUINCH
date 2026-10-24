@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Débogage uniquement : autorise HTTP vers le backend local (émulateur / réseau local).
+         Ce fichier n'est utilisé que par les builds debug ; le build release n'en tient pas compte. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:usesCleartextTraffic="true"/>
+</manifest>

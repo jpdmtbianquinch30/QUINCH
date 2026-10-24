@@ -1,0 +1,32 @@
+name: quinch_mobile
+description: Application mobile QUINCH (Flutter) pour la plateforme QUINCH au Sénégal.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.10.3
+  flutter: ">=3.38.0"
+
+# Les bornes ci-dessous sont des intervalles « caret » choisis de mémoire pour
+# Flutter 3.38.4 / Dart 3.10.3. Elles N'ONT PAS été vérifiées contre pub.dev
+# (inaccessible depuis l'environnement où ce fichier a été écrit).
+# `flutter pub get` tranche : en cas d'échec de résolution, envoyer la sortie.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  dio: ^5.8.0
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.1
+  flutter_secure_storage: ^9.2.4
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
