@@ -37,9 +37,13 @@ class PremiumPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Premium')),
       body: overview.when(
         skipLoadingOnReload: true,
-        loading: () => const Center(child: CircularProgressIndicator(semanticsLabel: 'Chargement')),
-        error: (error, stackTrace) =>
-            ErrorRetry.fromError(error, onRetry: () => ref.invalidate(premiumOverviewProvider)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Chargement'),
+        ),
+        error: (error, stackTrace) => ErrorRetry.fromError(
+          error,
+          onRetry: () => ref.invalidate(premiumOverviewProvider),
+        ),
         data: (data) => RefreshIndicator(
           onRefresh: () => ref.refresh(premiumOverviewProvider.future),
           child: ListView(
@@ -47,7 +51,8 @@ class PremiumPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: [
               _StatusCard(status: data.status),
-              if (!data.status.isPremium && data.status.pendingSubscription != null) ...[
+              if (!data.status.isPremium &&
+                  data.status.pendingSubscription != null) ...[
                 const SizedBox(height: 16),
                 const _PendingCard(),
               ],
@@ -95,13 +100,17 @@ class _StatusCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  status.isPremium ? Icons.workspace_premium : Icons.person_outline,
+                  status.isPremium
+                      ? Icons.workspace_premium
+                      : Icons.person_outline,
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    status.isPremium ? 'Votre compte est Premium' : 'Votre compte est gratuit',
+                    status.isPremium
+                        ? 'Votre compte est Premium'
+                        : 'Votre compte est gratuit',
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
@@ -109,7 +118,8 @@ class _StatusCard extends StatelessWidget {
             ),
             if (status.isPremium) ...[
               const SizedBox(height: 8),
-              if (status.plan != null) Text('Formule : ${planLabel(status.plan)}'),
+              if (status.plan != null)
+                Text('Formule : ${planLabel(status.plan)}'),
               if (expires != null)
                 Text(
                   status.daysRemaining == null
@@ -178,10 +188,13 @@ class _PendingCardState extends ConsumerState<_PendingCard> {
               onPressed: _checking ? null : _check,
               child: _checking
                   ? const SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: 'Vérification'),
-              )
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        semanticsLabel: 'Vérification',
+                      ),
+                    )
                   : const Text('Vérifier mon paiement'),
             ),
           ],
@@ -253,8 +266,14 @@ class _PlanTileState extends ConsumerState<_PlanTile> {
           '${formatPrice(plan.price, plan.currency)}. Vous allez être redirigé vers une page de paiement sécurisée, hors de QUINCH.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Annuler')),
-          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Continuer')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continuer'),
+          ),
         ],
       ),
     );
@@ -263,10 +282,15 @@ class _PlanTileState extends ConsumerState<_PlanTile> {
     }
     setState(() => _busy = true);
     try {
-      final start = await container.read(premiumRepositoryProvider).subscribe(plan.id);
+      final start = await container
+          .read(premiumRepositoryProvider)
+          .subscribe(plan.id);
       if (start == null) {
         // Aucune adresse https valide fournie : rien n'est ouvert.
-        _toast(messenger, 'Le lien de paiement est indisponible. Réessayez plus tard.');
+        _toast(
+          messenger,
+          'Le lien de paiement est indisponible. Réessayez plus tard.',
+        );
         return;
       }
       final opened = await container.read(urlOpenerProvider)(start.paymentUrl);
@@ -298,10 +322,13 @@ class _PlanTileState extends ConsumerState<_PlanTile> {
           onPressed: _busy ? null : _choose,
           child: _busy
               ? const SizedBox(
-            height: 18,
-            width: 18,
-            child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: 'Envoi en cours'),
-          )
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    semanticsLabel: 'Envoi en cours',
+                  ),
+                )
               : const Text('Choisir'),
         ),
       ),
@@ -328,7 +355,9 @@ class _OfferSectionState extends ConsumerState<_OfferSection> {
     final container = ProviderScope.containerOf(context);
     setState(() => _busy = true);
     try {
-      final result = await container.read(premiumRepositoryProvider).applyOffer();
+      final result = await container
+          .read(premiumRepositoryProvider)
+          .applyOffer();
       container.invalidate(premiumOverviewProvider);
       _toast(messenger, result.message ?? 'Candidature enregistrée.');
     } on ApiError catch (e) {
@@ -358,15 +387,18 @@ class _OfferSectionState extends ConsumerState<_OfferSection> {
         action = offer.slotsLeft <= 0
             ? const Text("Toutes les places de l'offre sont attribuées.")
             : FilledButton(
-          onPressed: _busy ? null : _apply,
-          child: _busy
-              ? const SizedBox(
-            height: 18,
-            width: 18,
-            child: CircularProgressIndicator(strokeWidth: 2, semanticsLabel: 'Envoi en cours'),
-          )
-              : const Text("Demander l'offre de lancement"),
-        );
+                onPressed: _busy ? null : _apply,
+                child: _busy
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          semanticsLabel: 'Envoi en cours',
+                        ),
+                      )
+                    : const Text("Demander l'offre de lancement"),
+              );
     }
     return Card(
       margin: EdgeInsets.zero,
@@ -379,7 +411,7 @@ class _OfferSectionState extends ConsumerState<_OfferSection> {
             const SizedBox(height: 4),
             Text(
               '${offer.days} jours de Premium offerts. '
-                  '${offer.slotsLeft} place${offer.slotsLeft == 1 ? '' : 's'} restante${offer.slotsLeft == 1 ? '' : 's'} sur ${offer.slotsTotal}.',
+              '${offer.slotsLeft} place${offer.slotsLeft == 1 ? '' : 's'} restante${offer.slotsLeft == 1 ? '' : 's'} sur ${offer.slotsTotal}.',
             ),
             const SizedBox(height: 12),
             action,

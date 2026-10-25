@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/network/api_error.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/validation/validators.dart';
 import '../../shared/widgets/app_widgets.dart';
+import '../legal/legal_content.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
@@ -189,6 +191,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           "J'accepte les conditions d'utilisation et la politique "
                           'de confidentialité de QUINCH.',
                         ),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          TextButton(
+                            onPressed: () =>
+                                context.push(LegalDocKey.terms.path),
+                            child: const Text(
+                              "Lire les conditions d'utilisation",
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                context.push(LegalDocKey.privacy.path),
+                            child: const Text(
+                              'Lire la politique de confidentialité',
+                            ),
+                          ),
+                        ],
                       ),
                       if (field.hasError)
                         Text(

@@ -35,6 +35,7 @@ class ApiError implements Exception {
     this.code,
     this.fieldErrors = const {},
     this.retryAfterSeconds,
+    this.data = const <String, dynamic>{},
   });
 
   final ApiErrorKind kind;
@@ -48,6 +49,10 @@ class ApiError implements Exception {
   final String? code;
   final Map<String, List<String>> fieldErrors;
   final int? retryAfterSeconds;
+
+  /// Corps JSON de la réponse d'erreur (vide s'il n'y en a pas). Sert aux cas
+  /// où le serveur joint des données à l'erreur (ex. 409 d'envoi de vidéo).
+  final Map<String, dynamic> data;
 
   factory ApiError.network() => const ApiError(kind: ApiErrorKind.network);
   factory ApiError.timeout() => const ApiError(kind: ApiErrorKind.timeout);
@@ -95,6 +100,7 @@ class ApiError implements Exception {
       code: code,
       fieldErrors: fields,
       retryAfterSeconds: retry,
+      data: map,
     );
   }
 

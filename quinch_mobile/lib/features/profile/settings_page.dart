@@ -9,8 +9,10 @@ import '../../core/session/session_controller.dart';
 import '../../core/session/session_state.dart';
 import '../../core/validation/validators.dart';
 import '../../shared/widgets/app_widgets.dart';
+import '../legal/legal_content.dart';
 
-/// Paramètres du compte : mot de passe et suppression du compte.
+/// Paramètres du compte : notifications, textes juridiques, mot de passe et
+/// suppression du compte.
 /// (Les préférences de notification arrivent avec les notifications.)
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -29,6 +31,14 @@ class SettingsPage extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(notificationPreferencesPath),
           ),
+          for (final doc in LegalDocKey.values)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description_outlined),
+              title: Text(doc.label),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push(doc.path),
+            ),
           const Divider(height: 32),
           const _ChangePasswordCard(),
           const SizedBox(height: 24),

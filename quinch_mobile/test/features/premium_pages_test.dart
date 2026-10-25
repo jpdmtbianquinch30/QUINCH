@@ -20,14 +20,22 @@ PublicConfig paymentsOn() => const PublicConfig(
 
 void main() {
   group('PremiumPage — compte gratuit, bêta', () {
-    testWidgets('paiements coupés : message clair, aucune formule à acheter', (tester) async {
+    testWidgets('paiements coupés : message clair, aucune formule à acheter', (
+      tester,
+    ) async {
       await pumpScreen(tester, const PremiumPage());
 
       expect(find.text('Votre compte est gratuit'), findsOneWidget);
-      expect(find.textContaining("Le paiement n'est pas actif pour la version bêta"), findsOneWidget);
+      expect(
+        find.textContaining("Le paiement n'est pas actif pour la version bêta"),
+        findsOneWidget,
+      );
       expect(find.text('Choisir'), findsNothing);
       expect(find.text('Offre de lancement'), findsOneWidget);
-      expect(find.text('90 jours de Premium offerts. 40 places restantes sur 100.'), findsOneWidget);
+      expect(
+        find.text('90 jours de Premium offerts. 40 places restantes sur 100.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('demander l\'offre de lancement', (tester) async {
@@ -39,16 +47,25 @@ void main() {
       expect(find.textContaining('Candidature envoyée'), findsOneWidget);
     });
 
-    testWidgets('email non vérifié : message du serveur, rien d\'inventé', (tester) async {
+    testWidgets('email non vérifié : message du serveur, rien d\'inventé', (
+      tester,
+    ) async {
       final premium = FakePremiumRepository();
-      premium.onApply = () async => throw ApiError.fromResponse(403, <String, dynamic>{
-        'error': 'email_not_verified',
-        'message': 'Veuillez confirmer votre adresse e-mail avant de continuer.',
-      });
+      premium.onApply = () async =>
+          throw ApiError.fromResponse(403, <String, dynamic>{
+            'error': 'email_not_verified',
+            'message':
+                'Veuillez confirmer votre adresse e-mail avant de continuer.',
+          });
       await pumpScreen(tester, const PremiumPage(), premium: premium);
 
       await tapVisible(tester, find.text("Demander l'offre de lancement"));
-      expect(find.text('Veuillez confirmer votre adresse e-mail avant de continuer.'), findsOneWidget);
+      expect(
+        find.text(
+          'Veuillez confirmer votre adresse e-mail avant de continuer.',
+        ),
+        findsOneWidget,
+      );
     });
 
     // Un test par état : monter l'écran plusieurs fois dans un même test laisse un
@@ -75,19 +92,26 @@ void main() {
 
     testWidgets('plus aucune place', (tester) async {
       final premium = FakePremiumRepository();
-      premium.onOffer = () async => const PremiumOffer(slotsTotal: 100, slotsLeft: 0, days: 90);
+      premium.onOffer = () async =>
+          const PremiumOffer(slotsTotal: 100, slotsLeft: 0, days: 90);
       await pumpScreen(tester, const PremiumPage(), premium: premium);
-      expect(find.text("Toutes les places de l'offre sont attribuées."), findsOneWidget);
+      expect(
+        find.text("Toutes les places de l'offre sont attribuées."),
+        findsOneWidget,
+      );
       expect(find.text("Demander l'offre de lancement"), findsNothing);
     });
 
-    testWidgets('l\'offre est facultative : son échec n\'empêche pas l\'écran', (tester) async {
-      final premium = FakePremiumRepository();
-      premium.onOffer = () async => throw ApiError.network();
-      await pumpScreen(tester, const PremiumPage(), premium: premium);
-      expect(find.text('Votre compte est gratuit'), findsOneWidget);
-      expect(find.text('Offre de lancement'), findsNothing);
-    });
+    testWidgets(
+      'l\'offre est facultative : son échec n\'empêche pas l\'écran',
+      (tester) async {
+        final premium = FakePremiumRepository();
+        premium.onOffer = () async => throw ApiError.network();
+        await pumpScreen(tester, const PremiumPage(), premium: premium);
+        expect(find.text('Votre compte est gratuit'), findsOneWidget);
+        expect(find.text('Offre de lancement'), findsNothing);
+      },
+    );
   });
 
   group('PremiumPage — paiements actifs', () {
@@ -106,26 +130,42 @@ void main() {
       expect(find.text('Choisir'), findsNWidgets(2));
     });
 
-    testWidgets('choisir une formule : confirmation, ouverture du paiement, jamais « payé »', (tester) async {
-      final opened = <Uri>[];
-      final premium = payable();
-      final env = await pumpScreen(tester, const PremiumPage(), premium: premium, openedUrls: opened);
+    testWidgets(
+      'choisir une formule : confirmation, ouverture du paiement, jamais « payé »',
+      (tester) async {
+        final opened = <Uri>[];
+        final premium = payable();
+        final env = await pumpScreen(
+          tester,
+          const PremiumPage(),
+          premium: premium,
+          openedUrls: opened,
+        );
 
-      await tapVisible(tester, find.text('Choisir').first);
-      expect(find.text('Formule Mensuel'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilledButton, 'Continuer'));
-      await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Choisir').first);
+        expect(find.text('Formule Mensuel'), findsOneWidget);
+        await tester.tap(find.widgetWithText(FilledButton, 'Continuer'));
+        await tester.pumpAndSettle();
 
-      expect(env.premium.subscribed, <String>['monthly']);
-      expect(opened.single.toString(), 'https://pay.example/session/abc');
-      expect(find.textContaining('Paiement en cours de traitement'), findsOneWidget);
-      expect(find.textContaining('confirmé'), findsNothing);
-      expect(find.text('Votre compte est gratuit'), findsOneWidget);
-    });
+        expect(env.premium.subscribed, <String>['monthly']);
+        expect(opened.single.toString(), 'https://pay.example/session/abc');
+        expect(
+          find.textContaining('Paiement en cours de traitement'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('confirmé'), findsNothing);
+        expect(find.text('Votre compte est gratuit'), findsOneWidget);
+      },
+    );
 
     testWidgets('annuler la confirmation : aucun appel', (tester) async {
       final opened = <Uri>[];
-      final env = await pumpScreen(tester, const PremiumPage(), premium: payable(), openedUrls: opened);
+      final env = await pumpScreen(
+        tester,
+        const PremiumPage(),
+        premium: payable(),
+        openedUrls: opened,
+      );
       await tapVisible(tester, find.text('Choisir').first);
       await tester.tap(find.text('Annuler'));
       await tester.pumpAndSettle();
@@ -133,35 +173,57 @@ void main() {
       expect(opened, isEmpty);
     });
 
-    testWidgets('adresse de paiement absente ou non sécurisée : rien n\'est ouvert', (tester) async {
-      final opened = <Uri>[];
-      final premium = payable();
-      premium.onSubscribe = (plan) async => null;
-      await pumpScreen(tester, const PremiumPage(), premium: premium, openedUrls: opened);
+    testWidgets(
+      'adresse de paiement absente ou non sécurisée : rien n\'est ouvert',
+      (tester) async {
+        final opened = <Uri>[];
+        final premium = payable();
+        premium.onSubscribe = (plan) async => null;
+        await pumpScreen(
+          tester,
+          const PremiumPage(),
+          premium: premium,
+          openedUrls: opened,
+        );
 
-      await tapVisible(tester, find.text('Choisir').first);
-      await tester.tap(find.widgetWithText(FilledButton, 'Continuer'));
-      await tester.pumpAndSettle();
+        await tapVisible(tester, find.text('Choisir').first);
+        await tester.tap(find.widgetWithText(FilledButton, 'Continuer'));
+        await tester.pumpAndSettle();
 
-      expect(opened, isEmpty);
-      expect(find.text('Le lien de paiement est indisponible. Réessayez plus tard.'), findsOneWidget);
-    });
+        expect(opened, isEmpty);
+        expect(
+          find.text(
+            'Le lien de paiement est indisponible. Réessayez plus tard.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('navigateur introuvable : message adapté', (tester) async {
-      await pumpScreen(tester, const PremiumPage(), premium: payable(), urlOpens: false);
+      await pumpScreen(
+        tester,
+        const PremiumPage(),
+        premium: payable(),
+        urlOpens: false,
+      );
       await tapVisible(tester, find.text('Choisir').first);
       await tester.tap(find.widgetWithText(FilledButton, 'Continuer'));
       await tester.pumpAndSettle();
-      expect(find.text("Impossible d'ouvrir la page de paiement."), findsOneWidget);
+      expect(
+        find.text("Impossible d'ouvrir la page de paiement."),
+        findsOneWidget,
+      );
     });
 
     testWidgets('refus du serveur : son message est affiché', (tester) async {
       final premium = payable();
       // 422 : le message du serveur est affiché. Les erreurs 5xx, elles, sont
       // volontairement remplacées par un message générique (pas de détail interne).
-      premium.onSubscribe = (plan) async => throw ApiError.fromResponse(422, <String, dynamic>{
-        'message': "L'abonnement n'a pas pu être initié.",
-      });
+      premium.onSubscribe = (plan) async => throw ApiError.fromResponse(
+        422,
+        <String, dynamic>{'message': "L'abonnement n'a pas pu être initié."},
+      );
       await pumpScreen(tester, const PremiumPage(), premium: premium);
       await tapVisible(tester, find.text('Choisir').first);
       await tester.tap(find.widgetWithText(FilledButton, 'Continuer'));
@@ -171,41 +233,71 @@ void main() {
   });
 
   group('PremiumPage — paiement en attente et compte Premium', () {
-    testWidgets('« Vérifier mon paiement » : tant que le serveur ne confirme pas, rien n\'est déclaré réussi', (tester) async {
-      final premium = FakePremiumRepository();
-      premium.onStatus = () async => const PremiumStatus(
-        isPremium: false,
-        pendingSubscription: <String, dynamic>{'id': 's1', 'status': 'pending'},
-      );
-      await pumpScreen(tester, const PremiumPage(), premium: premium, authenticated: true);
-      expect(find.textContaining('en attente de confirmation'), findsOneWidget);
+    testWidgets(
+      '« Vérifier mon paiement » : tant que le serveur ne confirme pas, rien n\'est déclaré réussi',
+      (tester) async {
+        final premium = FakePremiumRepository();
+        premium.onStatus = () async => const PremiumStatus(
+          isPremium: false,
+          pendingSubscription: <String, dynamic>{
+            'id': 's1',
+            'status': 'pending',
+          },
+        );
+        await pumpScreen(
+          tester,
+          const PremiumPage(),
+          premium: premium,
+          authenticated: true,
+        );
+        expect(
+          find.textContaining('en attente de confirmation'),
+          findsOneWidget,
+        );
 
-      await tapVisible(tester, find.text('Vérifier mon paiement'));
-      expect(find.text("Le paiement n'est pas encore confirmé par le serveur."), findsOneWidget);
-      expect(find.text('Votre compte est gratuit'), findsOneWidget);
-    });
+        await tapVisible(tester, find.text('Vérifier mon paiement'));
+        expect(
+          find.text("Le paiement n'est pas encore confirmé par le serveur."),
+          findsOneWidget,
+        );
+        expect(find.text('Votre compte est gratuit'), findsOneWidget);
+      },
+    );
 
-    testWidgets('le serveur confirme : compte Premium et utilisateur relu', (tester) async {
+    testWidgets('le serveur confirme : compte Premium et utilisateur relu', (
+      tester,
+    ) async {
       var confirmed = false;
       final premium = FakePremiumRepository();
       premium.onStatus = () async => confirmed
           ? PremiumStatus(
-        isPremium: true,
-        plan: 'monthly',
-        expiresAt: DateTime.utc(2099, 1, 1),
-        daysRemaining: 30,
-      )
+              isPremium: true,
+              plan: 'monthly',
+              expiresAt: DateTime.utc(2099, 1, 1),
+              daysRemaining: 30,
+            )
           : const PremiumStatus(
-        isPremium: false,
-        pendingSubscription: <String, dynamic>{'id': 's1', 'status': 'pending'},
+              isPremium: false,
+              pendingSubscription: <String, dynamic>{
+                'id': 's1',
+                'status': 'pending',
+              },
+            );
+      final env = await pumpScreen(
+        tester,
+        const PremiumPage(),
+        premium: premium,
+        authenticated: true,
       );
-      final env = await pumpScreen(tester, const PremiumPage(), premium: premium, authenticated: true);
       final meBefore = env.auth.meCalls;
 
       confirmed = true;
       await tapVisible(tester, find.text('Vérifier mon paiement'));
 
-      expect(find.text('Paiement confirmé : votre compte est Premium.'), findsOneWidget);
+      expect(
+        find.text('Paiement confirmé : votre compte est Premium.'),
+        findsOneWidget,
+      );
       expect(find.text('Votre compte est Premium'), findsOneWidget);
       expect(find.text('Formule : Mensuel'), findsOneWidget);
       expect(find.textContaining('30 jours restants'), findsOneWidget);
@@ -224,7 +316,10 @@ void main() {
       );
       await pumpScreen(tester, const PremiumPage(), premium: premium);
       expect(find.text('Formule : Annuel'), findsOneWidget);
-      expect(find.text("Valable jusqu'au 05/03/2027 (1 jour restant)"), findsOneWidget);
+      expect(
+        find.text("Valable jusqu'au 05/03/2027 (1 jour restant)"),
+        findsOneWidget,
+      );
     });
 
     testWidgets('lien vers les classements', (tester) async {
@@ -237,7 +332,10 @@ void main() {
       final premium = FakePremiumRepository();
       premium.onStatus = () async => throw ApiError.network();
       await pumpScreen(tester, const PremiumPage(), premium: premium);
-      expect(find.text('Connexion impossible. Vérifiez votre réseau.'), findsOneWidget);
+      expect(
+        find.text('Connexion impossible. Vérifiez votre réseau.'),
+        findsOneWidget,
+      );
 
       premium.onStatus = () async => const PremiumStatus(isPremium: false);
       await tester.tap(find.text('Réessayer'));
@@ -254,44 +352,71 @@ void main() {
   });
 
   group('RankingsPage', () {
-    testWidgets('compte gratuit : réservé aux Premium, lien vers l\'offre', (tester) async {
+    testWidgets('compte gratuit : réservé aux Premium, lien vers l\'offre', (
+      tester,
+    ) async {
       final rankings = FakeRankingRepository();
-      rankings.onPreferences = () async => const RankingPreferences(isPremium: false, optIn: false, anonymous: false);
+      rankings.onPreferences = () async => const RankingPreferences(
+        isPremium: false,
+        optIn: false,
+        anonymous: false,
+      );
       await pumpScreen(tester, const RankingsPage(), rankings: rankings);
 
-      expect(find.text('Les classements sont réservés aux comptes Premium.'), findsOneWidget);
+      expect(
+        find.text('Les classements sont réservés aux comptes Premium.'),
+        findsOneWidget,
+      );
       expect(rankings.requested, isEmpty);
       await tester.tap(find.text('Découvrir Premium'));
       await tester.pumpAndSettle();
       expect(find.text('ROUTE $premiumPath'), findsOneWidget);
     });
 
-    testWidgets('classement des vendeurs : mesures et ouverture du profil', (tester) async {
+    testWidgets('classement des vendeurs : mesures et ouverture du profil', (
+      tester,
+    ) async {
       final rankings = FakeRankingRepository();
       rankings.onUsers = (kind) async => <RankingEntry>[
-        rankingEntry(metrics: const <String, dynamic>{
-          'score': 90,
-          'total_views': 70,
-          'total_likes': 20,
-          'products_count': 4,
-        }),
-        rankingEntry(rank: 2, name: 'Utilisateur anonyme', username: null, anonymous: true),
+        rankingEntry(
+          metrics: const <String, dynamic>{
+            'score': 90,
+            'total_views': 70,
+            'total_likes': 20,
+            'products_count': 4,
+          },
+        ),
+        rankingEntry(
+          rank: 2,
+          name: 'Utilisateur anonyme',
+          username: null,
+          anonymous: true,
+        ),
       ];
       await pumpScreen(tester, const RankingsPage(), rankings: rankings);
 
       expect(find.text('#1'), findsOneWidget);
       expect(find.text('Fatou Sow'), findsOneWidget);
-      expect(find.text("90 points · 70 vues · 20 j'aime · 4 annonces"), findsOneWidget);
+      expect(
+        find.text("90 points · 70 vues · 20 j'aime · 4 annonces"),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Fatou Sow'));
       await tester.pumpAndSettle();
       expect(find.text('ROUTE /seller/fatou'), findsOneWidget);
     });
 
-    testWidgets('profil anonyme : affiché sans ouverture possible', (tester) async {
+    testWidgets('profil anonyme : affiché sans ouverture possible', (
+      tester,
+    ) async {
       final rankings = FakeRankingRepository();
       rankings.onUsers = (kind) async => <RankingEntry>[
-        rankingEntry(name: 'Utilisateur anonyme', username: null, anonymous: true),
+        rankingEntry(
+          name: 'Utilisateur anonyme',
+          username: null,
+          anonymous: true,
+        ),
       ];
       await pumpScreen(tester, const RankingsPage(), rankings: rankings);
 
@@ -300,7 +425,9 @@ void main() {
       expect(find.textContaining('ROUTE /seller'), findsNothing);
     });
 
-    testWidgets('classement des annonces : ouverture de l\'annonce', (tester) async {
+    testWidgets('classement des annonces : ouverture de l\'annonce', (
+      tester,
+    ) async {
       final rankings = FakeRankingRepository();
       rankings.onProducts = () async => <ProductRankingEntry>[
         const ProductRankingEntry(
@@ -347,17 +474,26 @@ void main() {
 
     testWidgets('préférences : participer et rester anonyme', (tester) async {
       final rankings = FakeRankingRepository();
-      rankings.onPreferences = () async =>
-      const RankingPreferences(isPremium: true, optIn: false, anonymous: false);
+      rankings.onPreferences = () async => const RankingPreferences(
+        isPremium: true,
+        optIn: false,
+        anonymous: false,
+      );
       await pumpScreen(tester, const RankingsPage(), rankings: rankings);
 
       // Tant que la participation est coupée, l'anonymat n'est pas réglable.
-      expect(tester.widget<Switch>(find.byType(Switch).at(1)).onChanged, isNull);
+      expect(
+        tester.widget<Switch>(find.byType(Switch).at(1)).onChanged,
+        isNull,
+      );
 
       await tester.tap(find.byType(Switch).at(0));
       await tester.pumpAndSettle();
       expect(rankings.updates.last, (true, false));
-      expect(tester.widget<Switch>(find.byType(Switch).at(1)).onChanged, isNotNull);
+      expect(
+        tester.widget<Switch>(find.byType(Switch).at(1)).onChanged,
+        isNotNull,
+      );
 
       await tester.tap(find.byType(Switch).at(1));
       await tester.pumpAndSettle();
@@ -373,7 +509,10 @@ void main() {
       await tester.tap(find.byType(Switch).at(0));
       await tester.pumpAndSettle();
       expect(tester.widget<Switch>(find.byType(Switch).at(0)).value, before);
-      expect(find.text('Connexion impossible. Vérifiez votre réseau.'), findsOneWidget);
+      expect(
+        find.text('Connexion impossible. Vérifiez votre réseau.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('classement vide', (tester) async {
@@ -381,14 +520,21 @@ void main() {
       expect(find.text("Aucun classement pour l'instant."), findsOneWidget);
     });
 
-    testWidgets('accès refusé (abonnement expiré entre-temps) : message du serveur et réessai', (tester) async {
-      final rankings = FakeRankingRepository();
-      rankings.onUsers = (kind) async => throw ApiError.fromResponse(403, <String, dynamic>{
-        'message': 'Les classements sont reserves aux comptes Premium.',
-      });
-      await pumpScreen(tester, const RankingsPage(), rankings: rankings);
-      expect(find.text('Les classements sont reserves aux comptes Premium.'), findsOneWidget);
-      expect(find.text('Réessayer'), findsOneWidget);
-    });
+    testWidgets(
+      'accès refusé (abonnement expiré entre-temps) : message du serveur et réessai',
+      (tester) async {
+        final rankings = FakeRankingRepository();
+        rankings.onUsers = (kind) async =>
+            throw ApiError.fromResponse(403, <String, dynamic>{
+              'message': 'Les classements sont reserves aux comptes Premium.',
+            });
+        await pumpScreen(tester, const RankingsPage(), rankings: rankings);
+        expect(
+          find.text('Les classements sont reserves aux comptes Premium.'),
+          findsOneWidget,
+        );
+        expect(find.text('Réessayer'), findsOneWidget);
+      },
+    );
   });
 }

@@ -1,6 +1,11 @@
+import 'package:dio/dio.dart';
+
 import '../../core/json/json_utils.dart';
+import '../../core/media/picked_video.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_error.dart';
 import '../api/endpoints.dart';
+import '../models/new_product.dart';
 import '../models/paginated.dart';
 import '../models/product.dart';
 
@@ -125,6 +130,134 @@ class ProductRepository {
     );
     return Paginated<ProductCard>.fromJson(body, ProductCard.fromJson);
   }
+
+  /// `POST products` (multipart) : crée un produit, en brouillon ou publié.
+  /// Si des frais de publication sont dus, la réponse contient `payment_url`
+  /// et l'annonce reste en brouillon : seul le serveur confirme le paiement.
+  Future<ProductSaveResult> createProduct(
+    NewProduct product,
+    PublishIntent intent, {
+    void Function(double progress)? onProgress,
+  }) async {
+    final form = FormData();
+    void field(String key, String value) =>
+        form.fields.add(MapEntry<String, String>(key, value));
+
+    field('title', product.title);
+    field('category_id', product.categoryId);
+    field('price', product.price.toString());
+    field('type', 'product');
+    field('condition', product.condition.value);
+    field('is_negotiable', product.isNegotiable ? '1' : '0');
+    field('stock_quantity', product.stockQuantity.toString());
+    if (product.description.isNotEmpty) {
+      field('description', product.description);
+    }
+    field('intent', intent.value);
+
+    final videoId = product.videoId;
+    if (videoId != null) {
+      field('video_id', videoId);
+    }
+    final poster = product.poster;
+    if (poster != null) {
+      form.files.add(
+        MapEntry<String, MultipartFile>(
+          'poster_file',
+          await MultipartFile.fromFile(poster.path, filename: poster.name),
+        ),
+      );
+    }
+    for (final image in product.images) {
+      form.files.add(
+        MapEntry<String, MultipartFile>(
+          'image_files[]',
+          await MultipartFile.fromFile(image.path, filename: image.name),
+        ),
+      );
+    }
+
+    final body = await _api.post(
+      Endpoints.createProduct,
+      data: form,
+      // Plusieurs photos sur réseau lent : plus long que le délai par défaut.
+      options: Options(sendTimeout: const Duration(minutes: 5)),
+      onSendProgress: (sent, total) {
+        if (total > 0) {
+          onProgress?.call(sent / total);
+        }
+      },
+    );
+    return ProductSaveResult.fromJson(body);
+  }
+
+  /// `POST products/upload-video` (multipart, champ `video`, 500 Mo maximum,
+  /// 5 envois par minute). La vidéo est ensuite traitée par le serveur
+  /// (miniature, durée) ; on la joint à l'annonce avec son identifiant.
+  ///
+  /// 409 : vidéo déjà connue du serveur. Si elle appartient à ce compte, le
+  /// serveur la renvoie et on la reprend ; sinon l'erreur est relancée.
+  /// 422 `video_blocked` : retirée par la modération (message du serveur).
+  Future<UploadedVideo> uploadVideo(
+    PickedVideo video, {
+    CancelToken? cancelToken,
+    void Function(double progress)? onProgress,
+  }) async {
+    final form = FormData();
+    form.files.add(
+      MapEntry<String, MultipartFile>(
+        'video',
+        await MultipartFile.fromFile(video.path, filename: video.name),
+      ),
+    );
+    try {
+      final body = await _api.post(
+        Endpoints.uploadVideo,
+        data: form,
+        cancelToken: cancelToken,
+        // Jusqu'à 500 Mo sur réseau mobile : très au-delà des délais par défaut.
+        // Le serveur calcule l'empreinte du fichier avant de répondre.
+        options: Options(
+          sendTimeout: const Duration(minutes: 45),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+        onSendProgress: (sent, total) {
+          if (total > 0) {
+            onProgress?.call(sent / total);
+          }
+        },
+      );
+      final id = asStringOrNull(asMap(asMap(body)['video'])['id']);
+      if (id == null) {
+        throw const ApiError(kind: ApiErrorKind.unknown);
+      }
+      return UploadedVideo(id: id);
+    } on ApiError catch (e) {
+      if (e.statusCode == 409) {
+        final ownId = asStringOrNull(asMap(e.data['video'])['id']);
+        if (ownId != null) {
+          return UploadedVideo(id: ownId, alreadyOnServer: true);
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// `POST products/{id}/publish` : met un brouillon en ligne. Si des frais sont
+  /// dus (compte gratuit, annonce avec vidéo, hors bêta), la réponse contient
+  /// `payment_url` et l'annonce reste en brouillon jusqu'à confirmation du
+  /// serveur. 422 si l'annonce n'est pas un brouillon.
+  Future<ProductSaveResult> publishProduct(String productId) async =>
+      ProductSaveResult.fromJson(await _api.post(Endpoints.publish(productId)));
+
+  /// `PUT products/{id}` : modifie les champs autorisés. Un changement de
+  /// statut interdit (brouillon, modération) est refusé par le serveur en 422.
+  Future<ProductSaveResult> updateProduct(
+    String productId,
+    ProductUpdate update,
+  ) async => ProductSaveResult.fromJson(
+    await _api.put(Endpoints.productById(productId), data: update.toJson()),
+  );
 
   /// Supprime une de mes annonces (le serveur vérifie la propriété).
   Future<void> deleteProduct(String productId) async {

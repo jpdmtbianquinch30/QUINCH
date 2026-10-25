@@ -4,9 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quinch_mobile/app/router.dart';
 import 'package:quinch_mobile/core/config/app_config.dart';
+import 'package:quinch_mobile/core/media/picked_image.dart';
+import 'package:quinch_mobile/core/platform/image_picker.dart';
 import 'package:quinch_mobile/core/platform/url_opener.dart';
+import 'package:quinch_mobile/core/platform/video_session.dart';
 import 'package:quinch_mobile/core/providers.dart';
 import 'package:quinch_mobile/core/session/session_controller.dart';
+import 'package:quinch_mobile/features/legal/legal_content.dart';
+import 'package:quinch_mobile/features/legal/legal_providers.dart';
 import 'package:quinch_mobile/features/notifications/notification_providers.dart';
 import 'package:quinch_mobile/features/premium/premium_providers.dart';
 import 'package:quinch_mobile/features/product/product_providers.dart';
@@ -27,6 +32,8 @@ class ScreenEnv {
     required this.notifications,
     required this.premium,
     required this.rankings,
+    required this.legal,
+    required this.video,
   });
 
   final ProviderContainer container;
@@ -39,6 +46,8 @@ class ScreenEnv {
   final FakeNotificationRepository notifications;
   final FakePremiumRepository premium;
   final FakeRankingRepository rankings;
+  final FakeLegalRepository legal;
+  final FakeVideoFactory video;
 }
 
 /// Monte un écran au-dessus d'un écran « RACINE » (le retour fonctionne), dans
@@ -55,6 +64,11 @@ Future<ScreenEnv> pumpScreen(
   FakeNotificationRepository? notifications,
   FakePremiumRepository? premium,
   FakeRankingRepository? rankings,
+  FakeLegalRepository? legal,
+  ImagePick? pickImage,
+  ImagesPick? pickImages,
+  VideoPick? pickVideo,
+  FakeVideoFactory? video,
   List<Uri>? openedUrls,
   bool urlOpens = true,
   bool authenticated = false,
@@ -71,6 +85,8 @@ Future<ScreenEnv> pumpScreen(
   final notificationsRepo = notifications ?? FakeNotificationRepository();
   final premiumRepo = premium ?? FakePremiumRepository();
   final rankingsRepo = rankings ?? FakeRankingRepository();
+  final legalRepo = legal ?? FakeLegalRepository();
+  final videoFactory = video ?? FakeVideoFactory();
   final opened = openedUrls ?? <Uri>[];
 
   final storage = InMemoryTokenStorage();
@@ -87,6 +103,14 @@ Future<ScreenEnv> pumpScreen(
       notificationRepositoryProvider.overrideWithValue(notificationsRepo),
       premiumRepositoryProvider.overrideWithValue(premiumRepo),
       rankingRepositoryProvider.overrideWithValue(rankingsRepo),
+      legalRepositoryProvider.overrideWithValue(legalRepo),
+      // Par défaut : galerie fermée sans choix (jamais le vrai plugin en test).
+      imagePickProvider.overrideWithValue(pickImage ?? () async => null),
+      imagesPickProvider.overrideWithValue(
+        pickImages ?? () async => <PickedImage>[],
+      ),
+      videoPickProvider.overrideWithValue(pickVideo ?? () async => null),
+      videoSessionFactoryProvider.overrideWithValue(videoFactory.create),
       urlOpenerProvider.overrideWithValue((uri) async {
         opened.add(uri);
         return urlOpens;
@@ -121,6 +145,14 @@ Future<ScreenEnv> pumpScreen(
         builder: (context, state) => marker('ROUTE $myProductsPath'),
       ),
       GoRoute(
+        path: editProductPath,
+        builder: (context, state) => marker('ROUTE $editProductPath'),
+      ),
+      GoRoute(
+        path: sellPath,
+        builder: (context, state) => marker('ROUTE $sellPath'),
+      ),
+      GoRoute(
         path: blockedUsersPath,
         builder: (context, state) => marker('ROUTE $blockedUsersPath'),
       ),
@@ -149,6 +181,11 @@ Future<ScreenEnv> pumpScreen(
         builder: (context, state) =>
             marker('ROUTE $notificationPreferencesPath'),
       ),
+      for (final doc in LegalDocKey.values)
+        GoRoute(
+          path: doc.path,
+          builder: (context, state) => marker('ROUTE ${doc.path}'),
+        ),
       GoRoute(
         path: '/notifications/:id',
         builder: (context, state) =>
@@ -189,6 +226,8 @@ Future<ScreenEnv> pumpScreen(
     notifications: notificationsRepo,
     premium: premiumRepo,
     rankings: rankingsRepo,
+    legal: legalRepo,
+    video: videoFactory,
   );
 }
 

@@ -79,6 +79,11 @@ class AccountPage extends ConsumerWidget {
             onTap: () => context.push(editProfilePath),
           ),
           ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Publier une annonce'),
+            onTap: () => context.push(sellPath),
+          ),
+          ListTile(
             leading: const Icon(Icons.storefront_outlined),
             title: const Text('Mes annonces'),
             onTap: () => context.push(myProductsPath),

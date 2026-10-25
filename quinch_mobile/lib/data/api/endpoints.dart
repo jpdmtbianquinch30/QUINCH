@@ -42,6 +42,7 @@ abstract final class Endpoints {
   // Produits
   static const feed = 'products/feed';
   static const explorer = 'products';
+  static const createProduct = 'products'; // POST multipart
   static const myProducts = 'my-products';
   static const search = 'search';
   static const searchSuggestions = 'search/suggestions';

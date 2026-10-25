@@ -130,6 +130,9 @@ void main() {
     ) async {
       final env = await pumpScreen(tester, const EditProfilePage());
 
+      // La section photos, en haut, pousse le numéro hors de l'écran.
+      await tester.drag(find.byType(ListView), const Offset(0, -700));
+      await tester.pumpAndSettle();
       await tester.enterText(fieldByLabel('Numéro'), '12345');
       await tapVisible(
         tester,
@@ -155,6 +158,8 @@ void main() {
         const EditProfilePage(),
         profile: profile,
       );
+      await tester.drag(find.byType(ListView), const Offset(0, -700));
+      await tester.pumpAndSettle();
       expect(find.text('771234567'), findsOneWidget);
 
       await tapVisible(
@@ -611,6 +616,7 @@ void main() {
         'Premium': premiumPath,
         'Classements': rankingsPath,
         'Modifier mon profil': editProfilePath,
+        'Publier une annonce': sellPath,
         'Mes annonces': myProductsPath,
         'Utilisateurs bloqués': blockedUsersPath,
         'Signaler un problème': supportPath,

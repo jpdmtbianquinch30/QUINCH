@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/media/picked_image.dart';
 import '../../core/network/api_error.dart';
+import '../../core/platform/image_picker.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/validation/validators.dart';
 import '../../data/models/user.dart';
@@ -57,6 +59,7 @@ class _EditFormState extends ConsumerState<_EditForm> {
   late AppUser _user;
   bool _saving = false;
   bool _savingPhone = false;
+  ProfileImageKind? _uploadingKind;
   String? _error;
   String? _phoneError;
   final Map<String, String> _serverErrors = <String, String>{};
@@ -196,6 +199,108 @@ class _EditFormState extends ConsumerState<_EditForm> {
     }
   }
 
+  Future<void> _changeImage(ProfileImageKind kind) async {
+    if (_uploadingKind != null) {
+      return;
+    }
+    PickedImage? picked;
+    try {
+      picked = await ref.read(imagePickProvider)();
+    } on Exception {
+      if (mounted) {
+        _toast("Impossible d'ouvrir la galerie.");
+      }
+      return;
+    }
+    if (picked == null || !mounted) {
+      return;
+    }
+    final problem = validateProfileImage(kind, picked);
+    if (problem != null) {
+      _toast(problem);
+      return;
+    }
+    setState(() => _uploadingKind = kind);
+    try {
+      final repo = ref.read(profileRepositoryProvider);
+      final updated = kind == ProfileImageKind.avatar
+          ? await repo.uploadAvatar(picked)
+          : await repo.uploadCover(picked);
+      ref.read(sessionControllerProvider.notifier).updateUser(updated);
+      if (mounted) {
+        setState(() => _user = updated);
+        _toast(kind.successMessage);
+      }
+    } on ApiError catch (e) {
+      if (mounted) {
+        _toast(e.firstFieldError(kind.field) ?? e.userMessage);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingKind = null);
+      }
+    }
+  }
+
+  Widget _buildPhotos(ThemeData theme) {
+    final busy = _uploadingKind != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 72,
+              height: 72,
+              child: _user.avatarUrl == null
+                  ? const CircleAvatar(child: Icon(Icons.person_outline))
+                  : ClipOval(
+                      child: QuinchImage(
+                        url: _user.avatarUrl,
+                        semanticLabel: 'Photo de profil',
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => _changeImage(ProfileImageKind.avatar),
+                    icon: const Icon(Icons.photo_outlined),
+                    label: const Text('Changer ma photo'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => _changeImage(ProfileImageKind.cover),
+                    icon: const Icon(Icons.panorama_outlined),
+                    label: const Text('Changer la couverture'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (busy) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(semanticsLabel: 'Envoi en cours'),
+        ],
+        const SizedBox(height: 8),
+        Text(
+          'JPEG, PNG ou WebP. Photo de profil : 5 Mo maximum. '
+          'Couverture : 10 Mo maximum.',
+          style: theme.textTheme.bodySmall,
+        ),
+        const Divider(height: 32),
+      ],
+    );
+  }
+
   Future<void> _savePhone({required bool remove}) async {
     if (_savingPhone) {
       return;
@@ -247,6 +352,7 @@ class _EditFormState extends ConsumerState<_EditForm> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        _buildPhotos(theme),
         Form(
           key: _profileKey,
           child: Column(

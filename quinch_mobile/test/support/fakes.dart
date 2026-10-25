@@ -2,7 +2,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show ChangeNotifier;
+import 'package:flutter/widgets.dart' show Key, SizedBox, Widget;
+import 'package:quinch_mobile/core/media/picked_image.dart';
+import 'package:quinch_mobile/core/media/picked_video.dart';
+import 'package:quinch_mobile/core/platform/video_session.dart';
 import 'package:quinch_mobile/core/storage/token_storage.dart';
+import 'package:quinch_mobile/data/models/legal.dart';
+import 'package:quinch_mobile/data/models/new_product.dart';
 import 'package:quinch_mobile/data/models/notifications.dart';
 import 'package:quinch_mobile/data/models/paginated.dart';
 import 'package:quinch_mobile/data/models/premium.dart';
@@ -10,6 +17,7 @@ import 'package:quinch_mobile/data/models/product.dart';
 import 'package:quinch_mobile/data/models/user.dart';
 import 'package:quinch_mobile/data/repositories/auth_repository.dart';
 import 'package:quinch_mobile/data/repositories/favorites_repository.dart';
+import 'package:quinch_mobile/data/repositories/legal_repository.dart';
 import 'package:quinch_mobile/data/repositories/notification_repository.dart';
 import 'package:quinch_mobile/data/repositories/product_repository.dart';
 import 'package:quinch_mobile/data/repositories/premium_repository.dart';
@@ -227,6 +235,11 @@ ProductCard sampleCard({
   bool saved = false,
   int likes = 4,
   String? status,
+  Map<String, dynamic>? video,
+  String? description,
+  int? stock,
+  String? condition,
+  bool negotiable = false,
 }) => ProductCard.fromJson(<String, dynamic>{
   'id': id,
   'slug': slug,
@@ -238,10 +251,24 @@ ProductCard sampleCard({
   'is_saved': saved,
   'like_count': likes,
   if (status != null) 'status': status,
+  if (video != null) 'video': video,
+  if (description != null) 'description': description,
+  if (stock != null) 'stock_quantity': stock,
+  if (condition != null) 'condition': condition,
+  'is_negotiable': negotiable,
   'seller': <String, dynamic>{'id': 's1', 'full_name': 'Fatou Sow'},
 });
 
-ProductDetail sampleDetail({ProductCard? card}) {
+/// Vidéo d'annonce telle que renvoyée par le feed (chemins relatifs au serveur).
+Map<String, dynamic> sampleVideoJson({String id = 'v1', int duration = 22}) =>
+    <String, dynamic>{
+      'id': id,
+      'url': '/api/v1/videos/$id/stream',
+      'thumbnail': '/api/v1/videos/$id/thumbnail',
+      'duration': duration,
+    };
+
+ProductDetail sampleDetail({ProductCard? card, Map<String, dynamic>? video}) {
   final product = card ?? sampleCard();
   return ProductDetail.fromJson(<String, dynamic>{
     'product': <String, dynamic>{
@@ -258,6 +285,7 @@ ProductDetail sampleDetail({ProductCard? card}) {
       'category': <String, dynamic>{'id': 'c1', 'name': 'Mode'},
       'delivery_option': 'fixed',
       'delivery_fee': 1500,
+      if (video != null) 'video': video,
     },
     'seller': <String, dynamic>{
       'id': 's1',
@@ -287,6 +315,35 @@ class FakeProductRepository implements ProductRepository {
   Future<ProductDetail> Function(String slug) onDetail = (slug) async =>
       sampleDetail();
   Future<List<Category>> Function() onCategories = () async => <Category>[];
+  Future<ProductSaveResult> Function(NewProduct product, PublishIntent intent)
+  onCreate = (product, intent) async => ProductSaveResult(
+    product: sampleCard(title: product.title),
+    message: intent == PublishIntent.draft
+        ? 'Brouillon enregistré.'
+        : 'Produit publié avec succès.',
+  );
+  final List<(NewProduct, PublishIntent)> created =
+      <(NewProduct, PublishIntent)>[];
+  Future<UploadedVideo> Function(
+    PickedVideo video,
+    CancelToken? cancelToken,
+    void Function(double progress)? onProgress,
+  )
+  onUploadVideo = (video, cancelToken, onProgress) async =>
+      const UploadedVideo(id: 'vid1');
+  final List<PickedVideo> uploadedVideos = <PickedVideo>[];
+  Future<ProductSaveResult> Function(String id) onPublish = (id) async =>
+      ProductSaveResult(
+        product: sampleCard(id: id, status: 'active'),
+        message: 'Annonce publiée.',
+      );
+  Future<ProductSaveResult> Function(String id, ProductUpdate update) onUpdate =
+      (id, update) async => ProductSaveResult(
+        product: sampleCard(id: id),
+        message: 'Produit mis à jour.',
+      );
+  final List<String> published = <String>[];
+  final List<(String, ProductUpdate)> updated = <(String, ProductUpdate)>[];
   Future<LikeResult> Function(String id) onLike = (id) async =>
       const LikeResult(liked: true, likeCount: 5);
   Future<bool> Function(String id) onToggleSave = (id) async => true;
@@ -340,6 +397,41 @@ class FakeProductRepository implements ProductRepository {
 
   @override
   Future<List<Category>> categories() => onCategories();
+
+  @override
+  Future<ProductSaveResult> publishProduct(String productId) {
+    published.add(productId);
+    return onPublish(productId);
+  }
+
+  @override
+  Future<ProductSaveResult> updateProduct(
+    String productId,
+    ProductUpdate update,
+  ) {
+    updated.add((productId, update));
+    return onUpdate(productId, update);
+  }
+
+  @override
+  Future<UploadedVideo> uploadVideo(
+    PickedVideo video, {
+    CancelToken? cancelToken,
+    void Function(double progress)? onProgress,
+  }) {
+    uploadedVideos.add(video);
+    return onUploadVideo(video, cancelToken, onProgress);
+  }
+
+  @override
+  Future<ProductSaveResult> createProduct(
+    NewProduct product,
+    PublishIntent intent, {
+    void Function(double progress)? onProgress,
+  }) {
+    created.add((product, intent));
+    return onCreate(product, intent);
+  }
 
   @override
   Future<LikeResult> like(String productId) => onLike(productId);
@@ -413,6 +505,10 @@ class FakeProfileRepository implements ProfileRepository {
   Future<AppUser> Function() onUpdateProfile = () async => fullUser();
   Future<AppUser> Function(String? phone) onUpdatePhone = (phone) async =>
       fullUser(phone: phone);
+  Future<AppUser> Function(PickedImage image) onUploadAvatar = (image) async =>
+      fullUser();
+  Future<AppUser> Function(PickedImage image) onUploadCover = (image) async =>
+      fullUser();
   Future<PublicProfile> Function(String username) onPublicProfile =
       (username) async => samplePublicProfile(username: username);
   Future<Paginated<ProductCard>> Function(String username, int page)
@@ -429,9 +525,23 @@ class FakeProfileRepository implements ProfileRepository {
   bool phoneUpdated = false;
   final List<String> followed = <String>[];
   final List<String> unfollowed = <String>[];
+  final List<PickedImage> uploadedAvatars = <PickedImage>[];
+  final List<PickedImage> uploadedCovers = <PickedImage>[];
 
   @override
   Future<AppUser> myProfile() => onMyProfile();
+
+  @override
+  Future<AppUser> uploadAvatar(PickedImage image) {
+    uploadedAvatars.add(image);
+    return onUploadAvatar(image);
+  }
+
+  @override
+  Future<AppUser> uploadCover(PickedImage image) {
+    uploadedCovers.add(image);
+    return onUploadCover(image);
+  }
 
   @override
   Future<AppUser> updateProfile({
@@ -811,5 +921,154 @@ class FakeRankingRepository implements RankingRepository {
   Future<List<ProductRankingEntry>> products() {
     requested.add(RankingKind.products);
     return onProducts();
+  }
+}
+
+// ------------------------------------------------------------ Textes juridiques
+
+/// Informations d'éditeur fictives (aucune valeur réelle du projet).
+LegalInfo sampleLegalInfo() => LegalInfo.fromJson(<String, dynamic>{
+  'publisher': <String, dynamic>{
+    'name': 'Atelier Test SARL',
+    'status': 'Société à responsabilité limitée',
+    'address': '1 rue de Test, Dakar',
+    'registration': 'NINEA 000000',
+    'director': 'Awa Test',
+  },
+  'cdp_receipt': '',
+  'contact_email': 'contact@example.sn',
+  'privacy_email': 'privacy@example.sn',
+  'hosting': <String, dynamic>{
+    'provider': 'Hébergeur Test',
+    'location': 'Pays Test',
+  },
+  'versions': <String, dynamic>{'terms': '2026-10', 'privacy': '2026-10'},
+  'retention': <String, dynamic>{
+    'anonymized_content_days': 30,
+    'audit_logs_days': 180,
+  },
+});
+
+class FakeLegalRepository implements LegalRepository {
+  Future<LegalInfo> Function() onInfo = () async => sampleLegalInfo();
+  int infoCalls = 0;
+
+  @override
+  Future<LegalInfo> info() {
+    infoCalls++;
+    return onInfo();
+  }
+}
+
+// ------------------------------------------------------------------- Vidéo
+
+/// Lecture factice : aucun décodeur, tout est piloté par le test.
+class FakeVideoSession extends ChangeNotifier implements VideoSession {
+  FakeVideoSession(this.url, {this.failInitialize = false, this.initGate});
+
+  final Uri url;
+  final bool failInitialize;
+  final Future<void>? initGate;
+
+  bool initialized = false;
+  bool playing = false;
+  bool muted = false;
+  bool disposed = false;
+  bool errored = false;
+  int restarts = 0;
+  Duration _position = Duration.zero;
+  final Duration _duration = const Duration(seconds: 30);
+
+  /// Simule la fin de la vidéo.
+  void finish() {
+    _position = _duration;
+    playing = false;
+    notifyListeners();
+  }
+
+  /// Simule une erreur de lecture en cours de route.
+  void fail() {
+    errored = true;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> initialize() async {
+    final gate = initGate;
+    if (gate != null) {
+      await gate;
+    }
+    if (failInitialize) {
+      throw Exception('initialisation impossible');
+    }
+    initialized = true;
+  }
+
+  @override
+  Future<void> play() async {
+    playing = true;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> pause() async {
+    playing = false;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> restart() async {
+    restarts++;
+    _position = Duration.zero;
+    playing = true;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> setMuted({required bool muted}) async {
+    this.muted = muted;
+  }
+
+  @override
+  bool get isInitialized => initialized;
+
+  @override
+  bool get isPlaying => playing;
+
+  @override
+  bool get hasError => errored;
+
+  @override
+  Duration get position => _position;
+
+  @override
+  Duration get duration => _duration;
+
+  @override
+  double get aspectRatio => 16 / 9;
+
+  @override
+  Widget buildView() => const SizedBox(key: Key('fake-video-view'));
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+    super.dispose();
+  }
+}
+
+class FakeVideoFactory {
+  final List<FakeVideoSession> sessions = <FakeVideoSession>[];
+  bool failInitialize = false;
+  Future<void>? initGate;
+
+  VideoSession create(Uri url) {
+    final session = FakeVideoSession(
+      url,
+      failInitialize: failInitialize,
+      initGate: initGate,
+    );
+    sessions.add(session);
+    return session;
   }
 }

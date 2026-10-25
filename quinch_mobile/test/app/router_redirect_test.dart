@@ -64,6 +64,37 @@ void main() {
     });
   });
 
+  group('textes juridiques', () {
+    test('accessibles sans session et avec session', () {
+      for (final path in <String>[
+        '/legal/cgu',
+        '/legal/confidentialite',
+        '/legal/mentions-legales',
+      ]) {
+        expect(resolveRedirect(const SessionUnauthenticated(), path), isNull);
+        expect(
+          resolveRedirect(SessionAuthenticated(testUser()), path),
+          isNull,
+          reason: path,
+        );
+      }
+    });
+
+    test('pendant la restauration de session : écran de chargement', () {
+      expect(
+        resolveRedirect(const SessionStarting(), '/legal/cgu'),
+        splashPath,
+      );
+    });
+
+    test('un chemin voisin n\'est pas public', () {
+      expect(
+        resolveRedirect(const SessionUnauthenticated(), '/legal/autre'),
+        loginPath,
+      );
+    });
+  });
+
   test('chemin d\'une annonce : slug encodé', () {
     expect(productPath('robe wax'), '/product/robe%20wax');
     expect(sellerPath('awa_diop'), '/seller/awa_diop');

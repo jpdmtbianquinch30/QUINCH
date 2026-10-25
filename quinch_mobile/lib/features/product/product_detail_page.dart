@@ -10,6 +10,7 @@ import '../../core/session/session_state.dart';
 import '../../data/models/product.dart';
 import '../../data/repositories/safety_repository.dart';
 import '../../shared/widgets/product_widgets.dart';
+import '../../shared/widgets/video_player_widget.dart';
 import '../../shared/widgets/report_sheet.dart';
 import '../profile/profile_providers.dart';
 import 'product_actions.dart';
@@ -127,11 +128,20 @@ class _DetailBody extends StatelessWidget {
 
     return ListView(
       children: [
-        _Gallery(
-          images: images,
-          hasVideo: product.video != null,
-          title: product.title,
-        ),
+        if (product.video == null)
+          _Gallery(images: images, hasVideo: false, title: product.title)
+        else
+          AspectRatio(
+            aspectRatio: 1,
+            child: QuinchVideoPlayer(
+              video: product.video!,
+              poster: _Gallery(
+                images: images,
+                hasVideo: true,
+                title: product.title,
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

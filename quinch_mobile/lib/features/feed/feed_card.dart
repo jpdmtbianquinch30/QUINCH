@@ -5,10 +5,11 @@ import '../../app/router.dart';
 import '../../core/format/fcfa.dart';
 import '../../data/models/product.dart';
 import '../../shared/widgets/product_widgets.dart';
+import '../../shared/widgets/video_player_widget.dart';
 import '../product/product_actions.dart';
 
-/// Carte du feed. La lecture de la vidéo arrive à l'étape 6 : en attendant, la
-/// carte montre l'image de couverture et indique la présence d'une vidéo.
+/// Carte du feed. L'image de couverture est affichée ; si l'annonce a une
+/// vidéo, un bouton « Lire » la lance dans la carte (au toucher seulement).
 class FeedCard extends StatelessWidget {
   const FeedCard({super.key, required this.card});
 
@@ -31,44 +32,54 @@ class FeedCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  QuinchImage(
-                    url: card.coverImage ?? video?.thumbnailPath,
-                    semanticLabel: card.title,
-                  ),
-                  Positioned(top: 8, right: 8, child: TypeChip(card.type)),
-                  if (video != null)
-                    Positioned(
-                      left: 8,
-                      bottom: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.play_arrow,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            if (video.durationSeconds != null)
-                              Text(
-                                formatDuration(video.durationSeconds!),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
+                  if (video == null)
+                    QuinchImage(url: card.coverImage, semanticLabel: card.title)
+                  else
+                    QuinchVideoPlayer(
+                      video: video,
+                      poster: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          QuinchImage(
+                            url: card.coverImage ?? video.thumbnailPath,
+                            semanticLabel: card.title,
+                          ),
+                          Positioned(
+                            left: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
                               ),
-                          ],
-                        ),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  if (video.durationSeconds != null)
+                                    Text(
+                                      formatDuration(video.durationSeconds!),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  Positioned(top: 8, right: 8, child: TypeChip(card.type)),
                 ],
               ),
             ),

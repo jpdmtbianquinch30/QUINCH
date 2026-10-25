@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/session/session_controller.dart';
 import '../core/session/session_state.dart';
+import '../data/models/product.dart';
 import '../features/account/account_page.dart';
 import '../features/auth/forgot_password_page.dart';
 import '../features/auth/login_page.dart';
@@ -11,6 +12,8 @@ import '../features/auth/register_page.dart';
 import '../features/explore/explore_page.dart';
 import '../features/favorites/favorites_page.dart';
 import '../features/feed/feed_page.dart';
+import '../features/legal/legal_content.dart';
+import '../features/legal/legal_page.dart';
 import '../features/notifications/notification_detail_page.dart';
 import '../features/notifications/notification_preferences_page.dart';
 import '../features/notifications/notifications_page.dart';
@@ -18,11 +21,13 @@ import '../features/premium/premium_page.dart';
 import '../features/product/product_detail_page.dart';
 import '../features/profile/blocked_users_page.dart';
 import '../features/profile/edit_profile_page.dart';
+import '../features/profile/edit_product_page.dart';
 import '../features/profile/my_products_page.dart';
 import '../features/profile/seller_profile_page.dart';
 import '../features/profile/settings_page.dart';
 import '../features/rankings/rankings_page.dart';
 import '../features/search/search_page.dart';
+import '../features/sell/sell_page.dart';
 import '../features/shell/main_shell.dart';
 import '../features/support/support_page.dart';
 import '../features/shell/placeholder_pages.dart';
@@ -44,6 +49,8 @@ String productPath(String slug) => '/product/${Uri.encodeComponent(slug)}';
 
 const editProfilePath = '/profile/edit';
 const myProductsPath = '/my-products';
+const editProductPath = '/my-products/edit';
+const sellPath = '/sell';
 const blockedUsersPath = '/blocked-users';
 const supportPath = '/support';
 const settingsPath = '/settings';
@@ -61,6 +68,10 @@ String sellerPath(String username) =>
 /// Écrans accessibles sans session.
 const publicPaths = <String>{loginPath, registerPath, forgotPasswordPath};
 
+/// Textes juridiques : accessibles avec ou sans session (l'inscription doit
+/// pouvoir les afficher, et l'utilisateur connecté doit pouvoir les relire).
+final legalPaths = <String>{for (final doc in LegalDocKey.values) doc.path};
+
 /// Règle de redirection pure (testable sans Flutter ni Riverpod).
 /// Renvoie null si l'écran demandé est autorisé.
 String? resolveRedirect(SessionState session, String location) {
@@ -69,7 +80,9 @@ String? resolveRedirect(SessionState session, String location) {
     case SessionUnavailable():
       return location == splashPath ? null : splashPath;
     case SessionUnauthenticated():
-      return publicPaths.contains(location) ? null : loginPath;
+      return (publicPaths.contains(location) || legalPaths.contains(location))
+          ? null
+          : loginPath;
     case SessionAuthenticated():
       return (location == splashPath || publicPaths.contains(location))
           ? homePath
@@ -147,6 +160,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: editProfilePath,
         builder: (context, state) => const EditProfilePage(),
       ),
+      GoRoute(path: sellPath, builder: (context, state) => const SellPage()),
+      GoRoute(
+        path: editProductPath,
+        builder: (context, state) {
+          final card = state.extra;
+          return card is ProductCard
+              ? EditProductPage(card: card)
+              : const MissingProductPage();
+        },
+      ),
       GoRoute(
         path: myProductsPath,
         builder: (context, state) => const MyProductsPage(),
@@ -179,6 +202,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: notificationPreferencesPath,
         builder: (context, state) => const NotificationPreferencesPage(),
       ),
+      for (final doc in LegalDocKey.values)
+        GoRoute(
+          path: doc.path,
+          builder: (context, state) => LegalPage(docKey: doc),
+        ),
       GoRoute(
         path: '/notifications/:id',
         builder: (context, state) =>

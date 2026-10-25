@@ -1,4 +1,7 @@
+import 'package:dio/dio.dart';
+
 import '../../core/json/json_utils.dart';
+import '../../core/media/picked_image.dart';
 import '../../core/network/api_client.dart';
 import '../api/endpoints.dart';
 import '../models/paginated.dart';
@@ -48,6 +51,35 @@ class ProfileRepository {
     final body = await _api.put(
       Endpoints.userPhone,
       data: <String, Object?>{'phone_number': phoneNumber},
+    );
+    return AppUser.fromJson(asMap(asMap(body)['user']));
+  }
+
+  /// `POST user/upload-avatar` (multipart, champ `avatar`, 5 Mo max) : renvoie
+  /// l'utilisateur à jour. Le serveur remplace l'ancienne photo.
+  Future<AppUser> uploadAvatar(PickedImage image) =>
+      _uploadImage(Endpoints.userAvatar, ProfileImageKind.avatar, image);
+
+  /// `POST user/upload-cover` (multipart, champ `cover`, 10 Mo max).
+  Future<AppUser> uploadCover(PickedImage image) =>
+      _uploadImage(Endpoints.userCover, ProfileImageKind.cover, image);
+
+  Future<AppUser> _uploadImage(
+    String path,
+    ProfileImageKind kind,
+    PickedImage image,
+  ) async {
+    final form = FormData.fromMap(<String, Object?>{
+      kind.field: await MultipartFile.fromFile(
+        image.path,
+        filename: image.name,
+      ),
+    });
+    final body = await _api.post(
+      path,
+      data: form,
+      // Un envoi de média peut dépasser le délai par défaut sur réseau lent.
+      options: Options(sendTimeout: const Duration(minutes: 2)),
     );
     return AppUser.fromJson(asMap(asMap(body)['user']));
   }
