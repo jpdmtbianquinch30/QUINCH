@@ -12,6 +12,7 @@ import '../../data/repositories/safety_repository.dart';
 import '../../shared/paging/paged_scroll.dart';
 import '../../shared/widgets/product_widgets.dart';
 import '../../shared/widgets/report_sheet.dart';
+import '../chat/contact_seller.dart';
 import '../explore/product_tile.dart';
 import 'profile_providers.dart';
 
@@ -275,6 +276,14 @@ class _HeaderState extends ConsumerState<_Header> {
           if (p.bio != null) ...[
             const SizedBox(height: 8),
             Text(p.bio!, maxLines: 3, overflow: TextOverflow.ellipsis),
+          ],
+          if (!widget.isMe) ...[
+            const SizedBox(height: 12),
+            ContactSellerButton(
+              sellerId: p.id,
+              label: 'Contacter',
+              filled: false,
+            ),
           ],
           if (!widget.isMe && followEnabled) ...[
             const SizedBox(height: 12),

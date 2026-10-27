@@ -11,6 +11,8 @@ import '../features/auth/login_page.dart';
 import '../features/auth/register_page.dart';
 import '../features/explore/explore_page.dart';
 import '../features/favorites/favorites_page.dart';
+import '../features/chat/chat_page.dart';
+import '../features/chat/messages_page.dart';
 import '../features/feed/feed_page.dart';
 import '../features/legal/legal_content.dart';
 import '../features/legal/legal_page.dart';
@@ -50,6 +52,9 @@ String productPath(String slug) => '/product/${Uri.encodeComponent(slug)}';
 const editProfilePath = '/profile/edit';
 const myProductsPath = '/my-products';
 const editProductPath = '/my-products/edit';
+const messagesPath = '/messages';
+String chatPath(String conversationId) =>
+    '/messages/${Uri.encodeComponent(conversationId)}';
 const sellPath = '/sell';
 const blockedUsersPath = '/blocked-users';
 const supportPath = '/support';
@@ -161,6 +166,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const EditProfilePage(),
       ),
       GoRoute(path: sellPath, builder: (context, state) => const SellPage()),
+      GoRoute(
+        path: messagesPath,
+        builder: (context, state) => const MessagesPage(),
+      ),
+      GoRoute(
+        path: '/messages/:id',
+        builder: (context, state) =>
+            ChatPage(conversationId: state.pathParameters['id']!),
+      ),
       GoRoute(
         path: editProductPath,
         builder: (context, state) {

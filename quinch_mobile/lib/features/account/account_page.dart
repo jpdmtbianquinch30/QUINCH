@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
 import '../../core/session/session_controller.dart';
 import '../../core/session/session_state.dart';
+import '../chat/chat_providers.dart';
 
 /// Écran « Compte » : identité et accès au profil, aux annonces, au support
 /// et aux paramètres.
@@ -41,6 +42,7 @@ class AccountPage extends ConsumerWidget {
     final session = ref.watch(sessionControllerProvider);
     final user = session is SessionAuthenticated ? session.user : null;
     final theme = Theme.of(context);
+    final unreadMessages = ref.watch(unreadMessagesProvider).valueOrNull ?? 0;
     return Scaffold(
       appBar: AppBar(title: const Text('Compte')),
       body: ListView(
@@ -77,6 +79,25 @@ class AccountPage extends ConsumerWidget {
             leading: const Icon(Icons.edit_outlined),
             title: const Text('Modifier mon profil'),
             onTap: () => context.push(editProfilePath),
+          ),
+          ListTile(
+            leading: const Icon(Icons.mail_outline),
+            title: const Text('Messages'),
+            trailing: unreadMessages > 0
+                ? Semantics(
+                    label:
+                        '$unreadMessages non lu${unreadMessages > 1 ? 's' : ''}',
+                    child: Badge(
+                      label: Text(
+                        unreadMessages > 99 ? '99+' : '$unreadMessages',
+                      ),
+                    ),
+                  )
+                : null,
+            onTap: () async {
+              await context.push(messagesPath);
+              ref.invalidate(unreadMessagesProvider);
+            },
           ),
           ListTile(
             leading: const Icon(Icons.add_circle_outline),

@@ -6,6 +6,7 @@ import '../../data/models/product.dart';
 import '../../data/repositories/product_repository.dart';
 import '../../shared/paging/paged_notifier.dart';
 import '../../shared/paging/paged_scroll.dart';
+import '../chat/messages_page.dart';
 import '../notifications/notifications_page.dart';
 import '../product/product_providers.dart';
 import 'feed_card.dart';
@@ -59,7 +60,7 @@ class _FeedPageState extends ConsumerState<FeedPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('QUINCH'),
-        actions: const [NotificationBell()],
+        actions: const [MessagesButton(), NotificationBell()],
       ),
       body: Column(
         children: [

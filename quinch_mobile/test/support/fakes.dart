@@ -4,11 +4,13 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show ChangeNotifier;
 import 'package:flutter/widgets.dart' show Key, SizedBox, Widget;
+import 'package:quinch_mobile/core/media/chat_attachment.dart';
 import 'package:quinch_mobile/core/media/picked_image.dart';
 import 'package:quinch_mobile/core/media/picked_video.dart';
 import 'package:quinch_mobile/core/platform/video_session.dart';
 import 'package:quinch_mobile/core/storage/token_storage.dart';
 import 'package:quinch_mobile/data/models/legal.dart';
+import 'package:quinch_mobile/data/models/chat.dart';
 import 'package:quinch_mobile/data/models/new_product.dart';
 import 'package:quinch_mobile/data/models/notifications.dart';
 import 'package:quinch_mobile/data/models/paginated.dart';
@@ -17,6 +19,7 @@ import 'package:quinch_mobile/data/models/product.dart';
 import 'package:quinch_mobile/data/models/user.dart';
 import 'package:quinch_mobile/data/repositories/auth_repository.dart';
 import 'package:quinch_mobile/data/repositories/favorites_repository.dart';
+import 'package:quinch_mobile/data/repositories/chat_repository.dart';
 import 'package:quinch_mobile/data/repositories/legal_repository.dart';
 import 'package:quinch_mobile/data/repositories/notification_repository.dart';
 import 'package:quinch_mobile/data/repositories/product_repository.dart';
@@ -268,7 +271,11 @@ Map<String, dynamic> sampleVideoJson({String id = 'v1', int duration = 22}) =>
       'duration': duration,
     };
 
-ProductDetail sampleDetail({ProductCard? card, Map<String, dynamic>? video}) {
+ProductDetail sampleDetail({
+  ProductCard? card,
+  Map<String, dynamic>? video,
+  String sellerId = 's1',
+}) {
   final product = card ?? sampleCard();
   return ProductDetail.fromJson(<String, dynamic>{
     'product': <String, dynamic>{
@@ -288,7 +295,7 @@ ProductDetail sampleDetail({ProductCard? card, Map<String, dynamic>? video}) {
       if (video != null) 'video': video,
     },
     'seller': <String, dynamic>{
-      'id': 's1',
+      'id': sellerId,
       'full_name': 'Fatou Sow',
       'username': 'fatou',
       'city': 'Dakar',
@@ -1070,5 +1077,174 @@ class FakeVideoFactory {
     );
     sessions.add(session);
     return session;
+  }
+}
+
+// ----------------------------------------------------------------- Messagerie
+
+/// Message tel que renvoyé par le serveur (`created_at` en UTC, ISO 8601).
+ChatMessage sampleMessage({
+  String id = 'm1',
+  String conversationId = 'c1',
+  String senderId = 'u2',
+  String body = 'Bonjour',
+  String type = 'text',
+  String createdAt = '2026-10-25T10:00:00.000000Z',
+  Map<String, dynamic>? metadata,
+}) => ChatMessage.fromJson(<String, dynamic>{
+  'id': id,
+  'conversation_id': conversationId,
+  'sender_id': senderId,
+  'body': body,
+  'type': type,
+  'is_read': false,
+  'created_at': createdAt,
+  if (metadata != null) 'metadata': metadata,
+});
+
+ChatUser sampleChatUser({String id = 'u2', String name = 'Fatou Sow'}) =>
+    ChatUser.fromJson(<String, dynamic>{
+      'id': id,
+      'full_name': name,
+      'username': 'fatou',
+    });
+
+Conversation sampleConversation({
+  String id = 'c1',
+  String otherName = 'Fatou Sow',
+  int unread = 0,
+  ChatMessage? last,
+  String? productTitle,
+}) => Conversation.fromJson(<String, dynamic>{
+  'id': id,
+  'unread_count': unread,
+  'last_message_at': '2026-10-25T10:00:00.000000Z',
+  'other_user': <String, dynamic>{
+    'id': 'u2',
+    'full_name': otherName,
+    'username': 'fatou',
+  },
+  if (productTitle != null)
+    'product': <String, dynamic>{
+      'id': 'p1',
+      'title': productTitle,
+      'slug': 'robe-wax',
+      'price': 15000,
+    },
+  if (last != null)
+    'last_message': <String, dynamic>{
+      'id': last.id,
+      'conversation_id': id,
+      'sender_id': last.senderId,
+      'body': last.body,
+      'type': last.type,
+      'created_at': last.createdAtRaw,
+    },
+});
+
+class FakeChatRepository implements ChatRepository {
+  Future<Paginated<Conversation>> Function(int page) onConversations =
+      (page) async => pageOf<Conversation>(<Conversation>[]);
+  Future<ConversationDetail> Function(String id) onConversation = (id) async =>
+      ConversationDetail(
+        conversation: sampleConversation(id: id),
+        messages: <ChatMessage>[],
+      );
+  Future<NewMessages> Function(String id, String? after) onSince =
+      (id, after) async => const NewMessages(messages: <ChatMessage>[]);
+  Future<ChatMessage> Function(String id, String body) onSend =
+      (id, body) async =>
+          sampleMessage(id: 'sent-1', senderId: 'u1', body: body);
+  Future<ChatMessage> Function(
+    String id,
+    ChatAttachment file,
+    void Function(double progress)? onProgress,
+  )
+  onSendFile = (id, file, onProgress) async => sampleMessage(
+    id: 'file-1',
+    senderId: 'u1',
+    body: '',
+    type: file.kind == ChatAttachmentKind.video ? 'video' : 'image',
+    metadata: <String, dynamic>{
+      'file_url': 'https://api.quinch.sn/storage/chat/${file.name}',
+      'file_name': file.name,
+      'file_size': file.sizeBytes,
+    },
+  );
+  final List<ChatAttachment> sentFiles = <ChatAttachment>[];
+  Future<void> Function(String conversationId, String messageId)
+  onDeleteMessage = (conversationId, messageId) async {};
+  Future<void> Function(String id) onDeleteConversation = (id) async {};
+  Future<List<String>> Function(List<String> ids) onDeleteConversations =
+      (ids) async => ids;
+  final List<(String, String)> deletedMessages = <(String, String)>[];
+  final List<String> deletedConversation = <String>[];
+  final List<List<String>> deletedBulk = <List<String>>[];
+  Future<String> Function(String sellerId, String message, String? productId)
+  onStart = (sellerId, message, productId) async => 'c1';
+
+  int conversationsCalls = 0;
+  final List<String?> sinceAfters = <String?>[];
+  final List<String> sent = <String>[];
+  final List<({String sellerId, String message, String? productId})> started =
+      <({String sellerId, String message, String? productId})>[];
+
+  @override
+  Future<Paginated<Conversation>> conversations({int page = 1}) {
+    conversationsCalls++;
+    return onConversations(page);
+  }
+
+  @override
+  Future<ConversationDetail> conversation(String id) => onConversation(id);
+
+  @override
+  Future<NewMessages> messagesSince(String id, {String? after}) {
+    sinceAfters.add(after);
+    return onSince(id, after);
+  }
+
+  @override
+  Future<ChatMessage> sendMessage(String id, String body) {
+    sent.add(body);
+    return onSend(id, body);
+  }
+
+  @override
+  Future<void> deleteMessage(String conversationId, String messageId) {
+    deletedMessages.add((conversationId, messageId));
+    return onDeleteMessage(conversationId, messageId);
+  }
+
+  @override
+  Future<void> deleteConversation(String id) {
+    deletedConversation.add(id);
+    return onDeleteConversation(id);
+  }
+
+  @override
+  Future<List<String>> deleteConversations(List<String> ids) {
+    deletedBulk.add(ids);
+    return onDeleteConversations(ids);
+  }
+
+  @override
+  Future<ChatMessage> sendFile(
+    String id,
+    ChatAttachment file, {
+    void Function(double progress)? onProgress,
+  }) {
+    sentFiles.add(file);
+    return onSendFile(id, file, onProgress);
+  }
+
+  @override
+  Future<String> start({
+    required String sellerId,
+    required String message,
+    String? productId,
+  }) {
+    started.add((sellerId: sellerId, message: message, productId: productId));
+    return onStart(sellerId, message, productId);
   }
 }

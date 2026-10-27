@@ -10,6 +10,7 @@ import '../../core/session/session_state.dart';
 import '../../data/models/product.dart';
 import '../../data/repositories/safety_repository.dart';
 import '../../shared/widgets/product_widgets.dart';
+import '../chat/contact_seller.dart';
 import '../../shared/widgets/video_player_widget.dart';
 import '../../shared/widgets/report_sheet.dart';
 import '../profile/profile_providers.dart';
@@ -87,7 +88,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         ),
         data: (data) {
           _recordViewOnce(data.product.id);
-          return _DetailBody(detail: data);
+          return _DetailBody(detail: data, isMine: data.seller.id == myId);
         },
       ),
     );
@@ -110,9 +111,12 @@ String statusLabel(String? status) => switch (status) {
 };
 
 class _DetailBody extends StatelessWidget {
-  const _DetailBody({required this.detail});
+  const _DetailBody({required this.detail, required this.isMine});
 
   final ProductDetail detail;
+
+  /// Vrai si l'annonce est la mienne : pas de « Contacter le vendeur ».
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +204,13 @@ class _DetailBody extends StatelessWidget {
                 SelectableText(product.description),
               ],
               const SizedBox(height: 16),
+              if (!isMine)
+                ContactSellerButton(
+                  sellerId: seller.id,
+                  productId: product.id,
+                  productTitle: product.title,
+                ),
+              if (!isMine) const SizedBox(height: 12),
               _SellerCard(seller: seller),
             ],
           ),

@@ -11,6 +11,7 @@ import 'package:quinch_mobile/data/models/product.dart';
 import 'package:quinch_mobile/data/repositories/product_repository.dart';
 import 'package:quinch_mobile/features/explore/explore_page.dart';
 import 'package:quinch_mobile/features/favorites/favorites_page.dart';
+import 'package:quinch_mobile/features/chat/chat_providers.dart';
 import 'package:quinch_mobile/features/feed/feed_page.dart';
 import 'package:quinch_mobile/features/notifications/notification_providers.dart';
 import 'package:quinch_mobile/features/product/product_detail_page.dart';
@@ -62,6 +63,7 @@ Future<void> pumpPage(
         notificationRepositoryProvider.overrideWithValue(
           FakeNotificationRepository(),
         ),
+        chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
       ],
       child: MaterialApp.router(routerConfig: router),
     ),

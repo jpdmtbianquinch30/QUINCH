@@ -28,6 +28,8 @@ enum FeatureStatus { unknown, available, unavailable }
 /// - un appel réussi prouve que la fonction est disponible ;
 /// - seul un 404 SANS message sur une route connue pour être sous drapeau
 ///   la fait considérer comme indisponible ;
+/// - un 403 « bientôt disponible » (envoi de fichier du chat) la fait aussi
+///   considérer comme indisponible ;
 /// - toute autre erreur (réseau, 5xx, 401, route inexistante, ressource
 ///   absente) laisse l'état inchangé : on ne sait pas.
 /// C'est une déduction à partir du code du backend, pas une certitude : l'écran
@@ -37,6 +39,12 @@ FeatureStatus statusAfterCall(FeatureStatus current, {ApiError? error}) {
     return FeatureStatus.available;
   }
   if (error.kind == ApiErrorKind.notFoundEmptyMessage) {
+    return FeatureStatus.unavailable;
+  }
+  // Envois de fichiers du chat : le contrôleur répond 403 avec ce message quand
+  // `chat_file` ou `chat_audio` est coupé (voir ConversationController).
+  if (error.statusCode == 403 &&
+      (error.serverMessage ?? '').contains('bientôt disponible')) {
     return FeatureStatus.unavailable;
   }
   return current;

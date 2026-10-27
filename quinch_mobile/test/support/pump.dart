@@ -10,6 +10,7 @@ import 'package:quinch_mobile/core/platform/url_opener.dart';
 import 'package:quinch_mobile/core/platform/video_session.dart';
 import 'package:quinch_mobile/core/providers.dart';
 import 'package:quinch_mobile/core/session/session_controller.dart';
+import 'package:quinch_mobile/features/chat/chat_providers.dart';
 import 'package:quinch_mobile/features/legal/legal_content.dart';
 import 'package:quinch_mobile/features/legal/legal_providers.dart';
 import 'package:quinch_mobile/features/notifications/notification_providers.dart';
@@ -34,6 +35,7 @@ class ScreenEnv {
     required this.rankings,
     required this.legal,
     required this.video,
+    required this.chat,
   });
 
   final ProviderContainer container;
@@ -48,6 +50,7 @@ class ScreenEnv {
   final FakeRankingRepository rankings;
   final FakeLegalRepository legal;
   final FakeVideoFactory video;
+  final FakeChatRepository chat;
 }
 
 /// Monte un écran au-dessus d'un écran « RACINE » (le retour fonctionne), dans
@@ -69,6 +72,7 @@ Future<ScreenEnv> pumpScreen(
   ImagesPick? pickImages,
   VideoPick? pickVideo,
   FakeVideoFactory? video,
+  FakeChatRepository? chat,
   List<Uri>? openedUrls,
   bool urlOpens = true,
   bool authenticated = false,
@@ -87,6 +91,7 @@ Future<ScreenEnv> pumpScreen(
   final rankingsRepo = rankings ?? FakeRankingRepository();
   final legalRepo = legal ?? FakeLegalRepository();
   final videoFactory = video ?? FakeVideoFactory();
+  final chatRepo = chat ?? FakeChatRepository();
   final opened = openedUrls ?? <Uri>[];
 
   final storage = InMemoryTokenStorage();
@@ -111,6 +116,7 @@ Future<ScreenEnv> pumpScreen(
       ),
       videoPickProvider.overrideWithValue(pickVideo ?? () async => null),
       videoSessionFactoryProvider.overrideWithValue(videoFactory.create),
+      chatRepositoryProvider.overrideWithValue(chatRepo),
       urlOpenerProvider.overrideWithValue((uri) async {
         opened.add(uri);
         return urlOpens;
@@ -143,6 +149,15 @@ Future<ScreenEnv> pumpScreen(
       GoRoute(
         path: myProductsPath,
         builder: (context, state) => marker('ROUTE $myProductsPath'),
+      ),
+      GoRoute(
+        path: messagesPath,
+        builder: (context, state) => marker('ROUTE $messagesPath'),
+      ),
+      GoRoute(
+        path: '/messages/:id',
+        builder: (context, state) =>
+            marker('ROUTE /messages/${state.pathParameters['id']}'),
       ),
       GoRoute(
         path: editProductPath,
@@ -228,6 +243,7 @@ Future<ScreenEnv> pumpScreen(
     rankings: rankingsRepo,
     legal: legalRepo,
     video: videoFactory,
+    chat: chatRepo,
   );
 }
 

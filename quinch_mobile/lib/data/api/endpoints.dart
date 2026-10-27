@@ -73,6 +73,8 @@ abstract final class Endpoints {
   static const conversationsBulkDelete = 'conversations/bulk-delete';
   static String conversation(String id) => 'conversations/$id';
   static String conversationMessages(String id) => 'conversations/$id/messages';
+  static String conversationMessage(String id, String messageId) =>
+      'conversations/$id/messages/$messageId';
   static String conversationSince(String id) =>
       'conversations/$id/messages/since'; // ?after=
   static String conversationFile(String id) => 'conversations/$id/file';
