@@ -25,11 +25,12 @@ final mine = sampleMessage(
   createdAt: '2026-10-25T10:01:00.000000Z',
 );
 
-FakeChatRepository chatWith(List<ChatMessage> messages) => FakeChatRepository()
-  ..onConversation = (id) async => ConversationDetail(
-    conversation: sampleConversation(id: id),
-    messages: messages,
-  );
+FakeChatRepository chatWith(List<ChatMessage> messages) =>
+    FakeChatRepository()
+      ..onConversation = (id) async => ConversationDetail(
+        conversation: sampleConversation(id: id),
+        messages: messages,
+      );
 
 Future<ScreenEnv> pumpChat(WidgetTester tester, FakeChatRepository chat) =>
     pumpScreen(
@@ -246,11 +247,18 @@ void main() {
     final c2 = sampleConversation(id: 'c2', otherName: 'Moussa Ba');
     final c3 = sampleConversation(id: 'c3', otherName: 'Awa Diop');
 
-    FakeChatRepository inbox() => FakeChatRepository()
-      ..onConversations = (page) async => pageOf<Conversation>([c1, c2, c3]);
+    FakeChatRepository inbox() =>
+        FakeChatRepository()
+          ..onConversations = (page) async =>
+              pageOf<Conversation>([c1, c2, c3]);
 
     Future<ScreenEnv> pumpInbox(WidgetTester tester, FakeChatRepository chat) =>
-        pumpScreen(tester, const MessagesPage(), chat: chat, authenticated: true);
+        pumpScreen(
+          tester,
+          const MessagesPage(),
+          chat: chat,
+          authenticated: true,
+        );
 
     testWidgets('appui long : mode sélection avec compteur', (tester) async {
       await pumpInbox(tester, inbox());
@@ -306,7 +314,9 @@ void main() {
       await tester.tap(find.text('Moussa Ba'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Supprimer les conversations sélectionnées'));
+      await tester.tap(
+        find.byTooltip('Supprimer les conversations sélectionnées'),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Supprimer 2 conversations ?'), findsOneWidget);
@@ -314,44 +324,51 @@ void main() {
       expect(chat.deletedBulk, isEmpty);
     });
 
-    testWidgets('confirmer : un seul appel, liste mise à jour après le serveur', (
+    testWidgets(
+      'confirmer : un seul appel, liste mise à jour après le serveur',
+      (tester) async {
+        var deleted = false;
+        final chat = FakeChatRepository();
+        chat.onConversations = (page) async =>
+            pageOf<Conversation>(deleted ? [c3] : [c1, c2, c3]);
+        chat.onDeleteConversations = (ids) async {
+          deleted = true;
+          return ids;
+        };
+        await pumpInbox(tester, chat);
+        await tester.longPress(find.text('Fatou Sow'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Moussa Ba'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byTooltip('Supprimer les conversations sélectionnées'),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(confirmButton);
+        await tester.pumpAndSettle();
+
+        expect(chat.deletedBulk, [
+          ['c1', 'c2'],
+        ]);
+        expect(find.text('Conversations supprimées.'), findsOneWidget);
+        expect(find.text('Fatou Sow'), findsNothing);
+        expect(find.text('Moussa Ba'), findsNothing);
+        expect(find.text('Awa Diop'), findsOneWidget);
+        expect(find.text('Messages'), findsOneWidget);
+      },
+    );
+
+    testWidgets('annuler la confirmation : rien n\'est supprimé', (
       tester,
     ) async {
-      var deleted = false;
-      final chat = FakeChatRepository();
-      chat.onConversations = (page) async =>
-          pageOf<Conversation>(deleted ? [c3] : [c1, c2, c3]);
-      chat.onDeleteConversations = (ids) async {
-        deleted = true;
-        return ids;
-      };
-      await pumpInbox(tester, chat);
-      await tester.longPress(find.text('Fatou Sow'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Moussa Ba'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Supprimer les conversations sélectionnées'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(confirmButton);
-      await tester.pumpAndSettle();
-
-      expect(chat.deletedBulk, [
-        ['c1', 'c2'],
-      ]);
-      expect(find.text('Conversations supprimées.'), findsOneWidget);
-      expect(find.text('Fatou Sow'), findsNothing);
-      expect(find.text('Moussa Ba'), findsNothing);
-      expect(find.text('Awa Diop'), findsOneWidget);
-      expect(find.text('Messages'), findsOneWidget);
-    });
-
-    testWidgets('annuler la confirmation : rien n\'est supprimé', (tester) async {
       final chat = inbox();
       await pumpInbox(tester, chat);
       await tester.longPress(find.text('Fatou Sow'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Supprimer les conversations sélectionnées'));
+      await tester.tap(
+        find.byTooltip('Supprimer les conversations sélectionnées'),
+      );
       await tester.pumpAndSettle();
       expect(find.text('Supprimer cette conversation ?'), findsOneWidget);
 
@@ -370,7 +387,9 @@ void main() {
       await pumpInbox(tester, chat);
       await tester.longPress(find.text('Fatou Sow'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Supprimer les conversations sélectionnées'));
+      await tester.tap(
+        find.byTooltip('Supprimer les conversations sélectionnées'),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(confirmButton);
@@ -382,14 +401,15 @@ void main() {
     });
 
     testWidgets('suppression partielle : signalée', (tester) async {
-      final chat = inbox()
-        ..onDeleteConversations = (ids) async => [ids.first];
+      final chat = inbox()..onDeleteConversations = (ids) async => [ids.first];
       await pumpInbox(tester, chat);
       await tester.longPress(find.text('Fatou Sow'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Moussa Ba'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Supprimer les conversations sélectionnées'));
+      await tester.tap(
+        find.byTooltip('Supprimer les conversations sélectionnées'),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(confirmButton);

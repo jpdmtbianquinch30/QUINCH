@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme.dart';
+
 /// Champ de texte standard : bordure, libellé, erreur du serveur éventuelle.
 class AppTextField extends StatelessWidget {
   const AppTextField({
@@ -48,7 +50,6 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         errorText: errorText,
-        border: const OutlineInputBorder(),
         counterText: '',
       ),
     );
@@ -104,7 +105,6 @@ class _PasswordFieldState extends State<PasswordField> {
       decoration: InputDecoration(
         labelText: widget.label,
         errorText: widget.errorText,
-        border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           tooltip: _hidden
               ? 'Afficher le mot de passe'
@@ -120,6 +120,10 @@ class _PasswordFieldState extends State<PasswordField> {
 }
 
 /// Bouton principal : désactivé et avec indicateur pendant une requête.
+///
+/// Reste un `FilledButton` (les tests le retrouvent par ce type). Le dégradé
+/// 135° et le halo d'Angular sont dessinés par un `DecoratedBox` autour du bouton,
+/// dont le fond est transparent : `ButtonStyle` ne sait pas dessiner de dégradé.
 class LoadingButton extends StatelessWidget {
   const LoadingButton({
     super.key,
@@ -134,19 +138,41 @@ class LoadingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-      onPressed: isLoading ? null : onPressed,
-      child: isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                semanticsLabel: 'Envoi en cours',
-              ),
-            )
-          : Text(label),
+    final palette = QuinchPalette.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: QuinchGradients.primary(palette, dimmed: isLoading),
+        borderRadius: BorderRadius.circular(QuinchRadius.md),
+        boxShadow: isLoading
+            ? null
+            : [
+                BoxShadow(
+                  color: QuinchColors.accent.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: FilledButton(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          backgroundColor: Colors.transparent,
+          disabledBackgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+        ),
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                  semanticsLabel: 'Envoi en cours',
+                ),
+              )
+            : Text(label),
+      ),
     );
   }
 }
